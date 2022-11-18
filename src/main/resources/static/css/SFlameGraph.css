@@ -1,0 +1,11 @@
+.SFlameGraphTooltip {
+    position: absolute;
+    text-align: left;
+    padding: 2px;
+    font: 14px sans-serif;
+    background: black;
+    color: white;
+    border: 0px;
+    border-radius: 5px;
+    pointer-events: none;
+}
