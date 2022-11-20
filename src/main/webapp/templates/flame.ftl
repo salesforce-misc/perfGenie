@@ -101,13 +101,12 @@ In other words, data that's in the second set but not in the first will not be d
 <!-- context menu javascript -->
 <script>
 
-
     function refreshTreeFlame(){
         isRefresh = true;
         $("#threshold").val($("#threshold-flame").val());
         updateProfilerView();
     }
-    // custom right-click implementation
+
     $("#tree-view-type-flame").on("change", (event) => {
         handleTreeViewTypeChange($("#tree-view-type-flame").val());
     });

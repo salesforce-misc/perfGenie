@@ -16,10 +16,10 @@ import java.util.logging.Logger;
 
 @SpringBootApplication
 @EnableScheduling
-public class ServerApplication {
+public class StackDigVizAppication {
     private static final Logger logger = Logger.getLogger(EventHandler.class.getName());
     public static void main(String[] args) {
-        SpringApplication.run(ServerApplication.class,args);
+        SpringApplication.run(StackDigVizAppication.class,args);
     }
 }
 

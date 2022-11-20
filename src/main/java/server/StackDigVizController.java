@@ -17,11 +17,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @RestController
-public class ServerController {
-    private final ServerService service;
+public class StackDigVizController {
+    private final StackDigVizService service;
     private static final Pattern queryPatterns = Pattern.compile("(?<key>.*?)(?<value>(>|<|=|!=|~|!~|<=|>=).*)");
     @Autowired
-    public ServerController(ServerService service) {
+    public StackDigVizController(StackDigVizService service) {
         this.service = service;
     }
 

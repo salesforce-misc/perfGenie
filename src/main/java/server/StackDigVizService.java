@@ -9,7 +9,6 @@ package server;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.ByteStreams;
 import com.salesforce.cantor.Cantor;
 import com.salesforce.cantor.Events;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,18 +28,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-public class ServerService {
+public class StackDigVizService implements IStackDigVizService {
     final Cantor cantor;
     final CustomJfrParser parser;
     public static final String NAMESPACE_JFR_JSON_CACHE = "jfr-json-cache";
-    private static final Logger logger = Logger.getLogger(ServerService.class.getName());
+    private static final Logger logger = Logger.getLogger(StackDigVizService.class.getName());
     private static final String JFR_DIR="/tmp/jfrs";
     private static String tenant = "dev";
     private static String host = "localhost";
     //final CustomJfrParser.Config config = new CustomJfrParser.Config();
 
+    //cronjob to parse jfrs placed in a directory
     @Scheduled(cron = "*/10 * * ? * *")
-    public void cronJob() throws IOException{
+    private void cronJob() throws IOException {
         host = InetAddress.getLocalHost().getHostName();
         logger.info("looking for Jfrs at " + JFR_DIR);
         File folder = new File(JFR_DIR);
@@ -49,74 +49,41 @@ public class ServerService {
         for (File file : listOfFiles) {
             if (file.isFile() && file.getName().contains(".jfr") || file.getName().contains(".jfr.gz")) {
                 EventHandler handler = new EventHandler();
-                //handler.initializeProfiles(config.getProfiles());
                 long timestamp = System.currentTimeMillis();
                 String guid = Utils.generateGuid();
-
                 final Stopwatch timer = Stopwatch.createStarted();
                 try {
                     parser.parseStream(handler, file.getPath());
+                    final Map<String, Double> dimMap = new HashMap<>();
+                    final Map<String, String> queryMap = new HashMap<>();
+                    queryMap.put("guid", guid);
+                    queryMap.put("tenant", tenant);
+                    queryMap.put("host", host);
+                    queryMap.put("file-name", file.getName());
+
                     List<String> l = handler.getProfileList();
-                    for(int i = 0; i<l.size();i++){
+                    for (int i = 0; i < l.size(); i++) {
                         Object profile = handler.getProfileTree(l.get(i));
-                        final byte[] compressedFileBytes = Utils.compress(ByteStreams.toByteArray(new ByteArrayInputStream(Utils.toJson(profile).getBytes(StandardCharsets.UTF_8))));
-                        if (compressedFileBytes.length == 0) {
-                            throw new IllegalStateException("Nothing to read from input stream");
-                        }
-
-                        final Map<String, Double> dimMap = new HashMap<>();
-                        final Map<String, String> queryMap = new HashMap<>();
-                        queryMap.put("guid", guid);
                         queryMap.put("type", "jfrprofile");
-                        queryMap.put("tenant", tenant);
-                        queryMap.put("host", host);
                         queryMap.put("name", l.get(i));
-                        queryMap.put("file-name", file.getName());
 
-                        this.cantor.events().store(
-                                NAMESPACE_JFR_JSON_CACHE,
-                                timestamp,
-                                queryMap,
-                                dimMap,
-                                compressedFileBytes);
+                        addEvent(NAMESPACE_JFR_JSON_CACHE, Utils.toJson(profile), timestamp, dimMap, queryMap);
                     }
-
-                    {
-                        Object o = handler.getLogContext();
-                        final byte[] compressedFileBytes = Utils.compress(ByteStreams.toByteArray(new ByteArrayInputStream(Utils.toJson(o).getBytes(StandardCharsets.UTF_8))));
-                        if (compressedFileBytes.length == 0) {
-                            throw new IllegalStateException("Nothing to read from input stream");
-                        }
-
-                        final Map<String, Double> dimMap = new HashMap<>();
-                        final Map<String, String> queryMap = new HashMap<>();
-                        queryMap.put("guid", guid);
-                        queryMap.put("type", "jfrevent");
-                        queryMap.put("tenant", tenant);
-                        queryMap.put("host", host);
-                        queryMap.put("name", "customEvent");
-                        queryMap.put("file-name", file.getName());
-
-                        this.cantor.events().store(
-                                NAMESPACE_JFR_JSON_CACHE,
-                                timestamp,
-                                queryMap,
-                                dimMap,
-                                compressedFileBytes);
-                    }
-                }catch(Exception e){
+                    Object logContext = handler.getLogContext();
+                    queryMap.put("type", "jfrevent");
+                    queryMap.put("name", "customEvent");
+                    addEvent(NAMESPACE_JFR_JSON_CACHE, Utils.toJson(logContext), timestamp, dimMap, queryMap);
+                } catch (Exception e) {
                     System.out.println(e);
-                    logger.warning("Exception parsing file " + file.getPath() + ":"+ e.getStackTrace());
-
+                    logger.warning("Exception parsing file " + file.getPath() + ":" + e.getStackTrace());
                 }
                 new File(file.getPath()).delete();
-                logger.info("successfully parsed "+ file.getPath() + " and stored event in database under namespace: " + NAMESPACE_JFR_JSON_CACHE + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+                logger.info("successfully parsed " + file.getPath() + " and stored event in database under namespace: " + NAMESPACE_JFR_JSON_CACHE + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
             }
         }
     }
 
-    @Autowired
-    public ServerService(Cantor cantor, CustomJfrParser parser) throws IOException{
+    public StackDigVizService(final CustomJfrParser parser, final Cantor cantor) throws IOException{
         this.cantor = cantor;
         this.parser = parser;
         try {
@@ -131,20 +98,37 @@ public class ServerService {
         }
     }
 
-    public void addEvent(String payload,long timestamp, final Map<String, Double> dimMap,final Map<String, String> queryMap ) throws IOException {
+    @Autowired
+    public StackDigVizService(final Cantor cantor, final CustomJfrParser parser) throws IOException{
+        this.cantor = cantor;
+        this.parser = parser;
+        try {
+            this.cantor.events().store(
+                    NAMESPACE_JFR_JSON_CACHE,
+                    System.currentTimeMillis(),
+                    ImmutableMap.of(),
+                    ImmutableMap.of(),
+                    null);
+        }catch (Exception e) {
+            this.cantor.events().create(NAMESPACE_JFR_JSON_CACHE);
+        }
+    }
 
+    @Override
+    public boolean addEvent(final String namespace, final String payload, final long timestamp, final Map<String, Double> dimMap,final Map<String, String> queryMap ) throws IOException {
         final Stopwatch timer = Stopwatch.createStarted();
-
         this.cantor.events().store(
-                NAMESPACE_JFR_JSON_CACHE,
+                namespace,
                 timestamp,
                 queryMap,
                 dimMap,
                 Utils.compress(payload.getBytes(StandardCharsets.UTF_8)));
 
         logger.info("successfully stored even in database under namespace: " + NAMESPACE_JFR_JSON_CACHE + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+        return true;
     }
 
+    @Override
     public String getMeta(long start, long end,final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException{
         final List<Events.Event> results = this.cantor.events().get(
                 NAMESPACE_JFR_JSON_CACHE,
@@ -160,7 +144,8 @@ public class ServerService {
         return Utils.toJson(results);
     }
 
-    public String getProfile(String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException{
+    @Override
+    public String getProfile(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException{
         final List<Events.Event> results = this.cantor.events().get(
                 NAMESPACE_JFR_JSON_CACHE,
                 start,
@@ -195,7 +180,8 @@ public class ServerService {
         return null;
     }
 
-    public String getProfiles(String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException{
+    @Override
+    public String getProfiles(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException{
         queryMap.put("type", "=jfrprofile");
         Map <String , Long> profiles = loadProfiles(tenant, start, end, queryMap, dimMap);
         if (profiles == null || profiles.size() < 1) {
@@ -229,7 +215,8 @@ public class ServerService {
         }
     }
 
-    public String getCustomEvents(String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException{
+    @Override
+    public String getCustomEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException{
         queryMap.put("type", "jfrevent");
         queryMap.put("name", "=customEvent");
         Map <String , Long> profiles = loadProfiles(tenant, start, end, queryMap, dimMap);
@@ -261,6 +248,7 @@ public class ServerService {
     }
 
     ///////////////////////////////
+    //experimental, patents
     private int chunkCount = 0;
     private List<Integer> chunkSamplesTotalList = new ArrayList();
     private List<Double> cpuSamplesList = new ArrayList();

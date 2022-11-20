@@ -94,92 +94,8 @@ public class CustomJfrParser {
         checkNotNull(path, "null/empty path argumet");
         try {
             final Stopwatch timer = Stopwatch.createStarted();
-            final StringBuilder sb = new StringBuilder();
-            final Map<String, List> header = new HashMap<>();
             IItemCollection events = JfrLoaderToolkit.loadEvents(new File(path));
-            for (IItemIterable iterable_element : events) {
-                if (config.isProfile(iterable_element.getType().getIdentifier())) {
-                    Object[] r = iterable_element.get().toArray();
-                    Map k = iterable_element.getType().getAccessorKeys();
-                    int tid = -1;
-                    long epoc = -1;
-                    handler.initializeProfile(iterable_element.getType().getIdentifier());
-                    handler.initializePid(iterable_element.getType().getIdentifier());
-                    System.out.println(iterable_element.getType().getIdentifier());
-                    final IMemberAccessor<IMCStackTrace, IItem> accessor = iterable_element.getType()
-                            .getAccessor(EVENT_STACKTRACE.getKey());
-                    for (final IItem item : iterable_element) {
-                        final IMCStackTrace stackTrace = accessor.getMember(item);
-                        for (Object key : k.keySet()) {
-                            if (((Attribute) key).getContentType().getIdentifier().equals("thread")) {
-                                final IMCThread thread = (IMCThread) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(item);
-                                tid = thread.getThreadId().intValue();
-                            } else if (((Attribute) key).getContentType().getIdentifier().equals("timestamp")) {
-                                ITypedQuantity<LinearUnit> v = (ITypedQuantity<LinearUnit>) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(item);
-                                epoc = v.longValue();
-                            }
-                        }
-                        handler.processEvent(sb, stackTrace, iterable_element.getType().getIdentifier(), tid, epoc);
-                    }
-                } else if (config.isCustomEvent(iterable_element.getType().getIdentifier())) {
-                    List l = iterable_element.getType().getAttributes();
-                    Map k = iterable_element.getType().getAccessorKeys();
-                    Object[] r = iterable_element.get().toArray();
-                    boolean addHeader = false;
-                    if (!header.containsKey(iterable_element.getType().getIdentifier())) {
-                        header.put(iterable_element.getType().getIdentifier(), new ArrayList<String>());
-                        addHeader = true;
-                    }
-
-                    for (int i = 0; i < r.length; i++) {
-                        IUnit u = null;
-                        List<Object> record = new ArrayList<>();
-                        int tid = -1;
-                        for (Object key : k.keySet()) {
-                            if (((Attribute) key).getContentType().getIdentifier().equals("thread")) {
-                                final IMCThread thread = (IMCThread) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i]);
-                                tid = thread.getThreadId().intValue();
-                                tid = thread.getThreadId().intValue();
-                                record.add(thread.getThreadId());
-                                record.add(thread.getThreadName());
-                                if (addHeader) {
-                                    header.get(iterable_element.getType().getIdentifier()).add("tid:text");
-                                    header.get(iterable_element.getType().getIdentifier()).add("threadname:text");
-                                }
-                            } else if (((Attribute) key).getContentType().getIdentifier().equals("timestamp")) {
-                                ITypedQuantity<LinearUnit> v = (ITypedQuantity<LinearUnit>) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i]);
-                                u = v.getUnit();
-                                record.add(Math.round(v.longValue() / 1000000d));
-                                if (addHeader) {
-                                    header.get(iterable_element.getType().getIdentifier()).add("timestamp:timestamp");
-                                }
-                            } else if (((Attribute) key).getContentType().getIdentifier().equals("timespan")) {
-                                ITypedQuantity<LinearUnit> v = (ITypedQuantity<LinearUnit>) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i]);
-                                record.add((long) Math.round(v.getUnit().valueTransformTo(u.getDeltaUnit()).getMultiplier() * v.longValue() / 1000000d)); //convert to ms
-                                if (addHeader) {
-                                    header.get(iterable_element.getType().getIdentifier()).add("duration:number");
-                                }
-                            } else if (((Attribute) key).getContentType().getIdentifier().equals("text")) {
-                                record.add(iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i]));
-                                if (addHeader) {
-                                    header.get(iterable_element.getType().getIdentifier()).add(((Attribute) key).getIdentifier() + ":text");
-                                }
-                            } else if (((Attribute) key).getContentType().getIdentifier().equals("number")) {
-                                record.add(((IQuantity) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i])).longValue());
-                                if (addHeader) {
-                                    header.get(iterable_element.getType().getIdentifier()).add(((Attribute) key).getIdentifier() + ":number");
-                                }
-                            }
-                        }
-                        if (addHeader) {
-                            handler.initializeEvent(iterable_element.getType().getIdentifier());
-                            handler.addHeader(iterable_element.getType().getIdentifier(), header.get(iterable_element.getType().getIdentifier()));
-                            addHeader = false;
-                        }
-                        handler.processContext(record, tid, iterable_element.getType().getIdentifier());
-                    }
-                }
-            }
+            processJfrEvents(handler, events);
             logger.info("doParseStream parse time sec: {}", timer.stop().elapsed(TimeUnit.SECONDS));
             return handler;
         } catch (CouldNotLoadRecordingException e) {
@@ -187,19 +103,109 @@ public class CustomJfrParser {
         }
     }
 
-    public EventHandler doParseStream(final EventHandler builder, final ByteArrayInputStream stream) throws IOException {
-        checkNotNull(builder, "null/empty builder argumet");
+    public EventHandler doParseStream(final EventHandler handler, final ByteArrayInputStream stream) throws IOException {
+        checkNotNull(handler, "null/empty builder argumet");
         checkNotNull(stream, "null/empty stream argumet");
+
         try {
             final Stopwatch timer = Stopwatch.createStarted();
             IItemCollection events = JfrLoaderToolkit.loadEvents(stream);
-            JfrLoaderToolkit.loadEvents(new File(""));
+            processJfrEvents(handler, events);
             logger.info("doParseStream parse time sec: {}", timer.stop().elapsed(TimeUnit.SECONDS));
-            return builder;
+            return handler;
         } catch (CouldNotLoadRecordingException e) {
             throw new RuntimeException(e);
         }
     }
+
+    void processJfrEvents(final EventHandler handler, final IItemCollection events){
+        final StringBuilder sb = new StringBuilder();
+        final Map<String, List> header = new HashMap<>();
+        for (IItemIterable iterable_element : events) {
+            if (config.isProfile(iterable_element.getType().getIdentifier())) {
+                Object[] r = iterable_element.get().toArray();
+                Map k = iterable_element.getType().getAccessorKeys();
+                int tid = -1;
+                long epoc = -1;
+                handler.initializeProfile(iterable_element.getType().getIdentifier());
+                handler.initializePid(iterable_element.getType().getIdentifier());
+                System.out.println(iterable_element.getType().getIdentifier());
+                final IMemberAccessor<IMCStackTrace, IItem> accessor = iterable_element.getType()
+                        .getAccessor(EVENT_STACKTRACE.getKey());
+                for (final IItem item : iterable_element) {
+                    final IMCStackTrace stackTrace = accessor.getMember(item);
+                    for (Object key : k.keySet()) {
+                        if (((Attribute) key).getContentType().getIdentifier().equals("thread")) {
+                            final IMCThread thread = (IMCThread) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(item);
+                            tid = thread.getThreadId().intValue();
+                        } else if (((Attribute) key).getContentType().getIdentifier().equals("timestamp")) {
+                            ITypedQuantity<LinearUnit> v = (ITypedQuantity<LinearUnit>) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(item);
+                            epoc = v.longValue();
+                        }
+                    }
+                    handler.processEvent(sb, stackTrace, iterable_element.getType().getIdentifier(), tid, epoc);
+                }
+            } else if (config.isCustomEvent(iterable_element.getType().getIdentifier())) {
+                List l = iterable_element.getType().getAttributes();
+                Map k = iterable_element.getType().getAccessorKeys();
+                Object[] r = iterable_element.get().toArray();
+                boolean addHeader = false;
+                if (!header.containsKey(iterable_element.getType().getIdentifier())) {
+                    header.put(iterable_element.getType().getIdentifier(), new ArrayList<String>());
+                    addHeader = true;
+                }
+
+                for (int i = 0; i < r.length; i++) {
+                    IUnit u = null;
+                    List<Object> record = new ArrayList<>();
+                    int tid = -1;
+                    for (Object key : k.keySet()) {
+                        if (((Attribute) key).getContentType().getIdentifier().equals("thread")) {
+                            final IMCThread thread = (IMCThread) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i]);
+                            tid = thread.getThreadId().intValue();
+                            tid = thread.getThreadId().intValue();
+                            record.add(thread.getThreadId());
+                            record.add(thread.getThreadName());
+                            if (addHeader) {
+                                header.get(iterable_element.getType().getIdentifier()).add("tid:text");
+                                header.get(iterable_element.getType().getIdentifier()).add("threadname:text");
+                            }
+                        } else if (((Attribute) key).getContentType().getIdentifier().equals("timestamp")) {
+                            ITypedQuantity<LinearUnit> v = (ITypedQuantity<LinearUnit>) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i]);
+                            u = v.getUnit();
+                            record.add(Math.round(v.longValue() / 1000000d));
+                            if (addHeader) {
+                                header.get(iterable_element.getType().getIdentifier()).add("timestamp:timestamp");
+                            }
+                        } else if (((Attribute) key).getContentType().getIdentifier().equals("timespan")) {
+                            ITypedQuantity<LinearUnit> v = (ITypedQuantity<LinearUnit>) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i]);
+                            record.add((long) Math.round(v.getUnit().valueTransformTo(u.getDeltaUnit()).getMultiplier() * v.longValue() / 1000000d)); //convert to ms
+                            if (addHeader) {
+                                header.get(iterable_element.getType().getIdentifier()).add("duration:number");
+                            }
+                        } else if (((Attribute) key).getContentType().getIdentifier().equals("text")) {
+                            record.add(iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i]));
+                            if (addHeader) {
+                                header.get(iterable_element.getType().getIdentifier()).add(((Attribute) key).getIdentifier() + ":text");
+                            }
+                        } else if (((Attribute) key).getContentType().getIdentifier().equals("number")) {
+                            record.add(((IQuantity) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i])).longValue());
+                            if (addHeader) {
+                                header.get(iterable_element.getType().getIdentifier()).add(((Attribute) key).getIdentifier() + ":number");
+                            }
+                        }
+                    }
+                    if (addHeader) {
+                        handler.initializeEvent(iterable_element.getType().getIdentifier());
+                        handler.addHeader(iterable_element.getType().getIdentifier(), header.get(iterable_element.getType().getIdentifier()));
+                        addHeader = false;
+                    }
+                    handler.processContext(record, tid, iterable_element.getType().getIdentifier());
+                }
+            }
+        }
+    }
+
 
     public static class Config {
         public List<String> getProfiles() {

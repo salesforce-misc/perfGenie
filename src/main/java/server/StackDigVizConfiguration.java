@@ -16,7 +16,7 @@ import server.utils.CustomJfrParser;
 import java.io.IOException;
 
 @Configuration
-public class ServerConfiguration {
+public class StackDigVizConfiguration {
 
     @Bean
     public Cantor getCantor()  throws IOException {
@@ -27,7 +27,7 @@ public class ServerConfiguration {
         return new CustomJfrParser(2);
     }
     @Bean
-    public ServerService getServerService(final Cantor cantor, final CustomJfrParser parser)  throws IOException {
-        return new ServerService(cantor, parser);
+    public StackDigVizService getServerService(final Cantor cantor, final CustomJfrParser parser)  throws IOException {
+        return new StackDigVizService(cantor, parser);
     }
 }
