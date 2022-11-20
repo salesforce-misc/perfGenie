@@ -7,14 +7,14 @@ StackDigViz is a Java Fligh Recorder (JFR) profile parsing and web visualizaiton
 
 StackDigViz can be deployed as a continuos profiling solution. It uses Cantor (https://github.com/salesforce/cantor) as a data layer, Cantor can be configred to store data in H2, MySQL or S3. This project is setup with a simple cron job to monitor a directory for any JFR files, parse and store in H2 (default configuration). 
 
-<img src="https://git.soma.salesforce.com/rpulle/profiler-views/blob/master/src/main/resources/static/images/flow.jpg?raw=true" width="500"  />
+<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/src/main/resources/static/images/flow.jpg?raw=true" width="500"  />
 
 ### Development
 
 Clone the repository:
 
 ```sh
-$ git clone https://git.soma.salesforce.com/rpulle/profiler-views.git
+$ git clone git@github.com:salesforce-misc/StackDigViz.git
 ```
 
 Build:
@@ -48,5 +48,5 @@ How to add JFR's for testing: The applicaiton server has a cron job to monitor a
 - Request timeline view (to see samples of single request)
 
 User interface:
-<img src="https://git.soma.salesforce.com/rpulle/profiler-views/blob/master/src/main/resources/static/images/ui.jpg?raw=true"   />
+<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/src/main/resources/static/images/ui.jpg?raw=true"   />
 
