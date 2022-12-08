@@ -264,7 +264,7 @@
 
     function createContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry) {
         let start = performance.now();
-        if (isCalltree == true && profilers[0] != WARDEN_PROFILER && getmergedContextTree() === undefined && getContextTree(1) !== undefined) {
+        if (isCalltree == true && getmergedContextTree() === undefined && getContextTree(1) !== undefined) {
             // this will happen when backtrace view  is loaded and requesting a call tree view
             resetTreeHeader("Inverting tree ...");
             spinnerToggle('spinnerId');
@@ -563,9 +563,8 @@
             }
         }
         let toTenant = "";
-        if (profilers[0] == WARDEN_PROFILER) {
-            toTenant = pods[0];
-        } else if (uploads[0] != "true" && isS3 == "false") {
+
+        if (uploads[0] != "true" && isS3 == "false") {
             toTenant = datacenters[0];
         }
         const callTreeUrl = getCallTreeUrl(dateRanges[0], pods[0], queries[0], profilers[0], tenants[0], profiles[0], hosts[0], uploads[0], fileIds[0], uploadTimes[0], aggregates[0], eventType);
@@ -576,9 +575,7 @@
         }
         if (profiles.length === 2) {
             let toTenant = "";
-            if (profilers[1] == WARDEN_PROFILER) {
-                toTenant = pods[1];
-            } else if (uploads[1] != "true" && isS3 == "false") {
+            if (uploads[1] != "true" && isS3 == "false") {
                 toTenant = datacenters[1];
             }
             const callTreeUrl = getCallTreeUrl(dateRanges[1], pods[1], (queries.length === 2) ? queries[1] : '', (profilers.length === 2) ? profilers[1] : '', (tenants.length === 2) ? tenants[1] : '', (profiles.length === 2) ? profiles[1] : '', (hosts.length === 2) ? hosts[1] : '', (uploads.length === 2) ? uploads[1] : '', (fileIds.length === 2) ? fileIds[1] : '', (uploadTimes.length === 2) ? uploadTimes[1] : '', aggregates[1], eventType);
@@ -599,7 +596,7 @@
             if(eventType == "Jstack") {
                 const start = parseInt(timeRange.split(" - ")[0]);
                 const end = parseInt(timeRange.split(" - ")[1]);
-                endpoint = "/v1/profile/" + tenant + "/jstack?start=" + start + "&end=" + end +
+                endpoint = "/v1/jstack/" + tenant + "/?start=" + start + "&end=" + end +
                     "&metadata_query=" + encodeURIComponent("host=" + host) +
                     "&metadata_query=" + encodeURIComponent("tenant=" + tenant) +
                     "&metadata_query=" + encodeURIComponent("name=Jstack");
@@ -714,5 +711,17 @@
 
     function setAggregationFlag() {
         return "is-aggregation=true";
+    }
+
+    function getThreadState(state){
+        if(state == 0){
+            return "RUNNABLE";
+        }else if(state == 1){
+            return "BLOCKED";
+        }else if(state == 2){
+            return "WAITING";
+        }else if(state == 3){
+            return "TIMED_WAITING";
+        }
     }
 </script>

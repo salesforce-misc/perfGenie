@@ -351,12 +351,13 @@
 
             trace['stackgroup'] = 'one';
             trace['mode'] = 'none';
+
             trace['path'] = newplotdata.pathList[index];
 
             for (let j = 0; j < newplotdata.data[index].length; j++) {
                 trace['x'].push(j);
                 // trace['y'].push((100 * plotdata[i][j] / plotdata[i][plotdata[i].length - 1]));
-                trace['y'].push((100 * newplotdata.data[index][j] / newplotdata.chunkSamplesTotalList[j]));
+                trace['y'].push((100 * newplotdata.data[index][j] / newplotdata.chunkSamplesTotalList[j])+0.01);
             }
             tmpdata.push(trace);
             //}

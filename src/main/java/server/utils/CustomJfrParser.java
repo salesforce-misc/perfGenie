@@ -24,6 +24,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -49,8 +50,6 @@ public class CustomJfrParser {
     final Config config = new Config();
 
     public CustomJfrParser(final int maxParallelAllowed) {
-        System.out.println(Utils.toJson(config));
-
         executor = new ThreadPoolExecutor(
                 1, maxParallelAllowed,
                 300L, TimeUnit.SECONDS,
@@ -224,8 +223,51 @@ public class CustomJfrParser {
             this.customevents = customevents;
         }
 
-        List<String> profiles = Arrays.asList("ExecutionS", "Socket");
-        List<String> customevents = Arrays.asList("LogContext", "MqFrm", "CPUEvent", "MemoryEvent");
+        public String getJfrdir() {
+            return jfrdir;
+        }
+
+        String jfrdir = "/tmp/jfrs";
+        List<String> profiles = new ArrayList<>(); //Arrays.asList("ExecutionS", "Socket");
+        List<String> customevents = new ArrayList<>(); //rrays.asList("LogContext", "MqFrm", "CPUEvent", "MemoryEvent");
+
+        public Config(){
+            try (InputStream config = CustomJfrParser.class.getClassLoader().getResourceAsStream("config.properties")) {
+                Properties prop = new Properties();
+                if (config == null) {
+                    logger.error("Error: unable to find config.properties, adding default entries");
+                    profiles.add("ExecutionS");
+                    profiles.add("Socket");
+                    customevents.add("MqFrm");
+                    customevents.add("LogContext");
+                    customevents.add("CPUEvent");
+                    customevents.add("MemoryEvent");
+                    logger.info(profiles.toString());
+                    logger.info(customevents.toString());
+                    return;
+                }
+                prop.load(config);
+                String [] ce = prop.getProperty("customevents").split(";");
+                for(int i = 0; i< ce.length; i++){
+                    customevents.add(ce[i]);
+                }
+
+                String [] pe = prop.getProperty("profiles").split(";");
+                for(int i = 0; i< pe.length; i++){
+                    profiles.add(pe[i]);
+                }
+                if(prop.getProperty("jfrdir") != null){
+                    jfrdir=prop.getProperty("jfrdir");
+                }
+                logger.info("profiles being parsed:" + profiles.toString());
+                logger.info("customevents being parsed:" + customevents.toString());
+                logger.info("dir monitored to parse jfr files:" + jfrdir);
+
+            } catch (IOException ex) {
+                logger.error("Exception: unable to find config.properties");
+                ex.printStackTrace();
+            }
+        }
 
         public boolean isCustomEvent(String type) {
             for (int i = 0; i < customevents.size(); i++) {

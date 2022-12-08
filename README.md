@@ -1,4 +1,5 @@
 # StackDigViz
+
 <a href="https://opensource.org/licenses/BSD-3-Clause" rel="nofollow"><img src="https://camo.githubusercontent.com/8ccf186e7288af6d88a1f6a930c0fcc4e7a8a9936b34e07629d815d1eab4d977/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f4c6963656e73652d425344253230332d2d436c617573652d626c75652e737667" alt="License" data-canonical-src="https://img.shields.io/badge/License-BSD%203--Clause-blue.svg" style="max-width: 100%;"></a>
 
 StackDigViz is a Java Fligh Recorder (JFR) profile parsing and web visualizaiton tool, it provides ability to view profiles in the form of Context Trees, Samples explorer, Flame Graph, Thread State, River and Hotspot surface views. It also helps to compare two profiles using context tree diff and flame graph diff views. It also provides functionality to filter profiles for a given custom event context, tid or thread name. Request timeline view helps in looking at samples of an individual request context. It also has option to visualize thread context request and context metric timeline views. The aggregation feature helps in combining profils for a longer period. Thread dumps can also be converted into profile views.
@@ -12,26 +13,38 @@ StackDigViz can be deployed as a continuos profiling solution. It uses Cantor (h
 
 ### Development
 
-Clone the repository:
+#### Clone the repository
 
 ```sh
 $ git clone git@github.com:salesforce-misc/StackDigViz.git
 ```
 
-Build:
+#### Build
 
 ```sh
 $ export JAVA_HOME=<jdk home path>
 $ mvn clean install
 ```
 
-Start applicaiton server:
+#### Config
+
+add profiles and customevents to be parsed in config.properties file
+
+```sh
+ex:
+customevents=LogContext;MqFrm;CPUEvent;MemoryEvent
+profiles=ExecutionS;Socket
+jfrdir=/tmp/jfrs
+```
+
+#### Start applicaiton server
 ```sh
 $ java -jar target/StackDigViz-0.0.1-SNAPSHOT.jar
 ```
 Access URL http://localhost:8080
 
-How to add JFR's for testing: The applicaiton server has a cron job to monitor and parser JFR files in /tmp/jfrs/ 
+#### How to add JFR's for testing
+The applicaiton server has a cron job to monitor and parse JFR (*.jfr or *.jfr.gz), Jstack (*.jstack) files in /tmp/jfrs/ 
 
 
 ### Features
@@ -50,4 +63,3 @@ How to add JFR's for testing: The applicaiton server has a cron job to monitor a
 
 User interface:
 <img src="https://github.com/salesforce-misc/StackDigViz/blob/main/src/main/resources/static/images/ui.jpg?raw=true"   />
-

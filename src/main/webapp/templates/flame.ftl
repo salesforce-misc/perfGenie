@@ -8,8 +8,6 @@
 </script>
 
 <div style="padding-left: 25px;">
-    <a title='Compress' href='javascript:treeView(1)'><i style="font-size:18px" class="fa fa-minus-square-o"
-                                                         aria-hidden="true"></i></a>
     <img title='Base (blue), Common (black) and New (beige)' style="cursor: pointer" opt=1 class="img-swap" height="24px"
          align="middle" src="/images/aub_on.png">
     <img title='Base (blue) and Common (black)' style="cursor: pointer" opt=2 height="24px" class="img-swap" align="middle"
@@ -44,7 +42,6 @@ In other words, data that's in the second set but not in the first will not be d
         <!-- custom context-menu -->
         <ul id="custom-menu-guid" class="items">
             <li>Copy</li>
-            <li>Find Owner</li>
             <li>Reset Zoom</li>
         </ul>
     </div>
@@ -400,19 +397,28 @@ In other words, data that's in the second set but not in the first will not be d
             }
 
             if (compareTree && isJfrContext) {
-                showTreeV1Compare(treeToProcess);
+                sFlameGraph.setIsCompare(true);
+                sFlameGraph.setThreshold(threshold);
+                sFlameGraph.showTreeV1FlameCompare(treeToProcess, searchString);
             } else if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
                 if (!isCalltree) {
                     sortTreeLevelBySize(treeToProcess, selectedLevel);
                     //updateStackIndex(treeToProcess);
-                    sFlameGraph.showTreeV1Flame(treeToProcess, selectedLevel,searchString);
+                    sFlameGraph.setThreshold(threshold);
+                    sFlameGraph.setSizeKey(selectedLevel);
+                    sFlameGraph.showTreeV1Flame(treeToProcess,searchString);
                 } else {
                     sortTreeBySize(treeToProcess);
-                    sFlameGraph.showTreeV1Flame(treeToProcess, 'sz',searchString);
+                    sFlameGraph.setThreshold(threshold);
+                    sFlameGraph.setSizeKey('sz');
+                    treeToProcess['sz'] = treeToProcess['subtotal'];
+                    sFlameGraph.showTreeV1Flame(treeToProcess,searchString);
                 }
             } else if (isJfrContext) {
                 sortTreeBySize(treeToProcess);
-                sFlameGraph.showTreeV1Flame(treeToProcess, 'sz',searchString);
+                sFlameGraph.setThreshold(threshold);
+                sFlameGraph.setSizeKey('sz');
+                sFlameGraph.showTreeV1Flame(treeToProcess,searchString);
             }
             if (!compareTree) {
                 $(".img-swap").each(function () {
@@ -427,19 +433,28 @@ In other words, data that's in the second set but not in the first will not be d
             let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
 
             if (compareTree && isJfrContext) {
-                showTreeV1Compare(treeToProcess);
+                sFlameGraph.setIsCompare(true);
+                sFlameGraph.setThreshold(threshold);
+                sFlameGraph.showTreeV1FlameCompare(treeToProcess, searchString);
             } else if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
                 if (!isCalltree) {
                     sortTreeLevelBySize(treeToProcess, selectedLevel);
                     //updateStackIndex(treeToProcess);
-                    sFlameGraph.showTreeV1Flame(treeToProcess, selectedLevel,searchString);
+                    sFlameGraph.setThreshold(threshold);
+                    sFlameGraph.setSizeKey(selectedLevel);
+                    sFlameGraph.showTreeV1Flame(treeToProcess,searchString);
                 } else {
                     sortTreeBySize(treeToProcess);
-                    sFlameGraph.showTreeV1Flame(treeToProcess, 'sz',searchString);
+                    sFlameGraph.setThreshold(threshold);
+                    sFlameGraph.setSizeKey('sz');
+                    treeToProcess['sz'] = treeToProcess['subtotal'];
+                    sFlameGraph.showTreeV1Flame(treeToProcess,searchString);
                 }
             } else if (isJfrContext) {
                 sortTreeBySize(treeToProcess);
-                sFlameGraph.showTreeV1Flame(treeToProcess, 'sz',searchString);
+                sFlameGraph.setThreshold(threshold);
+                sFlameGraph.setSizeKey('sz');
+                sFlameGraph.showTreeV1Flame(treeToProcess,searchString);
             }
             if (!compareTree) {
                 $(".img-swap").each(function () {

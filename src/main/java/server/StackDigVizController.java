@@ -16,6 +16,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 @RestController
 public class StackDigVizController {
     private final StackDigVizService service;
@@ -70,6 +72,17 @@ public class StackDigVizController {
         final Map<String, String> queryMap = new HashMap<>();
         final Map<String, String> dimMap = new HashMap<>();
         return service.getMeta(start, end, queryMap, dimMap);
+    }
+
+    @CrossOrigin
+    @GetMapping(path = {"/v1/jstack", "/v1/jstack/{tenant}"}, produces=MediaType.APPLICATION_JSON_VALUE)
+    public String jstack(@PathVariable(required=false,name="tenant") String tenant,
+                         @RequestParam(required=false,name="start") final long  start,
+                         @RequestParam(required=false,name="end") final long  end,
+                         @RequestParam("metadata_query") final List<String> metadataQuery) throws IOException {
+
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        return service.getJstack(tenant,start,end,queryMap);
     }
 
     private static Map<String, String> queryToMap(final List<String> queryList) {

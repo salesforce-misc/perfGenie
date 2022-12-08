@@ -152,7 +152,7 @@
         let contextTidMap = undefined;
         let treeToProcess = getContextTree(1,event);
         let contextData = getContextData();
-        if(contextData == undefined || treeToProcess[customEvent + event+"-context"] != undefined) {
+        if(event == "Jstack" || contextData == undefined || treeToProcess[customEvent + event+"-context"] != undefined) {
             console.log("addContextData skip:" + customEvent + event);
             return false;
         }
@@ -275,21 +275,26 @@
     }
 
     function addContextDataJstack(){
-        let treeToProcess = getContextTree(1,EventType.JSTACK);
-        let context = getContextData();
-        if(context == undefined || treeToProcess == undefined) {
-            console.log("addContextData skip:");
+        let treeToProcess = getContextTree(1,"Jstack");
+        let contextData = getContextData();
+        if(contextData == undefined || treeToProcess[customEvent +"Jstack-context"] != undefined) {
+            console.log("addContextData skip:" + customEvent + event);
             return false;
         }
-        let records = context.records;
-        let startMilli = treeToProcess.context.start;
+
+        //let contextStart = treeToProcess.context.start;
         let tidMap = treeToProcess.context.tidMap;
 
-        //move sorting to jmc
-        for(var tid in records) {
-            records[tid].sort(function (a, b) {
-                return a.epoch - b.epoch;
-            });
+        //sort records based on time, do we really need? move to jmc code?
+        if(contextData != undefined && contextData.records != undefined){
+            for (var customevent in contextData.records) {
+                for(var tid in contextData.records[customevent]) {
+                    //sort by timestamp
+                    contextData.records[customevent][tid].sort(function (a, b) {
+                        return a.record[0] - b.record[0];
+                    });
+                }
+            }
         }
 
         let start = performance.now();
@@ -304,6 +309,9 @@
         }
         let end = performance.now();
         console.log("addContextDataJstack time:" + (end - start) + ":" + event);
+
+        treeToProcess[customEvent +"Jstack-context"] = "done";
+
         return true;
     }
 
@@ -391,8 +399,8 @@
 
         //every sample of jstack has a tn
         if (getEventType() == "Jstack" && groupBySamples == "threadname" && isFilterEmpty(dimIndexMap)) {
-            for (var tid in contextTidMap) {
-                if(tidDatalistVal == undefined || tidDatalistVal == tid) {
+            for (var tid in contextDataRecords) {
+                if(contextTidMap[tid] != undefined && (tidDatalistVal == undefined || tidDatalistVal == tid)) {
                     for (let i = 0; i < contextTidMap[tid].length; i++) {
                         let stack = contextTidMap[tid][i].hash;
                         if (frameFilterString == "" || frameFilterStackMap[event][stack] !== undefined) {
@@ -422,8 +430,8 @@
             }
             //every sample will have a tid, so include all
         }else if(groupBySamples == "tid" && isFilterEmpty()){
-            for (var tid in contextTidMap) {
-                if(tidDatalistVal == undefined || tidDatalistVal == tid) {
+            for (var tid in contextDataRecords) {
+                if(contextTidMap[tid] != undefined && (tidDatalistVal == undefined || tidDatalistVal == tid)) {
                     for (let i = 0; i < contextTidMap[tid].length; i++) {
                         let stack = contextTidMap[tid][i].hash;
                         if (frameFilterString == "" || frameFilterStackMap[event][stack] !== undefined) {
@@ -451,8 +459,8 @@
             }
             //if only frame filter is selected then we need to include stacks that are any stack sample and containing frame filter string
         }else if(frameFilterString !== "" && isFilterEmpty()){
-            for(var tid in contextTidMap){
-                if(tidDatalistVal == undefined || tidDatalistVal == tid) {
+            for(var tid in contextDataRecords){
+                if(contextTidMap[tid] != undefined && (tidDatalistVal == undefined || tidDatalistVal == tid)) {
                     for (let i = 0; i < contextTidMap[tid].length; i++) {
                         let stack = contextTidMap[tid][i].hash;
                         if (frameFilterStackMap[event][stack] !== undefined) {
@@ -525,7 +533,7 @@
                     }
                 }
             }else{
-                if(getEventType() == EventType.JSTACK){
+                if(getEventType() == "Jstack"){
                     updateFilterViewStatus("Note: Failed to get Request context, only tid and threadName group by options supported.");
                 }else{
                     updateFilterViewStatus("Note: Failed to get Request context, only tid group by option supported.");

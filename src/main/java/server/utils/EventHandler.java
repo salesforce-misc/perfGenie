@@ -375,7 +375,8 @@ public class EventHandler {
             } else if (matcher.group(3) != null) {
                 if (stack.size() != 0 && tid != -1) {
                     sampleCount++;
-                    processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
+                    //processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
+                    processEvent(tid, time, tstate + ";" + tname, stack, "Jstack");
                     tid = -1;
                     tname = "";
                     stack.clear();
@@ -385,7 +386,8 @@ public class EventHandler {
                 //process previous stack
                 if (stack.size() != 0) {
                     sampleCount++;
-                    processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
+                    //processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
+                    processEvent(tid, time , tstate + ";" + tname, stack, "Jstack");
                     stack.clear();
                     tid = -1;
                     tname = "";
@@ -397,7 +399,8 @@ public class EventHandler {
         }
         //handle left over stack
         if (stack.size() != 0 && tid != -1) {
-            processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
+            //processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
+            processEvent(tid, time, tstate + ";" + tname, stack, "Jstack");
         }
         if (sampleCount > 0) {
             return true;
@@ -466,7 +469,12 @@ public class EventHandler {
         pidDatas.get(type).get(tid).add(new StackidTime(hash, time, ctx));
         StackFrame frame = profiles.get(type);
         int sz = 1;
-        eventCount++;
+
+        if (!eventCounts.containsKey(type)) {
+            eventCounts.put(type, 1);
+        } else {
+            eventCounts.put(type, eventCounts.get(type) + 1);
+        }
 
         frame.sz += sz;
         int sf = 0;

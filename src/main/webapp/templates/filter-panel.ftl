@@ -518,7 +518,6 @@
     let isLevelRefresh = true;
     let prevOption = 0;
     let isCalltree = false;
-    const WARDEN_PROFILER = "Warden";
     let uploadIDMap = {};
 
     let contextData;
@@ -654,7 +653,7 @@
         } else if (contextTree2Frames !== undefined && contextTree2Frames[id] !== undefined) {
             return contextTree2Frames[id];
         }
-        return "id:"+id;
+        return "."+id;
     }
 
     function onLevel3Filter() {
@@ -1570,17 +1569,19 @@
 
 
         if (isFilterEmpty(dimIndexMap) && tidDatalistVal != undefined) {
-            for (let i = 0; i < contextTidMap[tidDatalistVal].length; i++) {
-                if (stackMap[contextTidMap[tidDatalistVal][i].hash] !== undefined) {
-                    stackMap[contextTidMap[tidDatalistVal][i].hash] = stackMap[contextTidMap[tidDatalistVal][i].hash] + 1;
-                } else {
-                    stackMap[contextTidMap[tidDatalistVal][i].hash] = 1;
-                }
-                if (isTSView) {
-                    if (filteredStackMap[FilterLevel.LEVEL1][tidDatalistVal] == undefined) {
-                        filteredStackMap[FilterLevel.LEVEL1][tidDatalistVal] = [];
+            if(contextTidMap[tidDatalistVal] != undefined) { //check if the thread has samples
+                for (let i = 0; i < contextTidMap[tidDatalistVal].length; i++) {
+                    if (stackMap[contextTidMap[tidDatalistVal][i].hash] !== undefined) {
+                        stackMap[contextTidMap[tidDatalistVal][i].hash] = stackMap[contextTidMap[tidDatalistVal][i].hash] + 1;
+                    } else {
+                        stackMap[contextTidMap[tidDatalistVal][i].hash] = 1;
                     }
-                    filteredStackMap[FilterLevel.LEVEL1][tidDatalistVal].push(contextTidMap[tidDatalistVal][i]);
+                    if (isTSView) {
+                        if (filteredStackMap[FilterLevel.LEVEL1][tidDatalistVal] == undefined) {
+                            filteredStackMap[FilterLevel.LEVEL1][tidDatalistVal] = [];
+                        }
+                        filteredStackMap[FilterLevel.LEVEL1][tidDatalistVal].push(contextTidMap[tidDatalistVal][i]);
+                    }
                 }
             }
         }else {
@@ -1729,24 +1730,26 @@
         let eventTypeCount = 0;
         let eventTypeArray = [];
         for (var eventType in jfrprofiles1) {//for all profile event types
-            if (getContextTree(1, eventType) != undefined && getContextTree(1, eventType).context != undefined && getContextTree(1, eventType).context.tidMap[tid] !== undefined) {
-                getContextTree(1, eventType).context.tidMap[tid].forEach(function (obj) {
-                    if (obj.time >= start && obj.time <= start + runTime ) {
-                        tmpIdMap.set(obj.hash + "_" + eventTypeCount +"_" + obj.time, obj.time);
-                        scount++;
-                        if (getEventType() == eventType) {
-                            if(applyFilter) {
-                                getTreeStackLevel(getActiveTree(eventType, false), obj.hash, 1, FilterLevel.LEVEL2);
+            if (eventType != "Jstack") {
+                if (getContextTree(1, eventType) != undefined && getContextTree(1, eventType).context != undefined && getContextTree(1, eventType).context.tidMap[tid] !== undefined) {
+                    getContextTree(1, eventType).context.tidMap[tid].forEach(function (obj) {
+                        if (obj.time >= start && obj.time <= start + runTime) {
+                            tmpIdMap.set(obj.hash + "_" + eventTypeCount + "_" + obj.time, obj.time);
+                            scount++;
+                            if (getEventType() == eventType) {
+                                if (applyFilter) {
+                                    getTreeStackLevel(getActiveTree(eventType, false), obj.hash, 1, FilterLevel.LEVEL2);
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                }
+                eventTypeArray.push(eventType);
+                eventTypeCount++;
             }
-            eventTypeArray.push(eventType);
-            eventTypeCount++;
         }
 
-        if (getContextTree(1, "Jstack") !== undefined && getContextTree(1, "Jstack").context != undefined && getContextTree(1, "JStack").context.tidMap[tid] !== undefined) {
+        if (getContextTree(1, "Jstack") !== undefined && getContextTree(1, "Jstack").context != undefined && getContextTree(1, "Jstack").context.tidMap[tid] !== undefined) {
             getContextTree(1, "Jstack").context.tidMap[tid].forEach(function (obj) {
                 if (obj.time >= jstackstart && obj.time <= jstackstart + runTime ) {
                     if (getEventType() == "Jstack") {
@@ -1765,6 +1768,7 @@
                     scount++;
                 }
             });
+            eventTypeArray.push("Jstack");
         }
 
 
@@ -1809,15 +1813,30 @@
             stackID = "popupstack";
         }
         let jstackinterval = '60';
-        if(getContextTree(1,"Jstack") != undefined && getContextTree(1,EventType.JSTACK).meta != undefined && getContextTree(1,EventType.JSTACK).meta['jstack-interval'] != undefined){
+        if(getContextTree(1,"Jstack") != undefined && getContextTree(1,"Jstack").meta != undefined && getContextTree(1,"Jstack").meta['jstack-interval'] != undefined){
             jstackinterval = getContextTree(1,"Jstack").meta['jstack-interval'];
         }
         let timelinetitleIDHTML = "<select multiple=\"multiple\" style=\"border-color:#F2F2F3; height: 24px; width: 223px;\" name=\"timeline-event-type\" id=\"timeline-event-type\"> ";
         eventTypeCount = 0;
-        for (var eventType in jfrprofiles1) {//for all profile event types
-            timelinetitleIDHTML +=  "<option "+ ((Object.keys(multiSelect).length == 0 || multiSelect[eventTypeCount] != undefined) ? "selected" : "") + " value="+eventTypeCount+">"+eventType+"</option>";
-            eventTypeCount++;
+        let multiSelectEmpty=false;
+        if(Object.keys(multiSelect).length == 0){
+            multiSelectEmpty=true;
         }
+        for (let eventType in jfrprofiles1) {//for all profile event types
+            if (eventType != "Jstack") {
+                timelinetitleIDHTML += "<option " + ((multiSelectEmpty || multiSelect[eventTypeCount] != undefined) ? "selected" : "") + " value=" + eventTypeCount + ">" + eventType + "</option>";
+                if (multiSelectEmpty) {
+                    multiSelect[eventTypeCount] = "selected";
+                }
+                eventTypeCount++;
+            }
+        }
+
+        timelinetitleIDHTML += "<option " + ((multiSelectEmpty || multiSelect[eventTypeCount] != undefined) ? "selected" : "") + " value=" + eventTypeCount + ">" + "Jstack" + "</option>";
+        if (multiSelectEmpty) {
+            multiSelect[eventTypeCount] = "selected";
+        }
+
         timelinetitleIDHTML += "</select>" +
         "&nbsp;profiling samples for reqId " + reqId + " " + moment.utc(Number(time)).format('YYYY-MM-DD HH:mm:ss.SSS') + " to " + moment.utc(Number(time) + runTime).format('YYYY-MM-DD HH:mm:ss.SSS');
 
@@ -1873,12 +1892,14 @@
     function updateThreadStateView() {
         let eventTypeCount = 0;
         for (var eventType in jfrprofiles1) {//for all profile event types
-            if (multiSelect[eventTypeCount] != undefined) {
-                $('.stackCell'+eventTypeCount).removeClass('hide');
-            }else{
-                $('.stackCell'+eventTypeCount).addClass('hide');
+            if (eventType != "Jstack") {
+                if (multiSelect[eventTypeCount] != undefined) {
+                    $('.stackCell' + eventTypeCount).removeClass('hide');
+                } else {
+                    $('.stackCell' + eventTypeCount).addClass('hide');
+                }
+                eventTypeCount++;
             }
-            eventTypeCount++;
         }
         if (multiSelect[eventTypeCount] != undefined) {
             $('.stackCell'+eventTypeCount).removeClass('hide');
@@ -1931,8 +1952,14 @@
 
     function filterMatchNew(record,dimIndexMap) {
         for(dim in dimIndexMap){
-            if(!(filterMap[dim] == undefined || record[dimIndexMap[dim]].includes(filterMap[dim]))){
-                return false;
+            if(dim === "tid"){
+                if(!(filterMap[dim] == undefined || record[dimIndexMap[dim]] == filterMap[dim])){
+                    return false;
+                }
+            }else{
+                if(!(filterMap[dim] == undefined || record[dimIndexMap[dim]].includes(filterMap[dim]))){
+                    return false;
+                }
             }
         }
         return true;
@@ -2219,7 +2246,7 @@
                     let metricVal =  record[sortByIndex];
                     let key1 = tmpColorMap.get(key);
                     key1=key1.replace("#","_");
-                    if(tmpRunTime > 200) {
+                    if(tmpRunTime > spanThreshold) {
                         d3.select("#requestbarchart").select("svg").append("rect")
                             .attr("width", tmpRunTime / downScale)
                             .attr("height", h)
@@ -2602,6 +2629,10 @@
         let timestampIndex=-1;
         let tidRowIndex = -1;
 
+
+        let sortByFound = false;
+        let groupByFound = false;
+
         for (let val in contextData.header[customEvent]) {
             const tokens = contextData.header[customEvent][val].split(":");
             if (tokens[1] == "number") {
@@ -2610,8 +2641,10 @@
             }
             if (groupBy == tokens[0]) {
                 groupByIndex = val;
+                groupByFound=true;
             }
             if (sortBy == tokens[0]) {
+                sortByFound=true;
                 sortByIndex = val;
             }
             if ("tid" == tokens[0]) {
@@ -2629,9 +2662,13 @@
             }
         }
 
-        if(sortBy == "" || sortBy == undefined){
+        if(!groupByFound){
+            //groupBy = "tid";
+            //groupByIndex=tidRowIndex;
+        }
+        if(!sortByFound){
             sortBy = "duration";
-            sortByIndex=0;
+            sortByIndex=spanIndex;
         }
 
         addContextHints();
@@ -3132,16 +3169,15 @@
         return frame['map'][frameName];
     }
 
-
-
     function invertTreeV1(tree, num) {
         if (tree['tree'] !== undefined) {
             tree = tree['tree'];
         }
         let arr = [];
         var invertTree = getStackFrameV1("root");
-        invertV1(tree, invertTree, arr, 0, num);
+        let count = invertV1(tree, invertTree, arr, 0, num);
         invertTree['sz'] = tree['sz'];
+        invertTree['subtotal'] = count;
         return invertTree;
     }
 
@@ -3199,8 +3235,9 @@
         let level = getSelectedLevel(getActiveTree(getEventType(),false));
         let arr = [];
         var invertTree = getStackFrameV1("root");
-        invertV1atLevel(tree, invertTree, arr, 0, num, level);
+        let count = invertV1atLevel(tree, invertTree, arr, 0, num, level);
         invertTree['sz'] = tree['sz'];
+        invertTree['subtotal'] = count;
         //invertTree[level] = tree[level]; // set level size?
         return invertTree;
     }

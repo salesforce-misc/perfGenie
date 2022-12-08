@@ -69,4 +69,7 @@ public interface IStackDigVizService {
      * @return none
      */
     String getCustomEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
+
+    String getJstack(final String tenant, final long start, final long end, final Map<String, String> queryMap) throws IOException;
+
 }

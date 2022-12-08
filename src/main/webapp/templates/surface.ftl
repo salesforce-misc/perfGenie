@@ -355,7 +355,7 @@
             return 0;
         });
     }
-
+/*
     function getAreaData() {
 
         let tmpdata = [];
@@ -399,7 +399,7 @@
 
         return tmpdata;
     }
-
+*/
     function downloadPlotData(strData, strFileName, strMimeType) {
         var D = document,
             A = arguments,

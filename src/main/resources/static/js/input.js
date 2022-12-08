@@ -259,6 +259,8 @@ function updateTenantDropdown1() {
             jfrprofiles1[metaData1[key].metadata.name] = true;
         }else if(metaData1[key].metadata.type == "jfrevent" && jfrprofiles1[metaData1[key].metadata.name] == undefined){
             jfrevents1[metaData1[key].metadata.name] = true;
+        }else if(metaData1[key].metadata.type == "jstack" && jfrprofiles1[metaData1[key].metadata.name] == undefined){
+            jfrprofiles1[metaData1[key].metadata.name] = true;
         }
     }
     const optGroupTemplate = '<optgroup label="">OPTIONS</optgroup>';
@@ -283,6 +285,8 @@ function updateTenantDropdown2() {
             jfrprofiles2[metaData2[key].metadata.name] = true;
         }else if(metaData2[key].metadata.type != undefined && metaData2[key].metadata.type == "jfrevent" && jfrprofiles2[metaData2[key].metadata.name] == undefined){
             jfrevents2[metaData2[key].metadata.name] = true;
+        }else if(metaData2[key].metadata.type != undefined && metaData2[key].metadata.type == "jstack" && jfrprofiles2[metaData2[key].metadata.name] == undefined){
+            jfrprofiles2[metaData2[key].metadata.name] = true;
         }
     }
     const optGroupTemplate = '<optgroup label="">OPTIONS</optgroup>';
@@ -353,6 +357,9 @@ function populateIDs1(tenant, host, clearInput) {
     baseDatalist.empty();
     let profileFound=false;
     for (var key in metaData1) {
+        if(metaData1[key].metadata["name"] != undefined && metaData1[key].metadata["name"] == "Jstack"){
+            continue;
+        }
         if(profiles[metaData1[key].metadata.guid] == undefined && tenant === metaData1[key].metadata.tenant && host === metaData1[key].metadata.host){
             let str = moment(metaData1[key].timestampMillis).format("YYYY-MM-DD HH:mm:ss");
             let val = metaData1[key].timestampMillis +" - "+metaData1[key].metadata.guid;
@@ -387,6 +394,9 @@ function populateIDs2(tenant, host, clearInput) {
     baseDatalist.empty();
     let profileFound=false;
     for (var key in metaData2) {
+        if(metaData2[key].metadata["name"] != undefined && metaData2[key].metadata["name"] == "Jstack"){
+            continue;
+        }
         if(profiles[metaData2[key].metadata.guid] == undefined && tenant === metaData2[key].metadata.tenant && host === metaData2[key].metadata.host){
             let str = moment(metaData2[key].timestampMillis).format("YYYY-MM-DD HH:mm:ss");
             let val = metaData2[key].timestampMillis +" - "+metaData2[key].metadata.guid;

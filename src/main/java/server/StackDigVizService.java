@@ -33,17 +33,16 @@ public class StackDigVizService implements IStackDigVizService {
     final CustomJfrParser parser;
     public static final String NAMESPACE_JFR_JSON_CACHE = "jfr-json-cache";
     private static final Logger logger = Logger.getLogger(StackDigVizService.class.getName());
-    private static final String JFR_DIR="/tmp/jfrs";
     private static String tenant = "dev";
     private static String host = "localhost";
-    //final CustomJfrParser.Config config = new CustomJfrParser.Config();
+    final CustomJfrParser.Config config = new CustomJfrParser.Config();
 
     //cronjob to parse jfrs placed in a directory
     @Scheduled(cron = "*/10 * * ? * *")
     private void cronJob() throws IOException {
         host = InetAddress.getLocalHost().getHostName();
-        logger.info("looking for Jfrs at " + JFR_DIR);
-        File folder = new File(JFR_DIR);
+        logger.info("looking for Jfrs at " + config.getJfrdir());
+        File folder = new File(config.getJfrdir());
         File[] listOfFiles = folder.listFiles();
 
         for (File file : listOfFiles) {
@@ -79,8 +78,72 @@ public class StackDigVizService implements IStackDigVizService {
                 }
                 new File(file.getPath()).delete();
                 logger.info("successfully parsed " + file.getPath() + " and stored event in database under namespace: " + NAMESPACE_JFR_JSON_CACHE + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+            }else if(file.isFile() && file.getName().contains(".jstack")){
+                EventHandler handler = new EventHandler();
+                long timestamp = System.currentTimeMillis();
+                String guid = Utils.generateGuid();
+                final Stopwatch timer = Stopwatch.createStarted();
+                try {
+                    BufferedReader reader = new BufferedReader(new FileReader(file.getPath()));
+                    StringBuilder stringBuilder = new StringBuilder();
+                    char[] buffer = new char[10];
+                    while (reader.read(buffer) != -1) {
+                        stringBuilder.append(new String(buffer));
+                        buffer = new char[10];
+                    }
+                    reader.close();
+                    String content = stringBuilder.toString();
+                    handler.initializeProfile("Jstack");
+                    handler.initializePid("Jstack");
+                    handler.processJstackEvent(timestamp*1000000,content);
+                    final Map<String, Double> dimMap = new HashMap<>();
+                    final Map<String, String> queryMap = new HashMap<>();
+                    queryMap.put("guid", guid);
+                    queryMap.put("tenant", tenant);
+                    queryMap.put("host", host);
+                    queryMap.put("file-name", file.getName());
+                    Object profile = handler.getProfileTree("Jstack");
+                    queryMap.put("type", "jstack");
+                    queryMap.put("name", "Jstack");
+                    addEvent(NAMESPACE_JFR_JSON_CACHE, Utils.toJson(profile), timestamp, dimMap, queryMap);
+                }catch (Exception e) {
+                    System.out.println(e);
+                    logger.warning("Exception parsing file " + file.getPath() + ":" + e.getStackTrace());
+                }
+                new File(file.getPath()).delete();
+                logger.info("successfully parsed " + file.getPath() + " and stored event in database under namespace: " + NAMESPACE_JFR_JSON_CACHE + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
             }
         }
+    }
+
+    @Override
+    public String getJstack(final String tenant, final long start, final long end, final Map<String, String> queryMap) throws IOException {
+        final Map<String, String> dimMap = new HashMap<>();
+        final List<Events.Event> results = this.cantor.events().get(
+                NAMESPACE_JFR_JSON_CACHE,
+                start - 1,
+                end + 1,
+                queryMap,
+                dimMap,
+                true
+        );
+
+        if (results.size() == 0) {
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Jstack events not found", queryMap, null));
+        }
+
+        final EventHandler aggregator = new EventHandler();
+        for (final Events.Event r : results) {
+            final String json = new String(Utils.decompress(r.getPayload()));
+            aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(json, EventHandler.JfrParserResponse.class));
+        }
+        final EventHandler.JfrParserResponse res = aggregator.getAggregatedProfileTree();
+        int jstackInterval = (int) (end - start) / (results.size() * 1000);
+        jstackInterval = ((jstackInterval + 5) / 10) * 10; // round to nearest 10sec
+        res.addMeta(ImmutableMap.of("jstack-interval", Integer.toString(jstackInterval), "jstack-count", Integer.toString(results.size())));
+        final String response = Utils.toJson(res);
+        logger.info("getJstack response length: " + response.length());
+        return response;
     }
 
     public StackDigVizService(final CustomJfrParser parser, final Cantor cantor) throws IOException{
