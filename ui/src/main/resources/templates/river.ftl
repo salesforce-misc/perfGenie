@@ -9,7 +9,7 @@
 
 <div style="padding-left: 25px;">
     <label>Profile: </label>
-    <select   style="height:30px;text-align: center;" class="filterinput" name="event-type-river" id="event-type-river">
+    <select style="height:30px;text-align: center;" class="filterinput" name="event-type-river" id="event-type-river">
 
     </select>
 
@@ -22,12 +22,18 @@
         handleEventTypeChange($("#event-type-river").val());
     });
 
-    function  updateProfilerViewRiver(level){
+    function updateProfilerViewRiver(level) {
         clearPlotData();
-        riverPlot();
+        if(compareTree){
+            $("#riverview").html("Note: This view is not supported when Compare option is selected.");
+        }else {
+            $("#riverview").html("");
+            riverPlot();
+        }
     }
+
     let bucketTotal = [];
-    let useTimeslots=true;
+    let useTimeslots = true;
     let surfaceDataTmp = {};
     let surfaceData = {};
     let surfaceDataOrder = [];
@@ -37,8 +43,8 @@
     let thresholdCount = 0.01;
     let totalSize = 0;
     let yToSurefaceOrderMap = {};
-    let  NewsurfaceDataOrder     = [];
-    var z_data=[];
+    let NewsurfaceDataOrder = [];
+    var z_data = [];
     let parseData = false;
     let plotOption = 4;
     let plotDepth = 0;
@@ -46,9 +52,10 @@
     let sortedPlotOrder = [];
     let newplotdata = undefined;
     let plotdata = [];
-    function clearPlotData(){
+
+    function clearPlotData() {
         bucketTotal = [];
-        useTimeslots=true;
+        useTimeslots = true;
         surfaceDataTmp = {};
         surfaceData = {};
         surfaceDataOrder = [];
@@ -58,8 +65,8 @@
         thresholdCount = 0.01;
         totalSize = 0;
         yToSurefaceOrderMap = {};
-        NewsurfaceDataOrder     = [];
-        z_data=[];
+        NewsurfaceDataOrder = [];
+        z_data = [];
         parseData = false;
         plotOption = 4;
         plotDepth = 0;
@@ -69,48 +76,42 @@
         plotdata = [];
     }
 
-    function getTreeStackTmp(tree, stackid, filterTree, size) {
+   /* function getTreeStackTmp(tree, stackid, filterTree, size) {
         if (tree['tree'] !== undefined) {
             tree = tree['tree'];
         }
         totalSize = tree.sz;
 
-        if (tree.sm[stackid] != undefined  && tree.ch[tree.sm[stackid]].sm[stackid] !== undefined){//} && tree.sm[stackid] < 1) {
+        if (tree.sm[stackid] != undefined && tree.ch[tree.sm[stackid]].sm[stackid] !== undefined) {//} && tree.sm[stackid] < 1) {
 
             let bseJsonTree = tree.ch[tree.sm[stackid]];
 
             //handle single frame case
-            if(bseJsonTree['ch'] == null || bseJsonTree['ch'].length == 0){
-                //addFrameV1(bseJsonTree['nm'], size, size, filterTree);
+            if (bseJsonTree['ch'] == null || bseJsonTree['ch'].length == 0) {
                 return;
-            }else {
+            } else {
                 let arr = [];
                 arr.push(tree.sm[stackid]);
                 let res = getStackTmp(tree.ch[tree.sm[stackid]], filterTree, arr, size, stackid, false);
                 return res;
             }
         }
-    }
+    }*/
 
-
-
-    function getData(baseJsonTree,arr){
+    /*function getData(baseJsonTree, arr) {
         if (baseJsonTree['ch'] == undefined) {
-            if(baseJsonTree['sz'] > thresholdCount){
-
-                let firstKey =  Object.keys( baseJsonTree['sm'])[0];
+            if (baseJsonTree['sz'] > thresholdCount) {
                 let key = "";
                 for (let i = 0; i < arr.length; i++) {
-                    if(i==0){
+                    if (i == 0) {
                         key = arr[i];
-                    }else {
+                    } else {
                         key = key + ":" + arr[i];
                     }
                 }
-                //key = key + ":" + firstKey;
                 for (var key1 in baseJsonTree['sm']) {
                     let tmpKey = key + ":" + key1;
-                    if(gotSurfaceData) {
+                    if (gotSurfaceData) {
                         if (surfaceData[tmpKey] == undefined) {
                             surfaceData[tmpKey] = [];
                             surfaceData[tmpKey].push(baseJsonTree['sz'] + ":" + chunkCount);
@@ -118,34 +119,32 @@
                             surfaceData[tmpKey].push(baseJsonTree['sz'] + ":" + chunkCount);
                         }
                     }
-                    if(!gotSurfaceData){
-                        surfaceDataOrderTmp[tmpKey]=baseJsonTree['sz'];
+                    if (!gotSurfaceData) {
+                        surfaceDataOrderTmp[tmpKey] = baseJsonTree['sz'];
                         surfaceDataOrder.push(tmpKey);
                     }
                 }
-
-
             }
-        }else if(baseJsonTree['ch'].length > 1) {
-            if(baseJsonTree['sz'] > thresholdCount){
+        } else if (baseJsonTree['ch'].length > 1) {
+            if (baseJsonTree['sz'] > thresholdCount) {
                 let key = "";
                 for (let i = 0; i < arr.length; i++) {
-                    if(i==0){
+                    if (i == 0) {
                         key = arr[i];
-                    }else {
+                    } else {
                         key = key + ":" + arr[i];
                     }
                 }
-                if(gotSurfaceData) {
+                if (gotSurfaceData) {
                     if (surfaceData[key] == undefined) {
                         surfaceData[key] = [];
-                        surfaceData[key].push(baseJsonTree['sz']+":" + chunkCount);
+                        surfaceData[key].push(baseJsonTree['sz'] + ":" + chunkCount);
                     } else {
-                        surfaceData[key].push(baseJsonTree['sz']+":" + chunkCount);
+                        surfaceData[key].push(baseJsonTree['sz'] + ":" + chunkCount);
                     }
                 }
-                if(!gotSurfaceData) {
-                    surfaceDataOrderTmp[key]=baseJsonTree['sz'];
+                if (!gotSurfaceData) {
+                    surfaceDataOrderTmp[key] = baseJsonTree['sz'];
                     surfaceDataOrder.push(key);
                 }
             }
@@ -159,12 +158,12 @@
                 getData(baseJsonTree['ch'][treeIndex], tmparr);
             }
         }
-    }
+    }*/
 
-    function getStackTmp(baseJsonTree, filterTree, arr, size, stackid, flag) {
+    /*function getStackTmp(baseJsonTree, filterTree, arr, size, stackid, flag) {
         if (baseJsonTree['ch'] == null || baseJsonTree['ch'].length == 0) {
             if (flag && baseJsonTree.sm[stackid] !== undefined) {
-                if(100.0*(baseJsonTree['sz']/totalSize) >= thresholdCount) {
+                if (100.0 * (baseJsonTree['sz'] / totalSize) >= thresholdCount) {
                     let key = "";
                     for (let i = 0; i < arr.length; i++) {
                         if (i == 0) {
@@ -193,17 +192,17 @@
 
                 let res1 = getStackTmp(baseJsonTree['ch'][treeIndex], filterTree, tmparr, size, stackid, true);
 
-                if(!res && res1){
-                    res=true;
+                if (!res && res1) {
+                    res = true;
                 }
             }
-            if(res && baseJsonTree['ch'].length > 1) {
-                if(100.0*(baseJsonTree['sz']/totalSize) >= thresholdCount){
+            if (res && baseJsonTree['ch'].length > 1) {
+                if (100.0 * (baseJsonTree['sz'] / totalSize) >= thresholdCount) {
                     let key = "";
                     for (let i = 0; i < arr.length; i++) {
-                        if(i==0){
+                        if (i == 0) {
                             key = arr[i];
-                        }else {
+                        } else {
                             key = key + ":" + arr[i];
                         }
                     }
@@ -217,7 +216,7 @@
                 }
             }
             if (flag && baseJsonTree.sm[stackid] !== undefined) {
-                if(100.0*(baseJsonTree['sz']/totalSize) >= thresholdCount) {
+                if (100.0 * (baseJsonTree['sz'] / totalSize) >= thresholdCount) {
                     let key = "";
                     for (let i = 0; i < arr.length; i++) {
                         if (i == 0) {
@@ -237,8 +236,7 @@
             }
             return res;
         }
-    }
-
+    }*/
 
     function riverPlot() {
         console.log("riverPlot");
@@ -273,7 +271,6 @@
                 pts += '<tr><td class="plotstacktd">x = ' + data.points[i].x + ' , ' +
                     'y = ' + data.points[i].y.toPrecision(4) + ' , ' +
                     '(path = ' + data.points[i].data.path + ')</td></tr>';
-                //'order= ' + plotdata[data.points[i].y][plotdata[data.points[i].y].length-2] + '\n';
                 let tree = getContextTree(1, getEventType());
                 if (tree['tree'] !== undefined) {
                     tree = tree['tree'];
@@ -283,7 +280,7 @@
                 for (let i = 0; i < order.length; i++) {
                     if (tree.ch != null && tree.ch[Number(order[i])] != undefined) {
                         tree = tree.ch[Number(order[i])];
-                        stack = stack + "<tr><td class='plotstacktd'>" + getFrameName(tree['nm'])+ "</td><tr>";
+                        stack = stack + "<tr><td class='plotstacktd'>" + getFrameName(tree['nm']) + "</td><tr>";
                         while (tree.ch != null && tree.ch.length == 1) {
                             tree = tree.ch[0];
                             stack = stack + "<tr><td class='plotstacktd'>" + getFrameName(tree['nm']) + "</td><tr>";
@@ -292,25 +289,23 @@
                         stack = stack + "<tr><td class='plotstacktd'>stackID:" + Number(order[i]) + "</td><tr>";
                     }
                 }
-                pts = pts  + stack ;
+                pts = pts + stack;
             }
             pts = pts + "</table>";
             createRiverModal("river-model-guid", pts);
-            //alert(pts);
         });
-
     }
 
-    function sortPlotData(){
+    function sortPlotData() {
         let baseJsonTree = getContextTree(1, getEventType());
-        if(baseJsonTree.meta.data != undefined){
+        if (baseJsonTree.meta.data != undefined) {
             newplotdata = JSON.parse(baseJsonTree.meta.data);
         }
 
-        for(let i=0; i< newplotdata.pathList.length; i++) {
+        for (let i = 0; i < newplotdata.pathList.length; i++) {
             sortedPlotOrder.push(i);
         }
-        sortedPlotOrder.sort(function(x, y) {
+        sortedPlotOrder.sort(function (x, y) {
             if (newplotdata.data[x][0] > newplotdata.data[y][0]) {
                 return -1;
             }
@@ -321,8 +316,7 @@
         });
     }
 
-    function getAreaData(){
-
+    function getAreaData() {
         let tmpdata = [];
         let tmpx = [];
 
@@ -340,11 +334,8 @@
             name: "CPU%"
         };
         tmpdata.push(trace);
-        //for(let i=0; i< newplotdata.pathList.length; i++) {
-        for(let i=0; i< sortedPlotOrder.length; i++) {
-            //let order = newplotdata.pathList[i].split(":");
+        for (let i = 0; i < sortedPlotOrder.length; i++) {
             let index = sortedPlotOrder[i];
-            //if ( newplotdata.pathList[index].startsWith("0") || newplotdata.pathList[index].startsWith("1")) {
             let trace = {};
             trace['x'] = [];
             trace['y'] = [];
@@ -356,39 +347,27 @@
 
             for (let j = 0; j < newplotdata.data[index].length; j++) {
                 trace['x'].push(j);
-                // trace['y'].push((100 * plotdata[i][j] / plotdata[i][plotdata[i].length - 1]));
-                trace['y'].push((100 * newplotdata.data[index][j] / newplotdata.chunkSamplesTotalList[j])+0.01);
+                trace['y'].push((100 * newplotdata.data[index][j] / newplotdata.chunkSamplesTotalList[j]) + 0.01);
             }
             tmpdata.push(trace);
-            //}
         }
-
         return tmpdata;
-
     }
 
-    function getplotData(){
-
+    function getplotData() {
         let tmpdata = [];
-
         let index = 0;
-        for(let i=0; i< sortedPlotOrder.length; i++) {
+        for (let i = 0; i < sortedPlotOrder.length; i++) {
             tmpdata[index] = [];
             let aindex = sortedPlotOrder[i];
-            let order = newplotdata.pathList[aindex].split(":");
-            //if ( newplotdata.pathList[aindex].startsWith("0") || newplotdata.pathList[aindex].startsWith("1")) {
             for (let j = 0; j < newplotdata.data[aindex].length; j++) {
                 tmpdata[index].push((100 * newplotdata.data[aindex][j] / newplotdata.chunkSamplesTotalList[j]));
             }
             yToSurefaceOrderMap[index] = i;
             index++;
-            //}
         }
-
         return tmpdata;
     }
-
-
 
     function downloadPlotData(strData, strFileName, strMimeType) {
         var D = document,
@@ -401,62 +380,56 @@
         //build download link:
         a.href = "data:" + strMimeType + "charset=utf-8," + escape(strData);
 
-
         if (window.MSBlobBuilder) { // IE10
             var bb = new MSBlobBuilder();
             bb.append(strData);
             return navigator.msSaveBlob(bb, strFileName);
-        } /* end if(window.MSBlobBuilder) */
+        }
 
-
-
-        if ('download' in a) { //FF20, CH19
+        if ('download' in a) {
             a.setAttribute("download", n);
             a.innerHTML = "downloading...";
             D.body.appendChild(a);
-            setTimeout(function() {
+            setTimeout(function () {
                 var e = D.createEvent("MouseEvents");
                 e.initMouseEvent("click", true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
                 a.dispatchEvent(e);
                 D.body.removeChild(a);
             }, 66);
             return true;
-        }; /* end if('download' in a) */
+        }
 
-
-
-        //do iframe dataURL download: (older W3)
         var f = D.createElement("iframe");
         D.body.appendChild(f);
         f.src = "data:" + (A[2] ? A[2] : "application/octet-stream") + (window.btoa ? ";base64" : "") + "," + (window.btoa ? window.btoa : escape)(strData);
-        setTimeout(function() {
+        setTimeout(function () {
             D.body.removeChild(f);
         }, 333);
         return true;
     }
 
-    function downloadPlData(){
+    function downloadPlData() {
         let str = "[";
 
-        for(let i = 0; i< z_data.length; i++){
+        for (let i = 0; i < z_data.length; i++) {
             let row = "";
-            for(let j=0; j< z_data[i].length; j++) {
-                if(j==0){
-                    row =  z_data[i][j];
-                }else if (j == z_data[i].length - 2) {
+            for (let j = 0; j < z_data[i].length; j++) {
+                if (j == 0) {
+                    row = z_data[i][j];
+                } else if (j == z_data[i].length - 2) {
                     row = row + ",\"" + z_data[i][j] + "\"";
                 } else {
                     row = row + "," + z_data[i][j];
                 }
             }
-            if(i == z_data.length-1){
+            if (i == z_data.length - 1) {
                 str = str + "[" + row + "]";
-            }else{
+            } else {
                 str = str + "[" + row + "],";
             }
         }
         str = str + "];";
-        downloadPlotData(str,'filename.txt', 'text/plain');
+        downloadPlotData(str, 'filename.txt', 'text/plain');
     }
 </script>
 
