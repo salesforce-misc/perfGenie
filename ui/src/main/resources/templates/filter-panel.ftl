@@ -3141,13 +3141,13 @@
         return FilterLevel.UNDEFINED;
     }
 
-    function callTreeWardenAjax(pod, method, endpoint, successFunc) {
+    function callTreeStackDigVizAjax(pod, method, endpoint, successFunc) {
         const headers = {};
-        return internalWardenAjax(endpoint, method, successFunc, () => {
+        return internalStackDigVizAjax(endpoint, method, successFunc, () => {
         }, headers);
     }
 
-    function internalWardenAjax(url, method, successFunc, errorFunc, headers, data, includeCookies = false) {
+    function internalStackDigVizAjax(url, method, successFunc, errorFunc, headers, data, includeCookies = false) {
         let requestObject = {
             url: url,
             type: method,

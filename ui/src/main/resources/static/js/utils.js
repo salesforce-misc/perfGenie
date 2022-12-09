@@ -46,15 +46,15 @@ function updateUrl(key, value) {
     window.history.replaceState({}, "", newLocation);
 }
 
-function wardenAjax(pod, method, endpoint, successFunc, errorFunc) {
+function stackDigVizAjax(pod, method, endpoint, successFunc, errorFunc) {
     if (errorFunc === undefined) {
         errorFunc = defaultErrorFunc;
     }
 
     const headers = {};
     const errorFuncWithRetry = function () {
-            return internalWardenAjax(endpoint, method, successFunc, errorFunc, headers);
+            return internalStackDigVizAjax(endpoint, method, successFunc, errorFunc, headers);
     };
 
-    return internalWardenAjax(endpoint, method, successFunc, errorFuncWithRetry, headers);
+    return internalStackDigVizAjax(endpoint, method, successFunc, errorFuncWithRetry, headers);
 }
