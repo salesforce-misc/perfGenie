@@ -37,7 +37,7 @@ profiles=ExecutionS;Socket
 jfrdir=/tmp/jfrs
 ```
 
-#### Start applicaiton server
+#### Start application server
 ```sh
 $ java -jar ui/target/UI-0.0.1-SNAPSHOT.jar
 ```
