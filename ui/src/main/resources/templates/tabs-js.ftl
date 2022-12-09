@@ -593,7 +593,7 @@
         // for debug console.log("getCallTreeUrl timeRange:" + timeRange + " pod:" + pod + " query:"+query + " profiler:" + profiler + " tenant:"+tenant + " profile:" + profile + " host:" + host + " upload:" + upload + " fileId:" + fileId + " uploadTime:" + uploadTime + " aggregate:" + aggregate)
         let endpoint = "";
         {
-            if(eventType == "Jstack") {
+            if (eventType == "Jstack") {
                 const start = parseInt(timeRange.split(" - ")[0]);
                 const end = parseInt(timeRange.split(" - ")[1]);
                 endpoint = "/v1/jstack/" + tenant + "/?start=" + start + "&end=" + end +
@@ -602,6 +602,16 @@
                     "&metadata_query=" + encodeURIComponent("name=Jstack");
                 return endpoint;
             }
+            if (profile == "Jstacks") {
+                const start = parseInt(timeRange.split(" - ")[0]);
+                const end = parseInt(timeRange.split(" - ")[1]);
+                endpoint = "/v1/customevents/" + tenant + "/?start=" + start + "&end=" + end +
+                    "&metadata_query=" + encodeURIComponent("host=" + host) +
+                    "&metadata_query=" + encodeURIComponent("tenant=" + tenant) +
+                    "&metadata_query=" + encodeURIComponent("name=" + eventType);
+                return endpoint;
+            }
+
             if (profile !== "All") {
                 let array = profile.split(" - ");
                 const timestamp = array[0];
