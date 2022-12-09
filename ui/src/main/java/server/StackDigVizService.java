@@ -44,6 +44,8 @@ public class StackDigVizService implements IStackDigVizService {
         logger.info("looking for Jfrs at " + config.getJfrdir());
         File folder = new File(config.getJfrdir());
         File[] listOfFiles = folder.listFiles();
+        if(listOfFiles == null)
+            return;
 
         for (File file : listOfFiles) {
             if (file.isFile() && file.getName().contains(".jfr") || file.getName().contains(".jfr.gz")) {
