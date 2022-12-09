@@ -233,6 +233,12 @@
 
     function surfacePlot() {
         console.log("surfacePlot");
+        let baseJsonTree = getContextTree(1, getEventType());
+        if (baseJsonTree.meta.data == undefined) {
+            $("#areaplot").html("Error: Data not available to show this view");
+            return;
+        }
+
         sortPlotData();
         z_data = getplotData();
         var data = [{

@@ -240,6 +240,11 @@
 
     function riverPlot() {
         console.log("riverPlot");
+        let baseJsonTree = getContextTree(1, getEventType());
+        if (baseJsonTree.meta.data == undefined) {
+            $("#riverview").html("Error: Data not available to show this view");
+            return;
+        }
         sortPlotData();
 
         layout = {
