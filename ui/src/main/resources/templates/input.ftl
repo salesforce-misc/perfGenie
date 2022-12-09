@@ -17,11 +17,12 @@
     }
 </style>
 
-<form id="compare-context-selector-form" action="javascript:submitTo()" method="get"
-       content="application/x-www-form-urlencoded">
-<div  id="accordion" class="row">
+
+<div  style="padding: 0px" id="accordion" class="row">
     <h3 style="width:100%">Data source selector</h3>
     <div class="col-lg-12">
+        <form  style="padding: 0px" id="compare-context-selector-form" action="javascript:submitTo()" method="get"
+               content="application/x-www-form-urlencoded">
         <table>
             <tr>
                 <td><label >Time range from: </label></td>
@@ -89,6 +90,6 @@
                 </td>
             </tr>
         </table>
+        </form>
     </div>
 </div>
-</form>
