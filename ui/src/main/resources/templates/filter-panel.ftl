@@ -69,7 +69,6 @@
     .tgl:hover{
         fill: blue;
     }
-
     .requestHover{
         fill: blue;
     }
@@ -204,30 +203,31 @@
     }
 </style>
 <script type="text/javascript" class="init">
-    $( function() {
-        $( "#accordion" ).accordion({
+    $(function () {
+        $("#accordion").accordion({
             collapsible: true,
             heightStyle: "content"
         });
-    } );
-    $( function() {
-        $( "#contextfilter" ).accordion({
+    });
+
+    $(function () {
+        $("#contextfilter").accordion({
             collapsible: true
         });
-    } );
+    });
 
     let filterMap = {};
-    $(function() {
+    $(function () {
         $.contextMenu({
             selector: '.context-menu-one',
-            callback: function(key, options) {
-                if(key  == "add") {
-                    if($(this).attr("tp") == 3) {
+            callback: function (key, options) {
+                if (key == "add") {
+                    if ($(this).attr("tp") == 3) {
                         addToFilter("req=" + $(this).text());
                         filterReq = $(this).attr("id");
                         filterStack = "";
                     }
-                }else if(key == "show"){
+                } else if (key == "show") {
                     showRequestContextPopup($(this).attr("id"));
                 }
             },
@@ -238,31 +238,31 @@
         });
         $.contextMenu({
             selector: '.context-menu-two',
-            callback: function(key, options) {
-                if(key  == "add") {
-                    if($(this).attr("tp") == 3) {
+            callback: function (key, options) {
+                if (key == "add") {
+                    if ($(this).attr("tp") == 3) {
                         addToFilter("req=" + $(this).text());
                         filterReq = $(this).attr("id");
                         filterStack = "";
-                    }else if($(this).attr("tp") == 0) {
+                    } else if ($(this).attr("tp") == 0) {
                         addToFilter("org=" + $(this).text());
-                    }else if($(this).attr("tp") == 1) {
+                    } else if ($(this).attr("tp") == 1) {
                         addToFilter("user=" + $(this).text());
-                    }else if($(this).attr("tp") == 2) {
+                    } else if ($(this).attr("tp") == 2) {
                         addToFilter("log=" + $(this).text());
-                    }else if($(this).attr("tp") == 4) {
+                    } else if ($(this).attr("tp") == 4) {
                         addToFilter("uri=" + $(this).text());
-                    }else if($(this).attr("tp") == 6) {
+                    } else if ($(this).attr("tp") == 6) {
                         addToFilter("tid=" + $(this).text());
-                    }else if($(this).attr("tp") == 7) {
+                    } else if ($(this).attr("tp") == 7) {
                         addToFilter("rac=" + $(this).text());
-                    }else if($(this).attr("tp") == 8) {
+                    } else if ($(this).attr("tp") == 8) {
                         addToFilter("thread_name=" + $(this).text());
-                    }else if($(this).attr("tp") == 9) {
+                    } else if ($(this).attr("tp") == 9) {
                         addToFilter("tier=" + $(this).text());
-                    }else if($(this).attr("tp") == 10) {
+                    } else if ($(this).attr("tp") == 10) {
                         addToFilter("sfdcmsgid=" + $(this).text());
-                    }else if($(this).attr("tp") == 11) {
+                    } else if ($(this).attr("tp") == 11) {
                         addToFilter("uri=" + $(this).text());
                     }
                 }
@@ -276,34 +276,35 @@
     function setApplyDisabled(shouldDisable) {
         $("#filter-apply").prop("disabled", shouldDisable);
     }
+
     function setResetDisabled(shouldDisable) {
         $("#filter-reset").prop("disabled", shouldDisable);
     }
 
-    function addContextHint(hint, val){
-        addToFilter(hint+"="+val);
+    function addContextHint(hint, val) {
+        addToFilter(hint + "=" + val);
         updateContextHintView(val);
     }
 
-    function updateContextHintView(hintVal){
-        if(hintVal == "all"){
-            $('.all-heading').css({ 'font-weight': 'bold' });
-            $('.sync-heading').css({ 'font-weight': 'normal' });
-            $('.async-heading').css({ 'font-weight': 'normal' });
+    function updateContextHintView(hintVal) {
+        if (hintVal == "all") {
+            $('.all-heading').css({'font-weight': 'bold'});
+            $('.sync-heading').css({'font-weight': 'normal'});
+            $('.async-heading').css({'font-weight': 'normal'});
             $('.async-hints').removeClass('hide');
             $('.sync-hints').removeClass('hide');
             $('#filter-heading').text("Context hints");
-        }else if(hintVal == "sync"){
-            $('.all-heading').css({ 'font-weight': 'normal' });
-            $('.sync-heading').css({ 'font-weight': 'bold' });
-            $('.async-heading').css({ 'font-weight': 'normal' });
+        } else if (hintVal == "sync") {
+            $('.all-heading').css({'font-weight': 'normal'});
+            $('.sync-heading').css({'font-weight': 'bold'});
+            $('.async-heading').css({'font-weight': 'normal'});
             $('.async-hints').addClass('hide');
             $('.sync-hints').removeClass('hide');
             $('#filter-heading').text("Sync context hints");
-        }else if(hintVal == "async"){
-            $('.all-heading').css({ 'font-weight': 'normal' });
-            $('.sync-heading').css({ 'font-weight': 'normal' });
-            $('.async-heading').css({ 'font-weight': 'bold' });
+        } else if (hintVal == "async") {
+            $('.all-heading').css({'font-weight': 'normal'});
+            $('.sync-heading').css({'font-weight': 'normal'});
+            $('.async-heading').css({'font-weight': 'bold'});
             $('.async-hints').removeClass('hide');
             $('.sync-hints').addClass('hide');
             $('#filter-heading').text("Async context hints");
@@ -527,16 +528,7 @@
     let isS3 = "true";
 
     //1 for LEVEL1, 2 for LEVEL2 and 3 for LEVEL3
-
     let contextTree1InvertedLevel = {};
-
-
-    /*let socketcontextTree1InvertedLevel = {1:undefined,2:undefined,3:undefined};
-    let apexcontextTree1InvertedLevel = {1:undefined,2:undefined,3:undefined};
-    let jstackcontextTree1InvertedLevel = {1:undefined,2:undefined,3:undefined};
-    let nativecontextTree1InvertedLevel = {1:undefined,2:undefined,3:undefined};
-    */
-
 
     let prevReqTid = "";
     let prevReqTime = "";
@@ -617,32 +609,6 @@
         }
         setApplyDisabled(false);
     });
-
-    function toggleView(directiton, view){
-        if($("#"+directiton).hasClass("fa-chevron-up")){
-            $("#"+directiton).removeClass("fa-chevron-up");
-            $("#"+directiton).addClass("fa-chevron-down");
-            $("#"+view).css("display","none");
-            if(view == "logreq"){
-                $("#stack").css("max-height","307px");
-            }
-        }else{
-            $("#"+directiton).removeClass("fa-chevron-down");
-            $("#"+directiton).addClass("fa-chevron-up");
-            $("#"+view).css("display","block");
-            if(view == "logreq"){
-                $("#stack").css("max-height","275px");
-            }
-        }
-    }
-
-    function closeHelp(){
-        $("#contexthelp").addClass("hide");
-    }
-
-    function showHelp(){
-        $("#contexthelp").removeClass("hide");
-    }
 
     function getFrameName(id) {
         if (isJfrContext == false) {
@@ -828,8 +794,6 @@
         return true;
     }
 
-
-
     function resetTreeInvertedLevel(level) {
         for (var key in jfrevents1) {
             setcontextTree1InvertedLevel(undefined, key, level);
@@ -871,14 +835,10 @@
         $("#filter-apply").click();
     }
 
-
-
-
     function findRequest(reqId){
         if (contextData !== undefined) {
             var BreakException = {};
             try {
-                //contextData.tidlist.forEach(function (tid) {
                 for(var tid in contextData.records) {
                     contextData.records[tid].forEach(function (obj) {
                         if(obj.type == 2 || obj.type == 6) {//do not include sub requests
@@ -889,7 +849,6 @@
                         }
                     });
                 }
-                //});
             } catch (e) {
                 if (e !== BreakException) throw e;
             }
@@ -1026,7 +985,6 @@
 
     function showpopStack(stackid, time, eventType, obj) {
         if (prevpopReqCellSid == stackid && prevpopReqCellTime == time) {
-            //updateUrl("filterStack", "");
             document.getElementById("popupstack").innerHTML = "";
             prevpopReqCellSid = "";
             prevpopReqCellTime = "";
@@ -1034,21 +992,17 @@
             popfilterStack = "";
 
             if ($("#" + stackid + "-" + time+"_pop").length != 0) {
-                //$("#" + stackid + "-" + time+"_pop").addClass("stackCell");
                 $("#" + stackid + "-" + time+"_pop").removeClass("stackCells");
             }
         } else {
-            //updateUrl("filterStack", stackid + "_" + time);
             popfilterStack = stackid + "_" + time+"_pop";
             document.getElementById("popupstack").innerHTML = "";
             if ($("#" + prevpopReqCellSid + "-" + prevpopReqCellTime+"_pop").length != 0) {
-                //$("#" + prevpopReqCellSid + "-" + prevpopReqCellTime+"_pop").addClass("stackCell");
                 $("#" + prevpopReqCellSid + "-" + prevpopReqCellTime+"_pop").removeClass("stackCells");
             }
 
             if ($("#" + stackid + "-" + time+"_pop").length != 0) {
                 $("#" + stackid + "-" + time+"_pop").addClass("stackCells");
-                //$("#" + stackid + "-" + time+"_pop").removeClass("stackCell");
             }
 
             prevpopReqCellObj = obj;
@@ -1060,9 +1014,7 @@
             let stacktrace = "<table  style=\"border: 0px;\">";
             let tmpcontextTree1Level1 = getStackFrameV1("root");
             let tmpActiveTree = getActiveTree(eventType, false);
-            //if (tmpActiveTree.treeIndex !== undefined && tmpActiveTree.treeIndex !== FilterLevel.LEVEL2) {
             updateStackIndex(tmpActiveTree); //at this point tree must be indexed on LEVEL2
-            //}
 
             let arr = getTreeStack(tmpActiveTree, stackid, tmpcontextTree1Level1, 1);
             let ch = tmpcontextTree1Level1.ch;
@@ -1087,12 +1039,15 @@
     function hideFilterViewStatus(){
         $("#filter-view-status").addClass("hide");
     }
+
     function unhideFilterViewStatus(){
         $("#filter-view-status").removeClass("hide");
     }
+
     function updateFilterViewStatus(status){
         document.getElementById("filter-view-status").innerHTML = status;
     }
+
     function showContextFilter(){
         $("#contextpanel").removeClass("hide");
     }
@@ -1591,7 +1546,7 @@
                 contextDataRecords[tid].forEach(function (obj) {
                     let flag = false;
                     let record = obj.record;
-                    if (filterMatchNew(record, dimIndexMap)) {
+                    if (filterMatch(record, dimIndexMap)) {
                         flag = true;
                     }
                     if (flag) {
@@ -1933,7 +1888,7 @@
         return isEmpty;
     }
 
-    function filterMatchNew(record,dimIndexMap) {
+    function filterMatch(record,dimIndexMap) {
         for(dim in dimIndexMap){
             if(dim === "tid"){
                 if(!(filterMap[dim] == undefined || record[dimIndexMap[dim]] == filterMap[dim])){
@@ -1948,84 +1903,8 @@
         return true;
     }
 
-    function filterMatch(obj,contextType) {
-        if (contextType == 2) {
-            if ((filterMap["org"] == undefined || filterMap["org"] == obj.orgId) &&
-                (filterMap["user"] == undefined || filterMap["user"] == obj.userId) &&
-                (filterMap["log"] == undefined || filterMap["log"] == obj.logType) &&
-                (filterMap["uri"] == undefined || filterMap["uri"] == obj.ln) &&
-                (filterMap["thread_name"] == undefined || obj.tn.includes(filterMap["thread_name"])) &&
-                (filterMap["rac"] == undefined || filterMap["rac"] == obj.racNode) &&
-                (filterMap["tid"] == undefined || filterMap["tid"] == obj.tid) &&
-                (filterMap["trust"] == undefined || filterMap["trust"] == obj.trust) &&
-                (filterMap["req"] == undefined || filterMap["req"] == obj.reqId)) {
-                return true;
-            }
-        } else if (contextType == -1) {
-            if ((filterMap["org"] == undefined || filterMap["org"] == obj.orgId) &&
-                (filterMap["user"] == undefined || filterMap["user"] == obj.userId) &&
-                (filterMap["log"] == undefined || filterMap["log"] == obj.logType) &&
-                (filterMap["uri"] == undefined || filterMap["uri"] == obj.ln) &&
-                (filterMap["thread_name"] == undefined || obj.tn.includes(filterMap["thread_name"])) &&
-                (filterMap["rac"] == undefined || filterMap["rac"] == obj.racNode) &&
-                (filterMap["tid"] == undefined || filterMap["tid"] == obj.tid) &&
-                (filterMap["trust"] == undefined || filterMap["trust"] == obj.trust) &&
-                (filterMap["tier"] == undefined || filterMap["tier"] == obj.qTier) &&
-                (filterMap["sfdcmsgid"] == undefined || filterMap["sfdcmsgid"] == obj.sfdcMsgId) &&
-                (filterMap["req"] == undefined || filterMap["req"] == obj.reqId)) {
-                return true;
-            }
-        } else if (contextType == 6) {
-            if ((filterMap["org"] == undefined || filterMap["org"] == obj.orgId) &&
-                (filterMap["log"] == undefined || filterMap["log"] == obj.logType) &&
-                (filterMap["uri"] == undefined || filterMap["uri"] == obj.ln) &&
-                (filterMap["thread_name"] == undefined || obj.tn.includes(filterMap["thread_name"])) &&
-                (filterMap["rac"] == undefined || filterMap["rac"] == obj.racNode) &&
-                (filterMap["tid"] == undefined || filterMap["tid"] == obj.tid) &&
-                (filterMap["tier"] == undefined || filterMap["tier"] == obj.qTier) &&
-                (filterMap["sfdcmsgid"] == undefined || filterMap["sfdcmsgid"] == obj.sfdcMsgId) &&
-                (filterMap["req"] == undefined || filterMap["req"] == obj.reqId)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     function getHearderFor(field){
         return field;
-    }
-
-    function getContextTableHeader(groupBy, contextDataTypeVal) {
-        if (groupBy == "none") {
-            return "<thead><tr><th>time</th><th>tid</th><th title='organization Id'>orgId</th><th title='user Id'>userId</th><th title='log record type associated with the request'>log</th><th title='log name/message type of the request'>uri</th><th>threadName</th><th title='request Id'>reqId</th>" +
-                "<th title='the wall time in ms this request took (APT)'>runTime</th><th  title='the amount of cpu time in ms this request took'>cpuTime</th><th title='time spent in database'>dbTime</th><th title='wall clock time ms spent in apex code'>apexTime</th><th title='cpu time ms in db'>dbCpuTime</th><th title='GC duraiton in ms that impacted this request'>gcTime</th><th title='time spent waiting for and including a safepoint'>spTime</th><th>bytesAllocated</th><th title='time between enqueue and dequeue in ms'>dequeueLatency</th></tr></thead>";
-        } else {
-            if (groupBy == "userId") {
-                return "<thead><tr><th title='user Id'>userId</th><th title='organization Id'>orgId</th><th title='the wall time in ms this request took (APT)'>runTime</th><th  title='the amount of cpu time in ms this request took'>cpuTime</th><th title='time spent in database'>dbTime</th><th title='wall clock time ms spent in apex code'>apexTime</th><th title='cpu time ms in db'>dbCpuTime</th><th title='GC duraiton in ms that impacted this request'>gcTime</th><th title='time spent waiting for and including a safepoint'>spTime</th><th>bytesAllocated</th><th title='time between enqueue and dequeue in ms'>dequeueLatency</th><th>reqCount</th></tr></thead>";
-            } else {
-                return "<thead><tr><th>" + getHearderFor(groupBy) + "</th><th title='the wall time in ms this request took (APT)'>runTime</th><th  title='the amount of cpu time in ms this request took'>cpuTime</th><th title='time spent in database'>dbTime</th><th title='wall clock time ms spent in apex code'>apexTime</th><th title='cpu time ms in db'>dbCpuTime</th><th title='GC duraiton in ms that impacted this request'>gcTime</th><th title='time spent waiting for and including a safepoint'>spTime</th><th>bytesAllocated</th><th title='time between enqueue and dequeue in ms'>dequeueLatency</th><th>reqCount</th></tr></thead>";
-            }
-        }
-    }
-
-    function getContextTableRow(obj, tableFormat) {
-        if (tableFormat == 0) {
-            if (obj.type == 4) {
-                return "<tr><td>" + moment.utc(obj.epoch).format('YYYY:MM:DD.HH:mm:ss.SSS') + "</td><td tp=6 class=\"context-menu-two\">" + obj.tid + "</td><td tp=0 class=\"context-menu-two\">" + obj.orgId + "</td><td tp=1 class=\"context-menu-two\">" + obj.userId + "</td><td tp=2 class=\"context-menu-two\">axapx</td><td tp=4 class=\"context-menu-two\">" + obj.ln + "</td><td tp=8 class=\"context-menu-two\">" + obj.tn + "</td><td tp=3 class=\"context-menu-one\" id=\"" + obj.tid + "_" + obj.epoch + "\">" + obj.reqId + "</td><td>" + obj.runTime + "</td><td>" + obj.cpuTime + "</td><td>" + (obj.dbTime == undefined ? "NA" :  obj.dbTime) + "</td><td>" + obj.apexTime + "</td><td>" + obj.dbCpu + "</td><td>" + obj.gcTime + "</td><td>" + obj.spTime + "</td><td>" + obj.bytes + "</td><td>" + (obj.dqLatency == undefined ? "NA" :  obj.dqLatency) + "</td></tr>";
-            } else if (obj.type == 6) {
-                return "<tr><td>" + moment.utc(obj.epoch).format('YYYY:MM:DD.HH:mm:ss.SSS') + "</td><td tp=6 class=\"context-menu-two\">" + obj.tid + "</td><td tp=0 class=\"context-menu-two\">" + obj.orgId + "</td><td tp=1 class=\"context-menu-two\">NA</td><td tp=2 class=\"context-menu-two\">" + obj.logType + "</td><td tp=4 class=\"context-menu-two\">" + obj.ln + "</td><td tp=8 class=\"context-menu-two\">" + obj.tn + "</td><td tp=3 class=\"context-menu-one\" id=\"" + obj.tid + "_" + obj.epoch + "\">" + obj.reqId + "</td><td>" + obj.runTime + "</td><td>" + obj.cpuTime + "</td><td>" + (obj.dbTime == undefined ? "NA" :  obj.dbTime) + "</td><td>NA</td><td>" + obj.dbCpu + "</td><td>NA</td><td>NA</td><td>" + obj.bytes + "</td><td>" + (obj.dqLatency == undefined ? "NA" :  obj.dqLatency) + "</td></tr>";
-            } else {
-                return "<tr><td>" + moment.utc(obj.epoch).format('YYYY:MM:DD.HH:mm:ss.SSS') + "</td><td tp=6 class=\"context-menu-two\">" + obj.tid + "</td><td tp=0 class=\"context-menu-two\">" + obj.orgId + "</td><td tp=1 class=\"context-menu-two\">" + obj.userId + "</td><td tp=2 class=\"context-menu-two\">" + obj.logType + "</td><td tp=4 class=\"context-menu-two\">" + obj.ln + "</td><td tp=8 class=\"context-menu-two\">" + obj.tn + "</td><td tp=3 class=\"context-menu-one\" id=\"" + obj.tid + "_" + obj.epoch + "\">" + obj.reqId + "</td><td>" + obj.runTime + "</td><td>" + obj.cpuTime + "</td><td>" + (obj.dbTime == undefined ? "NA" :  obj.dbTime) + "</td><td>" + obj.apexTime + "</td><td>" + obj.dbCpu + "</td><td>" + obj.gcTime + "</td><td>" + obj.spTime + "</td><td>" + obj.bytes + "</td><td>NA</td></tr>";
-            }
-        } else {
-            if (obj.type == 4) {
-                return "<tr><td>" + moment.utc(obj.epoch).format('YYYY:MM:DD.HH:mm:ss.SSS') + "</td><td tp=6 class=\"context-menu-two\">" + obj.tid + "</td><td tp=0 class=\"context-menu-two\">" + obj.orgId + "</td><td tp=1 class=\"context-menu-two\">" + obj.userId + "</td><td tp=2 class=\"context-menu-two\">axapx</td><td tp=4 class=\"context-menu-two\">" + obj.ln + "</td><td tp=8 class=\"context-menu-two\">" + obj.tn + "</td><td tp=3 class=\"context-menu-one\" id=\"" + obj.tid + "_" + obj.epoch + "\">" + obj.reqId + "</td><td>" + (100 * obj.runTime / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.cpuTime / obj.runTime).toFixed(2) + "%</td><td>" + (obj.dbTime == undefined ? "NA" : (100 * obj.dbTime / obj.runTime).toFixed(2)) + "%</td><td>" + (100 * obj.apexTime / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.dbCpu / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.gcTime / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.spTime / obj.runTime).toFixed(2) + "%</td><td>" + obj.bytes + "</td><td>" + (obj.dqLatency == undefined ? "NA" :  obj.dqLatency) + "</td></tr>"
-            } else if (obj.type == 6) {
-                return "<tr><td>" + moment.utc(obj.epoch).format('YYYY:MM:DD.HH:mm:ss.SSS') + "</td><td tp=6 class=\"context-menu-two\">" + obj.tid + "</td><td tp=0 class=\"context-menu-two\">" + obj.orgId + "</td><td tp=1 class=\"context-menu-two\">NA</td><td tp=2 class=\"context-menu-two\">" + obj.logType + "</td><td tp=4 class=\"context-menu-two\">" + obj.ln + "</td><td tp=8 class=\"context-menu-two\">" + obj.tn + "</td><td tp=3 class=\"context-menu-one\" id=\"" + obj.tid + "_" + obj.epoch + "\">" + obj.reqId + "</td><td>" + (100 * obj.runTime / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.cpuTime / obj.runTime).toFixed(2) + "%</td><td>" + (obj.dbTime == undefined ? "NA" : (100 * obj.dbTime / obj.runTime).toFixed(2)) + "%</td><td>NA</td><td>" + (100 * obj.dbCpu / obj.runTime).toFixed(2) + "%</td><td>NA</td><td>NA</td><td>" + obj.bytes + "</td><td>" + (obj.dqLatency == undefined ? "NA" :  obj.dqLatency) + "</td></tr>";
-            } else {
-                return "<tr><td>" + moment.utc(obj.epoch).format('YYYY:MM:DD.HH:mm:ss.SSS') + "</td><td tp=6 class=\"context-menu-two\">" + obj.tid + "</td><td tp=0 class=\"context-menu-two\">" + obj.orgId + "</td><td tp=1 class=\"context-menu-two\">" + obj.userId + "</td><td tp=2 class=\"context-menu-two\">" + obj.logType + "</td><td tp=4 class=\"context-menu-two\">" + obj.ln + "</td><td tp=8 class=\"context-menu-two\">" + obj.tn + "</td><td tp=3 class=\"context-menu-one\" id=\"" + obj.tid + "_" + obj.epoch + "\">" + obj.reqId + "</td><td>" + (100 * obj.runTime / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.cpuTime / obj.runTime).toFixed(2) + "%</td><td>" + (obj.dbTime == undefined ? "NA" : (100 * obj.dbTime / obj.runTime).toFixed(2)) + "%</td><td>" + (100 * obj.apexTime / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.dbCpu / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.gcTime / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.spTime / obj.runTime).toFixed(2) + "%</td><td>" + obj.bytes + "</td><td>NA</td></tr>";
-            }
-        }
     }
 
     var randomColor = (function(){
@@ -2063,26 +1942,31 @@
             return hslToRgb(h, 0.5, 0.60);
         };
     })();
+
     function svgShowReq(evt) {
         var svgobj=evt.target;
         if(svgobj.getAttribute("style") == undefined || !svgobj.getAttribute("style").includes("opacity: 0")) {
             showRequestContextPopup(svgobj.getAttribute("id"));
         }
     }
+
     function OnScroll0(div) {
         var d2 = document.getElementById("requestbarchart");
         d2.scrollTop = div.scrollTop;
     }
+
     function OnScroll1(div) {
         var d2 = document.getElementById("requestbarchart");
         d2.scrollLeft = div.scrollLeft;
     }
+
     function OnScroll2(div) {
         var d1 = document.getElementById("xaxisid");
         var d0 = document.getElementById("yaxisid");
         d0.scrollTop = div.scrollTop;
         d1.scrollLeft = div.scrollLeft;
     }
+
     function addXAxis(id,top,right,bottom,left,min_x,max_x,w,h,contextStart,downScale){
         const margin = {top: top, right: right, bottom: bottom, left: left};
         const width = w - margin.left - margin.right,
@@ -2120,6 +2004,7 @@
             .attr("x", 6)
             .style("text-anchor", "start");
     }
+
     function addYAxis(id,top,right,bottom,left,min_x,max_x,w,h){
         const margin = {top: top, right: right, bottom: bottom, left: left};
         const width = w - margin.left - margin.right,
@@ -2272,6 +2157,7 @@
                 .style("cursor", "pointer");
         }
     }
+
     var mousemoveSVG = function(d, key,obj,metricVal) {
         if(d3.select(obj).attr("style") == undefined || !d3.select(obj).attr("style").includes("opacity: 0")) {
             Tooltip
@@ -2280,6 +2166,7 @@
                 .style("top", (d3.mouse(obj)[1]) + "px");
         }
     }
+
     var mouseleaveSVG = function(key,obj) {
         if(d3.select(obj).attr("style") == undefined || !d3.select(obj).attr("style").includes("opacity: 0")) {
             Tooltip
@@ -2296,6 +2183,7 @@
         }
         e.style.cursor = "pointer";
     }
+
     function legendMouseOut(e,key,color){
         if(!e.hasAttribute("dimmed")) {
             d3.selectAll("." + key).classed("requestHover", false);
@@ -2487,8 +2375,6 @@
         return [order, tp];
     }
 
-
-
     function getEventTableHeader(groupby){
         let header = "<thead><tr>";
         if(!(groupby == undefined || groupby == "")) {
@@ -2596,8 +2482,6 @@
         let groupByCountSum = 0;
         //status graph end
 
-
-
         let metricSumMap = {};
         let tidDatalistVal = filterMap["tid"];
 
@@ -2687,7 +2571,7 @@
                         let record = obj.record;
                         let flag = false;
                         recordIndex++;
-                        if (filterMatchNew(record, dimIndexMap)) {
+                        if (filterMatch(record, dimIndexMap)) {
                             let end = record[timestampIndex] - contextStart + record[spanIndex];
                             let start =  record[timestampIndex] - contextStart;
                             try {
@@ -2773,7 +2657,7 @@
                         let record = obj.record;
                         let flag = false;
                         recordIndex++;
-                        if (filterMatchNew(record, dimIndexMap)){
+                        if (filterMatch(record, dimIndexMap)){
                             flag = true;
                         }
 
@@ -3210,7 +3094,6 @@
         }
     }
 
-
     function invertTreeV1AtLevel(tree, num) {
         if (tree['tree'] !== undefined) {
             tree = tree['tree'];
@@ -3295,7 +3178,6 @@
             });
         }
     }
-
     //context tree end
 
     let prevSelectedLevel = undefined;
@@ -3321,6 +3203,7 @@
         return internalWardenAjax(endpoint, method, successFunc, () => {
         }, headers);
     }
+
     function internalWardenAjax(url, method, successFunc, errorFunc, headers, data, includeCookies = false) {
         let requestObject = {
             url: url,
@@ -3535,7 +3418,6 @@
         contextData = data;
         processCustomEvents();
     }
-
 
     function setContextTreeFrames(frames, count){
         if(count == 1) {
@@ -3921,7 +3803,6 @@
     //jfr context end
 </script>
 
-
 <div id="contextfilter" class="row" >
     <h3 style="width:100%">Context filter</h3>
     <div  id="cct-panel" class="col-lg-12" >
@@ -3931,7 +3812,6 @@
                     <table style="border-spacing: 5px; border-collapse: separate;">
                         <tr>
                             <td id="filter-heading">Context hints:</td>
-
                         </tr>
                     </table>
                 </div>
@@ -3943,7 +3823,6 @@
                                onkeypress="if(event.keyCode == 13) javascript:applyFilter()"
                         >
                     </div>
-
 
                     <div class="col-lg-2">
                         <button id="filter-apply" class="btn btn-block btn-info" type="submit">Apply Filter(s)</button>
@@ -3987,8 +3866,6 @@
                     </div>
                 </div>
             </div>
-
-
     </div>
 </div>
 

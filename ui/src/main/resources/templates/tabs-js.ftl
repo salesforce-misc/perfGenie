@@ -247,7 +247,6 @@
         if (count == 1) {
             if (getContextTree(1).context !== undefined && getContextTree(1).context !== null) {
                 isJfrContext = true;
-
             } else {
                 const defaultResult = {error_messages: [], total: 0, roots: []};
                 setmergedContextTree(mergeTrees(invertTree(getContextTree(1)), defaultResult));
@@ -382,18 +381,6 @@
                             }
                         }
                     }
-                    /*
-                    if (eventType == EventType.METHOD) {
-                        if(uploads[0] == "true" && fileIds[0] != "") {
-                            updateFilterViewStatus("Note: Context filter is disabled when upload option is selected.");
-                        }else{
-                            retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, EventType.SOCKET);
-                            retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, EventType.APEX);
-                            retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, EventType.JSTACK);
-                            retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, EventType.NATIVE);
-                        }
-                        //retrievAndcreateContextTree([contextTrees[0].context.start+" - "+contextTrees[0].context.end], pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, EventType.JSTACK);
-                    }*/
                 } else {
                     $("#framefilterId").addClass("hide");
                     const defaultResult = {error_messages: [], size: 0, children: []};
@@ -483,10 +470,6 @@
     }
 
     function getLogContext(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, eventType, start, end) {
-        //setContextData({records:{},tidlist:[]});
-        //console.log("getLogContext skipped");
-        //return;
-
         unhideFilterViewStatus();
         updateFilterViewStatus("Note: Retrieving request context from jfr, this may take few sec  ...");
         const callTreeUrl = getCallTreeUrl(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, "customEvent");
