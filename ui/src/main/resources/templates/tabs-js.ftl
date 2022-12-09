@@ -506,7 +506,7 @@
 
     function getNote(eventType){
         if(eventType.includes("Socket")){
-            return "Note: socket R/W events are captured only when R/W operation takes more than 200 ms";
+            return "Note: socket R/W events are captured only when R/W operation takes more than xx ms";
         }
         return "";
     }
