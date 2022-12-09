@@ -1940,7 +1940,7 @@
                     return false;
                 }
             }else{
-                if(!(filterMap[dim] == undefined || record[dimIndexMap[dim]].includes(filterMap[dim]))){
+                if(!(filterMap[dim] == undefined || record[dimIndexMap[dim]]?.includes(filterMap[dim]))){
                     return false;
                 }
             }
