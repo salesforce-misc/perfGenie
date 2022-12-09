@@ -500,7 +500,7 @@
                         contextDataRecords[tid].forEach(function (obj) {
                             let record = obj.record;
                             let flag = false;
-                            if (filterMatchNew(record, dimIndexMap)) {
+                            if (filterMatch(record, dimIndexMap)) {
                                 if (obj[event] != undefined) {
                                     flag = true;
                                     let key = record[dimIndexMap[groupBySamples]];

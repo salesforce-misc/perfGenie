@@ -247,7 +247,6 @@
         if (count == 1) {
             if (getContextTree(1).context !== undefined && getContextTree(1).context !== null) {
                 isJfrContext = true;
-
             } else {
                 const defaultResult = {error_messages: [], total: 0, roots: []};
                 setmergedContextTree(mergeTrees(invertTree(getContextTree(1)), defaultResult));
@@ -382,18 +381,6 @@
                             }
                         }
                     }
-                    /*
-                    if (eventType == EventType.METHOD) {
-                        if(uploads[0] == "true" && fileIds[0] != "") {
-                            updateFilterViewStatus("Note: Context filter is disabled when upload option is selected.");
-                        }else{
-                            retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, EventType.SOCKET);
-                            retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, EventType.APEX);
-                            retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, EventType.JSTACK);
-                            retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, EventType.NATIVE);
-                        }
-                        //retrievAndcreateContextTree([contextTrees[0].context.start+" - "+contextTrees[0].context.end], pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, EventType.JSTACK);
-                    }*/
                 } else {
                     $("#framefilterId").addClass("hide");
                     const defaultResult = {error_messages: [], size: 0, children: []};
@@ -483,10 +470,6 @@
     }
 
     function getLogContext(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, eventType, start, end) {
-        //setContextData({records:{},tidlist:[]});
-        //console.log("getLogContext skipped");
-        //return;
-
         unhideFilterViewStatus();
         updateFilterViewStatus("Note: Retrieving request context from jfr, this may take few sec  ...");
         const callTreeUrl = getCallTreeUrl(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, "customEvent");
@@ -494,7 +477,7 @@
         if(isS3 == "true") {
             toTenant = "";
         }
-        let request = wardenAjax(toTenant, "GET", callTreeUrl, function (response) { // success function
+        let request = stackDigVizAjax(toTenant, "GET", callTreeUrl, function (response) { // success function
             console.log("getLogContext done");
             if(response === "") {
                 console.log("log context not available in JFR, will fetch from Splunk");
@@ -523,7 +506,7 @@
 
     function getNote(eventType){
         if(eventType.includes("Socket")){
-            return "Note: socket R/W events are captured only when R/W operation takes more than 200 ms";
+            return "Note: socket R/W events are captured only when R/W operation takes more than xx ms";
         }
         return "";
     }
@@ -569,9 +552,9 @@
         }
         const callTreeUrl = getCallTreeUrl(dateRanges[0], pods[0], queries[0], profilers[0], tenants[0], profiles[0], hosts[0], uploads[0], fileIds[0], uploadTimes[0], aggregates[0], eventType);
         if (retry) {
-            requests.push(callTreeWardenAjax(toTenant, "GET", callTreeUrl, result => result));
+            requests.push(callTreeStackDigVizAjax(toTenant, "GET", callTreeUrl, result => result));
         } else {
-            requests.push(callTreeWardenAjax(toTenant, "GET", callTreeUrl, result => result));
+            requests.push(callTreeStackDigVizAjax(toTenant, "GET", callTreeUrl, result => result));
         }
         if (profiles.length === 2) {
             let toTenant = "";
@@ -580,9 +563,9 @@
             }
             const callTreeUrl = getCallTreeUrl(dateRanges[1], pods[1], (queries.length === 2) ? queries[1] : '', (profilers.length === 2) ? profilers[1] : '', (tenants.length === 2) ? tenants[1] : '', (profiles.length === 2) ? profiles[1] : '', (hosts.length === 2) ? hosts[1] : '', (uploads.length === 2) ? uploads[1] : '', (fileIds.length === 2) ? fileIds[1] : '', (uploadTimes.length === 2) ? uploadTimes[1] : '', aggregates[1], eventType);
             if (retry) {
-                requests.push(callTreeWardenAjax(toTenant, "GET", callTreeUrl, result => result));
+                requests.push(callTreeStackDigVizAjax(toTenant, "GET", callTreeUrl, result => result));
             } else {
-                requests.push(callTreeWardenAjax(toTenant, "GET", callTreeUrl, result => result));
+                requests.push(callTreeStackDigVizAjax(toTenant, "GET", callTreeUrl, result => result));
             }
         }
         return Promise.all(requests);

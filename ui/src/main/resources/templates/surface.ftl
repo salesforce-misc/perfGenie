@@ -9,7 +9,8 @@
 
 <div style="padding-left: 25px;">
     <label>Profile: </label>
-    <select   style="height:30px;text-align: center;" class="filterinput" name="event-type-surface" id="event-type-surface">
+    <select style="height:30px;text-align: center;" class="filterinput" name="event-type-surface"
+            id="event-type-surface">
 
     </select>
 
@@ -40,7 +41,7 @@
             "<div id='data-modal-body' class='modal-body' style='overflow: auto'>" +
             "<ul class='tree'>" +
             "<li>" + data + "</li>" +
-            "</ul>"+
+            "</ul>" +
             "</div>" +
             "</div>" +
             "</div>" +
@@ -53,15 +54,18 @@
     }
 
     function unLoadRiverModal(modalId) {
-        $('#'+modalId).modal('hide');
+        $('#' + modalId).modal('hide');
     }
 
     function updateProfilerViewSurface(level) {
         clearPlotData();
-        surfacePlot();
+        if(compareTree){
+            $("#areaplot").html("Note: This view is not supported when Compare option is selected.");
+        }else {
+            $("#areaplot").html("");
+            surfacePlot();
+        }
     }
-
-
 
     function getTreeStackTmp(tree, stackid, filterTree, size) {
         if (tree['tree'] !== undefined) {
@@ -75,7 +79,6 @@
 
             //handle single frame case
             if (bseJsonTree['ch'] == null || bseJsonTree['ch'].length == 0) {
-                //addFrameV1(bseJsonTree['nm'], size, size, filterTree);
                 return;
             } else {
                 let arr = [];
@@ -85,8 +88,6 @@
             }
         }
     }
-
-
 
     function getData(baseJsonTree, arr) {
         if (baseJsonTree['ch'] == undefined) {
@@ -101,7 +102,6 @@
                         key = key + ":" + arr[i];
                     }
                 }
-                //key = key + ":" + firstKey;
                 for (var key1 in baseJsonTree['sm']) {
                     let tmpKey = key + ":" + key1;
                     if (gotSurfaceData) {
@@ -117,8 +117,6 @@
                         surfaceDataOrder.push(tmpKey);
                     }
                 }
-
-
             }
         } else if (baseJsonTree['ch'].length > 1) {
             if (baseJsonTree['sz'] > thresholdCount) {
@@ -234,16 +232,14 @@
     }
 
     function surfacePlot() {
-        // return;
         console.log("surfacePlot");
-        //for(i=0;i<5;i++){
-        //if(parseData) {
-        //genSurfaceData();
-        //}else{
-        sortPlotData();
-        //}
-        //}
+        let baseJsonTree = getContextTree(1, getEventType());
+        if (baseJsonTree.meta.data == undefined) {
+            $("#areaplot").html("Error: Data not available to show this view");
+            return;
+        }
 
+        sortPlotData();
         z_data = getplotData();
         var data = [{
             z: z_data,
@@ -318,7 +314,7 @@
                     for (let i = 0; i < order.length; i++) {
                         if (tree.ch != null && tree.ch[Number(order[i])] != undefined) {
                             tree = tree.ch[Number(order[i])];
-                            stack = stack +"<tr><td class='plotstacktd'>" + getFrameName(tree['nm'])+ "</td><tr>";
+                            stack = stack + "<tr><td class='plotstacktd'>" + getFrameName(tree['nm']) + "</td><tr>";
                             while (tree.ch != null && tree.ch.length == 1) {
                                 tree = tree.ch[0];
                                 stack = stack + "<tr><td class='plotstacktd'>" + getFrameName(tree['nm']) + "</td><tr>";
@@ -332,11 +328,10 @@
             }
             pts = pts + "</table>";
             createRiverModal("surface-model-guid", pts);
-            //alert(pts);
         });
     }
 
-    function sortPlotData() {
+    /*function sortPlotData() {
         let baseJsonTree = getContextTree(1, getEventType());
         if (baseJsonTree.meta.data != undefined) {
             newplotdata = JSON.parse(baseJsonTree.meta.data);
@@ -354,53 +349,53 @@
             }
             return 0;
         });
-    }
-/*
-    function getAreaData() {
+    }*/
+    /*
+        function getAreaData() {
 
-        let tmpdata = [];
-        let tmpx = [];
+            let tmpdata = [];
+            let tmpx = [];
 
-        for (let j = 0; j < newplotdata.data[0].length; j++) {
-            tmpx.push(j);
-        }
-        var trace = {
-            'x': tmpx,
-            'y': newplotdata.cpuSamplesList,
-            mode: 'lines',
-            line: {
-                color: 'red',
-                width: 3
-            },
-            name: "CPU%"
-        };
-        tmpdata.push(trace);
-        //for(let i=0; i< newplotdata.pathList.length; i++) {
-        for (let i = 0; i < sortedPlotOrder.length; i++) {
-            //let order = newplotdata.pathList[i].split(":");
-            let index = sortedPlotOrder[i];
-            //if ( newplotdata.pathList[index].startsWith("0") || newplotdata.pathList[index].startsWith("1")) {
-            let trace = {};
-            trace['x'] = [];
-            trace['y'] = [];
-
-            trace['stackgroup'] = 'one';
-            trace['mode'] = 'none';
-            trace['path'] = newplotdata.pathList[index];
-
-            for (let j = 0; j < newplotdata.data[index].length; j++) {
-                trace['x'].push(j);
-                // trace['y'].push((100 * plotdata[i][j] / plotdata[i][plotdata[i].length - 1]));
-                trace['y'].push((100 * newplotdata.data[index][j] / newplotdata.chunkSamplesTotalList[j]));
+            for (let j = 0; j < newplotdata.data[0].length; j++) {
+                tmpx.push(j);
             }
+            var trace = {
+                'x': tmpx,
+                'y': newplotdata.cpuSamplesList,
+                mode: 'lines',
+                line: {
+                    color: 'red',
+                    width: 3
+                },
+                name: "CPU%"
+            };
             tmpdata.push(trace);
-            //}
-        }
+            //for(let i=0; i< newplotdata.pathList.length; i++) {
+            for (let i = 0; i < sortedPlotOrder.length; i++) {
+                //let order = newplotdata.pathList[i].split(":");
+                let index = sortedPlotOrder[i];
+                //if ( newplotdata.pathList[index].startsWith("0") || newplotdata.pathList[index].startsWith("1")) {
+                let trace = {};
+                trace['x'] = [];
+                trace['y'] = [];
 
-        return tmpdata;
-    }
-*/
-    function downloadPlotData(strData, strFileName, strMimeType) {
+                trace['stackgroup'] = 'one';
+                trace['mode'] = 'none';
+                trace['path'] = newplotdata.pathList[index];
+
+                for (let j = 0; j < newplotdata.data[index].length; j++) {
+                    trace['x'].push(j);
+                    // trace['y'].push((100 * plotdata[i][j] / plotdata[i][plotdata[i].length - 1]));
+                    trace['y'].push((100 * newplotdata.data[index][j] / newplotdata.chunkSamplesTotalList[j]));
+                }
+                tmpdata.push(trace);
+                //}
+            }
+
+            return tmpdata;
+        }
+    */
+    /*function downloadPlotData(strData, strFileName, strMimeType) {
         var D = document,
             A = arguments,
             a = D.createElement("a"),
@@ -416,8 +411,7 @@
             var bb = new MSBlobBuilder();
             bb.append(strData);
             return navigator.msSaveBlob(bb, strFileName);
-        } /* end if(window.MSBlobBuilder) */
-
+        }
 
         if ('download' in a) { //FF20, CH19
             a.setAttribute("download", n);
@@ -431,8 +425,6 @@
             }, 66);
             return true;
         }
-        ; /* end if('download' in a) */
-
 
         //do iframe dataURL download: (older W3)
         var f = D.createElement("iframe");
@@ -442,7 +434,7 @@
             D.body.removeChild(f);
         }, 333);
         return true;
-    }
+    }*/
 </script>
 
 

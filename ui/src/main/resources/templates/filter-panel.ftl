@@ -69,7 +69,6 @@
     .tgl:hover{
         fill: blue;
     }
-
     .requestHover{
         fill: blue;
     }
@@ -204,30 +203,31 @@
     }
 </style>
 <script type="text/javascript" class="init">
-    $( function() {
-        $( "#accordion" ).accordion({
+    $(function () {
+        $("#accordion").accordion({
             collapsible: true,
             heightStyle: "content"
         });
-    } );
-    $( function() {
-        $( "#contextfilter" ).accordion({
+    });
+
+    $(function () {
+        $("#contextfilter").accordion({
             collapsible: true
         });
-    } );
+    });
 
     let filterMap = {};
-    $(function() {
+    $(function () {
         $.contextMenu({
             selector: '.context-menu-one',
-            callback: function(key, options) {
-                if(key  == "add") {
-                    if($(this).attr("tp") == 3) {
+            callback: function (key, options) {
+                if (key == "add") {
+                    if ($(this).attr("tp") == 3) {
                         addToFilter("req=" + $(this).text());
                         filterReq = $(this).attr("id");
                         filterStack = "";
                     }
-                }else if(key == "show"){
+                } else if (key == "show") {
                     showRequestContextPopup($(this).attr("id"));
                 }
             },
@@ -238,31 +238,31 @@
         });
         $.contextMenu({
             selector: '.context-menu-two',
-            callback: function(key, options) {
-                if(key  == "add") {
-                    if($(this).attr("tp") == 3) {
+            callback: function (key, options) {
+                if (key == "add") {
+                    if ($(this).attr("tp") == 3) {
                         addToFilter("req=" + $(this).text());
                         filterReq = $(this).attr("id");
                         filterStack = "";
-                    }else if($(this).attr("tp") == 0) {
+                    } else if ($(this).attr("tp") == 0) {
                         addToFilter("org=" + $(this).text());
-                    }else if($(this).attr("tp") == 1) {
+                    } else if ($(this).attr("tp") == 1) {
                         addToFilter("user=" + $(this).text());
-                    }else if($(this).attr("tp") == 2) {
+                    } else if ($(this).attr("tp") == 2) {
                         addToFilter("log=" + $(this).text());
-                    }else if($(this).attr("tp") == 4) {
+                    } else if ($(this).attr("tp") == 4) {
                         addToFilter("uri=" + $(this).text());
-                    }else if($(this).attr("tp") == 6) {
+                    } else if ($(this).attr("tp") == 6) {
                         addToFilter("tid=" + $(this).text());
-                    }else if($(this).attr("tp") == 7) {
+                    } else if ($(this).attr("tp") == 7) {
                         addToFilter("rac=" + $(this).text());
-                    }else if($(this).attr("tp") == 8) {
+                    } else if ($(this).attr("tp") == 8) {
                         addToFilter("thread_name=" + $(this).text());
-                    }else if($(this).attr("tp") == 9) {
+                    } else if ($(this).attr("tp") == 9) {
                         addToFilter("tier=" + $(this).text());
-                    }else if($(this).attr("tp") == 10) {
+                    } else if ($(this).attr("tp") == 10) {
                         addToFilter("sfdcmsgid=" + $(this).text());
-                    }else if($(this).attr("tp") == 11) {
+                    } else if ($(this).attr("tp") == 11) {
                         addToFilter("uri=" + $(this).text());
                     }
                 }
@@ -276,52 +276,9 @@
     function setApplyDisabled(shouldDisable) {
         $("#filter-apply").prop("disabled", shouldDisable);
     }
+
     function setResetDisabled(shouldDisable) {
         $("#filter-reset").prop("disabled", shouldDisable);
-    }
-
-    function addContextHint(hint, val){
-        addToFilter(hint+"="+val);
-        updateContextHintView(val);
-    }
-
-    function updateContextHintView(hintVal){
-        if(hintVal == "all"){
-            $('.all-heading').css({ 'font-weight': 'bold' });
-            $('.sync-heading').css({ 'font-weight': 'normal' });
-            $('.async-heading').css({ 'font-weight': 'normal' });
-            $('.async-hints').removeClass('hide');
-            $('.sync-hints').removeClass('hide');
-            $('#filter-heading').text("Context hints");
-        }else if(hintVal == "sync"){
-            $('.all-heading').css({ 'font-weight': 'normal' });
-            $('.sync-heading').css({ 'font-weight': 'bold' });
-            $('.async-heading').css({ 'font-weight': 'normal' });
-            $('.async-hints').addClass('hide');
-            $('.sync-hints').removeClass('hide');
-            $('#filter-heading').text("Sync context hints");
-        }else if(hintVal == "async"){
-            $('.all-heading').css({ 'font-weight': 'normal' });
-            $('.sync-heading').css({ 'font-weight': 'normal' });
-            $('.async-heading').css({ 'font-weight': 'bold' });
-            $('.async-hints').removeClass('hide');
-            $('.sync-hints').addClass('hide');
-            $('#filter-heading').text("Async context hints");
-        }
-    }
-
-    function resetContextHints(){
-        let hintVal = "all";//default
-        let array = filterBy.split(";");
-        for(let i=0; i< array.length; i++){
-            if(array[i] != "") {
-                let pair = array[i].split("=");
-                if(pair[0] == "context"){
-                    hintVal = pair[1];
-                }
-            }
-        }
-        updateContextHintView(hintVal);
     }
 
     $(document).ready(function () {
@@ -329,10 +286,10 @@
             //validate manually edited filters
             $("#queryfilter").val($("#queryfilter").val().replace(/\s/g, ''));
             let array = $("#queryfilter").val().split(";");
-            for(let i=0; i< array.length; i++){
-                if(array[i] != "") {
+            for (let i = 0; i < array.length; i++) {
+                if (array[i] != "") {
                     let pair = array[i].split("=");
-                    if(pair.length != 2) {
+                    if (pair.length != 2) {
                         toastr_warning("Invalid filter(s) provided");
                         break;
                     }
@@ -363,9 +320,9 @@
             resetTreeInvertedLevel(FilterLevel.LEVEL3);
 
             resetTreeAllLevel(getActiveTree(getEventType(), false));
-            enableRequestTimelineView(false);;
+            enableRequestTimelineView(false);
+            ;
 
-            //genRequestTable();
             $("#filter-apply").click();
         });
 
@@ -374,22 +331,21 @@
                 toastr_warning("Please wait for previous filter to finish.");
                 return;
             }
-            filterMap={};
+            filterMap = {};
             filterFrame = "";
             frameFilterString = "";
             let hasReqIDFilter = false;
             let array = $("#queryfilter").val().split(";");
-            for(let i=0; i< array.length; i++){
-                if(array[i] != "") {
+            for (let i = 0; i < array.length; i++) {
+                if (array[i] != "") {
                     let pair = array[i].split("=");
-                    if(pair[0] == "frame") {
+                    if (pair[0] == "frame") {
                         filterFrame = pair[1];
                         frameFilterString = pair[1];
-                        //updateUrl("filterFrame", filterFrame, true);
                     }
-                    if(pair[0] == "req") {
+                    if (pair[0] == "req") {
                         hasReqIDFilter = true;
-                        if(filterReq == "" || filterReq == undefined){
+                        if (filterReq == "" || filterReq == undefined) {
                             //find matching request to show time line
                             findRequest(pair[1]);
                         }
@@ -400,19 +356,18 @@
             filterBy = $("#queryfilter").val();
 
             setApplyDisabled(true);
-            if(filterBy == ""){
+            if (filterBy == "") {
                 setResetDisabled(true);
-                updateContextHintView("all");
-            }else {
+            } else {
                 setResetDisabled(false);
             }
 
             updateUrl("filterBy", filterBy, true);
-            if(hasReqIDFilter) {
+            if (hasReqIDFilter) {
                 //updaate url with request timeline TO CHECK
                 updateUrl("filterReq", filterReq, true);
                 updateUrl("filterStack", filterStack, true);
-            }else{
+            } else {
                 //disable request timeline
                 filterReq = "";
                 filterStack = "";
@@ -423,38 +378,37 @@
             updateProfilerView(FilterLevel.LEVEL1);
         });
 
-        filterBy=urlParams.get('filterBy') || '';
-        filterReq=urlParams.get('filterReq') || '';
-        filterStack=urlParams.get('filterStack') || '';
-        filterStack=urlParams.get('filterStack') || '';
+        filterBy = urlParams.get('filterBy') || '';
+        filterReq = urlParams.get('filterReq') || '';
+        filterStack = urlParams.get('filterStack') || '';
+        filterStack = urlParams.get('filterStack') || '';
         contextTablePage = urlParams.get('cpage') || 0;
         customEvent = urlParams.get('customevent') || '';
-        let tmpMultiSelect  = urlParams.get('mSelect') || '';
+        let tmpMultiSelect = urlParams.get('mSelect') || '';
 
         setApplyDisabled(true);
-        resetContextHints();
-        if(filterBy == ""){
+        if (filterBy == "") {
             setResetDisabled(true);
         }
 
-        if(tmpMultiSelect !== undefined && tmpMultiSelect !== "") {
+        if (tmpMultiSelect !== undefined && tmpMultiSelect !== "") {
             let array = tmpMultiSelect.split(";");
-            for(let i=0; i< array.length; i++){
+            for (let i = 0; i < array.length; i++) {
                 multiSelect[array[i]] = "selected";
             }
         }
 
-        if(filterBy !== "" || filterBy !== undefined) {
+        if (filterBy !== "" || filterBy !== undefined) {
             $("#queryfilter").val(filterBy);
             let array = filterBy.split(";");
-            for(let i=0; i< array.length; i++){
-                if(array[i] != "") {
+            for (let i = 0; i < array.length; i++) {
+                if (array[i] != "") {
                     let pair = array[i].split("=");
-                    if(pair[0] == "frame"){
+                    if (pair[0] == "frame") {
                         filterFrame = pair[1];
                         frameFilterString = pair[1];
                     }
-                    filterMap[pair[0]]=pair[1];
+                    filterMap[pair[0]] = pair[1];
                 }
             }
         }
@@ -465,23 +419,23 @@
         str = str + "</table>";
         document.getElementById("statetable").innerHTML = str;
         $('#state-table').DataTable({
-            "order": [[ 1, "desc" ]],
+            "order": [[1, "desc"]],
             searching: false,
-            "columnDefs": [ {
+            "columnDefs": [{
                 "targets": 0,
                 "orderable": false
-            } ],
+            }],
             "sDom": '<"toolbar">frtip'
         });
 
-        groupBy=urlParams.get('groupBy') || '';
-        tableFormat=urlParams.get('tableFormat') || '0';
-        sortBy=urlParams.get('sortBy') || '';
+        groupBy = urlParams.get('groupBy') || '';
+        tableFormat = urlParams.get('tableFormat') || '0';
+        sortBy = urlParams.get('sortBy') || '';
 
-        sortBy=urlParams.get('sortBy') || '';
-        cumulativeLine=urlParams.get('cumulative') || '0';
-        spanThreshold=urlParams.get('spanThreshold') || 200;
-        spanInput=urlParams.get('spanInput') || 'duration';
+        sortBy = urlParams.get('sortBy') || '';
+        cumulativeLine = urlParams.get('cumulative') || '0';
+        spanThreshold = urlParams.get('spanThreshold') || 200;
+        spanInput = urlParams.get('spanInput') || 'duration';
         $("#statetabledrp").html(getToolBarOptions());
         $("#filter-input").on("change", (event) => {
             genRequestTable();
@@ -527,16 +481,7 @@
     let isS3 = "true";
 
     //1 for LEVEL1, 2 for LEVEL2 and 3 for LEVEL3
-
     let contextTree1InvertedLevel = {};
-
-
-    /*let socketcontextTree1InvertedLevel = {1:undefined,2:undefined,3:undefined};
-    let apexcontextTree1InvertedLevel = {1:undefined,2:undefined,3:undefined};
-    let jstackcontextTree1InvertedLevel = {1:undefined,2:undefined,3:undefined};
-    let nativecontextTree1InvertedLevel = {1:undefined,2:undefined,3:undefined};
-    */
-
 
     let prevReqTid = "";
     let prevReqTime = "";
@@ -579,22 +524,22 @@
         let inppair = val.split("=");
         let array = $("#queryfilter").val().split(";");
         let tmpMap = {};
-        for(let i=0; i< array.length; i++){
+        for (let i = 0; i < array.length; i++) {
             array[i] = array[i].replace(/\s/g, '');
-            if(array[i] != "") {
+            if (array[i] != "") {
                 let pair = array[i].split("=");
-                if(pair[0] != inppair[0]){
+                if (pair[0] != inppair[0]) {
                     tmpMap[pair[0]] = pair[1];
                 }
             }
         }
-        if(inppair[0] == "context" && inppair[1] == "all"){
+        if (inppair[0] == "context" && inppair[1] == "all") {
             //skip
-        }else {
+        } else {
             tmpMap[inppair[0]] = inppair[1];
         }
         let str = "";
-        for(var key in tmpMap){
+        for (var key in tmpMap) {
             str = str + key + "=" + tmpMap[key] + ";";
         }
         $("#queryfilter").val(str);
@@ -606,10 +551,10 @@
         //validate manually edited filters
         $("#queryfilter").val($("#queryfilter").val().replace(/\s/g, ''));
         let array = $("#queryfilter").val().split(";");
-        for(let i=0; i< array.length; i++){
-            if(array[i] != "") {
+        for (let i = 0; i < array.length; i++) {
+            if (array[i] != "") {
                 let pair = array[i].split("=");
-                if(pair.length != 2) {
+                if (pair.length != 2) {
                     toastr_warning("Invalid filter(s) provided");
                     break;
                 }
@@ -617,32 +562,6 @@
         }
         setApplyDisabled(false);
     });
-
-    function toggleView(directiton, view){
-        if($("#"+directiton).hasClass("fa-chevron-up")){
-            $("#"+directiton).removeClass("fa-chevron-up");
-            $("#"+directiton).addClass("fa-chevron-down");
-            $("#"+view).css("display","none");
-            if(view == "logreq"){
-                $("#stack").css("max-height","307px");
-            }
-        }else{
-            $("#"+directiton).removeClass("fa-chevron-down");
-            $("#"+directiton).addClass("fa-chevron-up");
-            $("#"+view).css("display","block");
-            if(view == "logreq"){
-                $("#stack").css("max-height","275px");
-            }
-        }
-    }
-
-    function closeHelp(){
-        $("#contexthelp").addClass("hide");
-    }
-
-    function showHelp(){
-        $("#contexthelp").removeClass("hide");
-    }
 
     function getFrameName(id) {
         if (isJfrContext == false) {
@@ -653,7 +572,7 @@
         } else if (contextTree2Frames !== undefined && contextTree2Frames[id] !== undefined) {
             return contextTree2Frames[id];
         }
-        return "."+id;
+        return "." + id;
     }
 
     function onLevel3Filter() {
@@ -707,9 +626,8 @@
     function onLevel1Filter() {
         console.log("onLevel1Filter start");
         if (filterMap["tid"] == undefined && isFilterEmpty()) {
-            //genRequestTable();
+            //none
         } else {
-            //genRequestTable();
             updateStackIndex(getActiveTree(getEventType(), false));//need this as stacks identified based on index
             isLevelRefresh = true;
             filterOnType();
@@ -724,10 +642,10 @@
     function getLevel1FilterInput() {
         let str = "";
         let array = filterBy.split(";");
-        for(let i=0; i< array.length; i++){
-            if(array[i] != "") {
+        for (let i = 0; i < array.length; i++) {
+            if (array[i] != "") {
                 let pair = array[i].split("=");
-                if(pair[0] != "frame") { //frame is a second level filter
+                if (pair[0] != "frame") { //frame is a second level filter
                     str = str + pair[0] + "=" + pair[1] + ";";
                 }
             }
@@ -767,7 +685,7 @@
                     resetTreeInvertedLevel(FilterLevel.LEVEL3);
 
                     onLevel1Filter();
-                    updateContextTable=true;
+                    updateContextTable = true;
                 }
             }
 
@@ -802,7 +720,7 @@
                 }
             }
 
-            if(updateContextTable){
+            if (updateContextTable) {
                 genRequestTable();
             }
 
@@ -827,8 +745,6 @@
         }
         return true;
     }
-
-
 
     function resetTreeInvertedLevel(level) {
         for (var key in jfrevents1) {
@@ -871,17 +787,13 @@
         $("#filter-apply").click();
     }
 
-
-
-
-    function findRequest(reqId){
+    function findRequest(reqId) {
         if (contextData !== undefined) {
             var BreakException = {};
             try {
-                //contextData.tidlist.forEach(function (tid) {
-                for(var tid in contextData.records) {
+                for (var tid in contextData.records) {
                     contextData.records[tid].forEach(function (obj) {
-                        if(obj.type == 2 || obj.type == 6) {//do not include sub requests
+                        if (obj.type == 2 || obj.type == 6) {//do not include sub requests
                             if (obj.reqId !== undefined && obj.reqId == reqId) {
                                 filterReq = obj.tid + "_" + obj.epoch;
                                 throw BreakException;
@@ -889,21 +801,20 @@
                         }
                     });
                 }
-                //});
             } catch (e) {
                 if (e !== BreakException) throw e;
             }
         }
     }
 
-    function showTimelineView(opt){
+    function showTimelineView(opt) {
         showTimeline = opt;
     }
 
-    function enableRequestTimelineView(opt){
-        if(showTimeline && opt){
+    function enableRequestTimelineView(opt) {
+        if (showTimeline && opt) {
             $("#stackncontextview").removeClass("hide");
-        }else{
+        } else {
             document.getElementById("timelinetitle").innerHTML = "";
             $("#stackncontextview").addClass("hide");
         }
@@ -946,7 +857,7 @@
     let prevReqCellTime = "";
     let prevReqCellObj = null;
 
-    function getStackTrace(stackid){
+    function getStackTrace(stackid) {
         let eventType = getEventType();
 
         let sampleType = eventType;
@@ -954,19 +865,18 @@
         let stacktrace = "";
         let tmpcontextTree1Level1 = getStackFrameV1("root");
         let tmpActiveTree = getActiveTree(eventType, false);
-        //if (tmpActiveTree.treeIndex !== undefined && tmpActiveTree.treeIndex !== FilterLevel.LEVEL2) {
         updateStackIndex(tmpActiveTree); //at this point tree must be indexed on LEVEL2
-        //}
 
         let arr = getTreeStack(tmpActiveTree, stackid, tmpcontextTree1Level1, 1);
         let ch = tmpcontextTree1Level1.ch;
         stacktrace = stacktrace + sampleType + "\n\n";
         while (ch !== undefined && ch != null && ch.length == 1) {
-            stacktrace = stacktrace  + getFrameName(ch[0].nm) + "\n";
+            stacktrace = stacktrace + getFrameName(ch[0].nm) + "\n";
             ch = ch[0].ch;
         }
         return stacktrace;
     }
+
     function showStack(stackid, time, eventType, obj) {
         if (prevReqCellSid == stackid && prevReqCellTime == time) {
             updateUrl("filterStack", "");
@@ -977,7 +887,6 @@
             filterStack = "";
 
             if ($("#" + stackid + "-" + time).length != 0) {
-                //$("#" + stackid + "-" + time).addClass("stackCell");
                 $("#" + stackid + "-" + time).removeClass("stackCells");
             }
         } else {
@@ -985,13 +894,11 @@
             filterStack = stackid + "_" + time;
             document.getElementById("stack").innerHTML = "";
             if ($("#" + prevReqCellSid + "-" + prevReqCellTime).length != 0) {
-                //$("#" + prevReqCellSid + "-" + prevReqCellTime).addClass("stackCell");
                 $("#" + prevReqCellSid + "-" + prevReqCellTime).removeClass("stackCells");
             }
 
             if ($("#" + stackid + "-" + time).length != 0) {
                 $("#" + stackid + "-" + time).addClass("stackCells");
-                //$("#" + stackid + "-" + time).removeClass("stackCell");
             }
 
             prevReqCellObj = obj;
@@ -1003,9 +910,7 @@
             let stacktrace = "<table  style=\"border: 0px;\">";
             let tmpcontextTree1Level1 = getStackFrameV1("root");
             let tmpActiveTree = getActiveTree(eventType, false);
-            //if (tmpActiveTree.treeIndex !== undefined && tmpActiveTree.treeIndex !== FilterLevel.LEVEL2) {
             updateStackIndex(tmpActiveTree); //at this point tree must be indexed on LEVEL2
-            //}
 
             let arr = getTreeStack(tmpActiveTree, stackid, tmpcontextTree1Level1, 1);
             let ch = tmpcontextTree1Level1.ch;
@@ -1026,29 +931,24 @@
 
     function showpopStack(stackid, time, eventType, obj) {
         if (prevpopReqCellSid == stackid && prevpopReqCellTime == time) {
-            //updateUrl("filterStack", "");
             document.getElementById("popupstack").innerHTML = "";
             prevpopReqCellSid = "";
             prevpopReqCellTime = "";
             prevpopReqCellObj = null;
             popfilterStack = "";
 
-            if ($("#" + stackid + "-" + time+"_pop").length != 0) {
-                //$("#" + stackid + "-" + time+"_pop").addClass("stackCell");
-                $("#" + stackid + "-" + time+"_pop").removeClass("stackCells");
+            if ($("#" + stackid + "-" + time + "_pop").length != 0) {
+                $("#" + stackid + "-" + time + "_pop").removeClass("stackCells");
             }
         } else {
-            //updateUrl("filterStack", stackid + "_" + time);
-            popfilterStack = stackid + "_" + time+"_pop";
+            popfilterStack = stackid + "_" + time + "_pop";
             document.getElementById("popupstack").innerHTML = "";
-            if ($("#" + prevpopReqCellSid + "-" + prevpopReqCellTime+"_pop").length != 0) {
-                //$("#" + prevpopReqCellSid + "-" + prevpopReqCellTime+"_pop").addClass("stackCell");
-                $("#" + prevpopReqCellSid + "-" + prevpopReqCellTime+"_pop").removeClass("stackCells");
+            if ($("#" + prevpopReqCellSid + "-" + prevpopReqCellTime + "_pop").length != 0) {
+                $("#" + prevpopReqCellSid + "-" + prevpopReqCellTime + "_pop").removeClass("stackCells");
             }
 
-            if ($("#" + stackid + "-" + time+"_pop").length != 0) {
-                $("#" + stackid + "-" + time+"_pop").addClass("stackCells");
-                //$("#" + stackid + "-" + time+"_pop").removeClass("stackCell");
+            if ($("#" + stackid + "-" + time + "_pop").length != 0) {
+                $("#" + stackid + "-" + time + "_pop").addClass("stackCells");
             }
 
             prevpopReqCellObj = obj;
@@ -1060,9 +960,7 @@
             let stacktrace = "<table  style=\"border: 0px;\">";
             let tmpcontextTree1Level1 = getStackFrameV1("root");
             let tmpActiveTree = getActiveTree(eventType, false);
-            //if (tmpActiveTree.treeIndex !== undefined && tmpActiveTree.treeIndex !== FilterLevel.LEVEL2) {
             updateStackIndex(tmpActiveTree); //at this point tree must be indexed on LEVEL2
-            //}
 
             let arr = getTreeStack(tmpActiveTree, stackid, tmpcontextTree1Level1, 1);
             let ch = tmpcontextTree1Level1.ch;
@@ -1084,16 +982,19 @@
         updateProfilerView(FilterLevel.LEVEL3);
     }
 
-    function hideFilterViewStatus(){
+    function hideFilterViewStatus() {
         $("#filter-view-status").addClass("hide");
     }
-    function unhideFilterViewStatus(){
+
+    function unhideFilterViewStatus() {
         $("#filter-view-status").removeClass("hide");
     }
-    function updateFilterViewStatus(status){
+
+    function updateFilterViewStatus(status) {
         document.getElementById("filter-view-status").innerHTML = status;
     }
-    function showContextFilter(){
+
+    function showContextFilter() {
         $("#contextpanel").removeClass("hide");
     }
 
@@ -1112,13 +1013,13 @@
     }
 
     function logColor(line) {
-        if(line == "U"){
+        if (line == "U") {
             return "#DA823B";
-        }else if(line == "5") {
+        } else if (line == "5") {
             return "#925EB0";
-        }else if(line == "4") {
+        } else if (line == "4") {
             return "#5098D5";
-        }else {
+        } else {
             return "#828282";
         }
     }
@@ -1155,10 +1056,10 @@
 
             let bseJsonTree = tree.ch[tree.sm[stackid]];
             //handle single frame case
-            if(bseJsonTree['ch'] == null || bseJsonTree['ch'].length == 0){
+            if (bseJsonTree['ch'] == null || bseJsonTree['ch'].length == 0) {
                 addFrameV1(bseJsonTree['nm'], size, size, filterTree);
                 return;
-            }else {
+            } else {
                 let arr = [];
                 let res = getStack(tree.ch[tree.sm[stackid]], filterTree, arr, size, stackid, false);
                 return res;
@@ -1312,10 +1213,10 @@
                 }
                 chCount = chCount + filterFramesV1Level(baseJsonTree['ch'][treeIndex], include, level);
             }
-        }else{
-            if(curInclude || include) {
+        } else {
+            if (curInclude || include) {
                 //collect stacks included in frame filter
-                if(baseJsonTree.sm !== undefined) {
+                if (baseJsonTree.sm !== undefined) {
                     for (var key in baseJsonTree.sm) {
                         frameFilterStackMap[event][key] = 1;
                     }
@@ -1339,18 +1240,18 @@
         }
     }
 
-    function showRequestContextPopup(filterReq){
-        if(filterReq != undefined) {
+    function showRequestContextPopup(filterReq) {
+        if (filterReq != undefined) {
             popfilterStack = "";
             createTimelineModal("timelinepopup");
             loadModal("timelinepopup");
             setTimeout(function () {
                 $('#timelinepopup').focus();
                 let pair = filterReq.split("_");
-                showRequestTimelineView(pair[0],pair[1],false);
+                showRequestTimelineView(pair[0], pair[1], false);
                 let stackPair = popfilterStack.split("_");
-                if ($("#" + stackPair[0] + "-" + stackPair[1]+"_pop").length != 0 && !$("#" + stackPair[0] + "-" + stackPair[1]+"_pop").hasClass("stackCells")) {
-                    $("#" + stackPair[0] + "-" + stackPair[1]+"_pop").click();
+                if ($("#" + stackPair[0] + "-" + stackPair[1] + "_pop").length != 0 && !$("#" + stackPair[0] + "-" + stackPair[1] + "_pop").hasClass("stackCells")) {
+                    $("#" + stackPair[0] + "-" + stackPair[1] + "_pop").click();
                 }
             }, 500);
         }
@@ -1389,9 +1290,9 @@
     }
 
     function unLoadModal(modalId) {
-        $('#'+modalId).modal('hide');
-        prevpopReqCellObj=null;
-        prevReqCellObj=null;
+        $('#' + modalId).modal('hide');
+        prevpopReqCellObj = null;
+        prevReqCellObj = null;
     }
 
     let clickC = 0;
@@ -1403,17 +1304,17 @@
         const timelineElement = document.getElementById("stackncontextview");
 
         if (timelinepopupmodalElement !== null && timelinepopupmodalElement.style.display !== "none") {
-            console.log("timelinepopup active " + clickC+ ":" +evt.keyCode);
+            console.log("timelinepopup active " + clickC + ":" + evt.keyCode);
             if (evt.keyCode == 39) {
                 nextAvailablepopStack();
             } else if (evt.keyCode == 37) {
                 previousAvailablepopStack();
-            }else if (evt.keyCode == 27) {
-                prevpopReqCellObj=null;
+            } else if (evt.keyCode == 27) {
+                prevpopReqCellObj = null;
             }
             clickC++;
-        }else if (timelineElement !== null && timelineElement.style.display !== "none") {
-            console.log("stackncontextview active " + clickC + ":" +evt.keyCode);
+        } else if (timelineElement !== null && timelineElement.style.display !== "none") {
+            console.log("stackncontextview active " + clickC + ":" + evt.keyCode);
             if (evt.keyCode == 39) {
                 nextAvailableStack();
             } else if (evt.keyCode == 37) {
@@ -1428,7 +1329,7 @@
         var cur = prevpopReqCellObj;
         while (cur != null && cur.nextSibling != null) {
             cur = cur.nextSibling;
-            if(!cur.classList.contains('hide')) {
+            if (!cur.classList.contains('hide')) {
                 cur.click();
                 break;
             }
@@ -1439,7 +1340,7 @@
         var cur = prevpopReqCellObj;
         while (cur != null && cur.previousSibling != null) {
             cur = cur.previousSibling;
-            if(!cur.classList.contains('hide')) {
+            if (!cur.classList.contains('hide')) {
                 cur.click();
                 break;
             }
@@ -1450,7 +1351,7 @@
         var cur = prevReqCellObj;
         while (cur != null && cur.nextSibling != null) {
             cur = cur.nextSibling;
-            if(!cur.classList.contains('hide')) {
+            if (!cur.classList.contains('hide')) {
                 cur.click();
                 break;
             }
@@ -1461,7 +1362,7 @@
         var cur = prevReqCellObj;
         while (cur != null && cur.previousSibling != null) {
             cur = cur.previousSibling;
-            if(!cur.classList.contains('hide')) {
+            if (!cur.classList.contains('hide')) {
                 cur.click();
                 break;
             }
@@ -1474,33 +1375,33 @@
             for (var c = 0; c < t.rows[r].cells.length; c++) {
                 t.rows[r].cells[c].addEventListener('click', function (e) {
                     if (e.altKey) {
-                        if($(e.target).attr("tp") == 3) {
+                        if ($(e.target).attr("tp") == 3) {
                             addToFilter("req=" + $(e.target).html());
                             filterReq = $(e.target).attr("id");
                             filterStack = "";
-                        }else if($(e.target).attr("tp") == 0) {
+                        } else if ($(e.target).attr("tp") == 0) {
                             addToFilter("org=" + $(e.target).html());
-                        }else if($(e.target).attr("tp") == 1) {
+                        } else if ($(e.target).attr("tp") == 1) {
                             addToFilter("user=" + $(e.target).html());
-                        }else if($(e.target).attr("tp") == 2) {
+                        } else if ($(e.target).attr("tp") == 2) {
                             addToFilter("log=" + $(e.target).html());
-                        }else if($(e.target).attr("tp") == 4) {
+                        } else if ($(e.target).attr("tp") == 4) {
                             addToFilter("uri=" + $(e.target).html());
-                        }else if($(e.target).attr("tp") == 6) {
+                        } else if ($(e.target).attr("tp") == 6) {
                             addToFilter("tid=" + $(e.target).html());
-                        }else if($(e.target).attr("tp") == 7) {
+                        } else if ($(e.target).attr("tp") == 7) {
                             addToFilter("rac=" + $(e.target).html());
-                        }else if($(e.target).attr("tp") == 8) {
+                        } else if ($(e.target).attr("tp") == 8) {
                             addToFilter("thread_name=" + $(e.target).html());
                         }
-                    }else{
-                        if($(e.target).attr("tp") == 3) {
+                    } else {
+                        if ($(e.target).attr("tp") == 3) {
                             //showRequestContextPopup($(e.target).attr("id")); //click show request timeline
                         }
                     }
                 });
                 t.rows[r].cells[c].addEventListener('mouseleave', function (e) {
-                    if($(e.target).attr("tp") == 3) {
+                    if ($(e.target).attr("tp") == 3) {
                         var popup = document.getElementById("idPopup");
                         popup.classList.remove("show");
                     }
@@ -1509,23 +1410,23 @@
         }
     }
 
-    function getContextView(record, dimIndexMap,metricsIndexMap) {
+    function getContextView(record, dimIndexMap, metricsIndexMap) {
         let str = "";
         for (var dim in dimIndexMap) {
-            if(dim == "timestamp"){
+            if (dim == "timestamp") {
                 str += "<tr><td style=\"white-space: nowrap;\" title='start time of the request'>" + dim + "</td><td  style=\"white-space: nowrap;padding-left: 5px;\">" + moment.utc(record[dimIndexMap[dim]]).format('YYYY-MM-DD HH:mm:ss SSS') + " UTC</td></tr>";
-            }else {
+            } else {
                 str += "<tr><td style=\"white-space: nowrap;\" title='start time of the request'>" + dim + "</td><td  style=\"white-space: nowrap;padding-left: 5px;\">" + record[dimIndexMap[dim]] + "</td></tr>";
             }
         }
         for (var metric in metricsIndexMap) {
-            str += "<tr><td style=\"white-space: nowrap;\" title='start time of the request'>"+metric+"</td><td  style=\"white-space: nowrap;padding-left: 5px;\">" + record[metricsIndexMap[metric]] + "</td></tr>";
+            str += "<tr><td style=\"white-space: nowrap;\" title='start time of the request'>" + metric + "</td><td  style=\"white-space: nowrap;padding-left: 5px;\">" + record[metricsIndexMap[metric]] + "</td></tr>";
         }
         return str;
     }
 
     function filterOnType() {
-        console.log("filterOnType start" );
+        console.log("filterOnType start");
         let scount = 0;
         let stackMap = {};
         filteredStackMap[FilterLevel.LEVEL1] = {};
@@ -1536,14 +1437,13 @@
         let metricsIndexArray = [];
         let groupByIndex = -1;
         let spanIndex = -1;
-        let timestampIndex=-1;
-
+        let timestampIndex = -1;
 
         for (let val in contextData.header[customEvent]) {
             const tokens = contextData.header[customEvent][val].split(":");
             if (tokens[1] == "number") {
                 metricsIndexArray.push(val);
-                metricsIndexMap[tokens[0]]=val;
+                metricsIndexMap[tokens[0]] = val;
             }
             if (groupBy == tokens[0]) {
                 groupByIndex = val;
@@ -1569,7 +1469,7 @@
 
 
         if (isFilterEmpty(dimIndexMap) && tidDatalistVal != undefined) {
-            if(contextTidMap[tidDatalistVal] != undefined) { //check if the thread has samples
+            if (contextTidMap[tidDatalistVal] != undefined) { //check if the thread has samples
                 for (let i = 0; i < contextTidMap[tidDatalistVal].length; i++) {
                     if (stackMap[contextTidMap[tidDatalistVal][i].hash] !== undefined) {
                         stackMap[contextTidMap[tidDatalistVal][i].hash] = stackMap[contextTidMap[tidDatalistVal][i].hash] + 1;
@@ -1584,19 +1484,19 @@
                     }
                 }
             }
-        }else {
+        } else {
             //we are here means one of DatalistVal is not empty
             //contextData.tidlist.forEach(function (tid) {
-            for(var tid in contextDataRecords) {
+            for (var tid in contextDataRecords) {
                 contextDataRecords[tid].forEach(function (obj) {
                     let flag = false;
                     let record = obj.record;
-                    if (filterMatchNew(record, dimIndexMap)) {
+                    if (filterMatch(record, dimIndexMap)) {
                         flag = true;
                     }
                     if (flag) {
                         let end = record[timestampIndex] - contextStart + record[spanIndex];
-                        let start =  record[timestampIndex] - contextStart;
+                        let start = record[timestampIndex] - contextStart;
 
                         try {
                             //do a binary search
@@ -1646,7 +1546,7 @@
         for (stack in stackMap) {
             getTreeStackLevel(getActiveTree(getEventType(), false), stack, stackMap[stack], FilterLevel.LEVEL1);
         }
-        console.log("filterOnType 1" );
+        console.log("filterOnType 1");
     }
 
     function showRequestTimelineView(tid, time, applyFilter) {
@@ -1678,7 +1578,7 @@
         let metricsIndexArray = [];
         let groupByIndex = -1;
         let spanIndex = -1;
-        let timestampIndex=-1;
+        let timestampIndex = -1;
 
 
         for (let val in contextData.header[customEvent]) {
@@ -1722,7 +1622,7 @@
         //identify stacks
         const tmpIdMap = new Map();
 
-        if(applyFilter) {
+        if (applyFilter) {
             filteredStackMap[FilterLevel.LEVEL2] = {};
         }
 
@@ -1828,7 +1728,7 @@
         }
 
         timelinetitleIDHTML += "</select>" +
-        "&nbsp;profiling samples for reqId " + reqId + " " + moment.utc(Number(time)).format('YYYY-MM-DD HH:mm:ss.SSS') + " to " + moment.utc(Number(time) + runTime).format('YYYY-MM-DD HH:mm:ss.SSS');
+            "&nbsp;profiling samples for reqId " + reqId + " " + moment.utc(Number(time)).format('YYYY-MM-DD HH:mm:ss.SSS') + " to " + moment.utc(Number(time) + runTime).format('YYYY-MM-DD HH:mm:ss.SSS');
 
         document.getElementById(timelinetitleID).innerHTML = timelinetitleIDHTML;
         document.getElementById(threadstateID).innerHTML = str1;
@@ -1882,12 +1782,12 @@
     function updateThreadStateView() {
         let eventTypeCount = 0;
         for (var eventType in jfrprofiles1) {//for all profile event types
-                if (multiSelect[eventTypeCount] != undefined) {
-                    $('.stackCell' + eventTypeCount).removeClass('hide');
-                } else {
-                    $('.stackCell' + eventTypeCount).addClass('hide');
-                }
-                eventTypeCount++;
+            if (multiSelect[eventTypeCount] != undefined) {
+                $('.stackCell' + eventTypeCount).removeClass('hide');
+            } else {
+                $('.stackCell' + eventTypeCount).addClass('hide');
+            }
+            eventTypeCount++;
         }
 
         let element = undefined;
@@ -1915,32 +1815,32 @@
     }
 
     function isFilterEmpty(dimIndexMap) {
-        if(dimIndexMap == undefined){
+        if (dimIndexMap == undefined) {
             dimIndexMap = {};
             for (let val in contextData.header[customEvent]) {
                 const tokens = contextData.header[customEvent][val].split(":");
-                if(tokens[1] == "text" || tokens[1] == "timestamp"){
-                    dimIndexMap[tokens[0]]=val;
+                if (tokens[1] == "text" || tokens[1] == "timestamp") {
+                    dimIndexMap[tokens[0]] = val;
                 }
             }
         }
         let isEmpty = true;
-        for(dim in dimIndexMap){
-            if(filterMap[dim] != undefined && dim != "tid"){ //handle tid separately
-                isEmpty=false;
+        for (dim in dimIndexMap) {
+            if (filterMap[dim] != undefined && dim != "tid") { //handle tid separately
+                isEmpty = false;
             }
         }
         return isEmpty;
     }
 
-    function filterMatchNew(record,dimIndexMap) {
-        for(dim in dimIndexMap){
-            if(dim === "tid"){
-                if(!(filterMap[dim] == undefined || record[dimIndexMap[dim]] == filterMap[dim])){
+    function filterMatch(record, dimIndexMap) {
+        for (dim in dimIndexMap) {
+            if (dim === "tid") {
+                if (!(filterMap[dim] == undefined || record[dimIndexMap[dim]] == filterMap[dim])) {
                     return false;
                 }
-            }else{
-                if(!(filterMap[dim] == undefined || record[dimIndexMap[dim]]?.includes(filterMap[dim]))){
+            } else {
+                if (!(filterMap[dim] == undefined || record[dimIndexMap[dim]]?.includes(filterMap[dim]))) {
                     return false;
                 }
             }
@@ -1948,142 +1848,71 @@
         return true;
     }
 
-    function filterMatch(obj,contextType) {
-        if (contextType == 2) {
-            if ((filterMap["org"] == undefined || filterMap["org"] == obj.orgId) &&
-                (filterMap["user"] == undefined || filterMap["user"] == obj.userId) &&
-                (filterMap["log"] == undefined || filterMap["log"] == obj.logType) &&
-                (filterMap["uri"] == undefined || filterMap["uri"] == obj.ln) &&
-                (filterMap["thread_name"] == undefined || obj.tn.includes(filterMap["thread_name"])) &&
-                (filterMap["rac"] == undefined || filterMap["rac"] == obj.racNode) &&
-                (filterMap["tid"] == undefined || filterMap["tid"] == obj.tid) &&
-                (filterMap["trust"] == undefined || filterMap["trust"] == obj.trust) &&
-                (filterMap["req"] == undefined || filterMap["req"] == obj.reqId)) {
-                return true;
-            }
-        } else if (contextType == -1) {
-            if ((filterMap["org"] == undefined || filterMap["org"] == obj.orgId) &&
-                (filterMap["user"] == undefined || filterMap["user"] == obj.userId) &&
-                (filterMap["log"] == undefined || filterMap["log"] == obj.logType) &&
-                (filterMap["uri"] == undefined || filterMap["uri"] == obj.ln) &&
-                (filterMap["thread_name"] == undefined || obj.tn.includes(filterMap["thread_name"])) &&
-                (filterMap["rac"] == undefined || filterMap["rac"] == obj.racNode) &&
-                (filterMap["tid"] == undefined || filterMap["tid"] == obj.tid) &&
-                (filterMap["trust"] == undefined || filterMap["trust"] == obj.trust) &&
-                (filterMap["tier"] == undefined || filterMap["tier"] == obj.qTier) &&
-                (filterMap["sfdcmsgid"] == undefined || filterMap["sfdcmsgid"] == obj.sfdcMsgId) &&
-                (filterMap["req"] == undefined || filterMap["req"] == obj.reqId)) {
-                return true;
-            }
-        } else if (contextType == 6) {
-            if ((filterMap["org"] == undefined || filterMap["org"] == obj.orgId) &&
-                (filterMap["log"] == undefined || filterMap["log"] == obj.logType) &&
-                (filterMap["uri"] == undefined || filterMap["uri"] == obj.ln) &&
-                (filterMap["thread_name"] == undefined || obj.tn.includes(filterMap["thread_name"])) &&
-                (filterMap["rac"] == undefined || filterMap["rac"] == obj.racNode) &&
-                (filterMap["tid"] == undefined || filterMap["tid"] == obj.tid) &&
-                (filterMap["tier"] == undefined || filterMap["tier"] == obj.qTier) &&
-                (filterMap["sfdcmsgid"] == undefined || filterMap["sfdcmsgid"] == obj.sfdcMsgId) &&
-                (filterMap["req"] == undefined || filterMap["req"] == obj.reqId)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function getHearderFor(field){
+    function getHearderFor(field) {
         return field;
     }
 
-    function getContextTableHeader(groupBy, contextDataTypeVal) {
-        if (groupBy == "none") {
-            return "<thead><tr><th>time</th><th>tid</th><th title='organization Id'>orgId</th><th title='user Id'>userId</th><th title='log record type associated with the request'>log</th><th title='log name/message type of the request'>uri</th><th>threadName</th><th title='request Id'>reqId</th>" +
-                "<th title='the wall time in ms this request took (APT)'>runTime</th><th  title='the amount of cpu time in ms this request took'>cpuTime</th><th title='time spent in database'>dbTime</th><th title='wall clock time ms spent in apex code'>apexTime</th><th title='cpu time ms in db'>dbCpuTime</th><th title='GC duraiton in ms that impacted this request'>gcTime</th><th title='time spent waiting for and including a safepoint'>spTime</th><th>bytesAllocated</th><th title='time between enqueue and dequeue in ms'>dequeueLatency</th></tr></thead>";
-        } else {
-            if (groupBy == "userId") {
-                return "<thead><tr><th title='user Id'>userId</th><th title='organization Id'>orgId</th><th title='the wall time in ms this request took (APT)'>runTime</th><th  title='the amount of cpu time in ms this request took'>cpuTime</th><th title='time spent in database'>dbTime</th><th title='wall clock time ms spent in apex code'>apexTime</th><th title='cpu time ms in db'>dbCpuTime</th><th title='GC duraiton in ms that impacted this request'>gcTime</th><th title='time spent waiting for and including a safepoint'>spTime</th><th>bytesAllocated</th><th title='time between enqueue and dequeue in ms'>dequeueLatency</th><th>reqCount</th></tr></thead>";
-            } else {
-                return "<thead><tr><th>" + getHearderFor(groupBy) + "</th><th title='the wall time in ms this request took (APT)'>runTime</th><th  title='the amount of cpu time in ms this request took'>cpuTime</th><th title='time spent in database'>dbTime</th><th title='wall clock time ms spent in apex code'>apexTime</th><th title='cpu time ms in db'>dbCpuTime</th><th title='GC duraiton in ms that impacted this request'>gcTime</th><th title='time spent waiting for and including a safepoint'>spTime</th><th>bytesAllocated</th><th title='time between enqueue and dequeue in ms'>dequeueLatency</th><th>reqCount</th></tr></thead>";
-            }
-        }
-    }
-
-    function getContextTableRow(obj, tableFormat) {
-        if (tableFormat == 0) {
-            if (obj.type == 4) {
-                return "<tr><td>" + moment.utc(obj.epoch).format('YYYY:MM:DD.HH:mm:ss.SSS') + "</td><td tp=6 class=\"context-menu-two\">" + obj.tid + "</td><td tp=0 class=\"context-menu-two\">" + obj.orgId + "</td><td tp=1 class=\"context-menu-two\">" + obj.userId + "</td><td tp=2 class=\"context-menu-two\">axapx</td><td tp=4 class=\"context-menu-two\">" + obj.ln + "</td><td tp=8 class=\"context-menu-two\">" + obj.tn + "</td><td tp=3 class=\"context-menu-one\" id=\"" + obj.tid + "_" + obj.epoch + "\">" + obj.reqId + "</td><td>" + obj.runTime + "</td><td>" + obj.cpuTime + "</td><td>" + (obj.dbTime == undefined ? "NA" :  obj.dbTime) + "</td><td>" + obj.apexTime + "</td><td>" + obj.dbCpu + "</td><td>" + obj.gcTime + "</td><td>" + obj.spTime + "</td><td>" + obj.bytes + "</td><td>" + (obj.dqLatency == undefined ? "NA" :  obj.dqLatency) + "</td></tr>";
-            } else if (obj.type == 6) {
-                return "<tr><td>" + moment.utc(obj.epoch).format('YYYY:MM:DD.HH:mm:ss.SSS') + "</td><td tp=6 class=\"context-menu-two\">" + obj.tid + "</td><td tp=0 class=\"context-menu-two\">" + obj.orgId + "</td><td tp=1 class=\"context-menu-two\">NA</td><td tp=2 class=\"context-menu-two\">" + obj.logType + "</td><td tp=4 class=\"context-menu-two\">" + obj.ln + "</td><td tp=8 class=\"context-menu-two\">" + obj.tn + "</td><td tp=3 class=\"context-menu-one\" id=\"" + obj.tid + "_" + obj.epoch + "\">" + obj.reqId + "</td><td>" + obj.runTime + "</td><td>" + obj.cpuTime + "</td><td>" + (obj.dbTime == undefined ? "NA" :  obj.dbTime) + "</td><td>NA</td><td>" + obj.dbCpu + "</td><td>NA</td><td>NA</td><td>" + obj.bytes + "</td><td>" + (obj.dqLatency == undefined ? "NA" :  obj.dqLatency) + "</td></tr>";
-            } else {
-                return "<tr><td>" + moment.utc(obj.epoch).format('YYYY:MM:DD.HH:mm:ss.SSS') + "</td><td tp=6 class=\"context-menu-two\">" + obj.tid + "</td><td tp=0 class=\"context-menu-two\">" + obj.orgId + "</td><td tp=1 class=\"context-menu-two\">" + obj.userId + "</td><td tp=2 class=\"context-menu-two\">" + obj.logType + "</td><td tp=4 class=\"context-menu-two\">" + obj.ln + "</td><td tp=8 class=\"context-menu-two\">" + obj.tn + "</td><td tp=3 class=\"context-menu-one\" id=\"" + obj.tid + "_" + obj.epoch + "\">" + obj.reqId + "</td><td>" + obj.runTime + "</td><td>" + obj.cpuTime + "</td><td>" + (obj.dbTime == undefined ? "NA" :  obj.dbTime) + "</td><td>" + obj.apexTime + "</td><td>" + obj.dbCpu + "</td><td>" + obj.gcTime + "</td><td>" + obj.spTime + "</td><td>" + obj.bytes + "</td><td>NA</td></tr>";
-            }
-        } else {
-            if (obj.type == 4) {
-                return "<tr><td>" + moment.utc(obj.epoch).format('YYYY:MM:DD.HH:mm:ss.SSS') + "</td><td tp=6 class=\"context-menu-two\">" + obj.tid + "</td><td tp=0 class=\"context-menu-two\">" + obj.orgId + "</td><td tp=1 class=\"context-menu-two\">" + obj.userId + "</td><td tp=2 class=\"context-menu-two\">axapx</td><td tp=4 class=\"context-menu-two\">" + obj.ln + "</td><td tp=8 class=\"context-menu-two\">" + obj.tn + "</td><td tp=3 class=\"context-menu-one\" id=\"" + obj.tid + "_" + obj.epoch + "\">" + obj.reqId + "</td><td>" + (100 * obj.runTime / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.cpuTime / obj.runTime).toFixed(2) + "%</td><td>" + (obj.dbTime == undefined ? "NA" : (100 * obj.dbTime / obj.runTime).toFixed(2)) + "%</td><td>" + (100 * obj.apexTime / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.dbCpu / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.gcTime / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.spTime / obj.runTime).toFixed(2) + "%</td><td>" + obj.bytes + "</td><td>" + (obj.dqLatency == undefined ? "NA" :  obj.dqLatency) + "</td></tr>"
-            } else if (obj.type == 6) {
-                return "<tr><td>" + moment.utc(obj.epoch).format('YYYY:MM:DD.HH:mm:ss.SSS') + "</td><td tp=6 class=\"context-menu-two\">" + obj.tid + "</td><td tp=0 class=\"context-menu-two\">" + obj.orgId + "</td><td tp=1 class=\"context-menu-two\">NA</td><td tp=2 class=\"context-menu-two\">" + obj.logType + "</td><td tp=4 class=\"context-menu-two\">" + obj.ln + "</td><td tp=8 class=\"context-menu-two\">" + obj.tn + "</td><td tp=3 class=\"context-menu-one\" id=\"" + obj.tid + "_" + obj.epoch + "\">" + obj.reqId + "</td><td>" + (100 * obj.runTime / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.cpuTime / obj.runTime).toFixed(2) + "%</td><td>" + (obj.dbTime == undefined ? "NA" : (100 * obj.dbTime / obj.runTime).toFixed(2)) + "%</td><td>NA</td><td>" + (100 * obj.dbCpu / obj.runTime).toFixed(2) + "%</td><td>NA</td><td>NA</td><td>" + obj.bytes + "</td><td>" + (obj.dqLatency == undefined ? "NA" :  obj.dqLatency) + "</td></tr>";
-            } else {
-                return "<tr><td>" + moment.utc(obj.epoch).format('YYYY:MM:DD.HH:mm:ss.SSS') + "</td><td tp=6 class=\"context-menu-two\">" + obj.tid + "</td><td tp=0 class=\"context-menu-two\">" + obj.orgId + "</td><td tp=1 class=\"context-menu-two\">" + obj.userId + "</td><td tp=2 class=\"context-menu-two\">" + obj.logType + "</td><td tp=4 class=\"context-menu-two\">" + obj.ln + "</td><td tp=8 class=\"context-menu-two\">" + obj.tn + "</td><td tp=3 class=\"context-menu-one\" id=\"" + obj.tid + "_" + obj.epoch + "\">" + obj.reqId + "</td><td>" + (100 * obj.runTime / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.cpuTime / obj.runTime).toFixed(2) + "%</td><td>" + (obj.dbTime == undefined ? "NA" : (100 * obj.dbTime / obj.runTime).toFixed(2)) + "%</td><td>" + (100 * obj.apexTime / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.dbCpu / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.gcTime / obj.runTime).toFixed(2) + "%</td><td>" + (100 * obj.spTime / obj.runTime).toFixed(2) + "%</td><td>" + obj.bytes + "</td><td>NA</td></tr>";
-            }
-        }
-    }
-
-    var randomColor = (function(){
+    var randomColor = (function () {
         var golden_ratio_conjugate = 0.618033988749895;
         var h = Math.random();
 
-        var hslToRgb = function (h, s, l){
+        var hslToRgb = function (h, s, l) {
             var r, g, b;
 
-            if(s == 0){
+            if (s == 0) {
                 r = g = b = l; // achromatic
-            }else{
-                function hue2rgb(p, q, t){
-                    if(t < 0) t += 1;
-                    if(t > 1) t -= 1;
-                    if(t < 1/6) return p + (q - p) * 6 * t;
-                    if(t < 1/2) return q;
-                    if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            } else {
+                function hue2rgb(p, q, t) {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1 / 6) return p + (q - p) * 6 * t;
+                    if (t < 1 / 2) return q;
+                    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
                     return p;
                 }
 
                 var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
                 var p = 2 * l - q;
-                r = hue2rgb(p, q, h + 1/3);
+                r = hue2rgb(p, q, h + 1 / 3);
                 g = hue2rgb(p, q, h);
-                b = hue2rgb(p, q, h - 1/3);
+                b = hue2rgb(p, q, h - 1 / 3);
             }
 
-            return '#'+Math.round(r * 255).toString(16)+Math.round(g * 255).toString(16)+Math.round(b * 255).toString(16);
+            return '#' + Math.round(r * 255).toString(16) + Math.round(g * 255).toString(16) + Math.round(b * 255).toString(16);
         };
 
-        return function(){
+        return function () {
             h += golden_ratio_conjugate;
             h %= 1;
             return hslToRgb(h, 0.5, 0.60);
         };
     })();
+
     function svgShowReq(evt) {
-        var svgobj=evt.target;
-        if(svgobj.getAttribute("style") == undefined || !svgobj.getAttribute("style").includes("opacity: 0")) {
+        var svgobj = evt.target;
+        if (svgobj.getAttribute("style") == undefined || !svgobj.getAttribute("style").includes("opacity: 0")) {
             showRequestContextPopup(svgobj.getAttribute("id"));
         }
     }
+
     function OnScroll0(div) {
         var d2 = document.getElementById("requestbarchart");
         d2.scrollTop = div.scrollTop;
     }
+
     function OnScroll1(div) {
         var d2 = document.getElementById("requestbarchart");
         d2.scrollLeft = div.scrollLeft;
     }
+
     function OnScroll2(div) {
         var d1 = document.getElementById("xaxisid");
         var d0 = document.getElementById("yaxisid");
         d0.scrollTop = div.scrollTop;
         d1.scrollLeft = div.scrollLeft;
     }
-    function addXAxis(id,top,right,bottom,left,min_x,max_x,w,h,contextStart,downScale){
+
+    function addXAxis(id, top, right, bottom, left, min_x, max_x, w, h, contextStart, downScale) {
         const margin = {top: top, right: right, bottom: bottom, left: left};
         const width = w - margin.left - margin.right,
             height = h - margin.top - margin.bottom;
@@ -2092,7 +1921,7 @@
             .attr("height", height + margin.top + margin.bottom)
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-        let ticCount = (max_x - min_x)/75;
+        let ticCount = (max_x - min_x) / 75;
 
         let xScale = d3.scaleLinear()
             .domain([min_x, max_x])
@@ -2104,15 +1933,15 @@
             .tickPadding(5)
             .ticks(ticCount)
             .tickFormat(function (d) {
-                if(curTick==0){
-                    curTick=1;
-                    return moment.utc(d*downScale+contextStart).format('MM-DD HH:mm:ss');
-                }else{
-                    return moment.utc(d*downScale+contextStart).format('mm:ss');
+                if (curTick == 0) {
+                    curTick = 1;
+                    return moment.utc(d * downScale + contextStart).format('MM-DD HH:mm:ss');
+                } else {
+                    return moment.utc(d * downScale + contextStart).format('mm:ss');
                 }
             });
 
-        let xAxis =  g.append("g")
+        let xAxis = g.append("g")
             .call(xAxisGenerator);
 
         xAxis.selectAll(".tick text")
@@ -2120,7 +1949,8 @@
             .attr("x", 6)
             .style("text-anchor", "start");
     }
-    function addYAxis(id,top,right,bottom,left,min_x,max_x,w,h){
+
+    function addYAxis(id, top, right, bottom, left, min_x, max_x, w, h) {
         const margin = {top: top, right: right, bottom: bottom, left: left};
         const width = w - margin.left - margin.right,
             height = h - margin.top - margin.bottom;
@@ -2136,7 +1966,7 @@
         g.append("text")
             .attr("transform", "rotate(-90)")
             .attr("y", -20)
-            .attr("x",-100)
+            .attr("x", -100)
             .attr("dy", "1em")
             .style("text-anchor", "middle")
             .text("Thread ID");
@@ -2150,18 +1980,18 @@
                 return tidIndex[d];
             });
 
-        let xAxis =  g.append("g")
+        let xAxis = g.append("g")
             .call(xAxisGenerator);
 
         xAxis.selectAll(".tick text")
-            .style("font-size",8)
+            .style("font-size", 8)
             .attr("y", 4)
             .attr("x", 3)
             .style("text-anchor", "start");
     }
 
-    function drowStateChart(filteredTidRequests,chartWidth,downScale,minStart,chartHeight,tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex){
-        document.getElementById("statetable").innerHTML="<div class='row col-lg-12' style='padding: 0 !important;'>"
+    function drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, chartHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex) {
+        document.getElementById("statetable").innerHTML = "<div class='row col-lg-12' style='padding: 0 !important;'>"
             + "<div  style='width: 4%;float: left;'></div>"
             + "<div style=\"max-height: 50px;overflow: hidden;width: 96%;float: right;\">"
             + " <div class='row col-lg-12' style='padding: 0 !important;'>"
@@ -2205,31 +2035,31 @@
             contextDataRecords = contextData.records[customEvent];
         }
 
-        for (let [tid, value] of tidSortByMetricMap){
+        for (let [tid, value] of tidSortByMetricMap) {
             let curTime = minStart;
             let x = 0;
-            for(let index of filteredTidRequests[tid]) {
-                let record =contextDataRecords[tid][index].record;
+            for (let index of filteredTidRequests[tid]) {
+                let record = contextDataRecords[tid][index].record;
                 let tmpEpoch = record[timestampIndex];
-                let tmpRunTime=record[spanIndex];
-                if(tmpEpoch < minStart){
-                    tmpRunTime = tmpRunTime-(minStart-tmpEpoch);
-                    tmpEpoch=minStart;
+                let tmpRunTime = record[spanIndex];
+                if (tmpEpoch < minStart) {
+                    tmpRunTime = tmpRunTime - (minStart - tmpEpoch);
+                    tmpEpoch = minStart;
                 }
-                if(tmpEpoch>=curTime){
+                if (tmpEpoch >= curTime) {
                     d3.select("#requestbarchart").select("svg").append("rect")
-                        .attr("width", (tmpEpoch-curTime) / downScale)
+                        .attr("width", (tmpEpoch - curTime) / downScale)
                         .attr("height", h)
                         .attr("x", x)
                         .attr("y", y)
                         .attr("fill", "white");
 
-                    x=x+(tmpEpoch-curTime) / downScale;
-                    let key =  record[groupByIndex];
-                    let metricVal =  record[sortByIndex];
+                    x = x + (tmpEpoch - curTime) / downScale;
+                    let key = record[groupByIndex];
+                    let metricVal = record[sortByIndex];
                     let key1 = tmpColorMap.get(key);
-                    key1=key1.replace("#","_");
-                    if(tmpRunTime > spanThreshold) {
+                    key1 = key1.replace("#", "_");
+                    if (tmpRunTime > spanThreshold) {
                         d3.select("#requestbarchart").select("svg").append("rect")
                             .attr("width", tmpRunTime / downScale)
                             .attr("height", h)
@@ -2251,18 +2081,19 @@
                             });
                     }
 
-                    x=x+tmpRunTime/downScale;
+                    x = x + tmpRunTime / downScale;
 
-                    curTime=tmpEpoch+tmpRunTime;
+                    curTime = tmpEpoch + tmpRunTime;
                 }
 
             }
-            y=y+h;
+            y = y + h;
         }
     }
+
     var Tooltip = undefined;
-    var mouseoverSVG = function(key,obj) {
-        if(d3.select(obj).attr("style") == undefined || !d3.select(obj).attr("style").includes("opacity: 0")) {
+    var mouseoverSVG = function (key, obj) {
+        if (d3.select(obj).attr("style") == undefined || !d3.select(obj).attr("style").includes("opacity: 0")) {
 
             Tooltip
                 .style("opacity", 1);
@@ -2272,16 +2103,18 @@
                 .style("cursor", "pointer");
         }
     }
-    var mousemoveSVG = function(d, key,obj,metricVal) {
-        if(d3.select(obj).attr("style") == undefined || !d3.select(obj).attr("style").includes("opacity: 0")) {
+
+    var mousemoveSVG = function (d, key, obj, metricVal) {
+        if (d3.select(obj).attr("style") == undefined || !d3.select(obj).attr("style").includes("opacity: 0")) {
             Tooltip
                 .html(d + ", " + metricVal + '<br>Click to see request profile samples and context')
                 .style("left", (d3.mouse(obj)[0] + 20) + "px")
                 .style("top", (d3.mouse(obj)[1]) + "px");
         }
     }
-    var mouseleaveSVG = function(key,obj) {
-        if(d3.select(obj).attr("style") == undefined || !d3.select(obj).attr("style").includes("opacity: 0")) {
+
+    var mouseleaveSVG = function (key, obj) {
+        if (d3.select(obj).attr("style") == undefined || !d3.select(obj).attr("style").includes("opacity: 0")) {
             Tooltip
                 .style("opacity", 0);
             d3.select(obj)
@@ -2290,53 +2123,54 @@
         }
     }
 
-    function legendMouseOver(e,key){
-        if(!e.hasAttribute("dimmed")) {
+    function legendMouseOver(e, key) {
+        if (!e.hasAttribute("dimmed")) {
             d3.selectAll("." + key).classed("requestHover", true);
         }
         e.style.cursor = "pointer";
     }
-    function legendMouseOut(e,key,color){
-        if(!e.hasAttribute("dimmed")) {
+
+    function legendMouseOut(e, key, color) {
+        if (!e.hasAttribute("dimmed")) {
             d3.selectAll("." + key).classed("requestHover", false);
         }
         e.style.cursor = "default";
     }
 
-    function disableCategory(e,key){
-        if(e.hasAttribute("dimmed")) {
+    function disableCategory(e, key) {
+        if (e.hasAttribute("dimmed")) {
             d3.selectAll("." + key).style("opacity", 1);
             e.removeAttribute("dimmed");
             e.style.opacity = 1;
-        }else{
+        } else {
             d3.selectAll("." + key).style("opacity", 0);
-            e.setAttribute("dimmed",true);
+            e.setAttribute("dimmed", true);
             e.style.opacity = 0.3;
         }
     }
 
     function addLegend(id, groupByTypeSortByMetricMap, groupByCount, groupByCountSum, tp) {
-        if(getHearderFor(groupBy) == "timestamp"){
+        if (getHearderFor(groupBy) == "timestamp") {
             return;
         }
         let table = "<table style='font-size: 10px;font-weight:bold;'>"
-            +"<tr><td style='text-align: left;padding-right: 5px'>"+getHearderFor(sortBy)+"</td><td style='text-align: left;'>"+getHearderFor(groupBy)+"</td></tr>";
-        for (let [key, value] of groupByTypeSortByMetricMap){
+            + "<tr><td style='text-align: left;padding-right: 5px'>" + getHearderFor(sortBy) + "</td><td style='text-align: left;'>" + getHearderFor(groupBy) + "</td></tr>";
+        for (let [key, value] of groupByTypeSortByMetricMap) {
             let key1 = tmpColorMap.get(key);
-            key1=key1.replace("#","_");
+            key1 = key1.replace("#", "_");
             let legend = key;
-            if(key == undefined && (groupBy == "msg" || groupBy == "userId" || groupBy == "qTier" || groupBy == "sfdcMsgId")){
-                legend =  "NA (non MQ)";
+            if (key == undefined && (groupBy == "msg" || groupBy == "userId" || groupBy == "qTier" || groupBy == "sfdcMsgId")) {
+                legend = "NA (non MQ)";
             }
 
-            table += "<tr style='color:"+tmpColorMap.get(key)+"'><td style='padding-right: 3px;width:40px'>"+(100*value/groupByCountSum).toFixed(2) + "%" +"</td><td onclick=\"disableCategory(this,'"+key1+"')\" onmouseout=\"legendMouseOut(this,'"+key1+"','"+tmpColorMap.get(key)+"')\" onmouseover=\"legendMouseOver(this,'"+key1+"')\" title='right click to add to filter' tp='"+tp+ "' class=\"context-menu-two\" style='curson: pointer'>"+legend+"</td></tr>";
+            table += "<tr style='color:" + tmpColorMap.get(key) + "'><td style='padding-right: 3px;width:40px'>" + (100 * value / groupByCountSum).toFixed(2) + "%" + "</td><td onclick=\"disableCategory(this,'" + key1 + "')\" onmouseout=\"legendMouseOut(this,'" + key1 + "','" + tmpColorMap.get(key) + "')\" onmouseover=\"legendMouseOver(this,'" + key1 + "')\" title='right click to add to filter' tp='" + tp + "' class=\"context-menu-two\" style='curson: pointer'>" + legend + "</td></tr>";
         }
-        table+="</table>";
+        table += "</table>";
         $(id).html(table);
     }
 
-    function drawTimelineChart(filteredTidRequests,minStart,tidSortByMetricMap,groupByTypeSortByMetricMap,groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex){
-        document.getElementById("statetable").innerHTML="<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
+    function drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex) {
+        document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
         let xs = {};
         let columns = [];
         let countMax = 6;
@@ -2351,7 +2185,7 @@
             if (curI >= countMax) {
                 break;
             }
-            let legend  = (100 * value1 / groupByCountSum).toFixed(2) + "% " + type;
+            let legend = (100 * value1 / groupByCountSum).toFixed(2) + "% " + type;
 
             curI++
             color[type] = tmpColorMap.get(type);
@@ -2364,18 +2198,18 @@
             for (let [tid, value] of tidSortByMetricMap) {
                 for (let index of filteredTidRequests[tid]) {
                     let record = contextDataRecords[tid][index].record;
-                        let tmpEpoch = record[timestampIndex];
-                        let tmpRunTime = record[spanIndex];
-                        let key = record[groupByIndex];
+                    let tmpEpoch = record[timestampIndex];
+                    let tmpRunTime = record[spanIndex];
+                    let key = record[groupByIndex];
 
-                        if (key == type) {
-                            let diff = record[sortByIndex];
-                            if (cumulative_map.has(tmpEpoch + tmpRunTime)) {
-                                cumulative_map.set(tmpEpoch + tmpRunTime, cumulative_map.get(tmpEpoch + tmpRunTime) + diff);
-                            } else {
-                                cumulative_map.set(tmpEpoch + tmpRunTime, diff);
-                            }
+                    if (key == type) {
+                        let diff = record[sortByIndex];
+                        if (cumulative_map.has(tmpEpoch + tmpRunTime)) {
+                            cumulative_map.set(tmpEpoch + tmpRunTime, cumulative_map.get(tmpEpoch + tmpRunTime) + diff);
+                        } else {
+                            cumulative_map.set(tmpEpoch + tmpRunTime, diff);
                         }
+                    }
 
                 }
             }
@@ -2385,10 +2219,10 @@
             for (let [tmpTime, tmpVal] of tmpSort) {
                 tmpValSum += tmpVal;
                 //make series points once every 1000ms to improve chart performance
-                if(prevTmpTime == 0 || (tmpTime - prevTmpTime) >= 1000){
+                if (prevTmpTime == 0 || (tmpTime - prevTmpTime) >= 1000) {
                     series.push(tmpValSum);
                     series_x.push(tmpTime);
-                    if (cumulativeLine != 0){
+                    if (cumulativeLine != 0) {
                         tmpValSum = 0;
                     }
                     prevTmpTime = tmpTime;
@@ -2437,7 +2271,7 @@
                 show: false
             }
         });
-        $("#timeLineChart").data('c3-chart',chart);
+        $("#timeLineChart").data('c3-chart', chart);
     }
 
     function getOrderandType() {
@@ -2487,35 +2321,33 @@
         return [order, tp];
     }
 
-
-
-    function getEventTableHeader(groupby){
+    function getEventTableHeader(groupby) {
         let header = "<thead><tr>";
-        if(!(groupby == undefined || groupby == "")) {
+        if (!(groupby == undefined || groupby == "")) {
             header = header + "<th>" + groupby + "</th>";
         }
-        if(contextData != undefined && contextData.header != undefined){
+        if (contextData != undefined && contextData.header != undefined) {
             for (let val in contextData.header[customEvent]) {
                 const tokens = contextData.header[customEvent][val].split(":");
-                if(groupby == undefined || groupby == "" || tokens[1] == "number") {
+                if (groupby == undefined || groupby == "" || tokens[1] == "number") {
                     header = header + "<th>" + tokens[0] + "</th>";
                 }
             }
         }
-        if(!(groupby == undefined || groupby == "")) {
+        if (!(groupby == undefined || groupby == "")) {
             header = header + "<th>Count</th>";
         }
         header = header + "</tr></thead>";
         return header;
     }
 
-    function addContextHints(){
+    function addContextHints() {
         let table = "<table style='border-spacing: 5px; border-collapse: separate;'><tr><td id='filter-heading'>Context hints:</td>";
-        if(contextData != undefined && contextData.header != undefined){
+        if (contextData != undefined && contextData.header != undefined) {
             for (let val in contextData.header[customEvent]) {
                 const tokens = contextData.header[customEvent][val].split(":");
-                if(tokens[1] == "text" || tokens[1] == "timestamp") {
-                    table += "<td class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('"+tokens[0]+"=xxxx');\" title='Narrows down a filter to a single organisation. For example '"+tokens[0]+"=xxxx' tabindex='-1'>"+tokens[0] +"</a></td>";
+                if (tokens[1] == "text" || tokens[1] == "timestamp") {
+                    table += "<td class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('" + tokens[0] + "=xxxx');\" title='Narrows down a filter to a single organisation. For example '" + tokens[0] + "=xxxx' tabindex='-1'>" + tokens[0] + "</a></td>";
                 }
             }
         }
@@ -2523,10 +2355,10 @@
         $("#contexthints").html(table);
     }
 
-    function setCustomEvent(){
-        if(customEvent == ""){
+    function setCustomEvent() {
+        if (customEvent == "") {
             //try to get first available
-            if(contextData != undefined && contextData.records != undefined){
+            if (contextData != undefined && contextData.records != undefined) {
                 for (let value in contextData.records) {
                     customEvent = value;
                     break;
@@ -2576,7 +2408,7 @@
         let start1 = performance.now();
         setCustomEvent();
 
-        if(customEvent == "" || customEvent == undefined){
+        if (customEvent == "" || customEvent == undefined) {
             return;
         }
 
@@ -2596,8 +2428,6 @@
         let groupByCountSum = 0;
         //status graph end
 
-
-
         let metricSumMap = {};
         let tidDatalistVal = filterMap["tid"];
 
@@ -2609,7 +2439,7 @@
         let groupByIndex = -1;
         let sortByIndex = -1;
         let spanIndex = -1;
-        let timestampIndex=-1;
+        let timestampIndex = -1;
         let tidRowIndex = -1;
 
 
@@ -2620,14 +2450,14 @@
             const tokens = contextData.header[customEvent][val].split(":");
             if (tokens[1] == "number") {
                 metricsIndexArray.push(val);
-                metricsIndexMap[tokens[0]]=val;
+                metricsIndexMap[tokens[0]] = val;
             }
             if (groupBy == tokens[0]) {
                 groupByIndex = val;
-                groupByFound=true;
+                groupByFound = true;
             }
             if (sortBy == tokens[0]) {
-                sortByFound=true;
+                sortByFound = true;
                 sortByIndex = val;
             }
             if ("tid" == tokens[0]) {
@@ -2645,13 +2475,13 @@
             }
         }
 
-        if(!groupByFound){
+        if (!groupByFound) {
             //groupBy = "tid";
             //groupByIndex=tidRowIndex;
         }
-        if(!sortByFound){
+        if (!sortByFound) {
             sortBy = "duration";
-            sortByIndex=spanIndex;
+            sortByIndex = spanIndex;
         }
 
         addContextHints();
@@ -2666,8 +2496,8 @@
         let table = "<table   style=\"width: 100%;\" id=\"state-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\">" + getEventTableHeader(groupBy);
 
         //if only frame filter is selected then we need to include stacks that are not part of any requests.
-        if(frameFilterString !== "" && tidDatalistVal == undefined && isFilterEmpty(dimIndexMap)){
-            for(var tid in contextTidMap){
+        if (frameFilterString !== "" && tidDatalistVal == undefined && isFilterEmpty(dimIndexMap)) {
+            for (var tid in contextTidMap) {
                 if (isTSView) {
                     for (let index = 0; index < contextTidMap[tid].length; index++) {
                         if (frameFilterStackMap[event][contextTidMap[tid][index].hash] !== undefined) {
@@ -2679,17 +2509,17 @@
                     }
                 }
                 //generate context table data, need to include requests that has frame filter found stacks
-                if(contextDataRecords[tid] != undefined) {
+                if (contextDataRecords[tid] != undefined) {
                     let includeTid = false;
                     let reqArray = [];
-                    let recordIndex=-1;
+                    let recordIndex = -1;
                     contextDataRecords[tid].forEach(function (obj) {
                         let record = obj.record;
                         let flag = false;
                         recordIndex++;
-                        if (filterMatchNew(record, dimIndexMap)) {
+                        if (filterMatch(record, dimIndexMap)) {
                             let end = record[timestampIndex] - contextStart + record[spanIndex];
-                            let start =  record[timestampIndex] - contextStart;
+                            let start = record[timestampIndex] - contextStart;
                             try {
                                 //do a binary search
                                 let entryIndex = isinRequest(contextTidMap[tid], start, end);
@@ -2733,12 +2563,12 @@
                                 }
                             }
                             if (groupBy == "" || groupBy == undefined) {
-                                if(record[metricsIndexMap[spanInput]] >= spanThreshold) {
+                                if (record[metricsIndexMap[spanInput]] >= spanThreshold) {
                                     table = table + "<tr>";
                                     for (let field in record) {
-                                        if(field == timestampIndex){
+                                        if (field == timestampIndex) {
                                             table = table + "<td>" + moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS') + "</td>";
-                                        }else {
+                                        } else {
                                             table = table + "<td>" + record[field] + "</td>";
                                         }
                                     }
@@ -2763,17 +2593,17 @@
                     }
                 }
             }
-        }else {
-            for(var tid in contextDataRecords) {
+        } else {
+            for (var tid in contextDataRecords) {
                 let includeTid = false;
                 let reqArray = [];
-                let recordIndex=-1;
+                let recordIndex = -1;
                 if (tidDatalistVal == undefined || tidDatalistVal == tid) {
                     contextDataRecords[tid].forEach(function (obj) {
                         let record = obj.record;
                         let flag = false;
                         recordIndex++;
-                        if (filterMatchNew(record, dimIndexMap)){
+                        if (filterMatch(record, dimIndexMap)) {
                             flag = true;
                         }
 
@@ -2783,7 +2613,7 @@
 
                             //check if the request has a stack and if stack is in frameFilterStackMap
                             let end = record[timestampIndex] - contextStart + record[spanIndex];
-                            let start =  record[timestampIndex] - contextStart;
+                            let start = record[timestampIndex] - contextStart;
 
                             try {
                                 //do a binary search
@@ -2828,12 +2658,12 @@
                                 }
                             }
                             if (groupBy == "" || groupBy == undefined) {
-                                if(record[metricsIndexMap[spanInput]] >= spanThreshold) {
+                                if (record[metricsIndexMap[spanInput]] >= spanThreshold) {
                                     table = table + "<tr>";
                                     for (let field in record) {
-                                        if(field == timestampIndex){
+                                        if (field == timestampIndex) {
                                             table = table + "<td>" + moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS') + "</td>";
-                                        }else {
+                                        } else {
                                             table = table + "<td>" + record[field] + "</td>";
                                         }
                                     }
@@ -2851,8 +2681,8 @@
                             }
                         }
                     });
-                    if(includeTid){
-                        filteredTidRequests[tid]=reqArray;
+                    if (includeTid) {
+                        filteredTidRequests[tid] = reqArray;
                         lineCount++;
                         totalRows++;
                     }
@@ -2860,11 +2690,11 @@
             }
         }
         let end1 = performance.now();
-        console.log("genRequestTable 0 time:" + (end1 - start1) )
+        console.log("genRequestTable 0 time:" + (end1 - start1))
         let start = performance.now();
-        let [order,tp] = [-1,1] //getOrderandType();
+        let [order, tp] = [-1, 1] //getOrderandType();
         if (tableFormat == 2 || tableFormat == 3) {
-            let minStart=getContextTree(1,getEventType()).context.start; //records are aligned to method profile context start
+            let minStart = getContextTree(1, getEventType()).context.start; //records are aligned to method profile context start
             let chartWidth = maxEndTimeOfReq - minStart;
             if (chartWidth < 600000) {//min 10 min
                 chartWidth = 600000;
@@ -2874,19 +2704,19 @@
             const groupByTypeSortByMetricMap = new Map([...tmpGgroupByTypeSortByMetricMap.entries()].sort((a, b) => b[1] - a[1]));
             //generate tidIndex for Yaxis
             let index = 0;
-            for (let [tid, value] of tidSortByMetricMap){
-                tidIndex[index]=tid;
+            for (let [tid, value] of tidSortByMetricMap) {
+                tidIndex[index] = tid;
                 index++;
             }
-            if (tableFormat == 2){
-                drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex,tidRowIndex);
+            if (tableFormat == 2) {
+                drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex);
                 addLegend("#legendid", groupByTypeSortByMetricMap, groupByCount, groupByCountSum, tp);
                 addYAxis("#yaxisid", 0, 0, 0, 17, 0, lineCount, 500, totalRows * rowHeight);
                 addXAxis("#xaxisid", 15, 0, 0, 0, 0, chartWidth, chartWidth, 50, minStart, downScale);
-            }else{
+            } else {
                 drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex);
             }
-        }else{
+        } else {
             if (!(groupBy == "" || groupBy == undefined)) {
                 for (let dim in metricSumMap) {
                     table = table + "<tr>";
@@ -2905,7 +2735,7 @@
         $("#statetabledrp").html(getToolBarOptions());
 
         $("#event-input").on("change", (event) => {
-            updateUrl("customevent",$("#event-input").val(),true);
+            updateUrl("customevent", $("#event-input").val(), true);
             customEvent = $("#event-input").val();
             tmpColorMap.clear();
             genRequestTable();
@@ -2913,39 +2743,39 @@
         });
 
         $("#filter-input").on("change", (event) => {
-            updateUrl("groupBy",$("#filter-input").val(),true);
+            updateUrl("groupBy", $("#filter-input").val(), true);
             groupBy = $("#filter-input").val();
             tmpColorMap.clear();
             genRequestTable();
             updateRequestView();
         });
         $("#format-input").on("change", (event) => {
-            updateUrl("tableFormat",$("#format-input").val(),true);
+            updateUrl("tableFormat", $("#format-input").val(), true);
             tableFormat = $("#format-input").val();
             genRequestTable();
             updateRequestView();
         });
         $("#sort-input").on("change", (event) => {
-            updateUrl("sortBy",$("#sort-input").val(),true);
-            sortBy=$("#sort-input").val();
+            updateUrl("sortBy", $("#sort-input").val(), true);
+            sortBy = $("#sort-input").val();
             genRequestTable();
             updateRequestView();
         });
         $("#line-type").on("change", (event) => {
-            updateUrl("cumulative",$("#line-type").val(),true);
-            cumulativeLine=$("#line-type").val();
+            updateUrl("cumulative", $("#line-type").val(), true);
+            cumulativeLine = $("#line-type").val();
             genRequestTable();
             updateRequestView();
         });
         $("#span-input").on("change", (event) => {
-            updateUrl("spanInput",$("#span-input").val(),true);
-            spanInput=$("#span-input").val();
+            updateUrl("spanInput", $("#span-input").val(), true);
+            spanInput = $("#span-input").val();
             genRequestTable();
             updateRequestView();
         });
         $("#span-threshold").on("change", (event) => {
-            updateUrl("spanThreshold",$("#span-threshold").val(),true);
-            spanThreshold=$("#span-threshold").val();
+            updateUrl("spanThreshold", $("#span-threshold").val(), true);
+            spanThreshold = $("#span-threshold").val();
             genRequestTable();
             updateRequestView();
         });
@@ -2953,22 +2783,20 @@
 
 
         let end = performance.now();
-        console.log("genRequestTable 1 time:" )
+        console.log("genRequestTable 1 time:")
     }
 
-    function enableDataTable(){
-        if(contextTable != undefined) {
+    function enableDataTable() {
+        if (contextTable != undefined) {
             contextTablePage = 0; //reset to 0 except 1st time
         }
 
-        contextTable=$('#state-table').DataTable({
+        contextTable = $('#state-table').DataTable({
             // "order": [[ order, "desc" ]],
             searching: true,
-            "columnDefs": [ {
-
-            } ],
-            "drawCallback": function( settings ) {
-                if(contextTable != undefined) {
+            "columnDefs": [{}],
+            "drawCallback": function (settings) {
+                if (contextTable != undefined) {
                     //when we change table page focus, remove request selection
                     if ((filterReq != "" && filterReq != undefined) && $("#" + filterReq).length != 0) {
                         updateRequestView();
@@ -2986,13 +2814,12 @@
                 }
             ],
             "sDom": '<"toolbar">tfp<"clear">'
-
         });
     }
 
     function getToolBarOptions() {
         let toolBarOptions = 'Event: <select  style="height:30px;text-align: center; " class="filterinput"  name="event-input" id="event-input">\n';
-        if(contextData != undefined && contextData.records != undefined){
+        if (contextData != undefined && contextData.records != undefined) {
             for (let value in contextData.records) {
                 toolBarOptions += '<option ' + (customEvent == value ? "selected" : "") + " value='" + value + "'>" + value + "</option>\n";
             }
@@ -3000,10 +2827,10 @@
         toolBarOptions += '             </select>';
         toolBarOptions += '&nbsp;&nbsp;Group by: <select  style="height:30px;text-align: center; " class="filterinput"  name="filter-input" id="filter-input">\n';
         toolBarOptions += "<option value=''> ... </option>";
-        if(contextData != undefined && contextData.header != undefined){
+        if (contextData != undefined && contextData.header != undefined) {
             for (let val in contextData.header[customEvent]) {
                 const tokens = contextData.header[customEvent][val].split(":");
-                if(tokens[1] == "text" || tokens[1] == "timestamp") {
+                if (tokens[1] == "text" || tokens[1] == "timestamp") {
                     toolBarOptions += '<option ' + (groupBy == tokens[0] ? "selected" : "") + " value='" + tokens[0] + "'>" + tokens[0] + "</option>\n";
                 }
             }
@@ -3018,10 +2845,10 @@
         if (tableFormat == 2 || tableFormat == 3) {
             toolBarOptions += '                        </select>' +
                 '&nbsp;&nbsp;Sort by: <select  style="height:30px;text-align: center; " class="filterinput"  name="sort-input" id="sort-input">\n';
-            if(contextData != undefined && contextData.header != undefined){
+            if (contextData != undefined && contextData.header != undefined) {
                 for (let val in contextData.header[customEvent]) {
                     const tokens = contextData.header[customEvent][val].split(":");
-                    if(!(tokens[1] == "text" || tokens[1] == "timestamp")) {
+                    if (!(tokens[1] == "text" || tokens[1] == "timestamp")) {
                         toolBarOptions += '<option ' + (sortBy == tokens[0] ? "selected" : "") + " value='" + tokens[0] + "'>" + tokens[0] + "</option>\n";
                     }
                 }
@@ -3036,7 +2863,7 @@
                 '                            </select> ';
         }
 
-        if(groupBy == "" || groupBy == undefined) {
+        if (groupBy == "" || groupBy == undefined) {
             toolBarOptions += '                        </select>' +
                 '&nbsp;&nbsp;Threshold: <select  style="height:30px;text-align: center; " class="spanMetric"  name="span-input" id="span-input">\n';
             if (contextData != undefined && contextData.header != undefined) {
@@ -3210,12 +3037,11 @@
         }
     }
 
-
     function invertTreeV1AtLevel(tree, num) {
         if (tree['tree'] !== undefined) {
             tree = tree['tree'];
         }
-        let level = getSelectedLevel(getActiveTree(getEventType(),false));
+        let level = getSelectedLevel(getActiveTree(getEventType(), false));
         let arr = [];
         var invertTree = getStackFrameV1("root");
         let count = invertV1atLevel(tree, invertTree, arr, 0, num, level);
@@ -3295,7 +3121,6 @@
             });
         }
     }
-
     //context tree end
 
     let prevSelectedLevel = undefined;
@@ -3316,12 +3141,13 @@
         return FilterLevel.UNDEFINED;
     }
 
-    function callTreeWardenAjax(pod, method, endpoint, successFunc) {
+    function callTreeStackDigVizAjax(pod, method, endpoint, successFunc) {
         const headers = {};
-        return internalWardenAjax(endpoint, method, successFunc, () => {
+        return internalStackDigVizAjax(endpoint, method, successFunc, () => {
         }, headers);
     }
-    function internalWardenAjax(url, method, successFunc, errorFunc, headers, data, includeCookies = false) {
+
+    function internalStackDigVizAjax(url, method, successFunc, errorFunc, headers, data, includeCookies = false) {
         let requestObject = {
             url: url,
             type: method,
@@ -3535,7 +3361,6 @@
         contextData = data;
         processCustomEvents();
     }
-
 
     function setContextTreeFrames(frames, count){
         if(count == 1) {
@@ -3921,7 +3746,6 @@
     //jfr context end
 </script>
 
-
 <div id="contextfilter" class="row" >
     <h3 style="width:100%">Context filter</h3>
     <div  id="cct-panel" class="col-lg-12" >
@@ -3931,7 +3755,6 @@
                     <table style="border-spacing: 5px; border-collapse: separate;">
                         <tr>
                             <td id="filter-heading">Context hints:</td>
-
                         </tr>
                     </table>
                 </div>
@@ -3943,7 +3766,6 @@
                                onkeypress="if(event.keyCode == 13) javascript:applyFilter()"
                         >
                     </div>
-
 
                     <div class="col-lg-2">
                         <button id="filter-apply" class="btn btn-block btn-info" type="submit">Apply Filter(s)</button>
@@ -3987,8 +3809,6 @@
                     </div>
                 </div>
             </div>
-
-
     </div>
 </div>
 

@@ -26,14 +26,14 @@
     }
 
     function unLoadCCTModal(modalId) {
-        $('#'+modalId).modal('hide');
+        $('#' + modalId).modal('hide');
     }
 
     function showTree(treeToProcess) {
         treeHtml = "";
         let skip = false;
         let index = 0;
-        if(treeToProcess.ch != null) {
+        if (treeToProcess.ch != null) {
             treeToProcess.children.forEach(function (root) {
                 if (skip || isSkipSubtree(root.bsize, root.csize)) {
                     return;
@@ -57,7 +57,7 @@
         treeHtml = "";
         let skip = false;
         let index = 0;
-        if(treeToProcess.ch != null) {
+        if (treeToProcess.ch != null) {
             treeToProcess.ch.forEach(function (root) {
                 if (skip || root[level] === undefined || root[level] === 0 || isSkipSubtree(root[level], 0)) {
                     return;
@@ -81,7 +81,7 @@
         treeHtml = "";
         let skip = false;
         let index = 0;
-        if(treeToProcess.ch != null) {
+        if (treeToProcess.ch != null) {
             treeToProcess.ch.forEach(function (root) {
                 if (skip || isSkipSubtree(root.sz, 0)) {
                     return;
@@ -105,7 +105,7 @@
         treeHtml = "";
         let skip = false;
         let index = 0;
-        if(treeToProcess.ch != null) {
+        if (treeToProcess.ch != null) {
             treeToProcess.ch.forEach(function (root) {
                 if (skip || isSkipSubtree(root.bsz, root.csz)) {
                     return;
@@ -127,9 +127,9 @@
 
     function searchWord(root, word) {
         let skip = false;
-        if(root.children !== undefined) {
+        if (root.children !== undefined) {
             root.children.forEach(function (child) {
-                if(skip == false) {
+                if (skip == false) {
                     if (getFrameName(child.name).includes(word)) {
                         skip = true;
                     } else {
@@ -137,8 +137,8 @@
                     }
                 }
             });
-        }else {
-            if(root.ch !== null) {
+        } else {
+            if (root.ch !== null) {
                 root.ch.forEach(function (child) {
                     if (skip == false) {
                         if (getFrameName(child.nm).includes(word)) {
@@ -207,15 +207,15 @@
             if (!processChildV1Compare(treeToProcess.ch[index], treeToProcess.bsz + treeToProcess.csz, 1)) {
                 treeHtml = treeHtml + "<li>...\n";
             }
-        }else if(isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
+        } else if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
             if (!processChildV1Level(treeToProcess.ch[index], treeToProcess.sz, 1, selectedLevel)) {
                 treeHtml = treeHtml + "<li>...\n";
             }
-        }else if (isJfrContext) {
+        } else if (isJfrContext) {
             if (!processChildV1(treeToProcess.ch[index], treeToProcess.sz, 1)) {
                 treeHtml = treeHtml + "<li>...\n";
             }
-        } else{
+        } else {
             if (!processChild(treeToProcess.children[index], treeToProcess.bsize + treeToProcess.csize, 1)) {
                 treeHtml = treeHtml + "<li>...\n";
             }
@@ -261,7 +261,7 @@
         }
         let skip = false;
 
-        if(tree.ch == null) {
+        if (tree.ch == null) {
             tree.ch = [];
         }
 
@@ -439,13 +439,13 @@
         for (let i = 0; i < tree.length; i++) {
             tree[i].addEventListener('click', function (e) {
                 const parent = $(e.target).closest("li")[0];
-                if(parent === undefined) {
+                if (parent === undefined) {
                     return;
                 }
                 const classList = parent.classList;
-                if(classList.contains("expand")) {
+                if (classList.contains("expand")) {
                     classList.remove('expand');
-                    expandTree(Number(parent.getAttribute('index')),parent)
+                    expandTree(Number(parent.getAttribute('index')), parent)
                 }
 
                 if (classList.contains("open")) {
@@ -471,9 +471,9 @@
                 e.preventDefault();
                 const parent = $(e.target).closest("li")[0];
                 const classList = parent.classList;
-                if(classList.contains("expand")) {
+                if (classList.contains("expand")) {
                     classList.remove('expand');
-                    expandTree(Number(parent.getAttribute('index')),parent)
+                    expandTree(Number(parent.getAttribute('index')), parent)
                 }
                 createCCTModal("cctpopup", parent.innerHTML);
                 loadCCTModal("cctpopup");
@@ -486,15 +486,14 @@
     }
 
     function updateProfilerViewCCT(level, skipFilter) {
-        if(skipFilter == undefined){
+        if (skipFilter == undefined) {
             skipFilter = false;
         }
         console.log("updateProfilerView start");
-        if(!skipFilter) {
+        if (!skipFilter) {
             if (level == undefined) {
                 level = FilterLevel.LEVEL1;
             }
-
 
             let start = performance.now();
             if (!filterToLevel(level)) {
@@ -504,7 +503,6 @@
             }
             let end = performance.now();
             console.log("filterToLevel time:" + (end - start));
-
 
             let treeToProcess = getActiveTree(getEventType(), isCalltree);
             let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
@@ -535,16 +533,10 @@
             if (compareTree) {
                 let $profile1 = "";
                 let $profile2 = "";
-
                 $profile1 = $("#bases1 :selected").text();
-
-
                 $profile2 = $("#bases2 :selected").text();
-
                 timeRange = ", Profile(s): <span class=\"bclr\">" + $profile1 + "</span> <span class=\"tclr\">" + $profile2 + "</span>";
-
             } else {
-
                 timeRange = ", Profile: <span>" + $("#bases1 :selected").text() + "</span>";
             }
 
@@ -562,7 +554,6 @@
             } else if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
                 if (!isCalltree) {
                     sortTreeLevelBySize(treeToProcess, selectedLevel);
-                    //updateStackIndex(treeToProcess);
                     showTreeV1Level(treeToProcess, selectedLevel);
                 } else {
                     sortTreeBySize(treeToProcess);
@@ -582,7 +573,7 @@
             }
             end = performance.now();
             console.log("updateProfilerView 3 time:" + (end - start));
-        }else{
+        } else {
             let start = performance.now();
             let treeToProcess = getActiveTree(getEventType(), isCalltree);
             let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
@@ -612,7 +603,6 @@
             let end = performance.now();
             console.log("updateProfilerView 4 time:" + (end - start));
         }
-
     }
 
 </script>
