@@ -356,8 +356,10 @@ function populateIDs1(tenant, host, clearInput) {
     const baseDatalist = $("#bases1");
     baseDatalist.empty();
     let profileFound=false;
+    let jstackFound=false;
     for (var key in metaData1) {
         if(metaData1[key].metadata["name"] != undefined && metaData1[key].metadata["name"] == "Jstack"){
+            jstackFound=true;
             continue;
         }
         if(profiles[metaData1[key].metadata.guid] == undefined && tenant === metaData1[key].metadata.tenant && host === metaData1[key].metadata.host){
@@ -379,6 +381,12 @@ function populateIDs1(tenant, host, clearInput) {
         }else{
             profileOptionHtml += "<option value=\"All\">All</option>";
         }
+    }else if(jstackFound){
+        if(profile1 == "Jstacks") {
+            profileOptionHtml += "<option value=\"Jstacks\" selected>Jstacks</option>";
+        }else{
+            profileOptionHtml += "<option value=\"Jstacks\">Jstacks</option>";
+        }
     }
     const optGroupTemplate = '<optgroup label="">OPTIONS</optgroup>';
     baseDatalist.append(optGroupTemplate.replace("OPTIONS", profileOptionHtml));
@@ -393,8 +401,10 @@ function populateIDs2(tenant, host, clearInput) {
     const baseDatalist = $("#bases2");
     baseDatalist.empty();
     let profileFound=false;
+    let jstackFound=false;
     for (var key in metaData2) {
         if(metaData2[key].metadata["name"] != undefined && metaData2[key].metadata["name"] == "Jstack"){
+            jstackFound=true;
             continue;
         }
         if(profiles[metaData2[key].metadata.guid] == undefined && tenant === metaData2[key].metadata.tenant && host === metaData2[key].metadata.host){
@@ -416,6 +426,12 @@ function populateIDs2(tenant, host, clearInput) {
             profileOptionHtml += "<option value=\"All\" selected>All</option>";
         }else{
             profileOptionHtml += "<option value=\"All\">All</option>";
+        }
+    }else if(jstackFound){
+        if(profile1 == "Jstacks") {
+            profileOptionHtml += "<option value=\"Jstacks\" selected>Jstacks</option>";
+        }else{
+            profileOptionHtml += "<option value=\"Jstacks\">Jstacks</option>";
         }
     }
     const optGroupTemplate = '<optgroup label="">OPTIONS</optgroup>';
