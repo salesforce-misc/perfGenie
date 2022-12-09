@@ -6,11 +6,11 @@
 
     <parent>
         <groupId>com.stackdigviz</groupId>
-        <artifactId>StackDigViz</artifactId>
+        <artifactId>stackdigviz-parent</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>Simulator</artifactId>
+    <artifactId>simulator</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
     <dependencies>

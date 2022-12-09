@@ -22,7 +22,7 @@ $ mvn clean install
 #### Run
 
 ```sh
-$ java -jar simulator/target/Simulator-0.0.1-SNAPSHOT.jar
+$ java -jar simulator/target/simulator-0.0.1-SNAPSHOT.jar
 ```
 
 #### Options
