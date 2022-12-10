@@ -514,12 +514,6 @@
     //one for LEVEL1, 2 for LEVEL2 and 3 for LEVEL3
     let filteredStackMap = {1:{},2:{},3:{}};
 
-    let isTSView = false;
-
-    function setTSView(bool){
-        isTSView = bool;
-    }
-
     function addToFilter(val) {
         let inppair = val.split("=");
         let array = $("#queryfilter").val().split(";");
@@ -1467,6 +1461,10 @@
         let contextStart = getContextTree(1).context.start;
         let contextTidMap = getContextTree(1).context.tidMap;
 
+        let isJstack = false;
+        if(getEventType() == "Jstack"){
+            isJstack = true;
+        }
 
         if (isFilterEmpty(dimIndexMap) && tidDatalistVal != undefined) {
             if (contextTidMap[tidDatalistVal] != undefined) { //check if the thread has samples
@@ -1476,7 +1474,7 @@
                     } else {
                         stackMap[contextTidMap[tidDatalistVal][i].hash] = 1;
                     }
-                    if (isTSView) {
+                    if (isJstack) {
                         if (filteredStackMap[FilterLevel.LEVEL1][tidDatalistVal] == undefined) {
                             filteredStackMap[FilterLevel.LEVEL1][tidDatalistVal] = [];
                         }
@@ -1506,7 +1504,7 @@
                                 let curIndex = entryIndex;
                                 //consider all matching samples downward
                                 while (curIndex >= 0 && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
-                                    if (isTSView) {
+                                    if (isJstack) {
                                         if (filteredStackMap[FilterLevel.LEVEL1][tid] == undefined) {
                                             filteredStackMap[FilterLevel.LEVEL1][tid] = [];
                                         }
@@ -1523,7 +1521,7 @@
                                 curIndex = entryIndex + 1;
                                 //consider all matching samples upward
                                 while (curIndex < requestArr.length && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
-                                    if (isTSView) {
+                                    if (isJstack) {
                                         filteredStackMap[FilterLevel.LEVEL1][tid].push(requestArr[curIndex]);
                                     }
                                     if (stackMap[requestArr[curIndex].hash] !== undefined) {
@@ -1630,6 +1628,7 @@
         let eventTypeArray = [];
         for (var eventType in jfrprofiles1) {//for all profile event types
             if (eventType == "Jstack") {
+                let isJstack = true;
                 if (getContextTree(1, "Jstack") !== undefined && getContextTree(1, "Jstack").context != undefined && getContextTree(1, "Jstack").context.tidMap[tid] !== undefined) {
                     getContextTree(1, "Jstack").context.tidMap[tid].forEach(function (obj) {
                         if (obj.time >= jstackstart && obj.time <= jstackstart + runTime) {
@@ -1638,7 +1637,7 @@
                                     getTreeStackLevel(getActiveTree("Jstack", false), obj.hash, 1, FilterLevel.LEVEL2);
                                 }
                             }
-                            if (isTSView && applyFilter) {
+                            if (isJstack && applyFilter) {
                                 if (filteredStackMap[FilterLevel.LEVEL2][tid] == undefined) {
                                     filteredStackMap[FilterLevel.LEVEL2][tid] = [];
                                 }
@@ -2370,11 +2369,16 @@
     function isRequestHasFrame(requestArr, entryIndex, event, start, end, addTofilteredStackMap) {
         let flag = false;
         let curIndex = entryIndex;
+
         //consider all matching requests downward
+        let isJstack = false;
+        if(event == "Jstack"){
+            isJstack = true;
+        }
         while ((flag == false || addTofilteredStackMap) && curIndex >= 0 && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
             if (frameFilterStackMap[event][requestArr[curIndex].hash] !== undefined) {
                 flag = true;
-                if (isTSView) {
+                if (isJstack) {
                     if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
                         filteredStackMap[FilterLevel.LEVEL3][tid] = [];
                     }
@@ -2388,7 +2392,7 @@
         while ((flag == false || addTofilteredStackMap) && curIndex < requestArr.length && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
             if (frameFilterStackMap[event][requestArr[curIndex].hash] !== undefined) {
                 flag = true;
-                if (isTSView) {
+                if (isJstack) {
                     if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
                         filteredStackMap[FilterLevel.LEVEL3][tid] = [];
                     }
@@ -2432,6 +2436,10 @@
         let tidDatalistVal = filterMap["tid"];
 
         let event = getEventType();
+        let isJstack = false;
+        if(event == "Jstack"){
+            isJstack = true;
+        }
 
         let dimIndexMap = {};
         let metricsIndexMap = {};
@@ -2498,7 +2506,7 @@
         //if only frame filter is selected then we need to include stacks that are not part of any requests.
         if (frameFilterString !== "" && tidDatalistVal == undefined && isFilterEmpty(dimIndexMap)) {
             for (var tid in contextTidMap) {
-                if (isTSView) {
+                if (isJstack  ) {
                     for (let index = 0; index < contextTidMap[tid].length; index++) {
                         if (frameFilterStackMap[event][contextTidMap[tid][index].hash] !== undefined) {
                             if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
