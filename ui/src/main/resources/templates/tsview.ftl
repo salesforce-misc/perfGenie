@@ -83,7 +83,10 @@
     }
 </style>
 
-<div class="row">
+<div class="row" id="tsview-header">
+    <label>Profile: </label>
+    <select style="height:30px;text-align: center;" class="filterinput" name="event-type-tsview" id="event-type-tsview">
+    </select>
     <div class="col-lg-12" padding="0">
         <table class=" table-striped table-bordered table-hover" padding="0" cellspacing="0" width="100%">
             <row>
@@ -100,7 +103,7 @@
         </table>
     </div>
 </div>
-
+<div id="tsview-note"></div>
 <div id="datatable-wrapper-guid" class="row">
     <div class="col-lg-12" >
         <div class="col-lg-12" style="max-height: 1150px; min-height: 10px; overflow-y: auto; border: solid 1px; border-color: #e7e7e7" >
@@ -119,6 +122,10 @@
 
 
 <script>
+    $("#event-type-tsview").on("change", (event) => {
+        handleEventTypeChange($("#event-type-tsview").val());
+    });
+
     let jstack = undefined;
     let context = undefined;
     let timestampHeader = "";
@@ -184,80 +191,161 @@
         }
     }
 
-    function  updateProfilerViewTsview(level){
+    function  updateProfilerViewTsview(level,skipFilter){
+        if(compareTree){
+            $("#tsview-note").html("Note: This view is not supported when Compare option is selected.");
+            return;
+        }else{
+            $("#tsview-note").html("");
+        }
+
+        if(skipFilter == undefined){
+            skipFilter = false;
+        }
 
         showTimelineView(false);
 
-        if (level == undefined) {
-            level = FilterLevel.LEVEL1;
-        }
-        let start = performance.now();
-        if (!filterToLevel(level)) {
+        if(!skipFilter) {
+            if (level == undefined) {
+                level = FilterLevel.LEVEL1;
+            }
+            let start = performance.now();
+
+            if (!filterToLevel(level)) {
+                let end = performance.now();
+                console.log("filterToLevel time:" + (end - start));
+                return;
+            }
             let end = performance.now();
             console.log("filterToLevel time:" + (end - start));
-            return;
-        }
-        let end = performance.now();
-        console.log("filterToLevel time:" + (end - start));
 
-        let treeToProcess = getActiveTree("Jstack", isCalltree);
-        let selectedLevel = getSelectedLevel(getActiveTree("Jstack", false));
+            let treeToProcess = getActiveTree(getEventType(), isCalltree);
+            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
 
-        if (currentLoadedTree === treeToProcess && prevOption === currentOption && isRefresh === false && isLevelRefresh === false && prevSelectedLevel === selectedLevel) {
-            console.log("no change in tree, option:" + prevOption +":"+isRefresh+":"+":"+isLevelRefresh+":"+selectedLevel);
+            if (currentLoadedTree === treeToProcess && prevOption === currentOption && isRefresh === false && isLevelRefresh === false && prevSelectedLevel === selectedLevel) {
+                console.log("no change in tree, option:" + (currentLoadedTree === treeToProcess)+":"+ (prevOption === currentOption) +" isRefresh:"+(isRefresh === false)+":"+" isLevelRefresh:"+(isLevelRefresh === false)+" selectedLevel:"+ (prevSelectedLevel === selectedLevel));
+                end = performance.now();
+                console.log("updateProfilerViewTsview 1 time:" + (end - start));
+                return;
+            }else{
+                console.log("change in tree, option:" + (currentLoadedTree === treeToProcess)+":"+ (prevOption === currentOption) +" isRefresh:"+(isRefresh === false)+":"+" isLevelRefresh:"+(isLevelRefresh === false)+" selectedLevel:"+ (prevSelectedLevel === selectedLevel));
+            }
+
+            currentLoadedTree = treeToProcess;
+            prevOption = currentOption;
+            prevSelectedLevel = selectedLevel;
+            isLevelRefresh = false;
+            threshold = 0;
+            isRefresh = false;
+
+            // if no data returned from our call don't try to parse it
+            if (treeToProcess === undefined) {
+                end = performance.now();
+                console.log("updateProfilerViewTsview 2 time:" + (end - start));
+                return;
+            }
+            //updateStackIndex(treeToProcess);
+            if(getEventType() != "Jstack"){
+                $("#tsview-note").html("Note: Thread state view supported only for Jstack");
+                return;
+            }else{
+                $("#tsview-note").html("");
+            }
+
+
+            var tableInnerHTML = "";
+
+            jstack = getContextTree(1,"Jstack");
+            context = getContextData();
+            let startMilli = getContextTree(1,"Jstack").context.start;
+
+            addContextData(selectedLevel, "Jstack");
+
+
+
+            let start1 = performance.now();
+
+            timestampHeader = buildRowHeader(timestampArray, startMilli);
+
+            // build header row containing number of colums equal to number of unique timestamps/samples
+            tableInnerHTML += timestampHeader;
+            let treeToProcesstmp = getActiveTree(getEventType(), false);
+            if(selectedLevel !== FilterLevel.UNDEFINED) {
+                $.each(filteredStackMap[selectedLevel], function (tid, samples) {
+                    tableInnerHTML += buildRow(treeToProcesstmp, selectedLevel, tid, samples, timestampArray.length);
+                });
+            }else{
+                $.each(jstack.context.tidMap, function (tid, samples) {
+                    tableInnerHTML += buildRow(treeToProcesstmp, selectedLevel, tid, samples, timestampArray.length);
+                });
+            }
+
+            document.getElementById("datatable-guid").innerHTML = tableInnerHTML;
+
+            showContextFilter();
+            showTimelineView(false);
+            let end1 = performance.now();
+            console.log("buildRow time:" + (end1 - start1));
+
             end = performance.now();
-            console.log("updateProfilerView 1 time:" + (end - start));
-            return;
-        }
-        currentLoadedTree = treeToProcess;
-        prevOption = currentOption;
-        prevSelectedLevel = selectedLevel;
-        isLevelRefresh = false;
-        threshold = 0;
-        isRefresh = false;
-
-        // if no data returned from our call don't try to parse it
-        if (treeToProcess === undefined) {
-            end = performance.now();
-            console.log("updateProfilerView 2 time:" + (end - start));
-            return;
-        }
-
-        var tableInnerHTML = "";
-
-        jstack = getContextTree(1,"Jstack");
-        context = getContextData();
-        let startMilli = getContextTree(1,"Jstack").context.start;
-
-        addContextData(selectedLevel, "Jstack");
-
-        let start1 = performance.now();
-
-        timestampHeader = buildRowHeader(timestampArray, startMilli);
-
-        // build header row containing number of colums equal to number of unique timestamps/samples
-        tableInnerHTML += timestampHeader;
-        if(selectedLevel !== FilterLevel.UNDEFINED) {
-            $.each(filteredStackMap[selectedLevel], function (tid, samples) {
-                tableInnerHTML += buildRow(treeToProcess, selectedLevel, tid, samples, timestampArray.length);
-            });
+            console.log("updateProfilerViewTsview 3 time:" + (end - start));
         }else{
-            $.each(jstack.context.tidMap, function (tid, samples) {
-                tableInnerHTML += buildRow(treeToProcess, selectedLevel, tid, samples, timestampArray.length);
-            });
+            if(compareTree){
+                $("#tsview-note").html("Note: This view is not supported when Compare option is selected.");
+                return;
+            }else{
+                $("#tsview-note").html("");
+            }
+
+            if(getEventType() != "Jstack"){
+                $("#tsview-note").html("Note: Thread state view supported only for Jstack");
+                return;
+            }else{
+                $("#tsview-note").html("");
+            }
+
+            let start = performance.now();
+
+            let treeToProcess = getActiveTree("Jstack", isCalltree);
+            let selectedLevel = getSelectedLevel(getActiveTree("Jstack", false));
+            //updateStackIndex(treeToProcess);
+
+            var tableInnerHTML = "";
+            jstack = getContextTree(1,"Jstack");
+            context = getContextData();
+            let startMilli = getContextTree(1,"Jstack").context.start;
+            addContextData(selectedLevel, "Jstack");
+
+
+            let start1 = performance.now();
+
+            timestampHeader = buildRowHeader(timestampArray, startMilli);
+
+            // build header row containing number of colums equal to number of unique timestamps/samples
+            tableInnerHTML += timestampHeader;
+            let treeToProcesstmp = getActiveTree(getEventType(), false);
+            if(selectedLevel !== FilterLevel.UNDEFINED) {
+                $.each(filteredStackMap[selectedLevel], function (tid, samples) {
+                    tableInnerHTML += buildRow(treeToProcesstmp, selectedLevel, tid, samples, timestampArray.length);
+                });
+            }else{
+                $.each(jstack.context.tidMap, function (tid, samples) {
+                    tableInnerHTML += buildRow(treeToProcesstmp, selectedLevel, tid, samples, timestampArray.length);
+                });
+            }
+
+            document.getElementById("datatable-guid").innerHTML = tableInnerHTML;
+
+            showContextFilter();
+            showTimelineView(false);
+            let end1 = performance.now();
+            console.log("buildRow time:" + (end1 - start1));
+
+            let end = performance.now();
+            console.log("updateProfilerViewTsview 4 time:" + (end - start));
         }
 
-        document.getElementById("datatable-guid").innerHTML = tableInnerHTML;
-
-        showContextFilter();
-        showTimelineView(false);
-        let end1 = performance.now();
-        console.log("buildRow time:" + (end1 - start1));
-
-        end = performance.now();
-        console.log("updateProfilerView 3 time:" + (end - start));
     }
-
 
     function includeSample(treeToProcess, stackid, level){
         if(level == FilterLevel.UNDEFINED){
@@ -337,7 +425,7 @@
 
         let tmpcontextTree1Level1 = getStackFrameV1("root");
         let tmpActiveTree = getActiveTree("Jstack", false);
-        updateStackIndex(tmpActiveTree);
+        //updateStackIndex(tmpActiveTree);
         let arr = getTreeStack(tmpActiveTree, stackid, tmpcontextTree1Level1, 1);
 
         let ch = tmpcontextTree1Level1.ch;

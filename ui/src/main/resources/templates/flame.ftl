@@ -192,19 +192,19 @@ In other words, data that's in the second set but not in the first will not be d
                 sFlameGraph.showTreeV1FlameCompare(treeToProcess, searchString);
             } else if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
                 if (!isCalltree) {
-                    sortTreeLevelBySize(treeToProcess, selectedLevel);
+                    //sortTreeLevelBySizeWrapper(treeToProcess, selectedLevel);
                     sFlameGraph.setThreshold(threshold);
                     sFlameGraph.setSizeKey(selectedLevel);
                     sFlameGraph.showTreeV1Flame(treeToProcess, searchString);
                 } else {
-                    sortTreeBySize(treeToProcess);
+                    //sortTreeBySizeWrapper(treeToProcess);
                     sFlameGraph.setThreshold(threshold);
                     sFlameGraph.setSizeKey('sz');
                     treeToProcess['sz'] = treeToProcess['subtotal'];
                     sFlameGraph.showTreeV1Flame(treeToProcess, searchString);
                 }
             } else if (isJfrContext) {
-                sortTreeBySize(treeToProcess);
+                //sortTreeBySizeWrapper(treeToProcess);
                 sFlameGraph.setThreshold(threshold);
                 sFlameGraph.setSizeKey('sz');
                 sFlameGraph.showTreeV1Flame(treeToProcess, searchString);
@@ -227,19 +227,19 @@ In other words, data that's in the second set but not in the first will not be d
                 sFlameGraph.showTreeV1FlameCompare(treeToProcess, searchString);
             } else if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
                 if (!isCalltree) {
-                    sortTreeLevelBySize(treeToProcess, selectedLevel);
+                    //sortTreeLevelBySizeWrapper(treeToProcess, selectedLevel);
                     sFlameGraph.setThreshold(threshold);
                     sFlameGraph.setSizeKey(selectedLevel);
                     sFlameGraph.showTreeV1Flame(treeToProcess, searchString);
                 } else {
-                    sortTreeBySize(treeToProcess);
+                    //sortTreeBySizeWrapper(treeToProcess);
                     sFlameGraph.setThreshold(threshold);
                     sFlameGraph.setSizeKey('sz');
                     treeToProcess['sz'] = treeToProcess['subtotal'];
                     sFlameGraph.showTreeV1Flame(treeToProcess, searchString);
                 }
             } else if (isJfrContext) {
-                sortTreeBySize(treeToProcess);
+                //sortTreeBySizeWrapper(treeToProcess);
                 sFlameGraph.setThreshold(threshold);
                 sFlameGraph.setSizeKey('sz');
                 sFlameGraph.showTreeV1Flame(treeToProcess, searchString);

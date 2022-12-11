@@ -34,6 +34,7 @@
 
     function handleEventTypeChange(event_type){
         filterEvent = event_type;
+        $("#event-type-tsview").val(event_type);
         $("#event-type-surface").val(event_type);
         $("#event-type-river").val(event_type);
         $("#event-type-sample").val(event_type);
@@ -93,6 +94,7 @@
         $('#event-type-sample').empty();
         $("#event-type-surface").empty();
         $("#event-type-river").empty();
+        $("#event-type-tsview").empty();
         for (var key in jfrprofiles1) {
             if(filterEvent == key) {
                 $('#event-type').append($('<option>', {
@@ -120,6 +122,11 @@
                     text: key,
                     selected: true
                 }));
+                $('#event-type-tsview').append($('<option>', {
+                    value: key,
+                    text: key,
+                    selected: true
+                }));
             }else{
                 $('#event-type').append($('<option>', {
                     value: key,
@@ -135,13 +142,15 @@
                 }));
                 $('#event-type-river').append($('<option>', {
                     value: key,
-                    text: key,
-                    selected: true
+                    text: key
                 }));
                 $('#event-type-surface').append($('<option>', {
                     value: key,
-                    text: key,
-                    selected: true
+                    text: key
+                }));
+                $('#event-type-tsview').append($('<option>', {
+                    value: key,
+                    text: key
                 }));
             }
         }
@@ -172,7 +181,8 @@
         if($("#event-type").val() == null){
             return undefined;
         }
-        return $("#event-type").val();
+        return filterEvent;
+        //return $("#event-type").val();
     }
 
     function validateInputAndcreateContextTree(retry) {
@@ -321,6 +331,7 @@
                         $("#event-type-sample option[value='jstack']").html("Java (Thread State(s): All, Sampling Frequency: "+jstackinterval+" s)");
                         $("#event-type-river option[value='jstack']").html("Java (Thread State(s): All, Sampling Frequency: "+jstackinterval+" s)");
                         $("#event-type-surface option[value='jstack']").html("Java (Thread State(s): All, Sampling Frequency: "+jstackinterval+" s)");
+                        $("#event-type-tsview option[value='jstack']").html("Java (Thread State(s): All, Sampling Frequency: "+jstackinterval+" s)");
                     }
                 }
                 if (contextTree["meta"] !== undefined && contextTree["meta"] != null && contextTree["meta"]["filename"] !== undefined && contextTree["meta"]["fileid"] !== undefined) {
@@ -350,17 +361,35 @@
                     //$("#framefilterId").removeClass("hide");
                     isJfrContext = true;
                     const defaultResult = {error_messages: [], sz: 0, ch: []};
-                    if(contextTree1Frames == undefined){
-                        contextTree1Frames = contextTrees[0].context.frames;
-                        contextTree1Frames[3506402] = "root";
-                    }
-                    if (eventType == "Jstack") {
-                        for (var key in contextTrees[0].context.frames) {
-                            if(contextTree1Frames[key] === undefined){
-                                contextTree1Frames[key]=contextTrees[0].context.frames[key];
+                    if (eventType === "Jstack") {
+                        console.log("add frames1:" + eventType);
+                        if(contextTree1Frames === undefined){
+                            contextTree1JstackFrames = true;
+                            contextTree1Frames = contextTrees[0].context.frames;
+                            contextTree1Frames[3506402] = "root";
+                        }else{
+                            for (var key in contextTrees[0].context.frames) {
+                                if(contextTree1Frames[key] === undefined){
+                                    contextTree1Frames[key]=contextTrees[0].context.frames[key];
+                                }
                             }
                         }
+                    }else{
+                        if(contextTree1JstackFrames === true){
+                            console.log("add frames1:" + eventType);
+                            contextTree1JstackFrames=false;
+                            for (var key in contextTrees[0].context.frames) {
+                                if(contextTree1Frames[key] === undefined){
+                                    contextTree1Frames[key]=contextTrees[0].context.frames[key];
+                                }
+                            }
+                        }else if(contextTree1Frames === undefined){
+                            console.log("add frames1:" + eventType);
+                            contextTree1Frames = contextTrees[0].context.frames;
+                            contextTree1Frames[3506402] = "root";
+                        }
                     }
+
                     if (isCalltree) {
                         setContextTree(contextTrees[0], 1, eventType);
                         setContextTreeInverted(invertTreeV1(contextTrees[0], 1), 1, eventType);
@@ -395,24 +424,61 @@
                 $("#framefilterId").addClass("hide");
                 if (contextTrees[0].context !== undefined && contextTrees[1].context !== undefined && contextTrees[0].context !== null && contextTrees[1].context !== null) {
                     isJfrContext = true;
-                    if(contextTree1Frames == undefined){
-                        contextTree1Frames = contextTrees[0].context.frames;
-                        contextTree1Frames[3506402] = "root";
-                    }
-                    if(contextTree2Frames == undefined){
-                        contextTree2Frames = contextTrees[1].context.frames;
-                    }
-
-                    if (eventType == "Jstack") {
-                        for (var key in contextTrees[0].context.frames) {
-                            if(contextTree1Frames[key] === undefined){
-                                contextTree1Frames[key]=contextTrees[0].context.frames[key];
+                    if (eventType === "Jstack") {
+                        console.log("add frames1:" + eventType);
+                        if(contextTree1Frames === undefined){
+                            contextTree1JstackFrames = true;
+                            contextTree1Frames = contextTrees[0].context.frames;
+                            contextTree1Frames[3506402] = "root";
+                        }else{
+                            for (var key in contextTrees[0].context.frames) {
+                                if(contextTree1Frames[key] === undefined){
+                                    contextTree1Frames[key]=contextTrees[0].context.frames[key];
+                                }
                             }
                         }
-                        for (var key in contextTrees[1].context.frames) {
-                            if(contextTree2Frames[key] === undefined){
-                                contextTree2Frames[key]=contextTrees[1].context.frames[key];
+                    }else{
+                        if(contextTree1JstackFrames === true){
+                            console.log("add frames1:" + eventType);
+                            contextTree1JstackFrames=false;
+                            for (var key in contextTrees[0].context.frames) {
+                                if(contextTree1Frames[key] === undefined){
+                                    contextTree1Frames[key]=contextTrees[0].context.frames[key];
+                                }
                             }
+                        }else if(contextTree1Frames === undefined){
+                            console.log("add frames1:" + eventType);
+                            contextTree1Frames = contextTrees[0].context.frames;
+                            contextTree1Frames[3506402] = "root";
+                        }
+                    }
+
+                    if (eventType === "Jstack") {
+                        console.log("add frames2:" + eventType);
+                        if(contextTree2Frames === undefined){
+                            contextTree2JstackFrames = true;
+                            contextTree2Frames = contextTrees[1].context.frames;
+                            contextTree2Frames[3506402] = "root";
+                        }else{
+                            for (var key in contextTrees[1].context.frames) {
+                                if(contextTree2Frames[key] === undefined){
+                                    contextTree2Frames[key]=contextTrees[1].context.frames[key];
+                                }
+                            }
+                        }
+                    }else{
+                        if(contextTree2JstackFrames === true){
+                            console.log("add frames2:" + eventType);
+                            contextTree2JstackFrames=false;
+                            for (var key in contextTrees[1].context.frames) {
+                                if(contextTree2Frames[key] === undefined){
+                                    contextTree2Frames[key]=contextTrees[1].context.frames[key];
+                                }
+                            }
+                        }else if(contextTree2Frames === undefined){
+                            console.log("add frames1:" + eventType);
+                            contextTree2Frames = contextTrees[1].context.frames;
+                            contextTree2Frames[3506402] = "root";
                         }
                     }
 
@@ -493,7 +559,9 @@
                     setContextData(response);
                     showContextFilter();
                     hideFilterViewStatus();
-                    refreshTree();
+                    if (!(filterMap["tid"] === undefined && isFilterEmpty())) {
+                        refreshTree();
+                    }
                 }
             }
         }, function (error) {
