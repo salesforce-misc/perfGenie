@@ -2367,6 +2367,8 @@
                     table += "<td class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('" + tokens[0] + "=xxxx');\" title='Narrows down a filter to a single organisation. For example '" + tokens[0] + "=xxxx' tabindex='-1'>" + tokens[0] + "</a></td>";
                 }
             }
+            table += "<td class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('frame=xxxx');\" title='Narrows down a filter to a single organisation. For example 'frame=xxxx' tabindex='-1'>frame</a></td>";
+
         }
         table += "</tr></table>";
         $("#contexthints").html(table);
