@@ -144,7 +144,7 @@
         }
         toolBarOptions += '             </select>';*/
         updateGroupByOptions('smpl-grp-by');
-        validateInputAndcreateContextTree(true);
+        //validateInputAndcreateContextTree(true);
     });
 
     //add context data for all request matching samples
@@ -152,7 +152,7 @@
         let contextTidMap = undefined;
         let treeToProcess = getContextTree(1,event);
         let contextData = getContextData();
-        if(event == "Jstack" || contextData == undefined || treeToProcess[customEvent + event+"-context"] != undefined) {
+        if(contextData == undefined || treeToProcess[customEvent + event+"-context"] != undefined) {
             console.log("addContextData skip:" + customEvent + event);
             return false;
         }
@@ -243,6 +243,10 @@
                                     stackMap[requestArr[curIndex].hash] = 1;
                                 }
                                 requestArr[curIndex].obj = record;
+                                if(requestArr[curIndex][customEvent] == undefined){
+                                    requestArr[curIndex][customEvent]={};
+                                }
+                                requestArr[curIndex][customEvent].obj = record;
                                 scount++;
                                 curIndex--;
                             }
@@ -254,27 +258,39 @@
                                 } else {
                                     stackMap[requestArr[curIndex].hash] = 1;
                                 }
-                                requestArr[curIndex].obj = obj;
+                                requestArr[curIndex].obj = record;
+                                if(requestArr[curIndex][customEvent] == undefined){
+                                    requestArr[curIndex][customEvent]={};
+                                }
+                                requestArr[curIndex][customEvent].obj = record;
                                 scount++;
                                 curIndex++;
                             }
                             reqCount++;
                             obj[event] = stackMap;
+
+                            obj[event+customEvent] = stackMap;
                         }
                     } catch (err) {
                         console.log("tid not found in JFR" + tid + " " + err.message);
                     }
-
                 }
             });
         }
+
+        if(event == "Jstack"){
+            addContextDataJstack();
+        }
+
         treeToProcess[customEvent + event+"-context"] = "done";
         let end = performance.now();
         console.log("addContextData time:" + (end - start) + ":" + customEvent + ":" + event + ":" +scount+":"+reqCount);
         return true;
     }
 
-    function addContextDataJstack(){
+    function addContextDataJstackOld(){
+        return;
+
         let treeToProcess = getContextTree(1,"Jstack");
         let contextData = getContextData();
         if(contextData == undefined || treeToProcess[customEvent +"Jstack-context"] != undefined) {
@@ -285,6 +301,7 @@
         //let contextStart = treeToProcess.context.start;
         let tidMap = treeToProcess.context.tidMap;
 
+        /* we already did this in addContextData
         //sort records based on time, do we really need? move to jmc code?
         if(contextData != undefined && contextData.records != undefined){
             for (var customevent in contextData.records) {
@@ -295,7 +312,7 @@
                     });
                 }
             }
-        }
+        }*/
 
         let start = performance.now();
         for(var tid in tidMap){
@@ -762,10 +779,12 @@
             let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
 
             if (currentLoadedTree === treeToProcess && prevOption === currentOption && isRefresh === false && isLevelRefresh === false && prevSelectedLevel === selectedLevel) {
-                console.log("no change in tree, option:" + prevOption + ":" + isRefresh + ":" + ":" + isLevelRefresh + ":" + selectedLevel);
+                console.log("no change in tree, option:" + (currentLoadedTree === treeToProcess)+":"+ (prevOption === currentOption) +" isRefresh:"+(isRefresh === false)+":"+" isLevelRefresh:"+(isLevelRefresh === false)+" selectedLevel:"+ (prevSelectedLevel === selectedLevel));
                 end = performance.now();
                 console.log("updateProfilerViewSample 1 time:" + (end - start));
                 return;
+            }else{
+                console.log("change in tree, option:" + (currentLoadedTree === treeToProcess)+":"+ (prevOption === currentOption) +" isRefresh:"+(isRefresh === false)+":"+" isLevelRefresh:"+(isLevelRefresh === false)+" selectedLevel:"+ (prevSelectedLevel === selectedLevel));
             }
             currentLoadedTree = treeToProcess;
             prevOption = currentOption;
@@ -780,22 +799,18 @@
                 return;
             }
 
-
             addContextData(selectedLevel, getEventType());
-            if (getEventType() == "Jstack") {
-                addContextDataJstack();
-            }
 
             resetTreeHeader("");
             if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
                 if (!isCalltree) {
                     //for sample explorer it should come here
-                    sortTreeLevelBySize(treeToProcess, selectedLevel);
+                    //sortTreeLevelBySizeWrapper(treeToProcess, selectedLevel);
                 } else {
-                    sortTreeBySize(treeToProcess);
+                    //sortTreeBySizeWrapper(treeToProcess);
                 }
             } else {
-                sortTreeBySize(treeToProcess);
+                //sortTreeBySizeWrapper(treeToProcess);
             }
 
             genSampleTable();
@@ -807,20 +822,17 @@
             let treeToProcess = getActiveTree(getEventType(), isCalltree);
             let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
             addContextData(selectedLevel, getEventType());
-            if (getEventType() == "Jstack") {
-                addContextDataJstack();
-            }
 
             resetTreeHeader("");
             if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
                 if (!isCalltree) {
                     //for sample explorer it should come here
-                    sortTreeLevelBySize(treeToProcess, selectedLevel);
+                    //sortTreeLevelBySizeWrapper(treeToProcess, selectedLevel);
                 } else {
-                    sortTreeBySize(treeToProcess);
+                    //sortTreeBySizeWrapper(treeToProcess);
                 }
             } else {
-                sortTreeBySize(treeToProcess);
+                //sortTreeBySizeWrapper(treeToProcess);
             }
 
             genSampleTable();

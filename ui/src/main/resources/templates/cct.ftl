@@ -7,7 +7,7 @@
  */
 
     function createCCTModal(modalId, data) {
-        $('#modals-guid')[0].innerHTML = "<div   id='" + modalId + "' class='modal fade' tabindex='-1' role='dialog' aria-labelledby='cctmodel' aria-hidden='true'>" +
+        $('#modals-guid')[0].innerHTML = "<div   id='" + modalId + "' class='modal inmodal fade' tabindex='-1' role='dialog' aria-labelledby='cctmodel' aria-hidden='true'>" +
             "<div class='modal-dialog' style=\"max-width: 95%;\" role=\"document\">" +
             "<div class='modal-content'>" +
             "<div id='data-modal-body' class='modal-body' style='overflow: auto'>" +
@@ -508,11 +508,14 @@
             let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
 
             if (currentLoadedTree === treeToProcess && prevOption === currentOption && isRefresh === false && isLevelRefresh === false && prevSelectedLevel === selectedLevel) {
-                console.log("no change in tree, option:" + prevOption + ":" + isRefresh + ":" + ":" + isLevelRefresh + ":" + selectedLevel);
+                console.log("no change in tree, option:" + (currentLoadedTree === treeToProcess)+":"+ (prevOption === currentOption) +" isRefresh:"+(isRefresh === false)+":"+" isLevelRefresh:"+(isLevelRefresh === false)+" selectedLevel:"+ (prevSelectedLevel === selectedLevel));
                 end = performance.now();
                 console.log("updateProfilerView 1 time:" + (end - start));
                 return;
+            }else{
+                console.log("change in tree, option:" + (currentLoadedTree === treeToProcess)+":"+ (prevOption === currentOption) +" isRefresh:"+(isRefresh === false)+":"+" isLevelRefresh:"+(isLevelRefresh === false)+" selectedLevel:"+ (prevSelectedLevel === selectedLevel));
             }
+
             currentLoadedTree = treeToProcess;
             prevOption = currentOption;
             prevSelectedLevel = selectedLevel;
@@ -553,14 +556,15 @@
                 showTreeV1Compare(treeToProcess);
             } else if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
                 if (!isCalltree) {
-                    sortTreeLevelBySize(treeToProcess, selectedLevel);
+                    //sortTreeLevelBySizeWrapper(treeToProcess, selectedLevel);
+                    //updateStackIndex(treeToProcess);//should we always do this?
                     showTreeV1Level(treeToProcess, selectedLevel);
                 } else {
-                    sortTreeBySize(treeToProcess);
+                    //sortTreeBySizeWrapper(treeToProcess);
                     showTreeV1(treeToProcess);
                 }
             } else if (isJfrContext) {
-                sortTreeBySize(treeToProcess);
+                //sortTreeBySizeWrapper(treeToProcess);
                 showTreeV1(treeToProcess);
             } else {
                 showTree(treeToProcess);
@@ -581,15 +585,15 @@
                 showTreeV1Compare(treeToProcess);
             } else if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
                 if (!isCalltree) {
-                    sortTreeLevelBySize(treeToProcess, selectedLevel);
-                    //updateStackIndex(treeToProcess);
+                    //sortTreeLevelBySizeWrapper(treeToProcess, selectedLevel);
+                    //updateStackIndex(treeToProcess);//should we always do this?
                     showTreeV1Level(treeToProcess, selectedLevel);
                 } else {
-                    sortTreeBySize(treeToProcess);
+                    //sortTreeBySizeWrapper(treeToProcess);
                     showTreeV1(treeToProcess);
                 }
             } else if (isJfrContext) {
-                sortTreeBySize(treeToProcess);
+                //sortTreeBySizeWrapper(treeToProcess);
                 showTreeV1(treeToProcess);
             } else {
                 showTree(treeToProcess);

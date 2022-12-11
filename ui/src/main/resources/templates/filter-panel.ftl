@@ -477,6 +477,8 @@
     let contextData;
     let contextTree1Frames;
     let contextTree2Frames;
+    let contextTree1JstackFrames=false;
+    let contextTree2JstackFrames=false;
     let isJfrContext = false;
     let isS3 = "true";
 
@@ -513,12 +515,6 @@
 
     //one for LEVEL1, 2 for LEVEL2 and 3 for LEVEL3
     let filteredStackMap = {1:{},2:{},3:{}};
-
-    let isTSView = false;
-
-    function setTSView(bool){
-        isTSView = bool;
-    }
 
     function addToFilter(val) {
         let inppair = val.split("=");
@@ -590,12 +586,10 @@
     function onLevel2Filter() {
         console.log("onLevel2Filter start");
         if (filterReq !== undefined && filterReq != "") {
-            let pair = filterReq.split("_");
-
             updateStackIndex(getActiveTree(getEventType(), false));//need this as stacks identified based on index
+            let pair = filterReq.split("_");
             isLevelRefresh = true;
             showRequestTimelineView(pair[0], pair[1], true);
-
             if (getSelectedLevel(getActiveTree(getEventType(), false)) !== FilterLevel.LEVEL2) {
                 getActiveTree(getEventType(), false)[FilterLevel.LEVEL2] = 0;
             }
@@ -654,8 +648,8 @@
     }
 
     function filterToLevel(level) {
-        console.log("filterToLevel start");
         let eventType = getEventType();
+        console.log("filterToLevel start:" + level + " eventType:" + eventType);
         if (contextData === undefined || isJfrContext == false) {
             return true;
         }
@@ -735,8 +729,19 @@
                     setcontextTree1InvertedLevel(invertTreeV1AtLevel(getActiveTree(eventType, false), 1), eventType, getSelectedLevel(getActiveTree(eventType, false)));
                 }
             }
-            filterStarted = false;
 
+            if (!compareTree && isJfrContext){
+                let treeToProcess = getActiveTree(getEventType(), isCalltree);
+                let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
+                if(getSelectedLevel(getActiveTree(eventType, false)) !== FilterLevel.UNDEFINED && !isCalltree){
+                    sortTreeLevelBySizeWrapper(treeToProcess, selectedLevel);
+                    updateStackIndex(treeToProcess);//should we always do this?
+                }else{
+                    sortTreeBySize(treeToProcess);
+                }
+            }
+
+            filterStarted = false;
         } catch (err) {
             filterStarted = false;
             console.log("FilterToLevel Exception:" + err + " " + err.stack);
@@ -831,6 +836,11 @@
             frameFilterStackMap[getEventType()] = {};
             filterFramesV1Level(tree, false, level);
         }
+    }
+
+    function sortTreeLevelBySizeWrapper(tree, level){
+        //console.log("sortTreeLevelBySize:"+level);
+        sortTreeLevelBySize(tree, level);
     }
 
     function sortTreeLevelBySize(tree, level) {
@@ -1467,6 +1477,10 @@
         let contextStart = getContextTree(1).context.start;
         let contextTidMap = getContextTree(1).context.tidMap;
 
+        let isJstack = false;
+        if(getEventType() == "Jstack"){
+            isJstack = true;
+        }
 
         if (isFilterEmpty(dimIndexMap) && tidDatalistVal != undefined) {
             if (contextTidMap[tidDatalistVal] != undefined) { //check if the thread has samples
@@ -1476,7 +1490,7 @@
                     } else {
                         stackMap[contextTidMap[tidDatalistVal][i].hash] = 1;
                     }
-                    if (isTSView) {
+                    if (isJstack) {
                         if (filteredStackMap[FilterLevel.LEVEL1][tidDatalistVal] == undefined) {
                             filteredStackMap[FilterLevel.LEVEL1][tidDatalistVal] = [];
                         }
@@ -1506,7 +1520,7 @@
                                 let curIndex = entryIndex;
                                 //consider all matching samples downward
                                 while (curIndex >= 0 && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
-                                    if (isTSView) {
+                                    if (isJstack) {
                                         if (filteredStackMap[FilterLevel.LEVEL1][tid] == undefined) {
                                             filteredStackMap[FilterLevel.LEVEL1][tid] = [];
                                         }
@@ -1523,7 +1537,7 @@
                                 curIndex = entryIndex + 1;
                                 //consider all matching samples upward
                                 while (curIndex < requestArr.length && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
-                                    if (isTSView) {
+                                    if (isJstack) {
                                         filteredStackMap[FilterLevel.LEVEL1][tid].push(requestArr[curIndex]);
                                     }
                                     if (stackMap[requestArr[curIndex].hash] !== undefined) {
@@ -1630,6 +1644,7 @@
         let eventTypeArray = [];
         for (var eventType in jfrprofiles1) {//for all profile event types
             if (eventType == "Jstack") {
+                let isJstack = true;
                 if (getContextTree(1, "Jstack") !== undefined && getContextTree(1, "Jstack").context != undefined && getContextTree(1, "Jstack").context.tidMap[tid] !== undefined) {
                     getContextTree(1, "Jstack").context.tidMap[tid].forEach(function (obj) {
                         if (obj.time >= jstackstart && obj.time <= jstackstart + runTime) {
@@ -1638,7 +1653,7 @@
                                     getTreeStackLevel(getActiveTree("Jstack", false), obj.hash, 1, FilterLevel.LEVEL2);
                                 }
                             }
-                            if (isTSView && applyFilter) {
+                            if (isJstack && applyFilter) {
                                 if (filteredStackMap[FilterLevel.LEVEL2][tid] == undefined) {
                                     filteredStackMap[FilterLevel.LEVEL2][tid] = [];
                                 }
@@ -2370,11 +2385,16 @@
     function isRequestHasFrame(requestArr, entryIndex, event, start, end, addTofilteredStackMap) {
         let flag = false;
         let curIndex = entryIndex;
+
         //consider all matching requests downward
+        let isJstack = false;
+        if(event == "Jstack"){
+            isJstack = true;
+        }
         while ((flag == false || addTofilteredStackMap) && curIndex >= 0 && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
             if (frameFilterStackMap[event][requestArr[curIndex].hash] !== undefined) {
                 flag = true;
-                if (isTSView) {
+                if (isJstack) {
                     if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
                         filteredStackMap[FilterLevel.LEVEL3][tid] = [];
                     }
@@ -2388,7 +2408,7 @@
         while ((flag == false || addTofilteredStackMap) && curIndex < requestArr.length && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
             if (frameFilterStackMap[event][requestArr[curIndex].hash] !== undefined) {
                 flag = true;
-                if (isTSView) {
+                if (isJstack) {
                     if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
                         filteredStackMap[FilterLevel.LEVEL3][tid] = [];
                     }
@@ -2432,6 +2452,10 @@
         let tidDatalistVal = filterMap["tid"];
 
         let event = getEventType();
+        let isJstack = false;
+        if(event == "Jstack"){
+            isJstack = true;
+        }
 
         let dimIndexMap = {};
         let metricsIndexMap = {};
@@ -2498,7 +2522,7 @@
         //if only frame filter is selected then we need to include stacks that are not part of any requests.
         if (frameFilterString !== "" && tidDatalistVal == undefined && isFilterEmpty(dimIndexMap)) {
             for (var tid in contextTidMap) {
-                if (isTSView) {
+                if (isJstack  ) {
                     for (let index = 0; index < contextTidMap[tid].length; index++) {
                         if (frameFilterStackMap[event][contextTidMap[tid][index].hash] !== undefined) {
                             if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
@@ -3110,6 +3134,11 @@
         }
     }
 
+    function sortTreeBySizeWrapper(tree){
+        //console.log("sortTreeBySize");
+        sortTreeBySize(tree);
+    }
+
     function sortTreeBySize(tree) {
         let ch = tree['ch'];
         if (ch != undefined && ch !== null) {
@@ -3126,18 +3155,24 @@
     let prevSelectedLevel = undefined;
 
     function getSelectedLevel(tree) {
+
         if(tree === undefined){
+            console.log("getSelectedLevel:" + FilterLevel.UNDEFINED);
             return FilterLevel.UNDEFINED;
         }
         if(tree[FilterLevel.LEVEL3] !== undefined) {
+            console.log("getSelectedLevel:" + FilterLevel.LEVEL3);
             return FilterLevel.LEVEL3;
         }
         if(tree[FilterLevel.LEVEL2] !== undefined) {
+            console.log("getSelectedLevel:" + FilterLevel.LEVEL2);
             return FilterLevel.LEVEL2;
         }
         if(tree[FilterLevel.LEVEL1] !== undefined) {
+            console.log("getSelectedLevel:" + FilterLevel.LEVEL1);
             return FilterLevel.LEVEL1;
         }
+        console.log("getSelectedLevel:" + FilterLevel.UNDEFINED);
         return FilterLevel.UNDEFINED;
     }
 
@@ -3523,6 +3558,7 @@
     }
     function updateStackIndex(contextTreeMaster){
         contextTreeMaster["treeIndex"] = getSelectedLevel(contextTreeMaster);
+        console.log("updateStackIndex:" + contextTreeMaster["treeIndex"]);
         if(contextTreeMaster.sm !== undefined && contextTreeMaster.ch !== undefined && contextTreeMaster.ch !== null) {
             for (let index = 0; index < contextTreeMaster.ch.length; index++) {
                 if(contextTreeMaster.ch[index].sm !== undefined) {
@@ -3578,13 +3614,13 @@
             } else if (baseCh[baseIndex]['nm'] < canaryCh[canaryIndex]['nm']) {
                 baseCh[baseIndex]['csz'] = 0;
                 baseCh[baseIndex]['bsz'] = baseCh[baseIndex]['sz'];
-                sortBaseTreeBySize(baseCh[baseIndex]);//make sure sub tree is sorted by size
+                sortBaseTreeBySizeWrapper(baseCh[baseIndex]);//make sure sub tree is sorted by size
                 baseIndex++;
             } else if (baseCh[baseIndex]['nm'] > canaryCh[canaryIndex]['nm']) {
                 baseCh[appendIndex] = canaryCh[canaryIndex];
                 baseCh[appendIndex]['csz'] = canaryCh[canaryIndex]['sz'];
                 baseCh[appendIndex]['bsz'] = 0;
-                sortCanaryTreeBySize(baseCh[appendIndex]);//make sure sub tree is sorted by size
+                sortCanaryTreeBySizeWrapper(baseCh[appendIndex]);//make sure sub tree is sorted by size
                 appendIndex++;
                 canaryIndex++;
             }
@@ -3595,7 +3631,7 @@
             baseCh[index]['csz'] = 0;
             baseCh[index]['bsz'] = baseCh[index]['sz'];
             //TODO update all childs bsz to sz and csz to 0
-            sortBaseTreeBySize(baseCh[index]);//make sure sub tree is sorted by size
+            sortBaseTreeBySizeWrapper(baseCh[index]);//make sure sub tree is sorted by size
         }
 
         //append remaining canaryCh to baseCh
@@ -3606,7 +3642,7 @@
             baseCh[appendIndex] = canaryCh[index];
             baseCh[appendIndex]['csz'] = canaryCh[index]['sz'];
             baseCh[appendIndex]['bsz'] = 0;
-            sortCanaryTreeBySize(baseCh[appendIndex]);//make sure sub tree is sorted by size
+            sortCanaryTreeBySizeWrapper(baseCh[appendIndex]);//make sure sub tree is sorted by size
             index++;
             appendIndex++;
         }
@@ -3617,6 +3653,11 @@
                 return b.bsz + b.csz - a.bsz - a.csz
             });
         }
+    }
+
+    function sortBaseTreeBySizeWrapper(tree){
+        //console.log("sortBaseTreeBySize");
+        sortBaseTreeBySize(tree);
     }
 
     function sortBaseTreeBySize(tree) {
@@ -3631,6 +3672,11 @@
                 return b.bsz + b.csz - a.bsz - a.csz
             });
         }
+    }
+
+    function sortCanaryTreeBySizeWrapper(tree) {
+        //console.log("sortCanaryTreeBySize");
+        sortCanaryTreeBySize(tree);
     }
 
     function sortCanaryTreeBySize(tree) {
