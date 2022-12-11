@@ -411,7 +411,9 @@
 
         let table = "<table   style=\"width: 100%;\" id=\"sample-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\"><thead><tr><th width=\"50%\">"+getHearderFor(groupBySamples)+"</th><th width=\"10%\">Sample Count</th><th width=\"40%\">Samples</th></thead>";
 
-        filteredStackMap[FilterLevel.LEVEL3] = {};
+        if (getEventType() == "Jstack") {
+            filteredStackMap[FilterLevel.LEVEL3] = {};
+        }
 
 
         //every sample of jstack has a tn

@@ -1439,7 +1439,6 @@
         console.log("filterOnType start");
         let scount = 0;
         let stackMap = {};
-        filteredStackMap[FilterLevel.LEVEL1] = {};
 
         let tidDatalistVal = filterMap["tid"];
         let dimIndexMap = {};
@@ -1480,6 +1479,7 @@
         let isJstack = false;
         if(getEventType() == "Jstack"){
             isJstack = true;
+            filteredStackMap[FilterLevel.LEVEL1] = {};
         }
 
         if (isFilterEmpty(dimIndexMap) && tidDatalistVal != undefined) {
@@ -1636,15 +1636,17 @@
         //identify stacks
         const tmpIdMap = new Map();
 
-        if (applyFilter) {
-            filteredStackMap[FilterLevel.LEVEL2] = {};
-        }
-
         let eventTypeCount = 0;
         let eventTypeArray = [];
         for (var eventType in jfrprofiles1) {//for all profile event types
             if (eventType == "Jstack") {
-                let isJstack = true;
+                let isJstack = false;
+                if (getEventType() == "Jstack") {
+                    isJstack=true;
+                }
+                if (isJstack && applyFilter) {
+                    filteredStackMap[FilterLevel.LEVEL2] = {};
+                }
                 if (getContextTree(1, "Jstack") !== undefined && getContextTree(1, "Jstack").context != undefined && getContextTree(1, "Jstack").context.tidMap[tid] !== undefined) {
                     getContextTree(1, "Jstack").context.tidMap[tid].forEach(function (obj) {
                         if (obj.time >= jstackstart && obj.time <= jstackstart + runTime) {
@@ -2365,6 +2367,8 @@
                     table += "<td class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('" + tokens[0] + "=xxxx');\" title='Narrows down a filter to a single organisation. For example '" + tokens[0] + "=xxxx' tabindex='-1'>" + tokens[0] + "</a></td>";
                 }
             }
+            table += "<td class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('frame=xxxx');\" title='Narrows down a filter to a single organisation. For example 'frame=xxxx' tabindex='-1'>frame</a></td>";
+
         }
         table += "</tr></table>";
         $("#contexthints").html(table);

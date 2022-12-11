@@ -559,9 +559,7 @@
                     setContextData(response);
                     showContextFilter();
                     hideFilterViewStatus();
-                    if (!(filterMap["tid"] === undefined && isFilterEmpty())) {
-                        refreshTree();
-                    }
+                    refreshTree();
                 }
             }
         }, function (error) {

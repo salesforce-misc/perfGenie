@@ -272,10 +272,12 @@
             tableInnerHTML += timestampHeader;
             let treeToProcesstmp = getActiveTree(getEventType(), false);
             if(selectedLevel !== FilterLevel.UNDEFINED) {
+                console.log("tsview show level:"+selectedLevel +":"+getEventType());
                 $.each(filteredStackMap[selectedLevel], function (tid, samples) {
                     tableInnerHTML += buildRow(treeToProcesstmp, selectedLevel, tid, samples, timestampArray.length);
                 });
             }else{
+                console.log("tsview show level:"+selectedLevel +":"+getEventType());
                 $.each(jstack.context.tidMap, function (tid, samples) {
                     tableInnerHTML += buildRow(treeToProcesstmp, selectedLevel, tid, samples, timestampArray.length);
                 });
@@ -327,10 +329,12 @@
             tableInnerHTML += timestampHeader;
             let treeToProcesstmp = getActiveTree(getEventType(), false);
             if(selectedLevel !== FilterLevel.UNDEFINED) {
+                console.log("tsview show level:"+selectedLevel +":"+getEventType());
                 $.each(filteredStackMap[selectedLevel], function (tid, samples) {
                     tableInnerHTML += buildRow(treeToProcesstmp, selectedLevel, tid, samples, timestampArray.length);
                 });
             }else{
+                console.log("tsview show level:"+selectedLevel +":"+getEventType());
                 $.each(jstack.context.tidMap, function (tid, samples) {
                     tableInnerHTML += buildRow(treeToProcesstmp, selectedLevel, tid, samples, timestampArray.length);
                 });
