@@ -247,6 +247,7 @@
             //updateStackIndex(treeToProcess);
             if(getEventType() != "Jstack"){
                 $("#tsview-note").html("Note: Thread state view supported only for Jstack");
+                document.getElementById("datatable-guid").innerHTML = "";
                 return;
             }else{
                 $("#tsview-note").html("");
@@ -299,6 +300,7 @@
 
             if(getEventType() != "Jstack"){
                 $("#tsview-note").html("Note: Thread state view supported only for Jstack");
+                document.getElementById("datatable-guid").innerHTML = "";
                 return;
             }else{
                 $("#tsview-note").html("");
@@ -487,7 +489,7 @@
                 table = table + "<tr><td style=\"white-space: nowrap;\">thread_name</td><td  style=\"white-space: nowrap;padding-left: 5px;\">" + sample.tn + "</td></tr>";
                 table = table + "<tr><td style=\"white-space: nowrap;\">thread_state</td><td  style=\"white-space: nowrap;padding-left: 5px;\">" + sample.ts + "</td></tr>";
             }
-            if(sample[customEvent].obj != undefined){
+            if(sample[customEvent]?.obj !== undefined){
                 table = table + getContextView(sample[customEvent].obj, dimIndexMap, metricsIndexMap);
             }
         }
