@@ -44,7 +44,7 @@ A detailed introduction to [Java Flight Recorder (JFR)](https://docs.oracle.com/
 1. Download and install the JMC tool for your platform from [JMC Download Website](https://www.oracle.com/java/technologies/javase/products-jmc8-downloads.html)
 2. Run the simulator with your preferred options
 3. Open the JMC tool start a JFR recording by choosing the simulator application from the JVM browser table as shown in the below image
-![jmc.png](..%2F..%2F..%2FDesktop%2Fjmc.png)
+<img width="814" alt="jmc" src="https://user-images.githubusercontent.com/10486426/206943979-c513ca9a-51a1-4916-aaf7-c6c7055e4474.png">
 4. Follow onscreen instructions to complete the JFR recording in JMC tool.
 
 #### JFR Custom Events
