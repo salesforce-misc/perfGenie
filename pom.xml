@@ -11,7 +11,7 @@
     <packaging>pom</packaging>
 
     <groupId>com.stackdigviz</groupId>
-    <artifactId>StackDigViz</artifactId>
+    <artifactId>stackdigviz-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
     <properties>
@@ -19,20 +19,6 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.salesforce.cantor</groupId>
-            <artifactId>cantor-h2</artifactId>
-            <version>0.5.0</version>
-        </dependency>
         <dependency>
             <groupId>org.openjdk.jmc</groupId>
             <artifactId>common</artifactId>
@@ -52,21 +38,6 @@
             <groupId>org.openjdk.jmc</groupId>
             <artifactId>flightrecorder.rules.jdk</artifactId>
             <version>8.2.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-freemarker</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <version>6.14.3</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 

@@ -132,14 +132,13 @@ public class Simulator extends Thread {
             cpuEvent.begin();
             cpuEvent.tenant = hostname;
             cpuEvent.cpuPerc = osBean.getProcessCpuLoad()*100;
-            cpuEvent.commit();
-            System.out.println("CPU Usage: " + osBean.getProcessCpuLoad());
-
             final File outFile = new File(String.format("%s_%s.jstack", pid, System.currentTimeMillis()));
             final ProcessBuilder builder = new ProcessBuilder("jstack", "-l" , String.valueOf(pid));
             builder.redirectOutput(outFile);
             builder.redirectError(outFile);
             builder.start();
+            cpuEvent.commit();
+            System.out.println("CPU Usage: " + osBean.getProcessCpuLoad());
         }
     }
 

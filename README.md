@@ -39,7 +39,7 @@ jfrdir=/tmp/jfrs
 
 #### Start application server
 ```sh
-$ java -jar ui/target/UI-0.0.1-SNAPSHOT.jar
+$ java -jar ui/target/ui-0.0.1-SNAPSHOT.jar
 ```
 Access URL http://localhost:8080
 
