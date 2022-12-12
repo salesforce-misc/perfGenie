@@ -556,15 +556,11 @@
                 showTreeV1Compare(treeToProcess);
             } else if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
                 if (!isCalltree) {
-                    //sortTreeLevelBySizeWrapper(treeToProcess, selectedLevel);
-                    //updateStackIndex(treeToProcess);//should we always do this?
                     showTreeV1Level(treeToProcess, selectedLevel);
                 } else {
-                    //sortTreeBySizeWrapper(treeToProcess);
                     showTreeV1(treeToProcess);
                 }
             } else if (isJfrContext) {
-                //sortTreeBySizeWrapper(treeToProcess);
                 showTreeV1(treeToProcess);
             } else {
                 showTree(treeToProcess);
@@ -585,15 +581,11 @@
                 showTreeV1Compare(treeToProcess);
             } else if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
                 if (!isCalltree) {
-                    //sortTreeLevelBySizeWrapper(treeToProcess, selectedLevel);
-                    //updateStackIndex(treeToProcess);//should we always do this?
                     showTreeV1Level(treeToProcess, selectedLevel);
                 } else {
-                    //sortTreeBySizeWrapper(treeToProcess);
                     showTreeV1(treeToProcess);
                 }
             } else if (isJfrContext) {
-                //sortTreeBySizeWrapper(treeToProcess);
                 showTreeV1(treeToProcess);
             } else {
                 showTree(treeToProcess);

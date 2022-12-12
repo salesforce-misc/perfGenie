@@ -11,9 +11,7 @@
     <label>Profile: </label>
     <select style="height:30px;text-align: center;" class="filterinput" name="event-type-surface"
             id="event-type-surface">
-
     </select>
-
 </div>
 <div id="areaplot" style="width:90%;min-height: 900px; paddingt-left: 0px" class="row no-padding">
 </div>
@@ -59,9 +57,9 @@
 
     function updateProfilerViewSurface(level) {
         clearPlotData();
-        if(compareTree){
+        if (compareTree) {
             $("#areaplot").html("Note: This view is not supported when Compare option is selected.");
-        }else {
+        } else {
             $("#areaplot").html("");
             surfacePlot();
         }
@@ -330,111 +328,4 @@
             createRiverModal("surface-model-guid", pts);
         });
     }
-
-    /*function sortPlotData() {
-        let baseJsonTree = getContextTree(1, getEventType());
-        if (baseJsonTree.meta.data != undefined) {
-            newplotdata = JSON.parse(baseJsonTree.meta.data);
-        }
-
-        for (let i = 0; i < newplotdata.pathList.length; i++) {
-            sortedPlotOrder.push(i);
-        }
-        sortedPlotOrder.sort(function (x, y) {
-            if (newplotdata.data[x][0] > newplotdata.data[y][0]) {
-                return -1;
-            }
-            if (newplotdata.data[x][0] < newplotdata.data[y][0]) {
-                return 1;
-            }
-            return 0;
-        });
-    }*/
-    /*
-        function getAreaData() {
-
-            let tmpdata = [];
-            let tmpx = [];
-
-            for (let j = 0; j < newplotdata.data[0].length; j++) {
-                tmpx.push(j);
-            }
-            var trace = {
-                'x': tmpx,
-                'y': newplotdata.cpuSamplesList,
-                mode: 'lines',
-                line: {
-                    color: 'red',
-                    width: 3
-                },
-                name: "CPU%"
-            };
-            tmpdata.push(trace);
-            //for(let i=0; i< newplotdata.pathList.length; i++) {
-            for (let i = 0; i < sortedPlotOrder.length; i++) {
-                //let order = newplotdata.pathList[i].split(":");
-                let index = sortedPlotOrder[i];
-                //if ( newplotdata.pathList[index].startsWith("0") || newplotdata.pathList[index].startsWith("1")) {
-                let trace = {};
-                trace['x'] = [];
-                trace['y'] = [];
-
-                trace['stackgroup'] = 'one';
-                trace['mode'] = 'none';
-                trace['path'] = newplotdata.pathList[index];
-
-                for (let j = 0; j < newplotdata.data[index].length; j++) {
-                    trace['x'].push(j);
-                    // trace['y'].push((100 * plotdata[i][j] / plotdata[i][plotdata[i].length - 1]));
-                    trace['y'].push((100 * newplotdata.data[index][j] / newplotdata.chunkSamplesTotalList[j]));
-                }
-                tmpdata.push(trace);
-                //}
-            }
-
-            return tmpdata;
-        }
-    */
-    /*function downloadPlotData(strData, strFileName, strMimeType) {
-        var D = document,
-            A = arguments,
-            a = D.createElement("a"),
-            d = A[0],
-            n = A[1],
-            t = A[2] || "text/plain";
-
-        //build download link:
-        a.href = "data:" + strMimeType + "charset=utf-8," + escape(strData);
-
-
-        if (window.MSBlobBuilder) { // IE10
-            var bb = new MSBlobBuilder();
-            bb.append(strData);
-            return navigator.msSaveBlob(bb, strFileName);
-        }
-
-        if ('download' in a) { //FF20, CH19
-            a.setAttribute("download", n);
-            a.innerHTML = "downloading...";
-            D.body.appendChild(a);
-            setTimeout(function () {
-                var e = D.createEvent("MouseEvents");
-                e.initMouseEvent("click", true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-                a.dispatchEvent(e);
-                D.body.removeChild(a);
-            }, 66);
-            return true;
-        }
-
-        //do iframe dataURL download: (older W3)
-        var f = D.createElement("iframe");
-        D.body.appendChild(f);
-        f.src = "data:" + (A[2] ? A[2] : "application/octet-stream") + (window.btoa ? ";base64" : "") + "," + (window.btoa ? window.btoa : escape)(strData);
-        setTimeout(function () {
-            D.body.removeChild(f);
-        }, 333);
-        return true;
-    }*/
 </script>
-
-

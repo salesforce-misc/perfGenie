@@ -244,7 +244,7 @@
                 console.log("updateProfilerViewTsview 2 time:" + (end - start));
                 return;
             }
-            //updateStackIndex(treeToProcess);
+
             if(getEventType() != "Jstack"){
                 $("#tsview-note").html("Note: Thread state view supported only for Jstack");
                 document.getElementById("datatable-guid").innerHTML = "";
@@ -310,9 +310,7 @@
 
             let start = performance.now();
 
-            let treeToProcess = getActiveTree("Jstack", isCalltree);
             let selectedLevel = getSelectedLevel(getActiveTree("Jstack", false));
-            //updateStackIndex(treeToProcess);
 
             var tableInnerHTML = "";
             jstack = getContextTree(1,"Jstack");

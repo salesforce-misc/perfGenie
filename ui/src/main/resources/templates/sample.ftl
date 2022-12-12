@@ -573,71 +573,7 @@
 
         let start = performance.now();
 
-        let orgselected = "";
-        let userselected = "";
-        let logselected = "";
-        let reqselected = "";
-        let noneselected = "";
-        let uriselected = "";
-        let tnselected = "";
-        let racselected = "";
-        let tidselected = "";
-
-        let qTierselected = "";
-        let sfdcMsgIdselected = "";
-        let msgselected = "";
-
-        let numselected = "";
-        let percselected = "";
-
-        let tableselected = "";
-        let chartselected = "";
-
         let order = 1;
-        let tp = -1;
-        if (groupBySamples == "userId") {
-            order=2;
-            userselected = "selected";
-        }else if (groupBySamples == "orgId") {
-            orgselected = "selected";
-            tp = 0;
-        }else if (groupBySamples == "logType") {
-            logselected = "selected";
-            tp = 2;
-        }else if (groupBySamples == "reqId") {
-            tp = 3;
-            reqselected = "selected";
-        }else if (groupBySamples == "ln") {
-            uriselected = "selected";
-            tp = 4;
-        }else if (groupBySamples == "tn") {
-            tnselected = "selected";
-            tp = 8;
-        }else if (groupBySamples == "none") {
-            noneselected = "selected";
-            order=7;
-        }else if (groupBySamples == "tid") {
-            tidselected = "selected";
-            tp = 6;
-        }else if (groupBySamples == "racNode") {
-            racselected = "selected";
-            tp = 7;
-        }else if (groupBySamples == "qTier") {
-            qTierselected = "selected";
-            tp = 9;
-        }else if (groupBySamples == "sfdcMsgId") {
-            sfdcMsgIdselected = "selected";
-            tp = 10;
-        }else if (groupBySamples == "msg") {
-            msgselected = "selected";
-            tp = 11;
-        }
-
-        if (tableFormat == 0) {
-            numselected = "selected";
-        }else if (tableFormat == 1) {
-            percselected = "selected";
-        }
 
         moreSamples = {};
         for (let [key, value] of sampleSortMap) {
@@ -673,7 +609,7 @@
                     str += "<div style=\"display: none;\"   class=\"stack-badge badge " + " hidden-stacks-" + hashCode(key) + "\"\">" + skipc + " more</div>";
                 }
             }
-            table = table + "<tr><td  tp=" + tp + " class=\"context-menu-two\"><label style=\"word-wrap: break-word; width: 300px\" >" + (key == undefined ? "NA" : key) + "</label></td><td data-order="+value+"><b>" +value+"</b>&nbsp;<div class=\"badge badge-info\"> "+ (100*value/totalSampleCount).toFixed(3) + "</div></td><td data-order="+order+">" + str + "</td></tr>";
+            table = table + "<tr><td  hint=" + groupBySamples + " class=\"context-menu-two\"><label style=\"word-wrap: break-word; width: 300px\" >" + (key == undefined ? "NA" : key) + "</label></td><td data-order="+value+"><b>" +value+"</b>&nbsp;<div class=\"badge badge-info\"> "+ (100*value/totalSampleCount).toFixed(3) + "</div></td><td data-order="+order+">" + str + "</td></tr>";
         }
 
         table = table + "</table>";
@@ -804,16 +740,6 @@
             addContextData(selectedLevel, getEventType());
 
             resetTreeHeader("");
-            if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
-                if (!isCalltree) {
-                    //for sample explorer it should come here
-                    //sortTreeLevelBySizeWrapper(treeToProcess, selectedLevel);
-                } else {
-                    //sortTreeBySizeWrapper(treeToProcess);
-                }
-            } else {
-                //sortTreeBySizeWrapper(treeToProcess);
-            }
 
             genSampleTable();
 
@@ -821,21 +747,11 @@
             console.log("updateProfilerViewSample 3 time:" + (end - start));
         }else{
             let start = performance.now();
-            let treeToProcess = getActiveTree(getEventType(), isCalltree);
+
             let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
             addContextData(selectedLevel, getEventType());
 
             resetTreeHeader("");
-            if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
-                if (!isCalltree) {
-                    //for sample explorer it should come here
-                    //sortTreeLevelBySizeWrapper(treeToProcess, selectedLevel);
-                } else {
-                    //sortTreeBySizeWrapper(treeToProcess);
-                }
-            } else {
-                //sortTreeBySizeWrapper(treeToProcess);
-            }
 
             genSampleTable();
 
