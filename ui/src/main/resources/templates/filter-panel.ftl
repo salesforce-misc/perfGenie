@@ -192,7 +192,6 @@
         to {opacity:1 ;}
     }
 
-
     .cct-customized-scrollbar::-webkit-scrollbar {
         width: 8px;
         height: 8px;
@@ -222,11 +221,8 @@
             selector: '.context-menu-one',
             callback: function (key, options) {
                 if (key == "add") {
-                    if ($(this).attr("tp") == 3) {
-                        addToFilter("req=" + $(this).text());
-                        filterReq = $(this).attr("id");
-                        filterStack = "";
-                    }
+                    let pair = $(this).attr("id").split("_")
+                    addToFilter("timestamp=" + pair[1]);
                 } else if (key == "show") {
                     showRequestContextPopup($(this).attr("id"));
                 }
@@ -240,31 +236,7 @@
             selector: '.context-menu-two',
             callback: function (key, options) {
                 if (key == "add") {
-                    if ($(this).attr("tp") == 3) {
-                        addToFilter("req=" + $(this).text());
-                        filterReq = $(this).attr("id");
-                        filterStack = "";
-                    } else if ($(this).attr("tp") == 0) {
-                        addToFilter("org=" + $(this).text());
-                    } else if ($(this).attr("tp") == 1) {
-                        addToFilter("user=" + $(this).text());
-                    } else if ($(this).attr("tp") == 2) {
-                        addToFilter("log=" + $(this).text());
-                    } else if ($(this).attr("tp") == 4) {
-                        addToFilter("uri=" + $(this).text());
-                    } else if ($(this).attr("tp") == 6) {
-                        addToFilter("tid=" + $(this).text());
-                    } else if ($(this).attr("tp") == 7) {
-                        addToFilter("rac=" + $(this).text());
-                    } else if ($(this).attr("tp") == 8) {
-                        addToFilter("thread_name=" + $(this).text());
-                    } else if ($(this).attr("tp") == 9) {
-                        addToFilter("tier=" + $(this).text());
-                    } else if ($(this).attr("tp") == 10) {
-                        addToFilter("sfdcmsgid=" + $(this).text());
-                    } else if ($(this).attr("tp") == 11) {
-                        addToFilter("uri=" + $(this).text());
-                    }
+                    addToFilter($(this).attr("hint") + "=" + $(this).text());
                 }
             },
             items: {
@@ -1379,47 +1351,6 @@
         }
     }
 
-    function addClickActionsToFilterTable(tableid) {
-        var t = document.getElementById(tableid);
-        for (var r = 0; r < t.rows.length; r++) {
-            for (var c = 0; c < t.rows[r].cells.length; c++) {
-                t.rows[r].cells[c].addEventListener('click', function (e) {
-                    if (e.altKey) {
-                        if ($(e.target).attr("tp") == 3) {
-                            addToFilter("req=" + $(e.target).html());
-                            filterReq = $(e.target).attr("id");
-                            filterStack = "";
-                        } else if ($(e.target).attr("tp") == 0) {
-                            addToFilter("org=" + $(e.target).html());
-                        } else if ($(e.target).attr("tp") == 1) {
-                            addToFilter("user=" + $(e.target).html());
-                        } else if ($(e.target).attr("tp") == 2) {
-                            addToFilter("log=" + $(e.target).html());
-                        } else if ($(e.target).attr("tp") == 4) {
-                            addToFilter("uri=" + $(e.target).html());
-                        } else if ($(e.target).attr("tp") == 6) {
-                            addToFilter("tid=" + $(e.target).html());
-                        } else if ($(e.target).attr("tp") == 7) {
-                            addToFilter("rac=" + $(e.target).html());
-                        } else if ($(e.target).attr("tp") == 8) {
-                            addToFilter("thread_name=" + $(e.target).html());
-                        }
-                    } else {
-                        if ($(e.target).attr("tp") == 3) {
-                            //showRequestContextPopup($(e.target).attr("id")); //click show request timeline
-                        }
-                    }
-                });
-                t.rows[r].cells[c].addEventListener('mouseleave', function (e) {
-                    if ($(e.target).attr("tp") == 3) {
-                        var popup = document.getElementById("idPopup");
-                        popup.classList.remove("show");
-                    }
-                });
-            }
-        }
-    }
-
     function getContextView(record, dimIndexMap, metricsIndexMap) {
         let str = "";
         for (var dim in dimIndexMap) {
@@ -1852,7 +1783,7 @@
 
     function filterMatch(record, dimIndexMap) {
         for (dim in dimIndexMap) {
-            if (dim === "tid") {
+            if (dim === "tid" || dim === "timestamp") {
                 if (!(filterMap[dim] == undefined || record[dimIndexMap[dim]] == filterMap[dim])) {
                     return false;
                 }
@@ -1990,7 +1921,6 @@
 
         let xAxisGenerator = d3.axisRight()
             .scale(xScale)
-            //.tickPadding(5)
             .ticks(max_x)
             .tickSize(4)
             .tickFormat(function (d) {
@@ -2166,7 +2096,7 @@
         }
     }
 
-    function addLegend(id, groupByTypeSortByMetricMap, groupByCount, groupByCountSum, tp) {
+    function addLegend(id, groupByTypeSortByMetricMap, groupByCount, groupByCountSum) {
         if (getHearderFor(groupBy) == "timestamp") {
             return;
         }
@@ -2180,7 +2110,7 @@
                 legend = "NA (non MQ)";
             }
 
-            table += "<tr style='color:" + tmpColorMap.get(key) + "'><td style='padding-right: 3px;width:40px'>" + (100 * value / groupByCountSum).toFixed(2) + "%" + "</td><td onclick=\"disableCategory(this,'" + key1 + "')\" onmouseout=\"legendMouseOut(this,'" + key1 + "','" + tmpColorMap.get(key) + "')\" onmouseover=\"legendMouseOver(this,'" + key1 + "')\" title='right click to add to filter' tp='" + tp + "' class=\"context-menu-two\" style='curson: pointer'>" + legend + "</td></tr>";
+            table += "<tr style='color:" + tmpColorMap.get(key) + "'><td style='padding-right: 3px;width:40px'>" + (100 * value / groupByCountSum).toFixed(2) + "%" + "</td><td onclick=\"disableCategory(this,'" + key1 + "')\" onmouseout=\"legendMouseOut(this,'" + key1 + "','" + tmpColorMap.get(key) + "')\" onmouseover=\"legendMouseOver(this,'" + key1 + "')\" title='right click to add to filter' hint='" + groupBy + "' class=\"context-menu-two\" style='curson: pointer'>" + legend + "</td></tr>";
         }
         table += "</table>";
         $(id).html(table);
@@ -2292,50 +2222,7 @@
     }
 
     function getOrderandType() {
-        let tp = -1;
-        let order = 1;
-        switch (groupBy) {
-            case "userId":
-                order = 2;
-                break;
-            case "orgId":
-                tp = 0;
-                break;
-            case "logType":
-                tp = 2;
-                break;
-            case "reqId":
-                tp = 3;
-                break;
-            case "ln":
-                tp = 4;
-                break;
-            case "tn":
-                tp = 8;
-                break;
-            case "none":
-                order = 8;
-                break;
-            case "tid":
-                tp = 6;
-                break;
-            case "racNode":
-                tp = 7;
-                break;
-            case "qTier":
-                tp = 9;
-                break;
-            case "sfdcMsgId":
-                tp = 10;
-                break;
-            case "msg":
-                tp = 11;
-                break;
-            default:
-                tp = -1;
-                order = 1;
-        }
-        return [order, tp];
+        return 1;
     }
 
     function getEventTableHeader(groupby) {
@@ -2464,6 +2351,7 @@
         let dimIndexMap = {};
         let metricsIndexMap = {};
         let metricsIndexArray = [];
+        let isDimIndexMap = {};
         let groupByIndex = -1;
         let sortByIndex = -1;
         let spanIndex = -1;
@@ -2500,6 +2388,7 @@
             }
             if (tokens[1] == "text" || tokens[1] == "timestamp") {
                 dimIndexMap[tokens[0]] = val;
+                isDimIndexMap[val]=tokens[0];
             }
         }
 
@@ -2595,9 +2484,13 @@
                                     table = table + "<tr>";
                                     for (let field in record) {
                                         if (field == timestampIndex) {
-                                            table = table + "<td>" + moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS') + "</td>";
+                                            table = table + "<td  hint='timestamp' class='context-menu-one' id='" + record[tidRowIndex] + "_" + record[field] + "'>" + moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS') + "</td>";
                                         } else {
-                                            table = table + "<td>" + record[field] + "</td>";
+                                            if(isDimIndexMap[field] !== undefined){
+                                                table = table + "<td hint='"+isDimIndexMap[field]+"' class='context-menu-two'>" + record[field] + "</td>";
+                                            }else {
+                                                table = table + "<td>" + record[field] + "</td>";
+                                            }
                                         }
                                     }
                                     table = table + "</tr>";
@@ -2690,9 +2583,13 @@
                                     table = table + "<tr>";
                                     for (let field in record) {
                                         if (field == timestampIndex) {
-                                            table = table + "<td>" + moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS') + "</td>";
+                                            table = table + "<td hint='timestamp' class=\"context-menu-one\" id='" + record[tidRowIndex] + "_" + record[field] + "'>" + moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS') + "</td>";
                                         } else {
-                                            table = table + "<td>" + record[field] + "</td>";
+                                            if(isDimIndexMap[field] !== undefined){
+                                                table = table + "<td hint='"+isDimIndexMap[field]+"' class='context-menu-two'>" + record[field] + "</td>";
+                                            }else {
+                                                table = table + "<td>" + record[field] + "</td>";
+                                            }
                                         }
                                     }
                                     table = table + "</tr>";
@@ -2720,7 +2617,7 @@
         let end1 = performance.now();
         console.log("genRequestTable 0 time:" + (end1 - start1))
         let start = performance.now();
-        let [order, tp] = [-1, 1] //getOrderandType();
+        let order = getOrderandType();
         if (tableFormat == 2 || tableFormat == 3) {
             let minStart = getContextTree(1, getEventType()).context.start; //records are aligned to method profile context start
             let chartWidth = maxEndTimeOfReq - minStart;
@@ -2738,7 +2635,7 @@
             }
             if (tableFormat == 2) {
                 drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex);
-                addLegend("#legendid", groupByTypeSortByMetricMap, groupByCount, groupByCountSum, tp);
+                addLegend("#legendid", groupByTypeSortByMetricMap, groupByCount, groupByCountSum);
                 addYAxis("#yaxisid", 0, 0, 0, 17, 0, lineCount, 500, totalRows * rowHeight);
                 addXAxis("#xaxisid", 15, 0, 0, 0, 0, chartWidth, chartWidth, 50, minStart, downScale);
             } else {
@@ -2748,7 +2645,7 @@
             if (!(groupBy == "" || groupBy == undefined)) {
                 for (let dim in metricSumMap) {
                     table = table + "<tr>";
-                    table = table + "<td>" + dim + "</td>";
+                    table = table + "<td hint='"+groupBy+"' class='context-menu-two'>" + dim + "</td>";
                     for (let i = 0; i < metricSumMap[dim].length; i++) {
                         table = table + "<td>" + metricSumMap[dim][i] + "</td>";
                     }
@@ -2758,7 +2655,7 @@
             table = table + "</table>";
             document.getElementById("statetable").innerHTML = table;
 
-            enableDataTable();
+            enableDataTable(order);
         }
         $("#statetabledrp").html(getToolBarOptions());
 
@@ -2814,13 +2711,13 @@
         console.log("genRequestTable 1 time:")
     }
 
-    function enableDataTable() {
+    function enableDataTable(order) {
         if (contextTable != undefined) {
             contextTablePage = 0; //reset to 0 except 1st time
         }
 
         contextTable = $('#state-table').DataTable({
-            // "order": [[ order, "desc" ]],
+            "order": [[ order, "desc" ]],
             searching: true,
             "columnDefs": [{}],
             "drawCallback": function (settings) {
@@ -2832,7 +2729,6 @@
                     contextTablePage = contextTable.page.info().page * contextTable.page.len();
                     updateUrl("cpage", contextTablePage, true);
                 }
-                addClickActionsToFilterTable("state-table");
             },
             "displayStart": contextTablePage,
             aoColumnDefs: [
@@ -3861,7 +3757,3 @@
             </div>
     </div>
 </div>
-
-
-
-
