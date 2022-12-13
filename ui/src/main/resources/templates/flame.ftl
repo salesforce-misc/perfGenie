@@ -114,9 +114,16 @@ In other words, data that's in the second set but not in the first will not be d
 
     let searchString = undefined;
 
+    $(document).ready(function () {
+        searchString =  urlParams.get('search') || '';
+        $("#search").val(searchString);
+        $("#search-flame").val(searchString);
+    });
+
     function searchFlame(value, event) {
         searchString = value;
         $("#search").val(value);
+        $("#search-flame").val(value);
         updateUrl("search", value, true);
         refreshTreeFlame();
     }
@@ -209,6 +216,9 @@ In other words, data that's in the second set but not in the first will not be d
                 sFlameGraph.setSizeKey('sz');
                 sFlameGraph.showTreeV1Flame(treeToProcess, searchString);
             }
+            if(searchString != ""){
+                $("span.cct-search-guid").html((sFlameGraph.getSearchMatchCount() >= 0) ? "<strong> Search found " + sFlameGraph.getSearchMatchCount() + " matching frame(s)</strong>" : "");
+            }
             if (!compareTree) {
                 $(".img-swap").each(function () {
                     this.src = this.src.replace("_on", "_off");
@@ -243,6 +253,9 @@ In other words, data that's in the second set but not in the first will not be d
                 sFlameGraph.setThreshold(threshold);
                 sFlameGraph.setSizeKey('sz');
                 sFlameGraph.showTreeV1Flame(treeToProcess, searchString);
+            }
+            if(searchString != ""){
+                $("span.cct-search-guid").html((sFlameGraph.getSearchMatchCount() >= 0) ? "<strong> Search found " + sFlameGraph.getSearchMatchCount() + " matching frame(s)</strong>" : "");
             }
             if (!compareTree) {
                 $(".img-swap").each(function () {

@@ -38,9 +38,9 @@
     <script src="/js/SFlameGraph.js"></script>
     <link rel="stylesheet" href="/css/SFlameGraph.css">
 
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/dataTables.jqueryui.min.css"/>
-    <script type="text/javascript" src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
-    <script type="text/javascript" src="https://cdn.datatables.net/1.12.1/js/dataTables.jqueryui.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/plugins/dataTables.jqueryui.min.css"/>
+    <script type="text/javascript" src="/plugins/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="/plugins/dataTables.jqueryui.min.js"></script>
 
 
     <script type="text/javascript" src="/plugins/d3/d3-4.10.0.min.js"></script>
