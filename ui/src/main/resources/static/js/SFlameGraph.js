@@ -26,6 +26,11 @@ class SFlameGraph {
     #pixelThreshold = 0.5;
     #filterOption = 1; // 1 show all, 2 do not show right, 3 do not show left
     #isCompare = false;
+    #searchMatchCount = 0;
+
+    getSearchMatchCount(){
+        return SFlameGraph.instance.#searchMatchCount;
+    }
 
     constructor() {
         if (!SFlameGraph.instance) {
@@ -75,7 +80,7 @@ class SFlameGraph {
     }
 
     showTreeV1Flame(treeToProcess, searchString) {
-
+        SFlameGraph.instance.#searchMatchCount = 0;
         if (searchString != "" && searchString != undefined) {
             SFlameGraph.instance.#flameGraphSearch = true;
             SFlameGraph.instance.#flameGraphSearchStr = searchString;
@@ -293,7 +298,7 @@ class SFlameGraph {
     }
 
     showTreeV1FlameCompare(treeToProcess, searchString) {
-
+        SFlameGraph.instance.#searchMatchCount = 0;
         if (searchString != "" && searchString != undefined) {
             SFlameGraph.instance.#flameGraphSearch = true;
             SFlameGraph.instance.#flameGraphSearchStr = searchString;
@@ -584,15 +589,17 @@ class SFlameGraph {
         if(bsz+csz !== 0){
             percDiff = percDiff/(bsz+csz);
         }
-
         if (SFlameGraph.instance.#flameGraphSearch && getFrameName(id).includes(SFlameGraph.instance.#flameGraphSearchStr)) {
+            SFlameGraph.instance.#searchMatchCount++;
             if (dull) {
                 return 'hsl(90, 75%, 80%)';
             } else {
                 return 'hsl(90, 100%, 50%)';
             }
         } else {
-            if(percDiff < 0) {
+            if(percDiff === 0) {
+                return 'hsl(0, 0%, 90%)';
+            }else if(percDiff < 0) {
                 if (dull) {
                     return 'hsl(360, 100%, 80%, '+-1*percDiff+')';
                 } else {
@@ -610,6 +617,7 @@ class SFlameGraph {
 
     getFlameColor(dull, id) {
         if (SFlameGraph.instance.#flameGraphSearch && getFrameName(id).includes(SFlameGraph.instance.#flameGraphSearchStr)) {
+            SFlameGraph.instance.#searchMatchCount++;
             if (dull) {
                 return 'hsl(90, 75%, 80%)';
             } else {
