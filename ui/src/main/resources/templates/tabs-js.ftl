@@ -181,8 +181,8 @@
         if($("#event-type").val() == null){
             return undefined;
         }
-        return filterEvent;
-        //return $("#event-type").val();
+        //return filterEvent; //this is breaking jstacks alone case
+        return $("#event-type").val();
     }
 
     function validateInputAndcreateContextTree(retry) {
