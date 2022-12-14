@@ -133,6 +133,8 @@ In other words, data that's in the second set but not in the first will not be d
             skipFilter = false;
         }
         console.log("updateProfilerView start");
+        addTabNote(false,"");
+
         if (!skipFilter) {
             if (level === undefined) {
                 level = FilterLevel.LEVEL1;

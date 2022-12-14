@@ -5,6 +5,24 @@
 * SPDX-License-Identifier: BSD-3-Clause
 * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
 */
+    function callback() {
+
+    };
+
+    function addTabNote(toggle, msg){
+        if(toggle){
+            if($( "#view-info" ).css("display") === "none"){
+                $( "#view-info-text" ).html(msg);
+                $( "#view-info" ).toggle( "slide", {}, 500 );
+            }
+        }else{
+            if($( "#view-info-text" ).html("") != "") {
+                $("#view-info").css("display", "none");
+                $("#view-info-text").html("");
+            }
+        }
+    }
+
 </script>
 
 <#include "tabs-js.ftl">
@@ -19,6 +37,9 @@
         <li><a href="#surface">Hotspot surface</a></li>
         <li><a href="#tsview">Thread state view</a></li>
     </ul>
+    <div id="view-info" class="ui-state-highlight ui-widget-header ui-corner-all" style="float: right !important;display:none">
+        <span class="ui-icon ui-icon-info"></span> <span id="view-info-text"></span>
+    </div>
     <div id="cct" style="min-height: 900px; paddingt-left: 0px" class="row no-padding">
         <#include "cct.ftl">
     </div>

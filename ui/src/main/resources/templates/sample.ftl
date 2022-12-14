@@ -682,8 +682,15 @@
 
     //create html tree recursively
     function updateProfilerViewSample(level, skipFilter) {
+        addTabNote(false,"");
+
         let contextData = getContextData();
         if(contextData == undefined) {
+            if(compareTree){
+                addTabNote(true,"This view is not supported when Compare option is selected.")
+            }else{
+                addTabNote(true,"Context data not available to show this view");
+            }
             console.log("updateProfilerViewSample skip:" + level);
             return false;
         }

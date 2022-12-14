@@ -41,13 +41,13 @@
         $("#event-type-flame").val(event_type);
         $("#event-type").val(event_type);
         updateUrl("filterEvent",filterEvent,true);
-        let note = getNote(filterEvent);
-        if(note != ""){
+        setNote(filterEvent);
+        /*if(note != ""){
             $('#cct-note').text(note);
             $('#cct-note').show();
         }else{
             $('#cct-note').hide();
-        }
+        }*/
         applyFilter();
     }
 
@@ -570,11 +570,14 @@
         });
     }
 
-    function getNote(eventType){
+    function setNote(eventType){
         if(eventType.includes("Socket")){
-            return "Note: socket R/W events are captured only when R/W operation takes more than xx ms";
+            //addTabNote(true,"socket R/W events are captured only when R/W operation takes more than xx ms");
+            //return "Note: socket R/W events are captured only when R/W operation takes more than xx ms";
+        }else{
+            //addTabNote(false,"");
         }
-        return "";
+        //return "";
     }
 
     function refreshTree() {

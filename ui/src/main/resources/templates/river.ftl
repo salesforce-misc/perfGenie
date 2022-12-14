@@ -21,11 +21,13 @@
     });
 
     function updateProfilerViewRiver(level) {
+        addTabNote(false,"");
+
         clearPlotData();
+        $("#riverview").html("");
         if (compareTree) {
-            $("#riverview").html("Note: This view is not supported when Compare option is selected.");
+            addTabNote(true,"This view is not supported when Compare option is selected.")
         } else {
-            $("#riverview").html("");
             riverPlot();
         }
     }
@@ -78,7 +80,7 @@
         console.log("riverPlot");
         let baseJsonTree = getContextTree(1, getEventType());
         if (baseJsonTree.meta.data == undefined) {
-            $("#riverview").html("Error: Data not available to show this view");
+            addTabNote(true,"Data not available to show this view")
             return;
         }
         sortPlotData();
