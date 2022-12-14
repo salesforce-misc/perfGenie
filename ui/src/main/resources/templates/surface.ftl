@@ -56,11 +56,12 @@
     }
 
     function updateProfilerViewSurface(level) {
+        addTabNote(false,"");
         clearPlotData();
+        $("#areaplot").html("");
         if (compareTree) {
-            $("#areaplot").html("Note: This view is not supported when Compare option is selected.");
+            addTabNote(true,"This view is not supported when Compare option is selected.")
         } else {
-            $("#areaplot").html("");
             surfacePlot();
         }
     }
@@ -233,7 +234,7 @@
         console.log("surfacePlot");
         let baseJsonTree = getContextTree(1, getEventType());
         if (baseJsonTree.meta.data == undefined) {
-            $("#areaplot").html("Error: Data not available to show this view");
+            addTabNote(true,"Data not available to show this view")
             return;
         }
 

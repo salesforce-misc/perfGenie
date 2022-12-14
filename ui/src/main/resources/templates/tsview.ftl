@@ -191,12 +191,15 @@
         }
     }
 
+
     function  updateProfilerViewTsview(level,skipFilter){
+        addTabNote(false,"");
+
         if(compareTree){
-            $("#tsview-note").html("Note: This view is not supported when Compare option is selected.");
+            addTabNote(true,"This view is not supported when Compare option is selected.")
             return;
         }else{
-            $("#tsview-note").html("");
+            addTabNote(false,"")
         }
 
         if(skipFilter == undefined){
@@ -246,12 +249,21 @@
             }
 
             if(getEventType() != "Jstack"){
-                $("#tsview-note").html("Note: Thread state view supported only for Jstack");
                 document.getElementById("datatable-guid").innerHTML = "";
+                addTabNote(true,"Thread state view supported only for Jstack")
+                return;
+            }else{
+                addTabNote(false,"")
+            }
+
+/*
+            if(getEventType() != "Jstack"){
+                $("#tsview-note").html("Note: Thread state view supported only for Jstack");
+
                 return;
             }else{
                 $("#tsview-note").html("");
-            }
+            }*/
 
 
             var tableInnerHTML = "";
@@ -294,18 +306,18 @@
             console.log("updateProfilerViewTsview 3 time:" + (end - start));
         }else{
             if(compareTree){
-                $("#tsview-note").html("Note: This view is not supported when Compare option is selected.");
+                addTabNote(true,"This view is not supported when Compare option is selected.")
                 return;
             }else{
-                $("#tsview-note").html("");
+                addTabNote(false,"")
             }
 
             if(getEventType() != "Jstack"){
-                $("#tsview-note").html("Note: Thread state view supported only for Jstack");
                 document.getElementById("datatable-guid").innerHTML = "";
+                addTabNote(true,"Thread state view supported only for Jstack")
                 return;
             }else{
-                $("#tsview-note").html("");
+                addTabNote(false,"")
             }
 
             let start = performance.now();

@@ -19,8 +19,9 @@
 
 
 <div  style="padding: 0px" id="accordion" class="row">
-    <h3 style="width:100%">Data source selector</h3>
+    <div style="width:100%">Data source selector</div>
     <div class="col-lg-12">
+
         <form  style="padding: 0px" id="compare-context-selector-form" action="javascript:submitTo()" method="get"
                content="application/x-www-form-urlencoded">
         <table>

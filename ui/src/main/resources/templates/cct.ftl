@@ -490,6 +490,8 @@
             skipFilter = false;
         }
         console.log("updateProfilerView start");
+        addTabNote(false,"");
+
         if (!skipFilter) {
             if (level == undefined) {
                 level = FilterLevel.LEVEL1;
