@@ -56,7 +56,7 @@
                     </select>
                 </td>
                 <td style="align-items:center;" rowspan="2">
-                    <button id="update" style="alignment:center;height:70px" class="ui-button ui-widget ui-corner-all">Submit</button>
+                    <button id="submit-input" style="alignment:center;height:70px" class="ui-button ui-widget ui-corner-all">Submit</button>
                 </td>
             </tr>
             <tr>
@@ -91,6 +91,13 @@
                 </td>
             </tr>
         </table>
+            <div id="input-info" class="ui-state-highlight ui-widget-header ui-corner-all" style="float: left !important;display:none">
+                <span class="ui-icon ui-icon-info"></span> <span id="input-info-text"></span>
+            </div>
         </form>
     </div>
 </div>
+
+<script>
+
+</script>
