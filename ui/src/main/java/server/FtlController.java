@@ -16,10 +16,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 @Controller
 public class FtlController {
-    private final StackDigVizService service;
+    private final PerfGenieService service;
 
     @Autowired
-    public FtlController(StackDigVizService service) {
+    public FtlController(PerfGenieService service) {
         this.service = service;
     }
 

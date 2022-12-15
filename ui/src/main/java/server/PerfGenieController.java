@@ -21,11 +21,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @RestController
-public class StackDigVizController {
-    private final StackDigVizService service;
+public class PerfGenieController {
+    private final PerfGenieService service;
     private static final Pattern queryPatterns = Pattern.compile("(?<key>.*?)(?<value>(>|<|=|!=|~|!~|<=|>=).*)");
     @Autowired
-    public StackDigVizController(StackDigVizService service) {
+    public PerfGenieController(PerfGenieService service) {
         this.service = service;
     }
 

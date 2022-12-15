@@ -621,9 +621,9 @@
         }
         const callTreeUrl = getCallTreeUrl(dateRanges[0], pods[0], queries[0], profilers[0], tenants[0], profiles[0], hosts[0], uploads[0], fileIds[0], uploadTimes[0], aggregates[0], eventType);
         if (retry) {
-            requests.push(callTreeStackDigVizAjax(toTenant, "GET", callTreeUrl, result => result));
+            requests.push(callTreePerfGenieAjax(toTenant, "GET", callTreeUrl, result => result));
         } else {
-            requests.push(callTreeStackDigVizAjax(toTenant, "GET", callTreeUrl, result => result));
+            requests.push(callTreePerfGenieAjax(toTenant, "GET", callTreeUrl, result => result));
         }
         if (profiles.length === 2) {
             let toTenant = "";
@@ -632,9 +632,9 @@
             }
             const callTreeUrl = getCallTreeUrl(dateRanges[1], pods[1], (queries.length === 2) ? queries[1] : '', (profilers.length === 2) ? profilers[1] : '', (tenants.length === 2) ? tenants[1] : '', (profiles.length === 2) ? profiles[1] : '', (hosts.length === 2) ? hosts[1] : '', (uploads.length === 2) ? uploads[1] : '', (fileIds.length === 2) ? fileIds[1] : '', (uploadTimes.length === 2) ? uploadTimes[1] : '', aggregates[1], eventType);
             if (retry) {
-                requests.push(callTreeStackDigVizAjax(toTenant, "GET", callTreeUrl, result => result));
+                requests.push(callTreePerfGenieAjax(toTenant, "GET", callTreeUrl, result => result));
             } else {
-                requests.push(callTreeStackDigVizAjax(toTenant, "GET", callTreeUrl, result => result));
+                requests.push(callTreePerfGenieAjax(toTenant, "GET", callTreeUrl, result => result));
             }
         }
         return Promise.all(requests);
