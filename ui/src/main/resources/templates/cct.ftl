@@ -354,11 +354,16 @@
             }
 
             if (bsize > 0 && csize > 0) {
-                diffPercent = (100 * (csize - bsize) / bsize).toFixed(2);
-                if (diffPercent > 0) {
-                    bar = "<div title=\"% diff \" class = \"rbar\" style=\"width:" + Math.log(diffPercent) * 2 + "px;\">&nbsp;</div>";
+                diffPercent = csize - bsize;
+                if(diffPercent !== 0) {
+                    diffPercent = (100 * diffPercent / bsize).toFixed(2);
+                }
+                if (diffPercent === 0) {
+                    bar = "<div title=\"% diff \" class = \"rbar\" style=\"width:" + diffPercent + "px;\">&nbsp;</div>";
+                }else if (diffPercent > 0) {
+                    bar = "<div title=\"" +diffPercent+ "% diff \" class = \"rbar\" style=\"width:" + Math.log(diffPercent) * 2 + "px;\">&nbsp;</div>";
                 } else {
-                    bar = "<div title=\"% diff\" class = \"ibar\" style=\"width:" + Math.log(Math.abs(diffPercent)) * 2 + "px;\">&nbsp;</div>";
+                    bar = "<div title=\"" +diffPercent+ "% diff\" class = \"ibar\" style=\"width:" + Math.log(Math.abs(diffPercent)) * 2 + "px;\">&nbsp;</div>";
                 }
                 diffPercent = " diff percent: " + diffPercent + " %";
             }
