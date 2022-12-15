@@ -3114,40 +3114,6 @@
         }
     }
 
-    function validateDateRange(index) {
-        const element = document.getElementById("daterange" + index);
-        element.style.borderColor = null;
-        const daterange = $('#daterange' + index).val().split(" - ");
-        const startDate = parseDateTime(daterange[0]);
-        const endDate = parseDateTime(daterange[1]);
-        const callSubmitDisabled = "setSubmitDisabledX(true);".replace("X", index);
-
-        if (!(startDate.isValid() && endDate.isValid())) {
-            toastr_warning("Invalid time range provided, try using format "+dateFormat);
-            element.style.borderColor = "red";
-            eval(callSubmitDisabled);
-            return false;
-        }
-
-        if (startDate.isAfter(endDate)) {
-            toastr_warning("Start time is after end time");
-            element.style.borderColor = "red";
-            eval(callSubmitDisabled);
-            return false;
-        }
-
-        if (endDate.diff(startDate, "seconds") > 60 * 60) {
-            toastr_warning("Time ranges are limited to 1 hour. Given " + startDate.format(dateFormat) + " - " + endDate.format(dateFormat));
-            element.style.borderColor = "red";
-            eval(callSubmitDisabled);
-            return false;
-        }
-
-        $('#daterange' + index).val(startDate.format(dateFormat) + " - " + endDate.format(dateFormat));
-        eval(callSubmitDisabled.replace("true", "false"));
-        return true;
-    }
-
     function setContextTree(tree, count, eventType) {
         if (eventType == undefined) {
             eventType = getEventType();

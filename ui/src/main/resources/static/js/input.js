@@ -18,12 +18,61 @@ let tenant2 = undefined;
 let profile1 = undefined;
 let profile2 = undefined;
 let dateFormat = 'YYYY-MM-DD HH:mm:ss.SSS';
+let maxTimeRange = 60 * 60 * 1000;
 
 let jfrprofiles1 = {};
 let jfrprofiles2 = {};
 let jfrevents1 = {};
 let jfrevents2 = {};
 const urlParams = new URLSearchParams(window.location.search);
+
+function setSubmitDisabled(shouldDisable) {
+    $("#submit-input").prop("disabled", shouldDisable);
+}
+
+function validateDateRange(index) {
+    const startTimeE = document.getElementById("startpicker" + index);
+    const endTimeE = document.getElementById("endpicker" + index);
+    startTimeE.style.borderColor = null;
+    endTimeE.style.borderColor = null;
+    addInputNote(false,"");
+
+    let startEpoch = eval("startTime" + index);
+    let endEpoch = eval("endTime" + index);
+
+    if (startEpoch > endEpoch) {
+        addInputNote(true,"Start time is after end time")
+        startTimeE.style.borderColor = "red";
+        endTimeE.style.borderColor = "red";
+        setSubmitDisabled(true);
+        return false;
+    }
+
+    if ((endEpoch - startEpoch) > maxTimeRange) {
+        addInputNote(true,"Time ranges are limited to 1 hour. Given " + moment(startEpoch).format('YYYY-MM-DD HH:mm:ss') + " - " + moment(endEpoch).format('YYYY-MM-DD HH:mm:ss'));
+        startTimeE.style.borderColor = "red";
+        endTimeE.style.borderColor = "red";
+        setSubmitDisabled(true);
+        return false;
+    }
+
+    setSubmitDisabled(false);
+    return true;
+}
+
+function addInputNote(toggle, msg){
+    if(toggle){
+        if($( "#input-info" ).css("display") === "none"){
+            $( "#input-info-text" ).html(msg);
+            $( "#input-info" ).toggle( "slide", { direction: "left" }, 500 );
+        }
+    }else{
+        if($( "#input-info-text" ).html("") != "") {
+            $("#input-info").css("display", "none");
+            $("#input-info-text").html("");
+        }
+    }
+}
 
 $(function () {
     startTime1 = Number(urlParams.get('startTime1')) || moment(moment().subtract('minute', 10).format('YYYY-MM-DD HH:mm:ss')).valueOf();
@@ -70,31 +119,40 @@ $(function () {
     getMetaData1(getStart1(), getEnd1());
     getMetaData2(getStart2(), getEnd2());
 
+
     $("#startpicker1").change(function (event) {
         if (moment($("#startpicker1").val()).valueOf() != startTime1) {
             startTime1 = moment($("#startpicker1").val()).valueOf();
-            getMetaData1(startTime1, endTime1);
+            if(validateDateRange(1)) {
+                getMetaData1(startTime1, endTime1);
+            }
         }
     });
 
     $("#startpicker2").change(function (event) {
         if (moment($("#startpicker2").val()).valueOf() != startTime2) {
             startTime2 = moment($("#startpicker2").val()).valueOf();
-            getMetaData2(startTime2, endTime2);
+            if(validateDateRange(2)) {
+                getMetaData2(startTime2, endTime2);
+            }
         }
     });
 
     $("#endpicker1").change(function (event) {
         if (moment($("#endpicker1").val()).valueOf() != endTime1) {
             endTime1 = moment($("#endpicker1").val()).valueOf();
-            getMetaData1(startTime1, endTime1);
+            if(validateDateRange(1)) {
+                getMetaData1(startTime1, endTime1);
+            }
         }
     });
 
     $("#endpicker2").change(function (event) {
         if (moment($("#endpicker2").val()).valueOf() != endTime2) {
             endTime2 = moment($("#endpicker2").val()).valueOf();
-            getMetaData2(startTime2, endTime2);
+            if(validateDateRange(2)) {
+                getMetaData2(startTime2, endTime2);
+            }
         }
     });
 
