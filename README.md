@@ -61,7 +61,7 @@ The applicaiton server has a cron job to monitor and parse JFR (*.jfr or *.jfr.g
 - Metric timeline view (based on custom event metrics)
 - Request timeline view (to see samples of single request)
 
-User interface:
+##User interface:
 <img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/ui.jpg?raw=true"   />
 
 ### Context Filters
@@ -79,5 +79,35 @@ User interface:
 
 #### Metric timeline view
 <img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/metrictimelineview.jpg?raw=true"/>
+
+### Profile views
+
+#### Calling context tree
+<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/treeview.jpg?raw=true"/>
+
+#### Calling context tree compare view
+<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/treeviewdiff.jpg?raw=true"/>
+
+#### Samples explorer
+<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/samplesexplorer.jpg?raw=true"/>
+
+#### Flame graph
+<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/flamegraph.jpg?raw=true"/>
+
+#### Flame graph compare view
+<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/flamegraphdiff.jpg?raw=true"/>
+
+
+#### Thread state view
+<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/threadstateview.jpg?raw=true"/>
+<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/threadstatepop.jpg?raw=true"/>
+
+#### River view (Experimental stack trace timeline view)
+<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/riverview.jpg?raw=true"/>
+
+#### Hotspot surface view (Experimental stack trace timeline view)
+<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/surfaceview.jpg?raw=true"/>
+
+
 
 
