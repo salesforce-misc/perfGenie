@@ -13,7 +13,7 @@
         if(toggle){
             if($( "#view-info" ).css("display") === "none"){
                 $( "#view-info-text" ).html(msg);
-                $( "#view-info" ).toggle( "slide", {}, 500 );
+                $( "#view-info" ).toggle( "slide", { direction: "right" }, 500 );
             }
         }else{
             if($( "#view-info-text" ).html("") != "") {
