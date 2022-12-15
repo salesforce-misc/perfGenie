@@ -2250,12 +2250,13 @@
         if (contextData != undefined && contextData.header != undefined) {
             for (let val in contextData.header[customEvent]) {
                 const tokens = contextData.header[customEvent][val].split(":");
-                if (tokens[1] == "text" || tokens[1] == "timestamp") {
-                    table += "<td class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('" + tokens[0] + "=xxxx');\" title='Narrows down a filter to a single organisation. For example '" + tokens[0] + "=xxxx' tabindex='-1'>" + tokens[0] + "</a></td>";
+                if (tokens[1] == "text") {
+                    table += "<td class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('" + tokens[0] + "=xxxx');\" title='Narrows down a filter to a single "+tokens[0]+". For example " + tokens[0] + "=xxxx' tabindex='-1'>" + tokens[0] + "</a></td>";
+                }
+                if(tokens[0] == "threadname"){
+                    table += "<td class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('frame=xxxx');\" title='Narrows down a filter to a single frame. For example frame=xxxx' tabindex='-1'>frame</a></td>";
                 }
             }
-            table += "<td class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('frame=xxxx');\" title='Narrows down a filter to a single organisation. For example 'frame=xxxx' tabindex='-1'>frame</a></td>";
-
         }
         table += "</tr></table>";
         $("#contexthints").html(table);
