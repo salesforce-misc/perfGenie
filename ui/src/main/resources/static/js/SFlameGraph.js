@@ -81,6 +81,7 @@ class SFlameGraph {
 
     showTreeV1Flame(treeToProcess, searchString) {
         SFlameGraph.instance.#searchMatchCount = 0;
+        $(SFlameGraph.instance.#SFlameGraphDetailsDiv).html("");
         if (searchString != "" && searchString != undefined) {
             SFlameGraph.instance.#flameGraphSearch = true;
             SFlameGraph.instance.#flameGraphSearchStr = searchString;
@@ -299,6 +300,7 @@ class SFlameGraph {
 
     showTreeV1FlameCompare(treeToProcess, searchString) {
         SFlameGraph.instance.#searchMatchCount = 0;
+        $(SFlameGraph.instance.#SFlameGraphDetailsDiv).html("");
         if (searchString != "" && searchString != undefined) {
             SFlameGraph.instance.#flameGraphSearch = true;
             SFlameGraph.instance.#flameGraphSearchStr = searchString;
