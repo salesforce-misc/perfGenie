@@ -61,7 +61,7 @@ The applicaiton server has a cron job to monitor and parse JFR (*.jfr or *.jfr.g
 - Metric timeline view (based on custom event metrics)
 - Request timeline view (to see samples of single request)
 
-##User interface:
+## User interface:
 <img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/ui.jpg?raw=true"   />
 
 ### Context Filters
