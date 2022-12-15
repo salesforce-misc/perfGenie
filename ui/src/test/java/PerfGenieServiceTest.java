@@ -12,7 +12,7 @@ import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 import com.salesforce.cantor.Cantor;
 import com.salesforce.cantor.h2.CantorOnH2;
-import server.StackDigVizService;
+import server.PerfGenieService;
 import server.utils.CustomJfrParser;
 import server.utils.EventHandler;
 import server.utils.Utils;
@@ -25,19 +25,19 @@ import java.util.UUID;
 
 import static org.testng.Assert.assertTrue;
 
-public class StackDigVizServiceTest extends StackDigVizService {
+public class PerfGenieServiceTest extends PerfGenieService {
     private static  CustomJfrParser parser = new CustomJfrParser(1);
     private static final Cantor cantor = getCantorInstance();
-    public StackDigVizServiceTest serviceTest;
+    public PerfGenieServiceTest serviceTest;
     String guid = Utils.generateGuid();
 
-    StackDigVizServiceTest() throws IOException{
+    PerfGenieServiceTest() throws IOException{
         super(parser,cantor);
     }
 
     @BeforeSuite
     void setup() throws IOException{
-        serviceTest = new StackDigVizServiceTest();
+        serviceTest = new PerfGenieServiceTest();
     }
 
     @Test

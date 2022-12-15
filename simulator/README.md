@@ -9,7 +9,7 @@ Java Transaction Simulator is a load generation tool that provides a way to simu
 #### Clone & build the repository
 
 ```sh
-$ git clone https://github.com/salesforce-misc/StackDigViz.git
+$ git clone https://github.com/salesforce-misc/PerfGenie.git
 $ export JAVA_HOME=<jdk8 home path>
 $ mvn clean install
 ```

@@ -3076,13 +3076,13 @@
         return FilterLevel.UNDEFINED;
     }
 
-    function callTreeStackDigVizAjax(pod, method, endpoint, successFunc) {
+    function callTreePerfGenieAjax(pod, method, endpoint, successFunc) {
         const headers = {};
-        return internalStackDigVizAjax(endpoint, method, successFunc, () => {
+        return internalPerfGenieAjax(endpoint, method, successFunc, () => {
         }, headers);
     }
 
-    function internalStackDigVizAjax(url, method, successFunc, errorFunc, headers, data, includeCookies = false) {
+    function internalPerfGenieAjax(url, method, successFunc, errorFunc, headers, data, includeCookies = false) {
         let requestObject = {
             url: url,
             type: method,

@@ -28,11 +28,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-public class StackDigVizService implements IStackDigVizService {
+public class PerfGenieService implements IPerfGenieService {
     final Cantor cantor;
     final CustomJfrParser parser;
     public static final String NAMESPACE_JFR_JSON_CACHE = "jfr-json-cache";
-    private static final Logger logger = Logger.getLogger(StackDigVizService.class.getName());
+    private static final Logger logger = Logger.getLogger(PerfGenieService.class.getName());
     private static String tenant = "dev";
     private static String host = "localhost";
     final CustomJfrParser.Config config = new CustomJfrParser.Config();
@@ -148,7 +148,7 @@ public class StackDigVizService implements IStackDigVizService {
         return response;
     }
 
-    public StackDigVizService(final CustomJfrParser parser, final Cantor cantor) throws IOException{
+    public PerfGenieService(final CustomJfrParser parser, final Cantor cantor) throws IOException{
         this.cantor = cantor;
         this.parser = parser;
         try {
@@ -164,7 +164,7 @@ public class StackDigVizService implements IStackDigVizService {
     }
 
     @Autowired
-    public StackDigVizService(final Cantor cantor, final CustomJfrParser parser) throws IOException{
+    public PerfGenieService(final Cantor cantor, final CustomJfrParser parser) throws IOException{
         this.cantor = cantor;
         this.parser = parser;
         try {

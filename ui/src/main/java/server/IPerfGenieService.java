@@ -10,7 +10,7 @@ package server;
 import java.io.IOException;
 import java.util.Map;
 
-public interface IStackDigVizService {
+public interface IPerfGenieService {
     /**
      * Store an event iwth given metadata
      *

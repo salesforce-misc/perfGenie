@@ -53,8 +53,8 @@ function stackDigVizAjax(pod, method, endpoint, successFunc, errorFunc) {
 
     const headers = {};
     const errorFuncWithRetry = function () {
-            return internalStackDigVizAjax(endpoint, method, successFunc, errorFunc, headers);
+            return internalPerfGenieAjax(endpoint, method, successFunc, errorFunc, headers);
     };
 
-    return internalStackDigVizAjax(endpoint, method, successFunc, errorFuncWithRetry, headers);
+    return internalPerfGenieAjax(endpoint, method, successFunc, errorFuncWithRetry, headers);
 }
