@@ -63,3 +63,21 @@ The applicaiton server has a cron job to monitor and parse JFR (*.jfr or *.jfr.g
 
 User interface:
 <img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/ui.jpg?raw=true"   />
+
+### Context Filters
+
+#### Context table view
+<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/contexttable.jpg?raw=true"/>
+
+#### Request samples view
+<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/showallrequests.jpg?raw=true"/>
+
+<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/requesttimeline.jpg?raw=true"/>
+
+#### Thread request view
+<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/threadrequestview.jpg?raw=true"/>
+
+#### Metric timeline view
+<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/metrictimelineview.jpg?raw=true"/>
+
+
