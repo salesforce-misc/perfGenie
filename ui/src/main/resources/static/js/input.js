@@ -227,8 +227,10 @@ $(function () {
         step: 1
     });
 
-    $("#update").click(function () {
-        addInputToURL();
+    $("#submit-input").click(function () {
+        if(validateDateRange(1) && validateDateRange(2)) {
+            addInputToURL();
+        }
     });
 
 });
