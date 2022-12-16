@@ -9,14 +9,14 @@ perfGenie is a Java Fligh Recorder or Async-profiler (JFR) profile parsing and w
 
 perfGenie can be deployed as a continuos profiling solution. It uses Cantor (https://github.com/salesforce/cantor) as a data layer, Cantor can be configred to store data in H2, MySQL or S3. This project is setup with a simple cron job to monitor a directory for any JFR files, parse and store in H2 (default configuration). 
 
-<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/flow.jpg?raw=true" width="500"  />
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/ui/src/main/resources/static/images/flow.jpg?raw=true" width="500"  />
 
 ### Development
 
 #### Clone the repository
 
 ```sh
-$ git clone git@github.com:salesforce-misc/StackDigViz.git
+$ git clone git@github.com:salesforce-misc/perfGenie.git
 ```
 
 #### Build
@@ -62,51 +62,51 @@ The applicaiton server has a cron job to monitor and parse JFR (*.jfr or *.jfr.g
 - Request timeline view (to see samples of single request)
 
 ## User interface:
-<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/ui.jpg?raw=true"   />
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/ui/src/main/resources/static/images/ui.jpg?raw=true"   />
 
 ### Context Filters
 
 #### Context table view
-<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/contexttable.jpg?raw=true"/>
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/ui/src/main/resources/static/images/contexttable.jpg?raw=true"/>
 
 #### Request samples view
-<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/showallrequests.jpg?raw=true"/>
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/ui/src/main/resources/static/images/showallrequests.jpg?raw=true"/>
 
-<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/requesttimeline.jpg?raw=true"/>
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/ui/src/main/resources/static/images/requesttimeline.jpg?raw=true"/>
 
 #### Thread request view
-<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/threadrequestview.jpg?raw=true"/>
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/ui/src/main/resources/static/images/threadrequestview.jpg?raw=true"/>
 
 #### Metric timeline view
-<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/metrictimelineview.jpg?raw=true"/>
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/ui/src/main/resources/static/images/metrictimelineview.jpg?raw=true"/>
 
 ### Profile views
 
 #### Calling context tree
-<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/treeview.jpg?raw=true"/>
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/ui/src/main/resources/static/images/treeview.jpg?raw=true"/>
 
 #### Calling context tree compare view
-<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/treeviewdiff.jpg?raw=true"/>
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/ui/src/main/resources/static/images/treeviewdiff.jpg?raw=true"/>
 
 #### Samples explorer
-<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/samplesexplorer.jpg?raw=true"/>
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/ui/src/main/resources/static/images/samplesexplorer.jpg?raw=true"/>
 
 #### Flame graph
-<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/flamegraph.jpg?raw=true"/>
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/ui/src/main/resources/static/images/flamegraph.jpg?raw=true"/>
 
 #### Flame graph compare view
-<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/flamegraphdiff.jpg?raw=true"/>
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/ui/src/main/resources/static/images/flamegraphdiff.jpg?raw=true"/>
 
 
 #### Thread state view
-<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/threadstateview.jpg?raw=true"/>
-<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/threadstatepop.jpg?raw=true"/>
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/ui/src/main/resources/static/images/threadstateview.jpg?raw=true"/>
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/ui/src/main/resources/static/images/threadstatepop.jpg?raw=true"/>
 
 #### River view (Experimental stack trace timeline view)
-<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/riverview.jpg?raw=true"/>
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/ui/src/main/resources/static/images/riverview.jpg?raw=true"/>
 
 #### Hotspot surface view (Experimental stack trace timeline view)
-<img src="https://github.com/salesforce-misc/StackDigViz/blob/main/ui/src/main/resources/static/images/surfaceview.jpg?raw=true"/>
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/ui/src/main/resources/static/images/surfaceview.jpg?raw=true"/>
 
 
 
