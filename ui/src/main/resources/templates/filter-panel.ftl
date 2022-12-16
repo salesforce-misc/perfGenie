@@ -1676,7 +1676,7 @@
         }
 
         timelinetitleIDHTML += "</select>" +
-            "&nbsp;profiling samples for reqId " + reqId + " " + moment.utc(Number(time)).format('YYYY-MM-DD HH:mm:ss.SSS') + " to " + moment.utc(Number(time) + runTime).format('YYYY-MM-DD HH:mm:ss.SSS');
+            "&nbsp;profiling samples between " + moment.utc(Number(time)).format('YYYY-MM-DD HH:mm:ss.SSS') + " to " + moment.utc(Number(time) + runTime).format('YYYY-MM-DD HH:mm:ss.SSS');
 
         document.getElementById(timelinetitleID).innerHTML = timelinetitleIDHTML;
         document.getElementById(threadstateID).innerHTML = str1;
