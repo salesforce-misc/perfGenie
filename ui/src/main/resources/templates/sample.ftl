@@ -637,7 +637,6 @@
                     sampleTablePage = sampleTable.page.info().page * sampleTable.page.len();
                     updateUrl("spage", sampleTablePage, true);
                 }
-                addClickActionsToFilterTable("sample-table");
             },
             "displayStart": sampleTablePage,
             aoColumnDefs: [
