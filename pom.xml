@@ -53,7 +53,7 @@
 
     <modules>
         <module>simulator</module>
-        <module>ui</module>
+        <module>perfgenie</module>
     </modules>
 
 </project>

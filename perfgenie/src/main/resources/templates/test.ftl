@@ -7,7 +7,7 @@
                     <div id="popupstackncontextview"
                          style="padding-top: 5px; padding-left: 0px;padding-right: 0px;"
                          class="popupstackncontextview col-lg-12">
-                        <span id="timelinepopuptitle" style="color: #686A6C;font-family: 'Arial', serif;">profiling samples for reqId 1641413985858:17016 2022-01-05 20:19:45.858 to 2022-01-05 20:24:24.691</span>
+                        <span id="timelinepopuptitle" style="color: #686A6C;font-family: 'Arial', serif;"></span>
                         <div style="padding-top:0px; padding-left: 0px;padding-right: 0px;" class="row col-lg-12">
                             <div style="padding-top: 0px; padding-left: 0px;padding-right: 5px;padding-bottom: 5px;"
                                  class="popupfilterpanel col-lg-9">
