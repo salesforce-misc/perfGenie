@@ -39,7 +39,7 @@ jfrdir=/tmp/jfrs
 
 #### Start application server
 ```sh
-$ java -jar ui/target/perfgenie-0.0.1-SNAPSHOT.jar
+$ java -jar perfgenie/target/perfgenie-0.0.1-SNAPSHOT.jar
 ```
 Access URL http://localhost:8080
 
