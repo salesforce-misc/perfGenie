@@ -237,6 +237,10 @@
             addTabNote(true,"Data not available to show this view")
             return;
         }
+        let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
+        if(selectedLevel !== FilterLevel.UNDEFINED){
+            addTabNote(true,"Filters not applied on this view.")
+        }
 
         sortPlotData();
         z_data = getplotData();

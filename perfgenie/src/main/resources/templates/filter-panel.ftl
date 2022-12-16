@@ -1357,11 +1357,11 @@
             if (dim == "timestamp") {
                 str += "<tr><td style=\"white-space: nowrap;\" title='start time of the request'>" + dim + "</td><td  style=\"white-space: nowrap;padding-left: 5px;\">" + moment.utc(record[dimIndexMap[dim]]).format('YYYY-MM-DD HH:mm:ss SSS') + " UTC</td></tr>";
             } else {
-                str += "<tr><td style=\"white-space: nowrap;\" title='start time of the request'>" + dim + "</td><td  style=\"white-space: nowrap;padding-left: 5px;\">" + record[dimIndexMap[dim]] + "</td></tr>";
+                str += "<tr><td style=\"white-space: nowrap;\" title=''>" + dim + "</td><td  style=\"white-space: nowrap;padding-left: 5px;\">" + record[dimIndexMap[dim]] + "</td></tr>";
             }
         }
         for (var metric in metricsIndexMap) {
-            str += "<tr><td style=\"white-space: nowrap;\" title='start time of the request'>" + metric + "</td><td  style=\"white-space: nowrap;padding-left: 5px;\">" + record[metricsIndexMap[metric]] + "</td></tr>";
+            str += "<tr><td style=\"white-space: nowrap;\" title=''>" + metric + "</td><td  style=\"white-space: nowrap;padding-left: 5px;\">" + record[metricsIndexMap[metric]] + "</td></tr>";
         }
         return str;
     }
@@ -1676,7 +1676,7 @@
         }
 
         timelinetitleIDHTML += "</select>" +
-            "&nbsp;profiling samples for reqId " + reqId + " " + moment.utc(Number(time)).format('YYYY-MM-DD HH:mm:ss.SSS') + " to " + moment.utc(Number(time) + runTime).format('YYYY-MM-DD HH:mm:ss.SSS');
+            "&nbsp;profiling samples between " + moment.utc(Number(time)).format('YYYY-MM-DD HH:mm:ss.SSS') + " to " + moment.utc(Number(time) + runTime).format('YYYY-MM-DD HH:mm:ss.SSS');
 
         document.getElementById(timelinetitleID).innerHTML = timelinetitleIDHTML;
         document.getElementById(threadstateID).innerHTML = str1;
@@ -2250,12 +2250,13 @@
         if (contextData != undefined && contextData.header != undefined) {
             for (let val in contextData.header[customEvent]) {
                 const tokens = contextData.header[customEvent][val].split(":");
-                if (tokens[1] == "text" || tokens[1] == "timestamp") {
-                    table += "<td class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('" + tokens[0] + "=xxxx');\" title='Narrows down a filter to a single organisation. For example '" + tokens[0] + "=xxxx' tabindex='-1'>" + tokens[0] + "</a></td>";
+                if (tokens[1] == "text") {
+                    table += "<td class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('" + tokens[0] + "=xxxx');\" title='Narrows down a filter to a single "+tokens[0]+". For example " + tokens[0] + "=xxxx' tabindex='-1'>" + tokens[0] + "</a></td>";
+                }
+                if(tokens[0] == "threadname"){
+                    table += "<td class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('frame=xxxx');\" title='Narrows down a filter to a single frame. For example frame=xxxx' tabindex='-1'>frame</a></td>";
                 }
             }
-            table += "<td class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('frame=xxxx');\" title='Narrows down a filter to a single organisation. For example 'frame=xxxx' tabindex='-1'>frame</a></td>";
-
         }
         table += "</tr></table>";
         $("#contexthints").html(table);
