@@ -1357,11 +1357,11 @@
             if (dim == "timestamp") {
                 str += "<tr><td style=\"white-space: nowrap;\" title='start time of the request'>" + dim + "</td><td  style=\"white-space: nowrap;padding-left: 5px;\">" + moment.utc(record[dimIndexMap[dim]]).format('YYYY-MM-DD HH:mm:ss SSS') + " UTC</td></tr>";
             } else {
-                str += "<tr><td style=\"white-space: nowrap;\" title='start time of the request'>" + dim + "</td><td  style=\"white-space: nowrap;padding-left: 5px;\">" + record[dimIndexMap[dim]] + "</td></tr>";
+                str += "<tr><td style=\"white-space: nowrap;\" title=''>" + dim + "</td><td  style=\"white-space: nowrap;padding-left: 5px;\">" + record[dimIndexMap[dim]] + "</td></tr>";
             }
         }
         for (var metric in metricsIndexMap) {
-            str += "<tr><td style=\"white-space: nowrap;\" title='start time of the request'>" + metric + "</td><td  style=\"white-space: nowrap;padding-left: 5px;\">" + record[metricsIndexMap[metric]] + "</td></tr>";
+            str += "<tr><td style=\"white-space: nowrap;\" title=''>" + metric + "</td><td  style=\"white-space: nowrap;padding-left: 5px;\">" + record[metricsIndexMap[metric]] + "</td></tr>";
         }
         return str;
     }
