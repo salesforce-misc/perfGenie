@@ -871,8 +871,8 @@ public class EventHandler {
 
         int sf = 0;
         List<StackFrame> ch = null;
-        transient Map<Integer, StackFrame> chMap = new HashMap<>();
-        transient Map<Integer, Integer> sm = new HashMap<>();//to tell a stack start and end in tree
+        transient Map<Integer, StackFrame> chMap = new HashMap<>(1);
+        transient Map<Integer, Integer> sm = new HashMap<>(1);//to tell a stack start and end in tree
 
         public StackFrame() {
         }
