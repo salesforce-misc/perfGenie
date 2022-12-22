@@ -17,10 +17,11 @@ import java.io.IOException;
 
 @Configuration
 public class PerfGenieConfiguration {
+    final CustomJfrParser.Config config = new CustomJfrParser.Config();
 
     @Bean
     public Cantor getCantor()  throws IOException {
-        return new CantorOnH2("/tmp/h2");
+        return new CantorOnH2(config.getH2dir());
     }
     @Bean
     public CustomJfrParser getCustomParser()  throws IOException {

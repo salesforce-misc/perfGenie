@@ -36,6 +36,7 @@ customevents=LogContext;MqFrm;CPUEvent;MemoryEvent
 profiles=ExecutionS;Socket
 jfrdir=/tmp/jfrs
 tenant=dev
+h2dir=/tmp/h2.db
 ```
 
 #### Start application server
