@@ -234,6 +234,12 @@ public class CustomJfrParser {
         }
 
         String tenant = "dev";
+
+        public String getH2dir() {
+            return h2dir;
+        }
+
+        String h2dir = "/tmp/h2";
         List<String> profiles = new ArrayList<>(); //Arrays.asList("ExecutionS", "Socket");
         List<String> customevents = new ArrayList<>(); //rrays.asList("LogContext", "MqFrm", "CPUEvent", "MemoryEvent");
 
@@ -268,6 +274,10 @@ public class CustomJfrParser {
                 if(prop.getProperty("tenant") != null){
                     tenant=prop.getProperty("tenant");
                 }
+                if(prop.getProperty("h2dir") != null){
+                    h2dir=prop.getProperty("h2dir");
+                }
+
                 logger.info("profiles being parsed:" + profiles.toString());
                 logger.info("customevents being parsed:" + customevents.toString());
                 logger.info("dir monitored to parse jfr files:" + jfrdir);
