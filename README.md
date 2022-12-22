@@ -35,6 +35,7 @@ ex:
 customevents=LogContext;MqFrm;CPUEvent;MemoryEvent
 profiles=ExecutionS;Socket
 jfrdir=/tmp/jfrs
+tenant=dev
 ```
 
 #### Start application server
