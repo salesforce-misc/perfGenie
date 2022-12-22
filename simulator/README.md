@@ -16,21 +16,19 @@ $ mvn clean install
 #### Run
 
 ```sh
-$ java -jar simulator/target/simulator-0.0.1-SNAPSHOT.jar
+usage: java -jar simulator/target/simulator-0.0.1-SNAPSHOT.jar [-b <arg>]
+       [-c <arg>] [-d <arg>] [-i <arg>] [-m <arg>] [-t <arg>]
+ -b,--txCount <arg>          Transactions per simulator (Default: 1000)
 
-Below configuration options are available on the simulator.
+ -c,--highCpuProb <arg>      High CPU event probability (Default: 0.05)
 
--t,--threads <arg>          Number of simulator thread to spin up (Default: 10)
+ -d,--maxDepth <arg>         Max depth of transaction trace (Default: 10)
 
--b,--txCount <arg>          Number of transactions per thread (Default: 1000)
+ -i,--highIoProb <arg>       High IO events probability (Default: 0.01)
 
--d,--maxDepth <arg>         Max depth of the transaction trace (Default: 10)
+ -m,--highMemoryProb <arg>   High Memory event probability (Default: 0.01)
 
--c,--highCpuProb <arg>      Probability of high CPU events (Default: 0.05)
-
--i,--highIoProb <arg>       Probability of high IO events (Default: 0.01)
-
--m,--highMemoryProb <arg>   Probability of high Memory events (Default:0.01)
+ -t,--threads <arg>          Simulator instance count (Default: 10)
 
 Note: Probability values range form (0-1)
 ```

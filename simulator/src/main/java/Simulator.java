@@ -93,12 +93,12 @@ public class Simulator extends Thread {
 
     public static void main(String[] args) throws InterruptedException, ParseException, IOException {
         final Options options = new Options();
-        final Option threadOpt = new Option("t", "threads", true, "number of simulator thread to spin up (Default: 10)");
-        final Option txCountOpt = new Option("b", "txCount", true, "number of transactions per thread (Default: 1000)");
-        final Option maxDepthOpt = new Option("d", "maxDepth", true, "max depth of the trace (Default: 10)");
-        final Option highCpuProbOpt = new Option("c", "highCpuProb", true, "probability of high CPU events (Default: 0.05)");
-        final Option highMemoryProbOpt = new Option("m", "highMemoryProb", true, "probability of high Memory events (Default: 0.01)");
-        final Option highIOProbOpt = new Option("i", "highIoProb", true, "probability of high IO events (Default: 0.01)");
+        final Option threadOpt = new Option("t", "threads", true, "Simulator instance count (Default: 10)");
+        final Option txCountOpt = new Option("b", "txCount", true, "Transactions per simulator (Default: 1000)");
+        final Option maxDepthOpt = new Option("d", "maxDepth", true, "Max depth of transaction trace (Default: 10)");
+        final Option highCpuProbOpt = new Option("c", "highCpuProb", true, "High CPU event probability (Default: 0.05)");
+        final Option highMemoryProbOpt = new Option("m", "highMemoryProb", true, "High Memory event probability (Default: 0.01)");
+        final Option highIOProbOpt = new Option("i", "highIoProb", true, "High IO events probability (Default: 0.01)");
 
         options.addOption(threadOpt);
         options.addOption(maxDepthOpt);
@@ -107,8 +107,16 @@ public class Simulator extends Thread {
         options.addOption(highMemoryProbOpt);
         options.addOption(highIOProbOpt);
 
+        final HelpFormatter formatter = new HelpFormatter();
         final CommandLineParser parser = new DefaultParser();
-        final CommandLine cmd = parser.parse(options, args);
+        CommandLine cmd = null;
+        try {
+            cmd = parser.parse(options, args);
+        } catch (Exception ignored) {
+            formatter.printHelp("java -jar simulator/target/simulator-0.0.1-SNAPSHOT.jar", "", options, "Note: Probability values range form (0-1)",true);
+            System.exit(1);
+        }
+
         final int threadCount = Integer.parseInt(cmd.getOptionValue("threads", "10"));
         final Map<Integer, Simulator> threads = new HashMap<>();
 
