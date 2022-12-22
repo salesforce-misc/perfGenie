@@ -40,6 +40,7 @@ public class PerfGenieService implements IPerfGenieService {
     //cronjob to parse jfrs placed in a directory
     @Scheduled(cron = "*/10 * * ? * *")
     private void cronJob() throws IOException {
+        tenant = config.getTenant();
         host = InetAddress.getLocalHost().getHostName();
         logger.info("looking for Jfrs at " + config.getJfrdir());
         File folder = new File(config.getJfrdir());

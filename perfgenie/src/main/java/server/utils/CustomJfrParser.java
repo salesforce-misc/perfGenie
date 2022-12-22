@@ -228,6 +228,12 @@ public class CustomJfrParser {
         }
 
         String jfrdir = "/tmp/jfrs";
+
+        public String getTenant() {
+            return tenant;
+        }
+
+        String tenant = "dev";
         List<String> profiles = new ArrayList<>(); //Arrays.asList("ExecutionS", "Socket");
         List<String> customevents = new ArrayList<>(); //rrays.asList("LogContext", "MqFrm", "CPUEvent", "MemoryEvent");
 
@@ -258,6 +264,9 @@ public class CustomJfrParser {
                 }
                 if(prop.getProperty("jfrdir") != null){
                     jfrdir=prop.getProperty("jfrdir");
+                }
+                if(prop.getProperty("tenant") != null){
+                    tenant=prop.getProperty("tenant");
                 }
                 logger.info("profiles being parsed:" + profiles.toString());
                 logger.info("customevents being parsed:" + customevents.toString());
