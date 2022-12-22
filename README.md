@@ -93,11 +93,10 @@ The application server has a cron job to monitor and parse JFR (*.jfr or *.jfr.g
 <img src="https://github.com/salesforce-misc/perfGenie/blob/main/perfgenie/src/main/resources/static/images/samplesexplorer.jpg?raw=true"/>
 
 #### Flame graph
-<img src="https://github.com/salesforce-misc/perfGenie/blob/main/perfgenie/src/main/resources/static/images/flamegraph.jpg?raw=true"/>
+Work in progress
 
 #### Flame graph compare view
-<img src="https://github.com/salesforce-misc/perfGenie/blob/main/perfgenie/src/main/resources/static/images/flamegraphdiff.jpg?raw=true"/>
-
+Work in progress
 
 #### Thread state view
 <img src="https://github.com/salesforce-misc/perfGenie/blob/main/perfgenie/src/main/resources/static/images/threadstateview.jpg?raw=true"/>
