@@ -45,10 +45,15 @@ public class PerfGenieService implements IPerfGenieService {
         logger.info("looking for Jfrs at " + config.getJfrdir());
         File folder = new File(config.getJfrdir());
         File[] listOfFiles = folder.listFiles();
+        Arrays.sort(listOfFiles, Comparator.comparingLong(File::lastModified));
+
         if(listOfFiles == null)
             return;
 
         for (File file : listOfFiles) {
+
+            logger.info("processing file: " + file.getName());
+
             if (file.isFile() && file.getName().contains(".jfr") || file.getName().contains(".jfr.gz")) {
                 EventHandler handler = new EventHandler();
                 long timestamp = System.currentTimeMillis();
