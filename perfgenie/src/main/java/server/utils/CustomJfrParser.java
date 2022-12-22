@@ -240,6 +240,43 @@ public class CustomJfrParser {
         }
 
         String h2dir = "/tmp/h2";
+
+        public String getStorageType() {
+            return storageType;
+        }
+
+        String mySQL_host="localhost";
+        int mySQL_port=3306;
+        String mySQL_user="root";
+
+
+        public String getMySQL_host() {
+            return mySQL_host;
+        }
+
+        public int getMySQL_port() {
+            return mySQL_port;
+        }
+
+        public String getMySQL_user() {
+            return mySQL_user;
+        }
+
+        public String getMySQL_pwd() {
+            return mySQL_pwd;
+        }
+
+        String mySQL_pwd="xxxx";
+
+        public String getGrpc_target() {
+            return grpc_target;
+        }
+
+        String grpc_target = "localhost:7443";
+
+
+
+        String storageType = "h2";
         List<String> profiles = new ArrayList<>(); //Arrays.asList("ExecutionS", "Socket");
         List<String> customevents = new ArrayList<>(); //rrays.asList("LogContext", "MqFrm", "CPUEvent", "MemoryEvent");
 
@@ -276,6 +313,24 @@ public class CustomJfrParser {
                 }
                 if(prop.getProperty("h2dir") != null){
                     h2dir=prop.getProperty("h2dir");
+                }
+                if(prop.getProperty("storageType") != null){
+                    storageType=prop.getProperty("storageType");
+                }
+                if(prop.getProperty("mySQL.host") != null){
+                    mySQL_host=prop.getProperty("mySQL.host");
+                }
+                if(prop.getProperty("mySQL.port") != null){
+                    mySQL_port=Integer.parseInt(prop.getProperty("mySQL.port"));
+                }
+                if(prop.getProperty("mySQL.pwd") != null){
+                    mySQL_pwd=prop.getProperty("mySQL.pwd");
+                }
+                if(prop.getProperty("grpc.target") != null){
+                    grpc_target=prop.getProperty("grpc.target");
+                }
+                if(prop.getProperty("mySQL.user") != null){
+                    mySQL_user=prop.getProperty("mySQL.user");
                 }
 
                 logger.info("profiles being parsed:" + profiles.toString());

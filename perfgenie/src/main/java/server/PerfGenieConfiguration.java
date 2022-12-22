@@ -9,6 +9,8 @@ package server;
 
 import com.salesforce.cantor.Cantor;
 import com.salesforce.cantor.h2.CantorOnH2;
+import com.salesforce.cantor.mysql.CantorOnMysql;
+import com.salesforce.cantor.grpc.CantorOnGrpc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import server.utils.CustomJfrParser;
@@ -21,8 +23,15 @@ public class PerfGenieConfiguration {
 
     @Bean
     public Cantor getCantor()  throws IOException {
-        return new CantorOnH2(config.getH2dir());
+        if(config.getStorageType().equals("mySQL")) {
+            return new CantorOnMysql(config.getMySQL_host(),config.getMySQL_port(),config.getMySQL_user(),config.getMySQL_pwd());
+        }else if(config.getStorageType().equals("grpc")) {
+            return new CantorOnGrpc(config.getGrpc_target());
+        }else{
+            return new CantorOnH2(config.getH2dir());//default
+        }
     }
+
     @Bean
     public CustomJfrParser getCustomParser()  throws IOException {
         return new CustomJfrParser(2);
