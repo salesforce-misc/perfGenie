@@ -49,6 +49,7 @@ Access URL http://localhost:8080
 The application server has a cron job to monitor and parse JFR (*.jfr or *.jfr.gz), Jstack (*.jstack) files available at /tmp/jfrs/ 
 
 Note: example files provided in examples directory can be copied into jfrdir for testing
+
 Note: refer simiulator module to generate a sample jfr with custom events added
 
 ### Features
