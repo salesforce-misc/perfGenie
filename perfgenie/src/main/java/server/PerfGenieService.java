@@ -13,6 +13,7 @@ import com.salesforce.cantor.Cantor;
 import com.salesforce.cantor.Events;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
+import server.utils.CantorEventToFileConverter;
 import server.utils.CustomJfrParser;
 import server.utils.EventHandler;
 import server.utils.Utils;
@@ -31,6 +32,7 @@ import java.util.logging.Logger;
 public class PerfGenieService implements IPerfGenieService {
     final Cantor cantor;
     final CustomJfrParser parser;
+    final CantorEventToFileConverter converter;
     public static final String NAMESPACE_JFR_JSON_CACHE = "jfr-json-cache";
     private static final Logger logger = Logger.getLogger(PerfGenieService.class.getName());
     private static String tenant = "dev";
@@ -74,12 +76,12 @@ public class PerfGenieService implements IPerfGenieService {
                         queryMap.put("type", "jfrprofile");
                         queryMap.put("name", l.get(i));
 
-                        addEvent(NAMESPACE_JFR_JSON_CACHE, Utils.toJson(profile), timestamp, dimMap, queryMap);
+                        converter.upload(NAMESPACE_JFR_JSON_CACHE, timestamp, queryMap, dimMap, Utils.toJson(profile));
                     }
                     Object logContext = handler.getLogContext();
                     queryMap.put("type", "jfrevent");
                     queryMap.put("name", "customEvent");
-                    addEvent(NAMESPACE_JFR_JSON_CACHE, Utils.toJson(logContext), timestamp, dimMap, queryMap);
+                    converter.upload(NAMESPACE_JFR_JSON_CACHE, timestamp, queryMap, dimMap, Utils.toJson(logContext));
                 } catch (Exception e) {
                     System.out.println(e);
                     logger.warning("Exception parsing file " + file.getPath() + ":" + e.getStackTrace());
@@ -113,7 +115,7 @@ public class PerfGenieService implements IPerfGenieService {
                     Object profile = handler.getProfileTree("Jstack");
                     queryMap.put("type", "jstack");
                     queryMap.put("name", "Jstack");
-                    addEvent(NAMESPACE_JFR_JSON_CACHE, Utils.toJson(profile), timestamp, dimMap, queryMap);
+                    converter.upload(NAMESPACE_JFR_JSON_CACHE, timestamp, queryMap, dimMap, Utils.toJson(profile));
                 }catch (Exception e) {
                     System.out.println(e);
                     logger.warning("Exception parsing file " + file.getPath() + ":" + e.getStackTrace());
@@ -157,6 +159,7 @@ public class PerfGenieService implements IPerfGenieService {
     public PerfGenieService(final CustomJfrParser parser, final Cantor cantor) throws IOException{
         this.cantor = cantor;
         this.parser = parser;
+        converter = new CantorEventToFileConverter(cantor);
         try {
             this.cantor.events().store(
                     NAMESPACE_JFR_JSON_CACHE,
@@ -173,6 +176,7 @@ public class PerfGenieService implements IPerfGenieService {
     public PerfGenieService(final Cantor cantor, final CustomJfrParser parser) throws IOException{
         this.cantor = cantor;
         this.parser = parser;
+        converter = new CantorEventToFileConverter(cantor);
         try {
             this.cantor.events().store(
                     NAMESPACE_JFR_JSON_CACHE,
@@ -216,19 +220,13 @@ public class PerfGenieService implements IPerfGenieService {
     }
 
     @Override
-    public String getProfile(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException{
-        final List<Events.Event> results = this.cantor.events().get(
-                NAMESPACE_JFR_JSON_CACHE,
-                start,
-                end,
-                queryMap,
-                dimMap,
-                true
-        );
-        if(results.size() > 0){
-            return new String( Utils.decompress(results.get(0).getPayload()));
+    public String getProfile(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) {
+        try {
+            final CantorEventToFileConverter downloader = new CantorEventToFileConverter(this.cantor);
+            return downloader.download(NAMESPACE_JFR_JSON_CACHE, start, end, queryMap, dimMap, this.cantor);
+        } catch (Exception e) {
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Profiles not found", queryMap, null));
         }
-        return Utils.toJson( new EventHandler.JfrParserResponse(null, "Error: Profiles not found", queryMap, null));
     }
 
     private Map loadProfiles(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
