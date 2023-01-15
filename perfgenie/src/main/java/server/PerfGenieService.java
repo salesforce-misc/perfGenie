@@ -83,7 +83,7 @@ public class PerfGenieService implements IPerfGenieService {
                     Object logContext = handler.getLogContext();
                     queryMap.put("type", "jfrevent");
                     queryMap.put("name", "customEvent");
-                    addEvent(NAMESPACE_JFR_JSON_CACHE, Utils.toJson(logContext), timestamp, dimMap, queryMap);
+                    uploader.upload(NAMESPACE_JFR_JSON_CACHE, timestamp, queryMap, dimMap, Utils.toJson(logContext));
                 } catch (Exception e) {
                     System.out.println(e);
                     logger.warning("Exception parsing file " + file.getPath() + ":" + e.getStackTrace());
@@ -247,18 +247,8 @@ public class PerfGenieService implements IPerfGenieService {
             for (String guid : profiles.keySet()) {
                 long timestamp = profiles.get(guid);
                 queryMap.put("guid",guid);
-                final List<Events.Event> results = this.cantor.events().get(
-                        NAMESPACE_JFR_JSON_CACHE,
-                        start,
-                        end,
-                        queryMap,
-                        dimMap,
-                        true
-                );
-                if(results.size() <= 0){
-                    return Utils.toJson( new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate", queryMap, null));
-                }
-                aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(new String( Utils.decompress(results.get(0).getPayload())), EventHandler.JfrParserResponse.class));
+                final String result = downloader.download(NAMESPACE_JFR_JSON_CACHE, start, end, queryMap, dimMap);
+                aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(result, EventHandler.JfrParserResponse.class));
             }
             SurfaceDataResponse res = genSurfaceData(aggregator.getAggregatedProfileTree(), tenant,queryMap.get("host"));
             EventHandler.JfrParserResponse apr= (EventHandler.JfrParserResponse)aggregator.getAggregatedProfileTree();
@@ -283,18 +273,8 @@ public class PerfGenieService implements IPerfGenieService {
             for (String guid : profiles.keySet()) {
                 long timestamp = profiles.get(guid);
                 queryMap.put("guid",guid);
-                final List<Events.Event> results = this.cantor.events().get(
-                        NAMESPACE_JFR_JSON_CACHE,
-                        start,
-                        end,
-                        queryMap,
-                        dimMap,
-                        true
-                );
-                if(results.size() <= 0){
-                    return Utils.toJson( new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate", queryMap, null));
-                }
-                aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(new String( Utils.decompress(results.get(0).getPayload())), EventHandler.ContextResponse.class));
+                final String result = downloader.download(NAMESPACE_JFR_JSON_CACHE, start, end, queryMap, dimMap);
+                aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(result, EventHandler.ContextResponse.class));
             }
             return Utils.toJson(aggregator.getLogContext());
         }catch (Exception e){
