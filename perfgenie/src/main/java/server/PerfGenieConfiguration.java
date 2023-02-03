@@ -14,6 +14,7 @@ import com.salesforce.cantor.grpc.CantorOnGrpc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import server.utils.CustomJfrParser;
+import server.utils.EventStore;
 
 import java.io.IOException;
 
@@ -33,11 +34,16 @@ public class PerfGenieConfiguration {
     }
 
     @Bean
+    public EventStore getEventStore(final Cantor cantor)  throws IOException {
+        return new EventStore(cantor);
+    }
+
+    @Bean
     public CustomJfrParser getCustomParser()  throws IOException {
         return new CustomJfrParser(2);
     }
     @Bean
-    public PerfGenieService getServerService(final Cantor cantor, final CustomJfrParser parser)  throws IOException {
-        return new PerfGenieService(cantor, parser);
+    public PerfGenieService getServerService(final EventStore eventStore, final CustomJfrParser parser)  throws IOException {
+        return new PerfGenieService(eventStore, parser);
     }
 }

@@ -13,11 +13,7 @@ import com.salesforce.cantor.Cantor;
 import com.salesforce.cantor.Events;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
-import server.utils.CustomJfrParser;
-import server.utils.Downloader;
-import server.utils.EventHandler;
-import server.utils.Uploader;
-import server.utils.Utils;
+import server.utils.*;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -30,13 +26,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-public class PerfGenieService implements IPerfGenieService {
-    final Cantor cantor;
-    final CustomJfrParser parser;
-    final Uploader uploader;
-    final Downloader downloader;
+//import static server.utils.EventStore.NAMESPACE_JFR_JSON_CACHE;
 
-    public static final String NAMESPACE_JFR_JSON_CACHE = "jfr-json-cache";
+public class PerfGenieService implements IPerfGenieService {
+    final EventStore eventStore;
+    final CustomJfrParser parser;
+
     private static final Logger logger = Logger.getLogger(PerfGenieService.class.getName());
     private static String tenant = "dev";
     private static String host = "localhost";
@@ -52,7 +47,7 @@ public class PerfGenieService implements IPerfGenieService {
         File[] listOfFiles = folder.listFiles();
         Arrays.sort(listOfFiles, Comparator.comparingLong(File::lastModified));
 
-        if(listOfFiles == null)
+        if (listOfFiles == null)
             return;
 
         for (File file : listOfFiles) {
@@ -78,19 +73,23 @@ public class PerfGenieService implements IPerfGenieService {
                         Object profile = handler.getProfileTree(l.get(i));
                         queryMap.put("type", "jfrprofile");
                         queryMap.put("name", l.get(i));
-                        uploader.upload(NAMESPACE_JFR_JSON_CACHE, timestamp, queryMap, dimMap, Utils.toJson(profile));
+                        final String payload = Utils.toJson(profile);
+                        int payloadSize = payload.length();
+                        queryMap.put("size", String.valueOf(payloadSize));
+                        eventStore.addEvent(timestamp, queryMap, dimMap, payload);
                     }
                     Object logContext = handler.getLogContext();
                     queryMap.put("type", "jfrevent");
                     queryMap.put("name", "customEvent");
-                    uploader.upload(NAMESPACE_JFR_JSON_CACHE, timestamp, queryMap, dimMap, Utils.toJson(logContext));
+
+                    eventStore.addEvent(timestamp, queryMap, dimMap, Utils.toJson(logContext));
                 } catch (Exception e) {
                     System.out.println(e);
                     logger.warning("Exception parsing file " + file.getPath() + ":" + e.getStackTrace());
                 }
                 new File(file.getPath()).delete();
-                logger.info("successfully parsed " + file.getPath() + " and stored event in database under namespace: " + NAMESPACE_JFR_JSON_CACHE + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
-            }else if(file.isFile() && file.getName().contains(".jstack")){
+                logger.info("successfully parsed " + file.getPath() + " and stored " + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+            } else if (file.isFile() && file.getName().contains(".jstack")) {
                 EventHandler handler = new EventHandler();
                 long timestamp = System.currentTimeMillis();
                 String guid = Utils.generateGuid();
@@ -107,7 +106,7 @@ public class PerfGenieService implements IPerfGenieService {
                     String content = stringBuilder.toString();
                     handler.initializeProfile("Jstack");
                     handler.initializePid("Jstack");
-                    handler.processJstackEvent(timestamp*1000000,content);
+                    handler.processJstackEvent(timestamp * 1000000, content);
                     final Map<String, Double> dimMap = new HashMap<>();
                     final Map<String, String> queryMap = new HashMap<>();
                     queryMap.put("guid", guid);
@@ -117,168 +116,114 @@ public class PerfGenieService implements IPerfGenieService {
                     Object profile = handler.getProfileTree("Jstack");
                     queryMap.put("type", "jstack");
                     queryMap.put("name", "Jstack");
-                    addEvent(NAMESPACE_JFR_JSON_CACHE, Utils.toJson(profile), timestamp, dimMap, queryMap);
-                }catch (Exception e) {
+                    eventStore.addEvent(timestamp, queryMap, dimMap, Utils.toJson(profile));
+                } catch (Exception e) {
                     System.out.println(e);
                     logger.warning("Exception parsing file " + file.getPath() + ":" + e.getStackTrace());
                 }
                 new File(file.getPath()).delete();
-                logger.info("successfully parsed " + file.getPath() + " and stored event in database under namespace: " + NAMESPACE_JFR_JSON_CACHE + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+                logger.info("successfully parsed " + file.getPath() + " and stored event " + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
             }
+        }
+    }
+
+    @Autowired
+    public PerfGenieService(final EventStore eventStore, final CustomJfrParser parser) throws IOException {
+        this.eventStore = eventStore;
+        this.parser = parser;
+    }
+
+    @Override
+    public boolean addEvent(final String payload, final long timestamp, final Map<String, Double> dimMap, final Map<String, String> queryMap) throws IOException {
+        return eventStore.addEvent(timestamp, queryMap,dimMap,payload);
+    }
+
+    @Override
+    public String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
+        return eventStore.getMeta(start, end, queryMap, dimMap);
+    }
+
+    @Override
+    public String getProfile(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) {
+        try {
+            return eventStore.getEvent(start, end, queryMap, dimMap);
+        } catch (Exception e) {
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Profiles not found", queryMap, null));
+        }
+    }
+
+    @Override
+    public String getProfiles(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
+        queryMap.put("type", "=jfrprofile");
+        Map<String, Map<String, String>> profiles = eventStore.loadProfiles(tenant, start, end, queryMap, dimMap);
+        if (profiles == null || profiles.size() < 1) {
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "no profiles found for the given time range", queryMap, null));
+        }
+        try {
+            final EventHandler aggregator = new EventHandler();
+            for (String guid : profiles.keySet()) {
+                //long timestamp = Integer.parseInt(profiles.get(guid).get("timestamp"));
+                queryMap.put("guid", guid);
+                final String result = eventStore.getEvent(start, end, queryMap, dimMap,Integer.parseInt(profiles.get(guid).get("size")));
+                aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(result, EventHandler.JfrParserResponse.class));
+            }
+            SurfaceDataResponse res = genSurfaceData(aggregator.getAggregatedProfileTree(), tenant, queryMap.get("host"));
+            EventHandler.JfrParserResponse apr = (EventHandler.JfrParserResponse) aggregator.getAggregatedProfileTree();
+            apr.addMeta(ImmutableMap.of("data", Utils.toJson(res)));
+            final String response = Utils.toJson(apr);
+            return response;
+        } catch (Exception e) {
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate" + e.getMessage(), queryMap, null));
         }
     }
 
     @Override
     public String getJstack(final String tenant, final long start, final long end, final Map<String, String> queryMap) throws IOException {
         final Map<String, String> dimMap = new HashMap<>();
-        final List<Events.Event> results = this.cantor.events().get(
-                NAMESPACE_JFR_JSON_CACHE,
-                start - 1,
-                end + 1,
-                queryMap,
-                dimMap,
-                true
-        );
+        Map<String, Map<String, String>> profiles = eventStore.loadProfiles(tenant, start, end, queryMap, dimMap);
 
-        if (results.size() == 0) {
+        if (profiles == null || profiles.size() < 1) {
             return Utils.toJson(new EventHandler.JfrParserResponse(null, "Jstack events not found", queryMap, null));
         }
-
-        final EventHandler aggregator = new EventHandler();
-        for (final Events.Event r : results) {
-            final String json = new String(Utils.decompress(r.getPayload()));
-            aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(json, EventHandler.JfrParserResponse.class));
-        }
-        final EventHandler.JfrParserResponse res = aggregator.getAggregatedProfileTree();
-        int jstackInterval = (int) (end - start) / (results.size() * 1000);
-        jstackInterval = ((jstackInterval + 5) / 10) * 10; // round to nearest 10sec
-        res.addMeta(ImmutableMap.of("jstack-interval", Integer.toString(jstackInterval), "jstack-count", Integer.toString(results.size())));
-        final String response = Utils.toJson(res);
-        logger.info("getJstack response length: " + response.length());
-        return response;
-    }
-
-    @Autowired
-    public PerfGenieService(final Cantor cantor, final CustomJfrParser parser) throws IOException{
-        this.cantor = cantor;
-        this.parser = parser;
-        this.uploader = new Uploader(this.cantor);
-        this.downloader = new Downloader(this.cantor);
-        try {
-            this.cantor.events().store(
-                    NAMESPACE_JFR_JSON_CACHE,
-                    System.currentTimeMillis(),
-                    ImmutableMap.of(),
-                    ImmutableMap.of(),
-                    null);
-        }catch (Exception e) {
-            this.cantor.events().create(NAMESPACE_JFR_JSON_CACHE);
-        }
-    }
-
-    @Override
-    public boolean addEvent(final String namespace, final String payload, final long timestamp, final Map<String, Double> dimMap,final Map<String, String> queryMap ) throws IOException {
-        final Stopwatch timer = Stopwatch.createStarted();
-        this.cantor.events().store(
-                namespace,
-                timestamp,
-                queryMap,
-                dimMap,
-                Utils.compress(payload.getBytes(StandardCharsets.UTF_8)));
-
-        logger.info("successfully stored even in database under namespace: " + NAMESPACE_JFR_JSON_CACHE + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
-        return true;
-    }
-
-    @Override
-    public String getMeta(long start, long end,final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException{
-        final List<Events.Event> results = this.cantor.events().get(
-                NAMESPACE_JFR_JSON_CACHE,
-                start,
-                end,
-                queryMap,
-                dimMap,
-                false
-        );
-        if(results.size() > 0){
-            return Utils.toJson(results);
-        }
-        return Utils.toJson(results);
-    }
-
-    @Override
-    public String getProfile(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) {
-        try {
-            return downloader.download(NAMESPACE_JFR_JSON_CACHE, start, end, queryMap, dimMap);
-        } catch (Exception e) {
-            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Profiles not found", queryMap, null));
-        }
-    }
-
-    private Map loadProfiles(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
-        final List<Events.Event> results = this.cantor.events().get(
-                NAMESPACE_JFR_JSON_CACHE,
-                start,
-                end,
-                queryMap,
-                dimMap,
-                false
-        );
-        if(results.size() > 0){
-            Map <String , Long> profiles = new HashMap<>();
-            results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
-            for (final Events.Event result : results) {
-                profiles.put(result.getMetadata().get("guid"),  result.getTimestampMillis());
-            }
-            return profiles;
-        }
-        return null;
-    }
-
-    @Override
-    public String getProfiles(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException{
-        queryMap.put("type", "=jfrprofile");
-        Map <String , Long> profiles = loadProfiles(tenant, start, end, queryMap, dimMap);
-        if (profiles == null || profiles.size() < 1) {
-            return Utils.toJson(new EventHandler.JfrParserResponse(null, "no profiles found for the given time range", queryMap, null));
-        }
         try {
             final EventHandler aggregator = new EventHandler();
             for (String guid : profiles.keySet()) {
-                long timestamp = profiles.get(guid);
-                queryMap.put("guid",guid);
-                final String result = downloader.download(NAMESPACE_JFR_JSON_CACHE, start, end, queryMap, dimMap);
-                aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(result, EventHandler.JfrParserResponse.class));
+                //long timestamp = Integer.parseInt(profiles.get(guid).get("timestamp"));
+                queryMap.put("guid", guid);
+                final String json = eventStore.getEvent(start, end, queryMap, dimMap, Integer.parseInt(profiles.get(guid).get("size")));
+                aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(json, EventHandler.JfrParserResponse.class));
             }
-            SurfaceDataResponse res = genSurfaceData(aggregator.getAggregatedProfileTree(), tenant,queryMap.get("host"));
-            EventHandler.JfrParserResponse apr= (EventHandler.JfrParserResponse)aggregator.getAggregatedProfileTree();
-            apr.addMeta(ImmutableMap.of("data", Utils.toJson(res)));
-            final String response = Utils.toJson(apr);
+            final EventHandler.JfrParserResponse res = aggregator.getAggregatedProfileTree();
+            int jstackInterval = (int) (end - start) / (profiles.size() * 1000);
+            jstackInterval = ((jstackInterval + 5) / 10) * 10; // round to nearest 10sec
+            res.addMeta(ImmutableMap.of("jstack-interval", Integer.toString(jstackInterval), "jstack-count", Integer.toString(profiles.size())));
+            final String response = Utils.toJson(res);
+            logger.info("getJstack response length: " + response.length());
             return response;
-        }catch (Exception e){
-            return Utils.toJson( new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate" + e.getMessage(), queryMap, null));
+        } catch (Exception e) {
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate Jstack events " + e.getMessage(), queryMap, null));
         }
     }
 
     @Override
-    public String getCustomEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException{
+    public String getCustomEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
         queryMap.put("type", "jfrevent");
         queryMap.put("name", "=customEvent");
-        Map <String , Long> profiles = loadProfiles(tenant, start, end, queryMap, dimMap);
+        Map<String, Map<String, String>> profiles = eventStore.loadProfiles(tenant, start, end, queryMap, dimMap);
         if (profiles == null || profiles.size() < 1) {
             return Utils.toJson(new EventHandler.JfrParserResponse(null, "no profiles found for the given time range", queryMap, null));
         }
         try {
             final EventHandler aggregator = new EventHandler();
             for (String guid : profiles.keySet()) {
-                long timestamp = profiles.get(guid);
-                queryMap.put("guid",guid);
-                final String result = downloader.download(NAMESPACE_JFR_JSON_CACHE, start, end, queryMap, dimMap);
+                //long timestamp = Integer.parseInt(profiles.get(guid).get("timestamp"));
+                queryMap.put("guid", guid);
+                final String result = eventStore.getEvent(start, end, queryMap, dimMap, Integer.parseInt(profiles.get(guid).get("size")));
                 aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(result, EventHandler.ContextResponse.class));
             }
             return Utils.toJson(aggregator.getLogContext());
-        }catch (Exception e){
-            return Utils.toJson( new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate" + e.getMessage(), queryMap, null));
+        } catch (Exception e) {
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate" + e.getMessage(), queryMap, null));
         }
     }
 
@@ -295,35 +240,36 @@ public class PerfGenieService implements IPerfGenieService {
     private int totalSize = 0;
     private Map<String, Integer> chunkSurfaceData = new ConcurrentHashMap<>();
 
-    class SurfaceDataResponse{
+    class SurfaceDataResponse {
         private List cpuSamplesList;
         private List<Integer> chunkSamplesTotalList;
         private List<String> pathList = new ArrayList<String>();
         private List<Integer> pathSizeList = new ArrayList<Integer>();
-        private Map<Integer,List<Integer>> data = new HashMap<>();
-        SurfaceDataResponse(List cpuSamplesList,List<Integer> chunkSamplesTotalList,Map<String, List<String>> surfaceData){
-            this.cpuSamplesList=cpuSamplesList;
-            this.chunkSamplesTotalList=chunkSamplesTotalList;
+        private Map<Integer, List<Integer>> data = new HashMap<>();
+
+        SurfaceDataResponse(List cpuSamplesList, List<Integer> chunkSamplesTotalList, Map<String, List<String>> surfaceData) {
+            this.cpuSamplesList = cpuSamplesList;
+            this.chunkSamplesTotalList = chunkSamplesTotalList;
             int colIndex = 0;
             int maxCol = chunkCount;
-            for (int i = 0;i<uniquePaths.size();i++){
-                if(surfaceData.containsKey(uniquePaths.get(i)) && surfaceData.get(uniquePaths.get(i)).size()>0){
+            for (int i = 0; i < uniquePaths.size(); i++) {
+                if (surfaceData.containsKey(uniquePaths.get(i)) && surfaceData.get(uniquePaths.get(i)).size() > 0) {
                     List<String> list = surfaceData.get(uniquePaths.get(i));
-                    for(int j = 0; j<list.size();j++){
-                        if(!data.containsKey(colIndex)){
-                            data.put(colIndex,new ArrayList<Integer>());
+                    for (int j = 0; j < list.size(); j++) {
+                        if (!data.containsKey(colIndex)) {
+                            data.put(colIndex, new ArrayList<Integer>());
                         }
                         String[] pair = list.get(j).split(":");
-                        if(pair.length > 1) {
+                        if (pair.length > 1) {
                             for (int k = data.get(colIndex).size(); k < Integer.valueOf(pair[1]); k++) {
                                 data.get(colIndex).add(0);
                             }
                             data.get(colIndex).add(Integer.valueOf(pair[0]));
-                        }else{
+                        } else {
                             data.get(colIndex).add(Integer.valueOf(list.get(j)));
                         }
                     }
-                    for(int k = data.get(colIndex).size(); k< maxCol; k++){
+                    for (int k = data.get(colIndex).size(); k < maxCol; k++) {
                         data.get(colIndex).add(0);
                     }
                     pathList.add(uniquePaths.get(i));
@@ -332,33 +278,43 @@ public class PerfGenieService implements IPerfGenieService {
                 }
             }
         }
+
         public List getCpuSamplesList() {
             return cpuSamplesList;
         }
+
         public void setCpuSamplesList(List cpuSamplesList) {
             this.cpuSamplesList = cpuSamplesList;
         }
+
         public List getChunkSamplesTotalList() {
             return chunkSamplesTotalList;
         }
+
         public void setChunkSamplesTotalList(List chunkSamplesTotalList) {
             this.chunkSamplesTotalList = chunkSamplesTotalList;
         }
+
         public List<String> getPathList() {
             return pathList;
         }
+
         public void setPathList(List<String> pathList) {
             this.pathList = pathList;
         }
+
         public List<Integer> getPathSizeList() {
             return pathSizeList;
         }
+
         public void setPathSizeList(List<Integer> pathSizeList) {
             this.pathSizeList = pathSizeList;
         }
+
         public Map<Integer, List<Integer>> getData() {
             return data;
         }
+
         public void setData(Map<Integer, List<Integer>> data) {
             this.data = data;
         }
@@ -371,7 +327,7 @@ public class PerfGenieService implements IPerfGenieService {
         surfaceData.clear();
         uniquePaths.clear();
         uniquePathsSize.clear();
-        totalSize=0;
+        totalSize = 0;
         chunkSurfaceData.clear();
 
         final EventHandler.StackFrame source = (EventHandler.StackFrame) response.getTree();
@@ -389,9 +345,9 @@ public class PerfGenieService implements IPerfGenieService {
         long filterStart = contextStart;
         long filterEnd = filterStart + 60000;
 
-        List<timeSeries> ts = getCPUTimeSeries(contextStart,contextEnd,tenant,host);
-        if(ts.size() == 0){
-            useTimeSeries=false;
+        List<timeSeries> ts = getCPUTimeSeries(contextStart, contextEnd, tenant, host);
+        if (ts.size() == 0) {
+            useTimeSeries = false;
         }
         int startIndex = 0;
         if (useTimeSeries) {
@@ -459,14 +415,14 @@ public class PerfGenieService implements IPerfGenieService {
                 } else {
                     filterEnd = ts.get(startIndex + 1).epoch;
                 }
-            }else{
+            } else {
                 filterStart = filterEnd;
                 filterEnd = filterStart + 60000;
             }
             chunkCount++;
         }
 
-        return new SurfaceDataResponse(cpuSamplesList,chunkSamplesTotalList,surfaceData);
+        return new SurfaceDataResponse(cpuSamplesList, chunkSamplesTotalList, surfaceData);
 
     }
 
@@ -603,7 +559,7 @@ public class PerfGenieService implements IPerfGenieService {
                     if (i == 0) {
                         builder.append(list.get(i));
                     } else {
-                        builder.append(":"+list.get(i));
+                        builder.append(":" + list.get(i));
                     }
                 }
                 final String key = builder.toString();
@@ -630,10 +586,12 @@ public class PerfGenieService implements IPerfGenieService {
             this.epoch = epoch;
             this.value = value;
         }
+
         timeSeries(long epoch, double value) {
             this.epoch = epoch;
             this.value = value;
         }
+
         timeSeries(String time, double value) {
             try {
                 SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
@@ -647,15 +605,15 @@ public class PerfGenieService implements IPerfGenieService {
     }
 
     private List<timeSeries> getCPUTimeSeries(long start, long end, String tenant, String host) {
-        int columnCount=0;
+        int columnCount = 0;
         try {
 
             List<timeSeries> ts = new ArrayList<>();
-            for(int i=0;i<columnCount;i++){
-                ts.add(new timeSeries(0L,0d));
+            for (int i = 0; i < columnCount; i++) {
+                ts.add(new timeSeries(0L, 0d));
             }
             return ts;
-        }catch (Exception e){
+        } catch (Exception e) {
 
         }
         return null;

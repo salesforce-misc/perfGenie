@@ -21,7 +21,7 @@ public interface IPerfGenieService {
      * @param dimMap event dimentions
      * @return true/false
      */
-    boolean addEvent(final String namespace, final String payload, final long timestamp, final Map<String, Double> dimMap, final Map<String, String> queryMap) throws IOException;
+    boolean addEvent(final String payload, final long timestamp, final Map<String, Double> dimMap, final Map<String, String> queryMap) throws IOException;
 
     /**
      * get event metadata

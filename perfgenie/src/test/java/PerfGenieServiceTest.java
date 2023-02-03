@@ -15,6 +15,7 @@ import com.salesforce.cantor.h2.CantorOnH2;
 import server.PerfGenieService;
 import server.utils.CustomJfrParser;
 import server.utils.EventHandler;
+import server.utils.EventStore;
 import server.utils.Utils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -24,15 +25,26 @@ import java.util.UUID;
 
 
 import static org.testng.Assert.assertTrue;
+import static server.utils.EventStore.NAMESPACE_JFR_JSON_CACHE;
 
 public class PerfGenieServiceTest extends PerfGenieService {
     private static  CustomJfrParser parser = new CustomJfrParser(1);
+    private static EventStore eventStore;
+
+    static {
+        try {
+            eventStore = new EventStore(getCantorInstance());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private static final Cantor cantor = getCantorInstance();
     public PerfGenieServiceTest serviceTest;
     String guid = Utils.generateGuid();
 
     PerfGenieServiceTest() throws IOException{
-        super(cantor, parser);
+        super(eventStore, parser);
     }
 
     @BeforeSuite
@@ -55,11 +67,11 @@ public class PerfGenieServiceTest extends PerfGenieService {
         queryMap.put("file-name", "testfile");
         queryMap.put("type", "jfrprofile");
         queryMap.put("name", "testname");
-        boolean ret = serviceTest.addEvent(NAMESPACE_JFR_JSON_CACHE, Utils.toJson(handler.getProfileTree("jdk.ExecutionSample")), timestamp, dimMap, queryMap);
+        boolean ret = serviceTest.addEvent(Utils.toJson(handler.getProfileTree("jdk.ExecutionSample")), timestamp, dimMap, queryMap);
 
         queryMap.put("type", "jfrevent");
         queryMap.put("name", "customEvent");
-        boolean ret1 = serviceTest.addEvent(NAMESPACE_JFR_JSON_CACHE, Utils.toJson(handler.getLogContext()), timestamp, dimMap, queryMap);
+        boolean ret1 = serviceTest.addEvent(Utils.toJson(handler.getLogContext()), timestamp, dimMap, queryMap);
 
         assertTrue(ret==true, "true expected");
         assertTrue(ret1==true, "true expected");
