@@ -23,27 +23,28 @@ public class PerfGenieConfiguration {
     final CustomJfrParser.Config config = new CustomJfrParser.Config();
 
     @Bean
-    public Cantor getCantor()  throws IOException {
-        if(config.getStorageType().equals("mySQL")) {
-            return new CantorOnMysql(config.getMySQL_host(),config.getMySQL_port(),config.getMySQL_user(),config.getMySQL_pwd());
-        }else if(config.getStorageType().equals("grpc")) {
+    public Cantor getCantor() throws IOException {
+        if (config.getStorageType().equals("mySQL")) {
+            return new CantorOnMysql(config.getMySQL_host(), config.getMySQL_port(), config.getMySQL_user(), config.getMySQL_pwd());
+        } else if (config.getStorageType().equals("grpc")) {
             return new CantorOnGrpc(config.getGrpc_target());
-        }else{
+        } else {
             return new CantorOnH2(config.getH2dir());//default
         }
     }
 
     @Bean
-    public EventStore getEventStore(final Cantor cantor)  throws IOException {
+    public EventStore getEventStore(final Cantor cantor) throws IOException {
         return new EventStore(cantor);
     }
 
     @Bean
-    public CustomJfrParser getCustomParser()  throws IOException {
+    public CustomJfrParser getCustomParser() throws IOException {
         return new CustomJfrParser(2);
     }
+
     @Bean
-    public PerfGenieService getServerService(final EventStore eventStore, final CustomJfrParser parser)  throws IOException {
+    public PerfGenieService getServerService(final EventStore eventStore, final CustomJfrParser parser) throws IOException {
         return new PerfGenieService(eventStore, parser);
     }
 }

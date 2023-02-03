@@ -18,8 +18,9 @@ import java.util.logging.Logger;
 @EnableScheduling
 public class PerfGenieApplication {
     private static final Logger logger = Logger.getLogger(EventHandler.class.getName());
+
     public static void main(String[] args) {
-        SpringApplication.run(PerfGenieApplication.class,args);
+        SpringApplication.run(PerfGenieApplication.class, args);
     }
 }
 

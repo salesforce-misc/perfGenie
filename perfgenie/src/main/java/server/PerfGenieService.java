@@ -9,15 +9,12 @@ package server;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
-import com.salesforce.cantor.Cantor;
-import com.salesforce.cantor.Events;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import server.utils.*;
 
 import java.io.*;
 import java.net.InetAddress;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,8 +22,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-
-//import static server.utils.EventStore.NAMESPACE_JFR_JSON_CACHE;
 
 public class PerfGenieService implements IPerfGenieService {
     final EventStore eventStore;
@@ -135,7 +130,7 @@ public class PerfGenieService implements IPerfGenieService {
 
     @Override
     public boolean addEvent(final String payload, final long timestamp, final Map<String, Double> dimMap, final Map<String, String> queryMap) throws IOException {
-        return eventStore.addEvent(timestamp, queryMap,dimMap,payload);
+        return eventStore.addEvent(timestamp, queryMap, dimMap, payload);
     }
 
     @Override
@@ -164,7 +159,7 @@ public class PerfGenieService implements IPerfGenieService {
             for (String guid : profiles.keySet()) {
                 //long timestamp = Integer.parseInt(profiles.get(guid).get("timestamp"));
                 queryMap.put("guid", guid);
-                final String result = eventStore.getEvent(start, end, queryMap, dimMap,Integer.parseInt(profiles.get(guid).get("size")));
+                final String result = eventStore.getEvent(start, end, queryMap, dimMap, Integer.parseInt(profiles.get(guid).get("size")));
                 aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(result, EventHandler.JfrParserResponse.class));
             }
             SurfaceDataResponse res = genSurfaceData(aggregator.getAggregatedProfileTree(), tenant, queryMap.get("host"));

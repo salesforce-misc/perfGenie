@@ -13,11 +13,8 @@ import java.util.HashMap;
 import java.util.UUID;
 
 import static org.testng.AssertJUnit.assertEquals;
-import static server.utils.EventStore.NAMESPACE_JFR_JSON_CACHE;
 
 public class DownloadUploadTest {
-    //private Cantor cantor;
-    //private final String testNamespace = "perfGenie-download-upload-test";
     private final long timestamp = System.currentTimeMillis();
 
     private static EventStore eventStore;
@@ -32,8 +29,6 @@ public class DownloadUploadTest {
 
     @BeforeSuite
     public void setup() throws IOException {
-        //this.cantor = new CantorOnGrpc("localhost:7443");
-        //this.cantor.events().create(testNamespace);
     }
 
     @Test
@@ -47,8 +42,6 @@ public class DownloadUploadTest {
 
     @AfterSuite
     public void cleanup() throws IOException {
-        // expire endpoint does not work
-//        this.cantor.events().expire(testNamespace, timestamp);
     }
 
     public static Cantor getCantorInstance() {

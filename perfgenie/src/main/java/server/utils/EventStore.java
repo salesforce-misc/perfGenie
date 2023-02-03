@@ -19,7 +19,7 @@ public class EventStore {
     public static final String NAMESPACE_JFR_JSON_CACHE = "jfr-json-cache";
     public static final String NAMESPACE_EVENT_LARGE_FILE = "event-large-file";
     public static final String NAMESPACE_EVENT_META = "event-meta-data";
-    public static final int LARGE_FILE_SIZE = 1024*1024;
+    public static final int LARGE_FILE_SIZE = 1024 * 1024;
     public static boolean enableLargeFile = true;
     private final Cantor cantor;
 
@@ -74,7 +74,7 @@ public class EventStore {
         if (results.size() > 0) {
             final Stopwatch timer = Stopwatch.createStarted();
             if (enableLargeFile && Integer.parseInt(results.get(0).getMetadata().get("size")) > LARGE_FILE_SIZE) {
-                String res =  download(start, end, queryMap, dimMap);
+                String res = download(start, end, queryMap, dimMap);
                 logger.info("successfully fetched event from namespace: " + NAMESPACE_EVENT_LARGE_FILE + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
                 return res;
             } else {
@@ -155,11 +155,9 @@ public class EventStore {
                 false
         );
         if (results.size() > 0) {
-            //Map<String, Long> profiles = new HashMap<>();
             Map<String, Map<String, String>> profiles = new HashMap<>();
             results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
             for (final Events.Event result : results) {
-                //profiles.put(result.getMetadata().get("guid"), result.getTimestampMillis());
                 profiles.put(result.getMetadata().get("guid"), result.getMetadata());
             }
             return profiles;
@@ -170,7 +168,6 @@ public class EventStore {
     private void upload(final long timestamp, final Map<String, String> metadata,
                         final Map<String, Double> dimensions, final String rawPayload) throws IOException {
         logger.info("Started uploading {}", metadata);
-
 
         final EventStore.UploadIterator iterator = new EventStore.UploadIterator(metadata, dimensions, rawPayload);
         this.cantor.events().store(NAMESPACE_EVENT_LARGE_FILE, timestamp, iterator.metadata, iterator.dimension);

@@ -14,11 +14,10 @@ public interface IPerfGenieService {
     /**
      * Store an event iwth given metadata
      *
-     * @param namespace   The name space where the event is store
-     * @param payload    event payload
-     * @param timestamp      event timestamp
-     * @param queryMap event filters
-     * @param dimMap event dimentions
+     * @param payload   event payload
+     * @param timestamp event timestamp
+     * @param queryMap  event filters
+     * @param dimMap    event dimentions
      * @return true/false
      */
     boolean addEvent(final String payload, final long timestamp, final Map<String, Double> dimMap, final Map<String, String> queryMap) throws IOException;
@@ -26,10 +25,10 @@ public interface IPerfGenieService {
     /**
      * get event metadata
      *
-     * @param start   start time ms
-     * @param end    end time ms
+     * @param start    start time ms
+     * @param end      end time ms
      * @param queryMap event filters
-     * @param dimMap event dimentions
+     * @param dimMap   event dimentions
      * @return none
      */
     String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
@@ -38,10 +37,10 @@ public interface IPerfGenieService {
      * get profile event data
      *
      * @param tenant   tenant name from where event to be fetched
-     * @param start   start time ms
-     * @param end    end time ms
+     * @param start    start time ms
+     * @param end      end time ms
      * @param queryMap event filters
-     * @param dimMap event dimentions
+     * @param dimMap   event dimentions
      * @return none
      */
     String getProfile(String tenant, long start, long end, Map<String, String> queryMap, Map<String, String> dimMap) throws IOException;
@@ -50,10 +49,10 @@ public interface IPerfGenieService {
      * get combined profile event data
      *
      * @param tenant   tenant name from where event to be fetched
-     * @param start   start time ms
-     * @param end    end time ms
+     * @param start    start time ms
+     * @param end      end time ms
      * @param queryMap event filters
-     * @param dimMap event dimentions
+     * @param dimMap   event dimentions
      * @return none
      */
     String getProfiles(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
@@ -62,10 +61,10 @@ public interface IPerfGenieService {
      * get custom event data
      *
      * @param tenant   tenant name from where event to be fetched
-     * @param start   start time ms
-     * @param end    end time ms
+     * @param start    start time ms
+     * @param end      end time ms
      * @param queryMap event filters
-     * @param dimMap event dimentions
+     * @param dimMap   event dimentions
      * @return none
      */
     String getCustomEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
