@@ -32,7 +32,7 @@ public class PerfGenieServiceTest extends PerfGenieService {
     String guid = Utils.generateGuid();
 
     PerfGenieServiceTest() throws IOException{
-        super(parser,cantor);
+        super(cantor, parser);
     }
 
     @BeforeSuite
