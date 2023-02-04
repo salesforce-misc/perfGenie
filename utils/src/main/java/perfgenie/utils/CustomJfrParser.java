@@ -5,7 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 
-package server.utils;
+package perfgenie.utils;
 
 import com.google.common.base.Stopwatch;
 import org.openjdk.jmc.common.IMCStackTrace;
@@ -23,15 +23,9 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
 import java.io.InputStream;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ExecutionException;
-
+import java.util.*;
+import java.util.concurrent.*;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.openjdk.jmc.flightrecorder.JfrAttributes.EVENT_STACKTRACE;

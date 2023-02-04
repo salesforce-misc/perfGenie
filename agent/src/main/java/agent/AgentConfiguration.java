@@ -1,11 +1,4 @@
-/*
- * Copyright (c) 2022, Salesforce.com, Inc.
- * All rights reserved.
- * SPDX-License-Identifier: BSD-3-Clause
- * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
- */
-
-package server;
+package agent;
 
 import com.salesforce.cantor.Cantor;
 import com.salesforce.cantor.h2.CantorOnH2;
@@ -19,7 +12,7 @@ import perfgenie.utils.EventStore;
 import java.io.IOException;
 
 @Configuration
-public class PerfGenieConfiguration {
+public class AgentConfiguration {
     final CustomJfrParser.Config config = new CustomJfrParser.Config();
 
     @Bean
@@ -44,7 +37,7 @@ public class PerfGenieConfiguration {
     }
 
     @Bean
-    public PerfGenieService getServerService(final EventStore eventStore, final CustomJfrParser parser) throws IOException {
-        return new PerfGenieService(eventStore, parser);
+    public AgentApplication getServerService(final EventStore eventStore, final CustomJfrParser parser) throws IOException {
+        return new AgentApplication(eventStore, parser);
     }
 }

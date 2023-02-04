@@ -4,15 +4,17 @@
  * SPDX-License-Identifier: BSD-3-Clause
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
-package server.utils;
+package perfgenie.utils;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.salesforce.cantor.Cantor;
 import com.salesforce.cantor.Events;
+import com.salesforce.cantor.grpc.CantorOnGrpc;
+import com.salesforce.cantor.h2.CantorOnH2;
+import com.salesforce.cantor.mysql.CantorOnMysql;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -28,8 +30,30 @@ public class EventStore {
     public static final int LARGE_FILE_SIZE = 1024 * 1024;
     public static boolean enableLargeFile = true;
     private final Cantor cantor;
+    final CustomJfrParser.Config config = new CustomJfrParser.Config();
 
-    @Autowired
+    public EventStore() throws IOException {
+        if (config.getStorageType().equals("mySQL")) {
+            this.cantor =  new CantorOnMysql(config.getMySQL_host(), config.getMySQL_port(), config.getMySQL_user(), config.getMySQL_pwd());
+        } else if (config.getStorageType().equals("grpc")) {
+            this.cantor =   new CantorOnGrpc(config.getGrpc_target());
+        } else {
+            this.cantor =   new CantorOnH2(config.getH2dir());//default
+        }
+        try {
+            this.cantor.events().store(
+                    NAMESPACE_JFR_JSON_CACHE,
+                    System.currentTimeMillis(),
+                    ImmutableMap.of(),
+                    ImmutableMap.of(),
+                    null);
+        } catch (Exception e) {
+            this.cantor.events().create(NAMESPACE_JFR_JSON_CACHE);
+            this.cantor.events().create(NAMESPACE_EVENT_LARGE_FILE);
+            this.cantor.events().create(NAMESPACE_EVENT_META);
+        }
+    }
+
     public EventStore(final Cantor cantor) throws IOException {
         this.cantor = cantor;
         try {
@@ -175,7 +199,7 @@ public class EventStore {
                         final Map<String, Double> dimensions, final String rawPayload) throws IOException {
         logger.info("Started uploading {}", metadata);
 
-        final EventStore.UploadIterator iterator = new EventStore.UploadIterator(metadata, dimensions, rawPayload);
+        final UploadIterator iterator = new UploadIterator(metadata, dimensions, rawPayload);
         this.cantor.events().store(NAMESPACE_EVENT_LARGE_FILE, timestamp, iterator.metadata, iterator.dimension);
         while (iterator.hasNext()) {
             final Events.Event event = iterator.next();
@@ -187,7 +211,7 @@ public class EventStore {
     private String download(final long startTimestamp, final long endTimestamp, final Map<String,
             String> metadataQuery, final Map<String, String> dimensionsQuery) throws IOException {
         logger.info("Started downloading  {}", metadataQuery);
-        final EventStore.DownloadIterator iterator = new EventStore.DownloadIterator(NAMESPACE_EVENT_LARGE_FILE, startTimestamp, endTimestamp, metadataQuery, dimensionsQuery);
+        final DownloadIterator iterator = new DownloadIterator(NAMESPACE_EVENT_LARGE_FILE, startTimestamp, endTimestamp, metadataQuery, dimensionsQuery);
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
         while (iterator.hasNext()) {
             final Events.Event event = iterator.next();

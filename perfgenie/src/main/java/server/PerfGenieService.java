@@ -11,7 +11,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
-import server.utils.*;
+import perfgenie.utils.*;
 
 import java.io.*;
 import java.net.InetAddress;

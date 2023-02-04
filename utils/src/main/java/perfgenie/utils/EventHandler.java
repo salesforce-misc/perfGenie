@@ -5,7 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 
-package server.utils;
+package perfgenie.utils;
 
 import org.openjdk.jmc.common.IMCFrame;
 import org.openjdk.jmc.common.IMCMethod;
@@ -13,15 +13,7 @@ import org.openjdk.jmc.common.IMCStackTrace;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Iterator;
-import java.util.HashMap;
-import java.util.Date;
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.LinkedList;
 
 public class EventHandler {
     private static final Logger logger = Logger.getLogger(EventHandler.class.getName());
@@ -180,7 +171,7 @@ public class EventHandler {
         }
         Map<String, String> meta = new HashMap<>();
         try {
-            EventHandler.SurfaceDataResponse res = genSurfaceData(profiles.get(type), pidDatas.get(type));
+            SurfaceDataResponse res = genSurfaceData(profiles.get(type), pidDatas.get(type));
             meta.put("data", Utils.toJson(res));
         } catch (Exception e) {
             meta.put("exception", Utils.toJson(e));
@@ -1622,7 +1613,7 @@ public class EventHandler {
         }
     }
 
-    public EventHandler.SurfaceDataResponse genSurfaceData(final EventHandler.StackFrame source, Map<Integer, List<EventHandler.StackidTime>> tidMap) throws IOException {
+    public SurfaceDataResponse genSurfaceData(final StackFrame source, Map<Integer, List<StackidTime>> tidMap) throws IOException {
         chunkCount = 0;
         chunkSamplesTotalList.clear();
         cpuSamplesList.clear();
@@ -1645,7 +1636,7 @@ public class EventHandler {
         long filterStart = contextStart;
         long filterEnd = filterStart + 60000;
 
-        List<EventHandler.timeSeries> ts = getCPUTimeSeries(contextStart, contextEnd);
+        List<timeSeries> ts = getCPUTimeSeries(contextStart, contextEnd);
         if (ts.size() == 0) {
             useTimeSeries = false;
         }
@@ -1670,7 +1661,7 @@ public class EventHandler {
             HashMap<Integer, Integer> stackMap = new HashMap<>();
 
             for (Integer tid : tidMap.keySet()) {
-                List<EventHandler.StackidTime> list = tidMap.get(tid);
+                List<StackidTime> list = tidMap.get(tid);
                 for (int i = 0; i < list.size(); i++) {
                     if ((list.get(i).getTime() + contextStart) >= filterStart && (list.get(i).getTime() + contextStart) < filterEnd) {
                         if (stackMap.containsKey(list.get(i).getHash())) {
@@ -1689,7 +1680,7 @@ public class EventHandler {
             for (Integer stackid : stackMap.keySet()) {
                 chunkSamplesTotal = chunkSamplesTotal + stackMap.get(stackid);
                 //getSurfaceData(source,stackid,stackMap.get(stackid));
-                executorService.execute(new EventHandler.GetSurfaceData(source, stackid, stackMap.get(stackid)));
+                executorService.execute(new GetSurfaceData(source, stackid, stackMap.get(stackid)));
             }
             executorService.shutdown();
             try {
@@ -1723,14 +1714,14 @@ public class EventHandler {
             chunkCount++;
         }
 
-        return new EventHandler.SurfaceDataResponse(cpuSamplesList, chunkSamplesTotalList, surfaceData);
+        return new SurfaceDataResponse(cpuSamplesList, chunkSamplesTotalList, surfaceData);
 
     }
 
-    private void getSurfaceData(final EventHandler.StackFrame tree, int stackid, int size) {
+    private void getSurfaceData(final StackFrame tree, int stackid, int size) {
 
         if (tree.getSm().containsKey(stackid) && tree.getCh() != null && tree.getCh().size() > tree.getSm().get(stackid)) {
-            final EventHandler.StackFrame baseJsonTree = tree.getCh().get(tree.getSm().get(stackid));
+            final StackFrame baseJsonTree = tree.getCh().get(tree.getSm().get(stackid));
             if (baseJsonTree.getCh() == null || baseJsonTree.getCh().size() == 0) {
                 return;
             } else {
@@ -1742,11 +1733,11 @@ public class EventHandler {
     }
 
     class GetSurfaceData implements Runnable {
-        final EventHandler.StackFrame tree;
+        final StackFrame tree;
         int stackid;
         int size;
 
-        GetSurfaceData(final EventHandler.StackFrame tree, int stackid, int size) {
+        GetSurfaceData(final StackFrame tree, int stackid, int size) {
             this.tree = tree;
             this.stackid = stackid;
             this.size = size;
@@ -1758,7 +1749,7 @@ public class EventHandler {
         }
     }
 
-    private boolean addStackSurfaceData(final EventHandler.StackFrame tree, final List<Integer> list, int stackid, int size, boolean flag) {
+    private boolean addStackSurfaceData(final StackFrame tree, final List<Integer> list, int stackid, int size, boolean flag) {
         if (tree.getCh() == null || tree.getSz() == 0) {
             if (flag && tree.getSm().containsKey(stackid)) {
                 if (((tree.getSz() * 100.0) / totalSize) >= plotThreshold) {
@@ -1834,7 +1825,7 @@ public class EventHandler {
         }
     }
 
-    public void getAllPaths(final EventHandler.StackFrame baseJsonTree, final List<Integer> list) {
+    public void getAllPaths(final StackFrame baseJsonTree, final List<Integer> list) {
         if (baseJsonTree.getCh() == null) {
             if (baseJsonTree.getSz() > 0) { //do it for all counts
                 Map.Entry<Integer, Integer> entry = baseJsonTree.getSm().entrySet().iterator().next();
@@ -1906,13 +1897,13 @@ public class EventHandler {
         }
     }
 
-    private List<EventHandler.timeSeries> getCPUTimeSeries(long start, long end) {
+    private List<timeSeries> getCPUTimeSeries(long start, long end) {
         int columnCount = 0;
         try {
 
-            List<EventHandler.timeSeries> ts = new ArrayList<>();
+            List<timeSeries> ts = new ArrayList<>();
             for (int i = 0; i < columnCount; i++) {
-                ts.add(new EventHandler.timeSeries(0L, 0d));
+                ts.add(new timeSeries(0L, 0d));
             }
             return ts;
         } catch (Exception e) {

@@ -8,7 +8,7 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>perfgenie</artifactId>
+    <artifactId>agent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
     <dependencies>
@@ -20,21 +20,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.salesforce.cantor</groupId>
-            <artifactId>cantor-h2</artifactId>
-            <version>0.5.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.salesforce.cantor</groupId>
-            <artifactId>cantor-grpc-client</artifactId>
-            <version>0.5.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.salesforce.cantor</groupId>
-            <artifactId>cantor-mysql</artifactId>
-            <version>0.5.0</version>
         </dependency>
 
         <dependency>
@@ -65,9 +50,9 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-               <version>2.7.4</version>
+
                 <configuration>
-                    <mainClass>server.PerfGenieApplication</mainClass>
+                    <mainClass>agent.AgentApplication</mainClass>
                 </configuration>
                 <executions>
                     <execution>
@@ -87,6 +72,6 @@
                 </configuration>
             </plugin>
         </plugins>
-        <finalName>perfgenie</finalName>
+        <finalName>agent</finalName>
     </build>
 </project>

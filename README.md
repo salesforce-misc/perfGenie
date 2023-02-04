@@ -41,7 +41,7 @@ h2dir=/tmp/h2.db
 
 #### Start application server
 ```sh
-$ java -jar perfgenie/target/perfgenie-0.0.1-SNAPSHOT.jar
+$ java -jar perfgenie/target/perfgenie.jar
 ```
 Access URL http://localhost:8080
 

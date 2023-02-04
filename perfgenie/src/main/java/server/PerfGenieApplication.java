@@ -10,7 +10,7 @@ package server;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import server.utils.EventHandler;
+import perfgenie.utils.EventHandler;
 
 import java.util.logging.Logger;
 

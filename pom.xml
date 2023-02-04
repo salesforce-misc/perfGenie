@@ -16,6 +16,15 @@
 
     <properties>
         <java.version>1.8</java.version>
+        <mvn.plugins.compiler.version>2.5.1</mvn.plugins.compiler.version>
+        <mvn.plugins.jar.version>2.4</mvn.plugins.jar.version>
+        <mvn.plugins.jcabi.version>0.14.1</mvn.plugins.jcabi.version>
+        <mvn.plugins.resources.version>2.7</mvn.plugins.resources.version>
+        <mvn.plugins.jacoco.version>0.8.0</mvn.plugins.jacoco.version>
+        <jacoco.reportPath>${project.basedir}/../target/jacoco.exec</jacoco.reportPath>
+        <source.version>1.8</source.version>
+        <target.version>1.8</target.version>
+        <failIfNoTests>false</failIfNoTests>
     </properties>
 
     <dependencies>
@@ -43,17 +52,59 @@
 
     <build>
         <plugins>
+            <!-- SOURCE -->
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.4.13</version>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+            </plugin>
+            <!--COMPILER-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${mvn.plugins.compiler.version}</version>
+                <configuration>
+                    <source>${source.version}</source>
+                    <target>${target.version}</target>
+                    <includes>
+                        <include>**/*.java</include>
+                        <include>**/*.proto</include>
+                        <include>**/*.conf</include>
+                    </includes>
+                </configuration>
+            </plugin>
+            <!--RESOURCES-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>${mvn.plugins.resources.version}</version>
+
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${basedir}/target/generated-sources/protobuf</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/resources/protos</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
 
     <modules>
         <module>simulator</module>
+        <module>utils</module>
         <module>perfgenie</module>
+        <module>agent</module>
     </modules>
 
 </project>

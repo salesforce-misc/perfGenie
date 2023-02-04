@@ -13,10 +13,11 @@ import org.testng.annotations.Test;
 import com.salesforce.cantor.Cantor;
 import com.salesforce.cantor.h2.CantorOnH2;
 import server.PerfGenieService;
-import server.utils.CustomJfrParser;
-import server.utils.EventHandler;
-import server.utils.EventStore;
-import server.utils.Utils;
+import perfgenie.utils.CustomJfrParser;
+import perfgenie.utils.EventHandler;
+import perfgenie.utils.EventStore;
+import perfgenie.utils.Utils;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
@@ -25,7 +26,7 @@ import java.util.UUID;
 
 
 import static org.testng.Assert.assertTrue;
-import static server.utils.EventStore.NAMESPACE_JFR_JSON_CACHE;
+//import static utils.EventStore.NAMESPACE_JFR_JSON_CACHE;
 
 public class PerfGenieServiceTest extends PerfGenieService {
     private static  CustomJfrParser parser = new CustomJfrParser(1);

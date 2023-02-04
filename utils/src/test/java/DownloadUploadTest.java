@@ -1,11 +1,10 @@
 import com.google.common.io.Resources;
 import com.salesforce.cantor.Cantor;
-import com.salesforce.cantor.grpc.CantorOnGrpc;
 import com.salesforce.cantor.h2.CantorOnH2;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
-import server.utils.EventStore;
+import perfgenie.utils.EventStore;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
