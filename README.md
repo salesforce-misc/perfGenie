@@ -52,6 +52,12 @@ Note: example files provided in the examples directory can be copied into jfrdir
 
 Note: refer simulator module to generate a sample jfr with custom events added
 
+### Agent mode
+```sh
+$ java -jar agent/target/agent.jar
+```
+Agent to monitor and parse JFR (*.jfr or .jfr.gz), and Jstack (.jstack) files available at /tmp/agent/jfrs/
+
 ### Features
 
 - Tree view (backtrace, call tree, and compare view)
