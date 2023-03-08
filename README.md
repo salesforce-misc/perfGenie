@@ -102,7 +102,7 @@ Agent to monitor and parse JFR (*.jfr or .jfr.gz), and Jstack (.jstack) files av
 #### Samples explorer
 <img src="https://github.com/salesforce-misc/perfGenie/blob/main/perfgenie/src/main/resources/static/images/samplesexplorer.jpg?raw=true"/>
 
-#### Flame graph
+#### Flame graph (Brendan Gregg, https://www.brendangregg.com/flamegraphs.html)
 <img src="https://github.com/salesforce-misc/perfGenie/blob/main/perfgenie/src/main/resources/static/images/flamegraph.jpg?raw=true"/>
 
 #### Flame graph compare view
