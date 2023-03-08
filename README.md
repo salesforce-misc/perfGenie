@@ -103,10 +103,10 @@ Agent to monitor and parse JFR (*.jfr or .jfr.gz), and Jstack (.jstack) files av
 <img src="https://github.com/salesforce-misc/perfGenie/blob/main/perfgenie/src/main/resources/static/images/samplesexplorer.jpg?raw=true"/>
 
 #### Flame graph
-Work in progress
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/perfgenie/src/main/resources/static/images/flamegraph.jpg?raw=true"/>
 
 #### Flame graph compare view
-Work in progress
+<img src="https://github.com/salesforce-misc/perfGenie/blob/main/perfgenie/src/main/resources/static/images/flamegraphdiff.jpg?raw=true"/>
 
 #### Thread state view
 <img src="https://github.com/salesforce-misc/perfGenie/blob/main/perfgenie/src/main/resources/static/images/threadstateview.jpg?raw=true"/>
