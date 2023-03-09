@@ -5,7 +5,7 @@
 perfGenie is a Java flight recorder(JFR) format profile and Jstack parsing and web visualization tool. JFR profiles can be created using Java machine control(JMC), Java flight recorder, Async-profiler, or jcmd. It provides the ability to view profiles in context trees, samples explorer, flame Graph, thread state, river, and hotspot surface views. It helps to compare two profiles using context tree diff or flame graph diff views. It also provides functionality to filter profiles for a given custom event context, tid or thread name, etc. The request timeline view helps look at samples of a particular request context. It also can visualize thread context requests and context metric timeline views. The aggregation feature allows for combining profiles for a more extended period. Thread dumps can also be converted into supported profile views.
 
 
-### Continuous profiling ✨
+### Continuous low overhead contextual profiling ✨
 
 perfGenie can be deployed as a continuous profiling solution. It uses Cantor (https://github.com/salesforce/cantor) as a data layer. Cantor can be configured to store data in H2, MySQL, or S3. This project is set up with a simple cron job to monitor a directory for any JFR files, parse and store in H2 (default configuration).
 
