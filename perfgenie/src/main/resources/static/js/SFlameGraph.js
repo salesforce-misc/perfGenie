@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
+
 class SFlameGraph {
     #flameSvgRowHeight = 16;
     #flameMaxSvgHeight = this.#flameSvgRowHeight * 128; //max stack depth 128
@@ -20,6 +21,8 @@ class SFlameGraph {
     #SFlameGraphCustomMenuDiv = "#custom-menu-guid";
     #threshold = 0.01;
     #sizeKey = 'sz';
+    #nameKey = 'nm';
+    #childrenKey = 'ch';
     #leftKey = 'bsz';
     #rightKey = 'csz';
     #pixelThreshold = 0.5;
@@ -65,22 +68,34 @@ class SFlameGraph {
     setSizeKey(key){
         SFlameGraph.instance.#sizeKey=key;
     }
+    setNameKey(key){
+        SFlameGraph.instance.#nameKey=key;
+    }
+    setChildrenKey(key){
+        SFlameGraph.instance.#childrenKey=key;
+    }
 
     setSFlameGraphDivId(id){
-        SFlameGraph.instance.#SFlameGraphDiv=id;
+        SFlameGraph.instance.#SFlameGraphDiv='#'+id;
     }
 
     setSFlameGraphDetailsDiv(id){
-        SFlameGraph.instance.#SFlameGraphDetailsDiv=id;
+        SFlameGraph.instance.#SFlameGraphDetailsDiv='#'+id;
     }
 
     setSFlameGraphCustomMenuDiv(id){
-        SFlameGraph.instance.#SFlameGraphCustomMenuDiv=id;
+        SFlameGraph.instance.#SFlameGraphCustomMenuDiv='#'+id;
     }
 
     showTreeV1Flame(treeToProcess, searchString) {
-        SFlameGraph.instance.#searchMatchCount = 0;
+        if($(SFlameGraph.instance.#SFlameGraphDetailsDiv).length < 1){
+            $(SFlameGraph.instance.#SFlameGraphDiv).after(
+                '<div id="'+SFlameGraph.instance.#SFlameGraphDetailsDiv.substring(1)+'"></div>' +
+                '<ul id="custom-menu-guid" class="items"> <li>Copy</li> <li>Reset Zoom</li> </ul>'
+            );
+        }
         $(SFlameGraph.instance.#SFlameGraphDetailsDiv).html("");
+        SFlameGraph.instance.#searchMatchCount = 0;
         if (searchString != "" && searchString != undefined) {
             SFlameGraph.instance.#flameGraphSearch = true;
             SFlameGraph.instance.#flameGraphSearchStr = searchString;
@@ -104,7 +119,7 @@ class SFlameGraph {
         d3.select("#flamegraphdiv").append("svg").attr("width", $(SFlameGraph.instance.#SFlameGraphDiv).width()).attr("height", SFlameGraph.instance.#flameMaxSvgHeight);
         SFlameGraph.instance.#flameSvgWidth = $(SFlameGraph.instance.#SFlameGraphDiv).width();
 
-        SFlameGraph.instance.addSVGRect(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#sizeKey], SFlameGraph.instance.#flameGraphActiveTree.nm, 0, "", 1);
+        SFlameGraph.instance.addSVGRect(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#sizeKey], SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#nameKey], 0, "", 1);
 
         SFlameGraph.instance.genSVG(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#sizeKey], 2, 0, "");
 
@@ -122,31 +137,31 @@ class SFlameGraph {
             return false;
         }
         let skip = false;
-        if (tree.ch == null) {
-            tree.ch = [];
+        if (tree[SFlameGraph.instance.#childrenKey] == null) {
+            tree[SFlameGraph.instance.#childrenKey] = [];
         }
         let nx = x;
 
         let index = 0;
-        tree.ch.forEach(function (child) {
+        tree[SFlameGraph.instance.#childrenKey].forEach(function (child) {
             if (skip || child[SFlameGraph.instance.#sizeKey] === undefined || child[SFlameGraph.instance.#sizeKey] === 0 || isSkipSubtree(child[SFlameGraph.instance.#sizeKey], 0)) {
                 return;
             }
             if (100 * child[SFlameGraph.instance.#sizeKey] / total < SFlameGraph.instance.#threshold) {
-                if (tree.ch.length > 1) {
+                if (tree[SFlameGraph.instance.#childrenKey].length > 1) {
                     SFlameGraph.instance.addSVGRect(child, total, "...", nx, path + index + ":", depth);
                 } else {
                     SFlameGraph.instance.addSVGRect(child, total, "...", nx, path, depth);
                 }
                 skip = true;
-            } else if (tree.ch.length > 0) {
-                if (tree.ch.length > 1) {
-                    SFlameGraph.instance.addSVGRect(child, total, child.nm, nx, path + index + ":", depth);
+            } else if (tree[SFlameGraph.instance.#childrenKey].length > 0) {
+                if (tree[SFlameGraph.instance.#childrenKey].length > 1) {
+                    SFlameGraph.instance.addSVGRect(child, total, child[SFlameGraph.instance.#nameKey], nx, path + index + ":", depth);
                     if (!SFlameGraph.instance.genSVG(child, total, depth + 1, nx, path + index + ":")) {
                         SFlameGraph.instance.addSVGRect(child, total, "...", nx, path, depth);
                     }
                 } else {
-                    SFlameGraph.instance.addSVGRect(child, total, child.nm, nx, path, depth);
+                    SFlameGraph.instance.addSVGRect(child, total, child[SFlameGraph.instance.#nameKey], nx, path, depth);
                     if (!SFlameGraph.instance.genSVG(child, total, depth + 1, nx, path)) {
                         SFlameGraph.instance.addSVGRect(child, total, "...", nx, path, depth);
                     }
@@ -253,43 +268,43 @@ class SFlameGraph {
             SFlameGraph.instance.#flameGraphPath = "";
             SFlameGraph.instance.#flameGraphClickDepth = 0;
             //full svg
-            SFlameGraph.instance.addSVGRect(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#sizeKey], SFlameGraph.instance.#flameGraphActiveTree.nm, 0, "", 1);
+            SFlameGraph.instance.addSVGRect(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#sizeKey], SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#nameKey], 0, "", 1);
             SFlameGraph.instance.genSVG(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#sizeKey], 2, 0, "");
         } else {
             //find click node
-            SFlameGraph.instance.addSVGRect(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#sizeKey], SFlameGraph.instance.#flameGraphActiveTree.nm, 0, "", 1, true);
+            SFlameGraph.instance.addSVGRect(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#sizeKey], SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#nameKey], 0, "", 1, true);
             let tmpCh = SFlameGraph.instance.#flameGraphActiveTree;
             let curDepth = 1;
             let curPathIndex = 0;
             let curPath = "";
             while (curDepth < clickDepth) {
-                while (tmpCh.ch.length == 1 && curDepth < clickDepth) {
-                    tmpCh = tmpCh.ch[0];
+                while (tmpCh[SFlameGraph.instance.#childrenKey].length == 1 && curDepth < clickDepth) {
+                    tmpCh = tmpCh[SFlameGraph.instance.#childrenKey][0];
                     curDepth++;
 
                     if (curDepth == clickDepth) {
-                        SFlameGraph.instance.addSVGRect(tmpCh, tmpCh[SFlameGraph.instance.#sizeKey], tmpCh.nm, 0, curPath, curDepth);
+                        SFlameGraph.instance.addSVGRect(tmpCh, tmpCh[SFlameGraph.instance.#sizeKey], tmpCh[SFlameGraph.instance.#nameKey], 0, curPath, curDepth);
                         SFlameGraph.instance.genSVG(tmpCh, tmpCh[SFlameGraph.instance.#sizeKey], curDepth + 1, 0, curPath);
                     } else {
-                        SFlameGraph.instance.addSVGRect(tmpCh, tmpCh[SFlameGraph.instance.#sizeKey], tmpCh.nm, 0, curPath, curDepth, true);
+                        SFlameGraph.instance.addSVGRect(tmpCh, tmpCh[SFlameGraph.instance.#sizeKey], tmpCh[SFlameGraph.instance.#nameKey], 0, curPath, curDepth, true);
                     }
                 }
                 if (curDepth < clickDepth) {
                     curPath = curPath + Number(paths[curPathIndex]) + ":";
                     curDepth++;
-                    if (tmpCh.ch[Number(paths[curPathIndex])] == undefined) {
+                    if (tmpCh[SFlameGraph.instance.#childrenKey][Number(paths[curPathIndex])] == undefined) {
                         console.log("warning1");
                     }
-                    tmpCh = tmpCh.ch[Number(paths[curPathIndex])];
+                    tmpCh = tmpCh[SFlameGraph.instance.#childrenKey][Number(paths[curPathIndex])];
 
                     if (curDepth == clickDepth) {
-                        SFlameGraph.instance.addSVGRect(tmpCh, tmpCh[SFlameGraph.instance.#sizeKey], tmpCh.nm, 0, curPath, curDepth);
+                        SFlameGraph.instance.addSVGRect(tmpCh, tmpCh[SFlameGraph.instance.#sizeKey], tmpCh[SFlameGraph.instance.#nameKey], 0, curPath, curDepth);
                         SFlameGraph.instance.genSVG(tmpCh, tmpCh[SFlameGraph.instance.#sizeKey], curDepth + 1, 0, curPath);
                     } else {
                         if (tmpCh == undefined) {
                             console.log("warning2");
                         }
-                        SFlameGraph.instance.addSVGRect(tmpCh, tmpCh[SFlameGraph.instance.#sizeKey], tmpCh.nm, 0, curPath, curDepth, true);
+                        SFlameGraph.instance.addSVGRect(tmpCh, tmpCh[SFlameGraph.instance.#sizeKey], tmpCh[SFlameGraph.instance.#nameKey], 0, curPath, curDepth, true);
                     }
                     curPathIndex++;
                 }
@@ -298,8 +313,14 @@ class SFlameGraph {
     }
 
     showTreeV1FlameCompare(treeToProcess, searchString) {
-        SFlameGraph.instance.#searchMatchCount = 0;
+        if($(SFlameGraph.instance.#SFlameGraphDetailsDiv).length < 1){
+            $(SFlameGraph.instance.#SFlameGraphDiv).after(
+                '<div id="'+SFlameGraph.instance.#SFlameGraphDetailsDiv.substring(1)+'"></div>' +
+                '<ul id="custom-menu-guid" class="items"> <li>Copy</li> <li>Reset Zoom</li> </ul>'
+            );
+        }
         $(SFlameGraph.instance.#SFlameGraphDetailsDiv).html("");
+        SFlameGraph.instance.#searchMatchCount = 0;
         if (searchString != "" && searchString != undefined) {
             SFlameGraph.instance.#flameGraphSearch = true;
             SFlameGraph.instance.#flameGraphSearchStr = searchString;
@@ -323,7 +344,7 @@ class SFlameGraph {
         d3.select("#flamegraphdiv").append("svg").attr("width", $(SFlameGraph.instance.#SFlameGraphDiv).width()).attr("height", SFlameGraph.instance.#flameMaxSvgHeight);
         SFlameGraph.instance.#flameSvgWidth = $(SFlameGraph.instance.#SFlameGraphDiv).width();
 
-        SFlameGraph.instance.addSVGRectCompare(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#leftKey] + SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#rightKey], SFlameGraph.instance.#flameGraphActiveTree.nm, 0, "", 1);
+        SFlameGraph.instance.addSVGRectCompare(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#leftKey] + SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#rightKey], SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#nameKey], 0, "", 1);
 
         SFlameGraph.instance.genSVGCompare(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#leftKey] + SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#rightKey], 2, 0, "");
 
@@ -341,31 +362,31 @@ class SFlameGraph {
             return false;
         }
         let skip = false;
-        if (tree.ch == null) {
-            tree.ch = [];
+        if (tree[SFlameGraph.instance.#childrenKey] == null) {
+            tree[SFlameGraph.instance.#childrenKey] = [];
         }
         let nx = x;
 
         let index = 0;
-        tree.ch.forEach(function (child) {
+        tree[SFlameGraph.instance.#childrenKey].forEach(function (child) {
             if (skip || isSkipSubtree(child[SFlameGraph.instance.#leftKey], child[SFlameGraph.instance.#rightKey])) {
                 return;
             }
             if (100 * child[SFlameGraph.instance.#leftKey] / total < SFlameGraph.instance.#threshold && 100 * child[SFlameGraph.instance.#rightKey] / total < SFlameGraph.instance.#threshold) {
-                if (tree.ch.length > 1) {
+                if (tree[SFlameGraph.instance.#childrenKey].length > 1) {
                     SFlameGraph.instance.addSVGRectCompare(child, total, "...", nx, path + index + ":", depth);
                 } else {
                     SFlameGraph.instance.addSVGRectCompare(child, total, "...", nx, path, depth);
                 }
                 skip = true;
-            } else if (tree.ch.length > 0) {
-                if (tree.ch.length > 1) {
-                    SFlameGraph.instance.addSVGRectCompare(child, total, child.nm, nx, path + index + ":", depth);
+            } else if (tree[SFlameGraph.instance.#childrenKey].length > 0) {
+                if (tree[SFlameGraph.instance.#childrenKey].length > 1) {
+                    SFlameGraph.instance.addSVGRectCompare(child, total, child[SFlameGraph.instance.#nameKey], nx, path + index + ":", depth);
                     if (!SFlameGraph.instance.genSVGCompare(child, total, depth + 1, nx, path + index + ":")) {
                         SFlameGraph.instance.addSVGRectCompare(child, total, "...", nx, path, depth);
                     }
                 } else {
-                    SFlameGraph.instance.addSVGRectCompare(child, total, child.nm, nx, path, depth);
+                    SFlameGraph.instance.addSVGRectCompare(child, total, child[SFlameGraph.instance.#nameKey], nx, path, depth);
                     if (!SFlameGraph.instance.genSVGCompare(child, total, depth + 1, nx, path)) {
                         SFlameGraph.instance.addSVGRectCompare(child, total, "...", nx, path, depth);
                     }
@@ -457,43 +478,43 @@ class SFlameGraph {
             SFlameGraph.instance.#flameGraphPath = "";
             SFlameGraph.instance.#flameGraphClickDepth = 0;
             //full svg
-            SFlameGraph.instance.addSVGRectCompare(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#leftKey] + SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#rightKey], SFlameGraph.instance.#flameGraphActiveTree.nm, 0, "", 1);
+            SFlameGraph.instance.addSVGRectCompare(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#leftKey] + SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#rightKey], SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#nameKey], 0, "", 1);
             SFlameGraph.instance.genSVGCompare(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#leftKey] + SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#rightKey], 2, 0, "");
         } else {
             //find click node
-            SFlameGraph.instance.addSVGRectCompare(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#leftKey] + SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#rightKey], SFlameGraph.instance.#flameGraphActiveTree.nm, 0, "", 1, true);
+            SFlameGraph.instance.addSVGRectCompare(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#leftKey] + SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#rightKey], SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#nameKey], 0, "", 1, true);
             let tmpCh = SFlameGraph.instance.#flameGraphActiveTree;
             let curDepth = 1;
             let curPathIndex = 0;
             let curPath = "";
             while (curDepth < clickDepth) {
-                while (tmpCh.ch.length == 1 && curDepth < clickDepth) {
-                    tmpCh = tmpCh.ch[0];
+                while (tmpCh[SFlameGraph.instance.#childrenKey].length == 1 && curDepth < clickDepth) {
+                    tmpCh = tmpCh[SFlameGraph.instance.#childrenKey][0];
                     curDepth++;
 
                     if (curDepth == clickDepth) {
-                        SFlameGraph.instance.addSVGRectCompare(tmpCh, tmpCh[SFlameGraph.instance.#leftKey] + tmpCh[SFlameGraph.instance.#rightKey], tmpCh.nm, 0, curPath, curDepth);
+                        SFlameGraph.instance.addSVGRectCompare(tmpCh, tmpCh[SFlameGraph.instance.#leftKey] + tmpCh[SFlameGraph.instance.#rightKey], tmpCh[SFlameGraph.instance.#nameKey], 0, curPath, curDepth);
                         SFlameGraph.instance.genSVGCompare(tmpCh, tmpCh[SFlameGraph.instance.#leftKey] + tmpCh[SFlameGraph.instance.#rightKey], curDepth + 1, 0, curPath);
                     } else {
-                        SFlameGraph.instance.addSVGRectCompare(tmpCh, tmpCh[SFlameGraph.instance.#leftKey] + tmpCh[SFlameGraph.instance.#rightKey], tmpCh.nm, 0, curPath, curDepth, true);
+                        SFlameGraph.instance.addSVGRectCompare(tmpCh, tmpCh[SFlameGraph.instance.#leftKey] + tmpCh[SFlameGraph.instance.#rightKey], tmpCh[SFlameGraph.instance.#nameKey], 0, curPath, curDepth, true);
                     }
                 }
                 if (curDepth < clickDepth) {
                     curPath = curPath + Number(paths[curPathIndex]) + ":";
                     curDepth++;
-                    if (tmpCh.ch[Number(paths[curPathIndex])] == undefined) {
+                    if (tmpCh[SFlameGraph.instance.#childrenKey][Number(paths[curPathIndex])] == undefined) {
                         console.log("warning1");
                     }
-                    tmpCh = tmpCh.ch[Number(paths[curPathIndex])];
+                    tmpCh = tmpCh[SFlameGraph.instance.#childrenKey][Number(paths[curPathIndex])];
 
                     if (curDepth == clickDepth) {
-                        SFlameGraph.instance.addSVGRectCompare(tmpCh, tmpCh[SFlameGraph.instance.#leftKey] + tmpCh[SFlameGraph.instance.#rightKey], tmpCh.nm, 0, curPath, curDepth);
+                        SFlameGraph.instance.addSVGRectCompare(tmpCh, tmpCh[SFlameGraph.instance.#leftKey] + tmpCh[SFlameGraph.instance.#rightKey], tmpCh[SFlameGraph.instance.#nameKey], 0, curPath, curDepth);
                         SFlameGraph.instance.genSVGCompare(tmpCh, tmpCh[SFlameGraph.instance.#leftKey] + tmpCh[SFlameGraph.instance.#rightKey], curDepth + 1, 0, curPath);
                     } else {
                         if (tmpCh == undefined) {
                             console.log("warning2");
                         }
-                        SFlameGraph.instance.addSVGRectCompare(tmpCh, tmpCh[SFlameGraph.instance.#leftKey] + tmpCh[SFlameGraph.instance.#rightKey], tmpCh.nm, 0, curPath, curDepth, true);
+                        SFlameGraph.instance.addSVGRectCompare(tmpCh, tmpCh[SFlameGraph.instance.#leftKey] + tmpCh[SFlameGraph.instance.#rightKey], tmpCh[SFlameGraph.instance.#nameKey], 0, curPath, curDepth, true);
                     }
                     curPathIndex++;
                 }
@@ -590,6 +611,7 @@ class SFlameGraph {
         if(bsz+csz !== 0){
             percDiff = percDiff/(bsz+csz);
         }
+
         if (SFlameGraph.instance.#flameGraphSearch && getFrameName(id).includes(SFlameGraph.instance.#flameGraphSearchStr)) {
             SFlameGraph.instance.#searchMatchCount++;
             if (dull) {
