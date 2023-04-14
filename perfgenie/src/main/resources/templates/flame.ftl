@@ -38,12 +38,6 @@ When off only the first data set (BASE) is displayed with the changes compared t
 In other words, data that's in the second set but not in the first will not be displayed when the toggle is off."></div>
     <div class="col-lg-12 col-md-12 col-sm-12">
         <div  id="flame-graph-guid"></div>
-        <div id="flame-graph-details-guid"></div>
-        <!-- custom context-menu -->
-        <ul id="custom-menu-guid" class="items">
-            <li>Copy</li>
-            <li>Reset Zoom</li>
-        </ul>
     </div>
 </div>
 <!-- context menu css -->
