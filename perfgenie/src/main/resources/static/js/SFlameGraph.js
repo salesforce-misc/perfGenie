@@ -29,6 +29,7 @@ class SFlameGraph {
     #filterOption = 1; // 1 show all, 2 do not show right, 3 do not show left
     #isCompare = false;
     #searchMatchCount = 0;
+    #SFlameGraphcontextMenu = this.flameGraphcontextMenu;
 
     getSearchMatchCount(){
         return SFlameGraph.instance.#searchMatchCount;
@@ -39,6 +40,10 @@ class SFlameGraph {
             SFlameGraph.instance = this;
         }
         return SFlameGraph.instance;
+    }
+
+    setContextMenu(f){
+        SFlameGraph.instance.#SFlameGraphcontextMenu=f;
     }
 
     setRightKey(key){
@@ -209,7 +214,8 @@ class SFlameGraph {
                 .attr("onclick", 'SFlameGraph.instance.svgShowFlame(evt)')
                 .attr("id", id)
                 .on("contextmenu", function () {
-                    return SFlameGraph.instance.flameGraphcontextMenu(fN);
+                    return SFlameGraph.instance.#SFlameGraphcontextMenu(fN);
+                    //return SFlameGraph.instance.flameGraphcontextMenu(fN);
                 })
                 .on("mouseover", function () {
                     return SFlameGraph.instance.mouseoverFlame(id, this, width * SFlameGraph.instance.#flameSvgWidth);
@@ -233,7 +239,8 @@ class SFlameGraph {
                 .attr("p", path)
                 .attr("d", depth)
                 .on("contextmenu", function () {
-                    return SFlameGraph.instance.flameGraphcontextMenu(fN);
+                    return SFlameGraph.instance.#SFlameGraphcontextMenu(fN);
+                    //return SFlameGraph.instance.flameGraphcontextMenu(fN);
                 })
                 .on("mouseover", function () {
                     return SFlameGraph.instance.mouseoverFlame(id, this, width * SFlameGraph.instance.#flameSvgWidth);
@@ -434,7 +441,8 @@ class SFlameGraph {
                 .attr("onclick", 'SFlameGraph.instance.svgShowFlame(evt)')
                 .attr("id", id)
                 .on("contextmenu", function () {
-                    return SFlameGraph.instance.flameGraphcontextMenu(fN);
+                    return SFlameGraph.instance.#SFlameGraphcontextMenu(fN);
+                    //return SFlameGraph.instance.flameGraphcontextMenu(fN);
                 })
                 .on("mouseover", function () {
                     return SFlameGraph.instance.mouseoverFlame(id, this, width * SFlameGraph.instance.#flameSvgWidth);
@@ -458,7 +466,8 @@ class SFlameGraph {
                 .attr("p", path)
                 .attr("d", depth)
                 .on("contextmenu", function () {
-                    return SFlameGraph.instance.flameGraphcontextMenu(fN);
+                    return SFlameGraph.instance.#SFlameGraphcontextMenu(fN);
+                    //return SFlameGraph.instance.flameGraphcontextMenu(fN);
                 })
                 .on("mouseover", function () {
                     return SFlameGraph.instance.mouseoverFlame(id, this, width * SFlameGraph.instance.#flameSvgWidth);
