@@ -200,6 +200,16 @@
     .cct-customized-scrollbar::-webkit-scrollbar-thumb {
         background: #6D6F70;
     }
+
+    table.alternate_color tr:nth-of-type(even) {
+        background-color:#F9F9F9;
+    }
+
+    table.alternate_color th, td {
+        border: 1px solid #E8EAEC;
+        border-collapse: collapse;
+    }
+
 </style>
 <script type="text/javascript" class="init">
     $(function () {
@@ -3657,6 +3667,886 @@
         return alignedNodes;
     }
     //jfr context end
+
+    //Request context table crash temporary fix START
+
+    let tableRows = [];
+    let tableHeader = [];
+
+    function genRequestTableNew() {
+        let start1 = performance.now();
+        let table = "";
+        let tidDatalistVal = filterMap["tid"];
+        let reqDatalistVal = filterMap["req"];
+        let contextDatalistVal = filterMap["context"];
+        let contextDataTypeVal = -1;
+        if (contextDatalistVal != undefined && contextDatalistVal == "async") {
+            contextDataTypeVal = 6;
+        } else if (contextDatalistVal != undefined && contextDatalistVal == "sync") {
+            contextDataTypeVal = 2;
+        }
+        let contextStart = getContextTree(1).context.start;
+
+        //status graph start
+        let downScale = 200;
+        let maxEndTimeOfReq = 0;
+        let totalRows = 0;
+        let rowHeight = 8;
+        let filteredTidRequests = {};
+        let lineCount = 0;
+        if (tableFormat == 2 || tableFormat == 3) {
+            tidIndex = {};
+        }
+        let tmpTidSortByMetricMap = new Map();
+        let tmpGgroupByTypeSortByMetricMap = new Map();
+        let groupByCount = 0;
+        let groupByCountSum = 0;
+        //status graph end
+
+        let contextTidMap = getContextTree(1).context.tidMap;
+        let tmporgusrMap = new Map();
+        let tmpcpuTimeMap = new Map();
+        let tmprunTimeMap = new Map();
+        let tmpgcTimeMap = new Map();
+        let tmpbytesTimeMap = new Map();
+        let tmpdbTimeMap = new Map();
+        let tmpdbHoldingTimeMap = new Map();
+        let tmpapexTimeMap = new Map();
+        let tmpdbcpuTimeMap = new Map();
+        let tmpsfpTimeMap = new Map();
+        let rowCountMap = new Map();
+        let tmpdqLatencyMap = new Map();
+        let event = getEventType();
+
+        let rowIndex = -1;
+        tableHeader = [];
+        tableRows = [];
+        getContextTableHeadernew(groupBy, contextDataTypeVal, tableHeader);
+
+        filteredStackMap[FilterLevel.LEVEL3] = {};
+
+        //if only frame filter is selected then we need to include stacks that are not part of any requests.
+        if (frameFilterString !== "" && tidDatalistVal == undefined && isFilterEmpty()) {
+            for (var tid in contextTidMap) {
+                if (isTSView) {
+                    for (let index = 0; index < contextTidMap[tid].length; index++) {
+                        if (frameFilterStackMap[event][contextTidMap[tid][index].hash] !== undefined) {
+                            if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
+                                filteredStackMap[FilterLevel.LEVEL3][tid] = [];
+                            }
+                            filteredStackMap[FilterLevel.LEVEL3][tid].push(contextTidMap[tid][index]);
+                        }
+                    }
+                }
+                //generate context table data, need to include requests that has frame filter found stacks
+                if (contextData.records[tid] != undefined) {
+                    let includeTid = false;
+                    let reqArray = [];
+                    let recordIndex = -1;
+                    contextData.records[tid].forEach(function (obj) {
+                        let flag = false;
+                        recordIndex++;
+
+                        if ((obj.type == undefined || (contextDataTypeVal == -1 && (obj.type == 2 || obj.type == 6)) || obj.type == contextDataTypeVal || (reqDatalistVal != undefined && obj.type == 4)) &&
+                            filterMatch(obj, contextDataTypeVal)) {
+
+                            let end = obj.epoch - contextStart + obj.runTime;
+                            let start = obj.epoch - contextStart;
+
+                            try {
+                                //do a binary search
+                                let entryIndex = isinRequest(contextTidMap[tid], start, end);
+                                if (entryIndex != -1) {
+                                    let requestArr = contextTidMap[tid];
+                                    let curIndex = entryIndex;
+                                    //consider all matching requests downward
+                                    while (flag == false && curIndex >= 0 && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
+                                        if (frameFilterStackMap[event][requestArr[curIndex].hash] !== undefined) {
+                                            flag = true;
+                                        }
+                                        curIndex--;
+                                    }
+                                    curIndex = entryIndex + 1;
+                                    //consider all matching requests upward
+                                    while (flag == false && curIndex < requestArr.length && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
+                                        if (frameFilterStackMap[event][requestArr[curIndex].hash] !== undefined) {
+                                            flag = true;
+                                        }
+                                        curIndex++;
+                                    }
+                                }
+                            } catch (err) {
+                                //console.log("tid not found in JFR" + tid.key + " " + err.message);
+                            }
+                        }
+
+                        if (flag) {
+                            if ((tableFormat == 2 || tableFormat == 3) && (obj.type == 2 || obj.type == 6)) {
+                                includeTid = true;
+                                reqArray.push(recordIndex);
+                                if ((obj.runTime + obj.epoch) > maxEndTimeOfReq) {
+                                    maxEndTimeOfReq = obj.runTime + obj.epoch;
+                                }
+                                let key = eval("obj." + groupBy);
+                                if (!tmpColorMap.has(key)) {
+                                    tmpColorMap.set(key, randomColor());
+                                    groupByCount++;
+                                }
+
+                                let metricValue = eval("obj." + sortBy);
+                                if (metricValue != undefined) {
+                                    groupByCountSum += metricValue;
+                                } else {
+                                    metricValue = 0;
+                                }
+
+                                if (tmpGgroupByTypeSortByMetricMap.has(key)) {
+                                    tmpGgroupByTypeSortByMetricMap.set(key, tmpGgroupByTypeSortByMetricMap.get(key) + metricValue);
+                                } else {
+                                    tmpGgroupByTypeSortByMetricMap.set(key, metricValue);
+                                }
+
+                                if (tmpTidSortByMetricMap.has(tid)) {
+                                    tmpTidSortByMetricMap.set(tid, tmpTidSortByMetricMap.get(tid) + metricValue);
+                                } else {
+                                    tmpTidSortByMetricMap.set(tid, metricValue);
+                                }
+
+                            }
+                            if (groupBy == "none") {
+                                if (obj.runTime > (filterMap["runTimeThreshold"] ?? defaultRunTimeThreshold) || reqDatalistVal !== undefined) {
+                                    rowIndex++;
+                                    tableRows[rowIndex] = [];
+                                    table += getContextTableRownew(obj, tableFormat, tableRows[rowIndex]);
+                                }
+                            } else if (obj.type != 4) {
+                                if (groupBy == "userId") {
+                                    if (!tmporgusrMap.has(obj.userId)) {
+                                        tmporgusrMap.set(obj.userId, obj.orgId)
+                                    }
+                                }
+                                let key = eval("obj." + groupBy);
+                                if (tmpcpuTimeMap.has(key)) {
+                                    rowCountMap.set(key, rowCountMap.get(key) + 1);
+                                    tmpcpuTimeMap.set(key, tmpcpuTimeMap.get(key) + obj.cpuTime);
+                                    tmprunTimeMap.set(key, tmprunTimeMap.get(key) + obj.runTime);
+                                    if (obj.bytes != undefined) {
+                                        tmpbytesTimeMap.set(key, tmpbytesTimeMap.get(key) + obj.bytes);
+                                    }
+                                    tmpdbcpuTimeMap.set(key, tmpdbcpuTimeMap.get(key) + obj.dbCpu);
+                                } else {
+                                    rowCountMap.set(key, 1);
+                                    tmpcpuTimeMap.set(key, obj.cpuTime);
+                                    tmprunTimeMap.set(key, obj.runTime);
+                                    if (obj.bytes != undefined) {
+                                        tmpbytesTimeMap.set(key, obj.bytes);
+                                    }
+                                    tmpdbcpuTimeMap.set(key, obj.dbCpu);
+                                }
+                                if (tmpdbTimeMap.has(key)) {
+                                    if (obj.dbTime != undefined) {
+                                        tmpdbTimeMap.set(key, tmpdbTimeMap.get(key) + obj.dbTime);
+                                    }
+                                } else {
+                                    if (obj.dbTime != undefined) {
+                                        tmpdbTimeMap.set(key, obj.dbTime);
+                                    }
+                                }
+                                if (obj.hasOwnProperty("dbHoldingTime")) {
+                                    tmpdbHoldingTimeMap.set(key, (tmpdbHoldingTimeMap.get(key) ?? 0) + obj["dbHoldingTime"]);
+                                }
+                                if (tmpdqLatencyMap.has(key)) {
+                                    if (obj.dqLatency != undefined) {
+                                        tmpdqLatencyMap.set(key, tmpdqLatencyMap.get(key) + obj.dqLatency);
+                                    }
+                                } else {
+                                    if (obj.dqLatency != undefined) {
+                                        tmpdqLatencyMap.set(key, obj.dqLatency);
+                                    }
+                                }
+                                if (tmpsfpTimeMap.has(key)) {
+                                    if (obj.spTime != undefined) {
+                                        tmpapexTimeMap.set(key, tmpapexTimeMap.get(key) + obj.apexTime);
+                                        tmpgcTimeMap.set(key, tmpgcTimeMap.get(key) + obj.gcTime);
+                                        tmpsfpTimeMap.set(key, tmpsfpTimeMap.get(key) + obj.spTime);
+                                    }
+                                } else {
+                                    if (obj.spTime != undefined) {
+                                        tmpsfpTimeMap.set(key, obj.spTime);
+                                        tmpgcTimeMap.set(key, obj.gcTime);
+                                        tmpapexTimeMap.set(key, obj.apexTime);
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    if (includeTid) {
+                        filteredTidRequests[tid] = reqArray;
+                        lineCount++;
+                        totalRows++;
+                    }
+                }
+            }
+        } else {
+            for (var tid in contextData.records) {
+                let includeTid = false;
+                let reqArray = [];
+                let recordIndex = -1;
+                if (tidDatalistVal == undefined || tidDatalistVal == tid) {
+                    contextData.records[tid].forEach(function (obj) {
+                        let flag = false;
+                        recordIndex++;
+                        if ((obj.type == undefined || (contextDataTypeVal == -1 && (obj.type == 2 || obj.type == 6)) || obj.type == contextDataTypeVal || (reqDatalistVal != undefined && obj.type == 4)) &&
+                            filterMatch(obj, contextDataTypeVal)) {
+                            flag = true;
+                        }
+
+                        //context filter matched, but check if samples of request is matching frame filter
+                        if (flag == true && frameFilterString !== "") {
+                            flag = false;
+
+                            //check if the request has a stack and if stack is in frameFilterStackMap
+                            let end = obj.epoch - contextStart + obj.runTime;
+                            let start = obj.epoch - contextStart;
+
+                            try {
+                                //do a binary search
+                                let entryIndex = isinRequest(contextTidMap[tid], start, end);
+                                if (entryIndex != -1) {
+                                    let requestArr = contextTidMap[tid];
+                                    let curIndex = entryIndex;
+                                    //consider all matching requests downward
+                                    while (curIndex >= 0 && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
+                                        if (frameFilterStackMap[event][requestArr[curIndex].hash] !== undefined) {
+                                            flag = true;
+                                            if (isTSView) {
+                                                if (obj.type != 4) {//skip sub requests
+                                                    if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
+                                                        filteredStackMap[FilterLevel.LEVEL3][tid] = [];
+                                                    }
+                                                    filteredStackMap[FilterLevel.LEVEL3][tid].push(requestArr[curIndex]);
+                                                }
+                                            } else {
+                                                break;
+                                            }
+                                        }
+                                        curIndex--;
+                                    }
+                                    curIndex = entryIndex + 1;
+                                    //consider all matching requests upward
+                                    while (curIndex < requestArr.length && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
+                                        if (frameFilterStackMap[event][requestArr[curIndex].hash] !== undefined) {
+                                            flag = true;
+                                            if (isTSView) {
+                                                if (obj.type != 4) {//skip sub requests
+                                                    if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
+                                                        filteredStackMap[FilterLevel.LEVEL3][tid] = [];
+                                                    }
+                                                    filteredStackMap[FilterLevel.LEVEL3][tid].push(requestArr[curIndex]);
+                                                }
+                                            } else {
+                                                break;
+                                            }
+                                        }
+                                        curIndex++;
+                                    }
+                                }
+                            } catch (err) {
+                                //console.log("tid not found in JFR" + tid + " " + err.message);
+                            }
+                        }
+
+                        if (flag) {
+                            if ((tableFormat == 2 || tableFormat == 3) && (obj.type == 2 || obj.type == 6)) {
+                                includeTid = true;
+                                reqArray.push(recordIndex);
+                                if ((obj.runTime + obj.epoch) > maxEndTimeOfReq) {
+                                    maxEndTimeOfReq = obj.runTime + obj.epoch;
+                                }
+                                let key = eval("obj." + groupBy);
+                                if (!tmpColorMap.has(key)) {
+                                    tmpColorMap.set(key, randomColor());
+                                    groupByCount++;
+                                }
+                                let metricValue = eval("obj." + sortBy);
+                                if (metricValue != undefined) {
+                                    groupByCountSum += metricValue;
+                                } else {
+                                    metricValue = 0;
+                                }
+
+                                if (tmpGgroupByTypeSortByMetricMap.has(key)) {
+                                    tmpGgroupByTypeSortByMetricMap.set(key, tmpGgroupByTypeSortByMetricMap.get(key) + metricValue);
+                                } else {
+                                    tmpGgroupByTypeSortByMetricMap.set(key, metricValue);
+                                }
+
+                                if (tmpTidSortByMetricMap.has(tid)) {
+                                    tmpTidSortByMetricMap.set(tid, tmpTidSortByMetricMap.get(tid) + metricValue);
+                                } else {
+                                    tmpTidSortByMetricMap.set(tid, metricValue);
+                                }
+                            }
+
+                            if (groupBy == "none") {
+                                if (obj.runTime > (filterMap["runTimeThreshold"] ?? defaultRunTimeThreshold) || reqDatalistVal !== undefined) {
+                                    rowIndex++;
+                                    tableRows[rowIndex] = [];
+                                    table += getContextTableRownew(obj, tableFormat, tableRows[rowIndex]);
+                                }
+                            } else if (obj.type != 4) {
+                                if (groupBy == "userId") {
+                                    if (!tmporgusrMap.has(obj.userId)) {
+                                        tmporgusrMap.set(obj.userId, obj.orgId)
+                                    }
+                                }
+                                let key = eval("obj." + groupBy);
+                                if (tmpcpuTimeMap.has(key)) {
+                                    rowCountMap.set(key, rowCountMap.get(key) + 1);
+                                    tmpcpuTimeMap.set(key, tmpcpuTimeMap.get(key) + obj.cpuTime);
+                                    tmprunTimeMap.set(key, tmprunTimeMap.get(key) + obj.runTime);
+                                    if (obj.bytes != undefined) {
+                                        tmpbytesTimeMap.set(key, tmpbytesTimeMap.get(key) + obj.bytes);
+                                    }
+                                    tmpdbcpuTimeMap.set(key, tmpdbcpuTimeMap.get(key) + obj.dbCpu);
+                                } else {
+                                    rowCountMap.set(key, 1);
+                                    tmpcpuTimeMap.set(key, obj.cpuTime);
+                                    tmprunTimeMap.set(key, obj.runTime);
+                                    if (obj.bytes != undefined) {
+                                        tmpbytesTimeMap.set(key, obj.bytes);
+                                    }
+                                    tmpdbcpuTimeMap.set(key, obj.dbCpu);
+                                }
+                                if (tmpdbTimeMap.has(key)) {
+                                    if (obj.dbTime != undefined) {
+                                        tmpdbTimeMap.set(key, tmpdbTimeMap.get(key) + obj.dbTime);
+                                    }
+                                } else {
+                                    if (obj.dbTime != undefined) {
+                                        tmpdbTimeMap.set(key, obj.dbTime);
+                                    }
+                                }
+                                if (obj.hasOwnProperty("dbHoldingTime")) {
+                                    tmpdbHoldingTimeMap.set(key, (tmpdbHoldingTimeMap.get(key) ?? 0) + obj["dbHoldingTime"]);
+                                }
+                                if (tmpdqLatencyMap.has(key)) {
+                                    if (obj.dqLatency != undefined) {
+                                        tmpdqLatencyMap.set(key, tmpdqLatencyMap.get(key) + obj.dqLatency);
+                                    }
+                                } else {
+                                    if (obj.dqLatency != undefined) {
+                                        tmpdqLatencyMap.set(key, obj.dqLatency);
+                                    }
+                                }
+                                if (tmpsfpTimeMap.has(key)) {
+                                    if (obj.spTime != undefined) {
+                                        tmpapexTimeMap.set(key, tmpapexTimeMap.get(key) + obj.apexTime);
+                                        tmpgcTimeMap.set(key, tmpgcTimeMap.get(key) + obj.gcTime);
+                                        tmpsfpTimeMap.set(key, tmpsfpTimeMap.get(key) + obj.spTime);
+                                    }
+                                } else {
+                                    if (obj.spTime != undefined) {
+                                        tmpsfpTimeMap.set(key, obj.spTime);
+                                        tmpgcTimeMap.set(key, obj.gcTime);
+                                        tmpapexTimeMap.set(key, obj.apexTime);
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    if (includeTid) {
+                        filteredTidRequests[tid] = reqArray;
+                        lineCount++;
+                        totalRows++;
+                    }
+                }
+            }
+        }
+
+        let end1 = performance.now();
+        console.log("genRequestTable 0 time:" + (end1 - start1))
+        let start = performance.now();
+        let [order, tp] = getOrderandType();
+
+        if (tableFormat == 2 || tableFormat == 3) {
+            let minStart = getContextTree(1, EventType.METHOD).context.start; //records are aligned to method profile context start
+            let chartWidth = maxEndTimeOfReq - minStart;
+            if (chartWidth < 600000) {//min 10 min
+                chartWidth = 600000;
+            }
+            chartWidth = chartWidth / downScale;
+            const tidSortByMetricMap = new Map([...tmpTidSortByMetricMap.entries()].sort((a, b) => b[1] - a[1]));
+            const groupByTypeSortByMetricMap = new Map([...tmpGgroupByTypeSortByMetricMap.entries()].sort((a, b) => b[1] - a[1]));
+            //generate tidIndex for Yaxis
+            let index = 0;
+            for (let [tid, value] of tidSortByMetricMap) {
+                tidIndex[index] = tid;
+                index++;
+            }
+            if (tableFormat == 2) {
+                drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap);
+                addLegend("#legendid", groupByTypeSortByMetricMap, groupByCount, groupByCountSum, tp);
+                addYAxis("#yaxisid", 0, 0, 0, 17, 0, lineCount, 500, totalRows * rowHeight);
+                addXAxis("#xaxisid", 15, 0, 0, 0, 0, chartWidth, chartWidth, 50, minStart, downScale);
+            } else {
+                drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum);
+            }
+        } else {
+            for (let [key, value] of tmpcpuTimeMap) {
+                if (tableFormat == 0) {
+                    if (tmprunTimeMap.get(key) > (filterMap["runTimeThreshold"] ?? defaultRunTimeThreshold)) {
+                        rowIndex++;
+                        tableRows[rowIndex] = [];
+                        if (groupBy == "userId") {
+                            tableRows[rowIndex].push({"v": (key == undefined ? "NA" : key)}, {"v": tmporgusrMap.get(key)}, {"v": tmprunTimeMap.get(key)}, {"v": value}, {"v": (tmpdbTimeMap.get(key) == undefined ? "NA" : tmpdbTimeMap.get(key))}, {"v": (tmpdbHoldingTimeMap.get(key) ?? "NA")}, {"v": (tmpapexTimeMap.get(key) == undefined ? "NA" : tmpapexTimeMap.get(key))}, {"v": tmpdbcpuTimeMap.get(key)}, {"v": (tmpgcTimeMap.get(key) == undefined ? "NA" : tmpgcTimeMap.get(key))}, {"v": (tmpsfpTimeMap.get(key) == undefined ? "NA" : tmpsfpTimeMap.get(key))}, {"v": tmpbytesTimeMap.get(key)}, {"v": (tmpdqLatencyMap.get(key) == undefined ? "NA" : tmpdqLatencyMap.get(key))}, {"v": rowCountMap.get(key)});
+                        } else {
+                            tableRows[rowIndex].push({"v": (key == undefined ? "NA" : key)}, {"v": tmprunTimeMap.get(key)}, {"v": value}, {"v": (tmpdbTimeMap.get(key) == undefined ? "NA" : tmpdbTimeMap.get(key))}, {"v": (tmpdbHoldingTimeMap.get(key) ?? "NA")}, {"v": (tmpapexTimeMap.get(key) == undefined ? "NA" : tmpapexTimeMap.get(key))}, {"v": tmpdbcpuTimeMap.get(key)}, {"v": (tmpgcTimeMap.get(key) == undefined ? "NA" : tmpgcTimeMap.get(key))}, {"v": (tmpsfpTimeMap.get(key) == undefined ? "NA" : tmpsfpTimeMap.get(key))}, {"v": tmpbytesTimeMap.get(key)}, {"v": (tmpdqLatencyMap.get(key) == undefined ? "NA" : tmpdqLatencyMap.get(key))}, {"v": rowCountMap.get(key)});
+                        }
+                    }
+                } else {
+                    if (tmprunTimeMap.get(key) > (filterMap["runTimeThreshold"] ?? defaultRunTimeThreshold)) {
+                        rowIndex++;
+                        tableRows[rowIndex] = [];
+                        if (groupBy == "userId") {
+                            tableRows[rowIndex].push({"v": (key == undefined ? "NA" : key)}, {"v": tmporgusrMap.get(key)}, {"v": (100 * tmprunTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2)}, {"v": (100 * value / tmprunTimeMap.get(key)).toFixed(2)}, {"v": (tmpdbTimeMap.get(key) == undefined ? "NA" : (100 * tmpdbTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": (!tmpdbHoldingTimeMap.has(key) ? "NA" : (100 * tmpdbHoldingTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": (tmpapexTimeMap.get(key) == undefined ? "NA" : (100 * tmpapexTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": (100 * tmpdbcpuTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2)}, {"v": (tmpgcTimeMap.get(key) == undefined ? "NA" : (100 * tmpgcTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": (tmpsfpTimeMap.get(key) == undefined ? "NA" : (100 * tmpsfpTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": tmpbytesTimeMap.get(key)}, {"v": (tmpdqLatencyMap.get(key) == undefined ? "NA" : tmpdqLatencyMap.get(key))}, {"v": rowCountMap.get(key)});
+                        } else {
+                            tableRows[rowIndex].push({"v": (key == undefined ? "NA" : key)}, {"v": (100 * tmprunTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2)}, {"v": (100 * value / tmprunTimeMap.get(key)).toFixed(2)}, {"v": (tmpdbTimeMap.get(key) == undefined ? "NA" : (100 * tmpdbTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": (!tmpdbHoldingTimeMap.has(key) ? "NA" : (100 * tmpdbHoldingTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": (tmpapexTimeMap.get(key) == undefined ? "NA" : (100 * tmpapexTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": (100 * tmpdbcpuTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2)}, {"v": (tmpgcTimeMap.get(key) == undefined ? "NA" : (100 * tmpgcTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": (tmpsfpTimeMap.get(key) == undefined ? "NA" : (100 * tmpsfpTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": tmpbytesTimeMap.get(key)}, {"v": (tmpdqLatencyMap.get(key) == undefined ? "NA" : tmpdqLatencyMap.get(key))}, {"v": rowCountMap.get(key)});
+                        }
+                    }
+                }
+            }
+            table = table + "</table>";
+
+            SFDataTable(tableRows, tableHeader, "statetable", order);
+
+            if (contextTable != undefined) {
+                contextTablePage = 0; //reset to 0 except 1st time
+            }
+            console.log("DataTable 0");
+        }
+        console.log("DataTable 1");
+        $("#statetabledrp").html(getToolBarOptions());
+        $("#filter-input").on("change", (event) => {
+            updateUrl("groupBy", $("#filter-input").val(), true);
+            groupBy = $("#filter-input").val();
+            tmpColorMap.clear();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#format-input").on("change", (event) => {
+            updateUrl("tableFormat", $("#format-input").val(), true);
+            tableFormat = $("#format-input").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#sort-input").on("change", (event) => {
+            updateUrl("sortBy", $("#sort-input").val(), true);
+            sortBy = $("#sort-input").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#line-type").on("change", (event) => {
+            updateUrl("cumulative", $("#line-type").val(), true);
+            cumulativeLine = $("#line-type").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        let end = performance.now();
+        console.log("genRequestTable 1 time:" + (end - start))
+    }
+
+    //SF Data table
+    let SFDataTablePage = 0;
+    let SFDataTablePageSize = 10;
+    let sfdtsci = 0;
+    let SFDataTableHeader = "";
+    let SFDataTableRows = "";
+    let SFDataTableSearchStr = undefined;
+    let SFDataTableSearchMatchedRows = [];
+    let SFDataTableID = undefined;
+    let sortIcon = "down";
+
+    //First time data table loading, entry point
+    function SFDataTable(rows, header, id, sortColIndex) {
+        if (rows !== undefined) {
+            //reset
+            SFDataTableSearchMatchedRows = [];
+            SFDataTableRows = rows;
+            SFDataTableHeader = header;
+            SFDataTableID = id;
+            SFDataTablePage = 0;
+            if (sortColIndex != undefined) {
+                sfdtsci = sortColIndex;
+            }
+            SFDataTableSearchStr = undefined;
+            //sort data
+            SFDataTableSort(1);
+        }
+
+        let table = "<table id='SFDataTable' class='alternate_color'>\n";
+        table += SFDataTableGetHeader();
+        table += SFDataTableGetRows();
+        table += "</table>";
+        table += SFDataTableGetToolBar();
+        document.getElementById(SFDataTableID).innerHTML = table;
+    }
+
+    function SFDataTableSearch() {
+        SFDataTableSearchMatchedRows = []; //reset search matched rows
+        if (SFDataTableSearchStr !== undefined) {
+            for (let i = SFDataTablePageSize * SFDataTablePage; i < SFDataTableRows.length; i++) {
+                for (let j = 0; j < SFDataTableRows[i].length; j++) {
+                    if (isNaN(SFDataTableRows[i][j].v)) {
+                        if (SFDataTableRows[i][j].v.includes(SFDataTableSearchStr)) {
+                            SFDataTableSearchMatchedRows.push(i);
+                            break;
+                        }
+                    } else {
+                        if (SFDataTableRows[i][j].v != null && SFDataTableRows[i][j].v.toString().includes(SFDataTableSearchStr)) {
+                            SFDataTableSearchMatchedRows.push(i);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    function SFhandlePaginationClick(pageno) {
+        SFDataTablePage = pageno - 1;
+        SFDataTable();
+    }
+
+    function SFhandlePrevious(x) {
+        SFDataTablePage--;
+        SFDataTable();
+    }
+
+    function SFhandleNext(x) {
+        SFDataTablePage++;
+        SFDataTable();
+    }
+
+    function SFDataTableSetSortIndex(x) {
+        let sortorder = 1;
+        if (sfdtsci == x.cellIndex) {
+            if (x.getElementsByTagName("i")[0].className.includes("down")) {
+                sortIcon = "up";
+            } else {
+                sortIcon = "down";
+            }
+            sortorder = -1;//reverse
+        } else {
+            sortIcon = "down";
+            sfdtsci = x.cellIndex;
+        }
+
+        SFDataTablePage = 0; //reset to first page on sort
+        SFDataTableSearchMatchedRows = []; //invalidate any matched search rows
+
+        SFDataTableSort(sortorder);
+
+        SFDataTableSearch();
+
+        SFDataTable();
+    }
+
+
+    function SFDataTableSort(sortorder) {
+        if (SFDataTableHeader[sfdtsci].t == undefined) {
+            SFDataTableAutoFillColType(SFDataTableRows);
+        }
+        if (sortorder === 1) {
+            if (SFDataTableHeader[sfdtsci].t > 0) {
+                SFDataTableRows.sort(SFDataTableSortCompareDescNumber);
+            } else {
+                SFDataTableRows.sort(SFDataTableSortCompareDescString);
+            }
+        } else {
+            SFDataTableRows.reverse();
+        }
+    }
+
+    function SFDataTableGetRows() {
+        let rows = "";
+        let rowsAdded = 0;
+        if (SFDataTableSearchStr != undefined) {
+            for (let i = SFDataTablePageSize * SFDataTablePage; i < SFDataTableSearchMatchedRows.length && rowsAdded < SFDataTablePageSize; i++) {
+                if (rowsAdded < SFDataTablePageSize) {
+                    rows += "<tr>"
+                    for (let j = 0; j < SFDataTableRows[SFDataTableSearchMatchedRows[i]].length; j++) {
+                        rows += "<td>" + SFDataTableRows[SFDataTableSearchMatchedRows[i]][j].v + "</td>";
+                    }
+                    rows += "</tr>\n"
+                    rowsAdded++;
+                }
+            }
+        } else {
+            for (let i = SFDataTablePageSize * SFDataTablePage; i < SFDataTableRows.length && rowsAdded < SFDataTablePageSize; i++) {
+                if (rowsAdded < SFDataTablePageSize) {
+                    rows += "<tr>"
+                    for (let j = 0; j < SFDataTableRows[i].length; j++) {
+                        rows += "<td " + (SFDataTableHeader[j].p == undefined ? "" : SFDataTableHeader[j].p) + " " + (SFDataTableRows[i][j].p == undefined ? "" : SFDataTableRows[i][j].p) + " >" + SFDataTableRows[i][j].v + "</td>";
+                    }
+                    rows += "</tr>\n"
+                    rowsAdded++;
+                }
+            }
+        }
+        return rows;
+    }
+
+    function SFDataTableGetToolBar() {
+        let toolbar = "";
+        toolbar += " Search: <input type='text' style='border: 1px solid #E8EAEC;' id='SFSearch' class='' name='SFSearch'  value='" + (SFDataTableSearchStr == undefined ? "" : SFDataTableSearchStr) + "'onkeypress='if(event.keyCode == 13) javascript:SFSearch()'>";
+
+        if (SFDataTablePage == 0) {
+            toolbar += "<button disabled=true id='pagination' style='border-color: #f9f9f9;' class='' type='submit' onClick='JavaScript:SFhandlePrevious()'>Previous</button>";
+        } else {
+            toolbar += "<button  id='pagination' style='border-color: #f9f9f9;' type='submit' onClick='JavaScript:SFhandlePrevious()'>Previous</button>";
+        }
+
+        let total = 0;
+        if (SFDataTableSearchStr != undefined) {
+            while (SFDataTablePageSize * total < SFDataTableSearchMatchedRows.length) {
+                total++;
+            }
+        } else {
+            while (SFDataTablePageSize * total < SFDataTableRows.length) {
+                total++;
+            }
+        }
+
+        if (total > 7) {
+            if (0 == SFDataTablePage) {
+                toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='JavaScript:SFhandlePaginationClick(" + 1 + ")'>" + 1 + "</button>";
+            } else {
+                toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='JavaScript:SFhandlePaginationClick(" + 1 + ")'>" + 1 + "</button>";
+            }
+
+            if (total - (SFDataTablePage + 1) < 4) {//is it in the last 5
+                toolbar += "<button active style='border-color: #f9f9f9;' class=''>...</button>";
+                for (let i = total - 5; i < total - 1; i++) {
+                    if (i == SFDataTablePage) {
+                        toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='JavaScript:SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
+                    } else {
+                        toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='JavaScript:SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
+                    }
+                }
+            } else if ((SFDataTablePage + 1) - 1 < 4) {//is it in the first 5
+                for (let i = 1; i < 5; i++) {
+                    if (i == SFDataTablePage) {
+                        toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='JavaScript:SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
+                    } else {
+                        toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='JavaScript:SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
+                    }
+                }
+                toolbar += "<button active style='border-color: #f9f9f9;' class=''>...</button>";
+            } else {//in the middle
+                toolbar += "<button active style='border-color: #f9f9f9;' class=''>...</button>";
+                for (let i = SFDataTablePage - 1; i < SFDataTablePage + 2; i++) {
+                    if (i == SFDataTablePage) {
+                        toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='JavaScript:SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
+                    } else {
+                        toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='JavaScript:SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
+                    }
+                }
+                toolbar += "<button active style='border-color: #f9f9f9;' class=''>...</button>";
+            }
+            if (total == SFDataTablePage + 1) {
+                toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='JavaScript:SFhandlePaginationClick(" + total + ")'>" + total + "</button>";
+            } else {
+                toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='JavaScript:SFhandlePaginationClick(" + total + ")'>" + total + "</button>";
+            }
+        } else {
+            //all
+            for (let i = 0; i < total; i++) {
+                if (i == SFDataTablePage) {
+                    toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='JavaScript:SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
+                } else {
+                    toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='JavaScript:SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
+                }
+            }
+        }
+
+
+        if (SFDataTableSearchStr != undefined) {
+            if (SFDataTablePageSize * SFDataTablePage + SFDataTablePageSize < SFDataTableSearchMatchedRows.length) {
+                toolbar += "<button id='pagination' class='' style='border-color: #f9f9f9;' type='submit' onClick='JavaScript:SFhandleNext()'>Next</button>";
+            } else {
+                toolbar += "<button disabled=true id='pagination' class='' style='border-color: #f9f9f9;' type='submit' onClick='JavaScript:SFhandleNext()'>Next</button>";
+            }
+        } else {
+            if (SFDataTablePageSize * SFDataTablePage + SFDataTablePageSize < SFDataTableRows.length) {
+                toolbar += "<button id='pagination' class='' style='border-color: #f9f9f9;' type='submit' onClick='JavaScript:SFhandleNext()'>Next</button>";
+            } else {
+                toolbar += "<button disabled=true id='pagination' style='border-color: #f9f9f9;' class='' type='submit' onClick='JavaScript:SFhandleNext()'>Next</button>";
+            }
+        }
+        return toolbar;
+    }
+
+    function SFDataTableGetHeader() {
+        let header = "<thead style='height: 30px;'><tr>";
+        for (let i = 0; i < SFDataTableHeader.length; i++) {
+            if (i == sfdtsci) {
+                header += "<th onclick='SFDataTableSetSortIndex(this)' style='cursor: pointer;padding: 5px; white-space: nowrap;'>" + SFDataTableHeader[i].v + " <i class='fa fa-caret-" + sortIcon + "' style='color:black'></i></th>";
+            } else {
+                header += "<th onclick='SFDataTableSetSortIndex(this)' style='cursor: pointer;padding: 5px; white-space: nowrap;'>" + SFDataTableHeader[i].v + " <i class='fa fa-caret-down' style='color:#d3d3d4'></i></th>";
+            }
+        }
+        header += "</tr></thead>\n";
+        return header;
+    }
+
+    function SFDataTableAutoFillColType(rows) {
+        return;
+
+        //check first 5 rows and find what is the type
+        for (let i = 0; i < rows.length && i < 5; i++) {
+            for (let j = 0; j < rows[i].length; j++) {
+                if (isNaN(rows[i][j].v)) {
+                    if (SFDataTableHeader[j].t == undefined) {
+                        SFDataTableHeader[j].t = -1;
+                    } else {
+                        SFDataTableHeader[j].t += -1;
+                    }
+                } else {
+                    if (SFDataTableHeader[j].t == undefined) {
+                        SFDataTableHeader[j].t = 1;
+                    } else {
+                        SFDataTableHeader[j].t += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    function SFDataTableSortCompareDescString(a, b) {
+        let tmp1 = a[sfdtsci].v == null ? "null" : a[sfdtsci].v.toLowerCase();
+        let tmp2 = b[sfdtsci].v == null ? "null" : b[sfdtsci].v.toLowerCase();
+
+        if (tmp1 > tmp2) {
+            return -1;
+        }
+        if (tmp1 < tmp2) {
+            return 1;
+        }
+        return 0;
+    }
+
+    function SFDataTableSortCompareDescNumber(a, b) {
+        let tmp1 = isNaN(a[sfdtsci].v) ? -1 : a[sfdtsci].v;
+        let tmp2 = isNaN(b[sfdtsci].v) ? -1 : b[sfdtsci].v;
+
+        if (tmp1 > tmp2) {
+            return -1;
+        }
+        if (tmp1 < tmp2) {
+            return 1;
+        }
+        return 0;
+    }
+
+    function SFSearch() {
+        SFDataTablePage = 0;
+        SFDataTableSearchMatchedRows = [];
+        if ($('#SFSearch').val() === '') {
+            SFDataTableSearchStr = undefined;
+        } else {
+            SFDataTableSearchStr = $('#SFSearch').val();
+        }
+        SFDataTableSearch();
+        SFDataTable();
+    }
+
+    function getContextTableHeadernew(groupBy, contextDataTypeVal, row) {
+        if (groupBy == "none") {
+            row.push({"v": "time", "t": -1, "p": "class='context-menu-two'"}, {
+                "v": "tid",
+                "t": 1,
+                "p": "tp=6 class='context-menu-two'"
+            }, {"v": "orgId", "t": -1, "p": "tp=0 class='context-menu-two'"}, {
+                "v": "userId",
+                "t": -1,
+                "p": "tp=1 class='context-menu-two'"
+            }, {"v": "log", "t": -1, "p": "tp=2 class='context-menu-two'"}, {
+                "v": "uri",
+                "t": -1,
+                "p": "tp=4 class='context-menu-two'"
+            }, {"v": "threadName", "t": -1, "p": "tp=8 class='context-menu-two'"}, {
+                "v": "reqId",
+                "t": -1,
+                "p": "tp=3 class='context-menu-one'"
+            }, {"v": "runTime", "t": 1}, {"v": "cpuTime", "t": 1}, {"v": "dbTime", "t": 1}, {
+                "v": "dbHoldingTime",
+                "t": 1
+            }, {"v": "apexTime", "t": 1}, {"v": "dbCpuTime", "t": 1}, {"v": "gcTime", "t": 1}, {
+                "v": "spTime",
+                "t": 1
+            }, {"v": "bytesAllocated", "t": 1}, {"v": "dequeueLatency", "t": 1});
+        } else {
+            if (groupBy == "userId") {
+                row.push({"v": "userId", "t": -1, "p": "tp=1 class=\"context-menu-two\""}, {
+                    "v": "orgId",
+                    "t": -1,
+                    "p": "tp=0 class=\"context-menu-two\""
+                }, {"v": "runTime", "t": 1}, {"v": "cpuTime", "t": 1}, {"v": "dbTime", "t": 1}, {
+                    "v": "dbHoldingTime",
+                    "t": 1
+                }, {"v": "apexTime", "t": 1}, {"v": "dbCpuTime", "t": 1}, {"v": "gcTime", "t": 1}, {
+                    "v": "spTime",
+                    "t": 1
+                }, {"v": "bytesAllocated", "t": 1}, {"v": "dequeueLatency", "t": 1}, {"v": "reqCount", "t": 1});
+            } else {
+                let [order, tp] = getOrderandType();
+                row.push({
+                    "v": getHearderFor(groupBy),
+                    "o": -1,
+                    "p": "tp=" + tp + " class=\"context-menu-two\""
+                }, {"v": "runTime", "t": 1}, {"v": "cpuTime", "t": 1}, {"v": "dbTime", "t": 1}, {
+                    "v": "dbHoldingTime",
+                    "t": 1
+                }, {"v": "apexTime", "t": 1}, {"v": "dbCpuTime", "t": 1}, {"v": "gcTime", "t": 1}, {
+                    "v": "spTime",
+                    "t": 1
+                }, {"v": "bytesAllocated", "t": 1}, {"v": "dequeueLatency", "t": 1}, {"v": "reqCount", "t": 1});
+            }
+        }
+        return "";
+    }
+
+    function getContextTableRownew(obj, tableFormat, row) {
+        if (tableFormat == 0) {
+            if (obj.type == 4) {
+                row.push({"v": moment.utc(obj.epoch).format(dateTimeFormat)}, {"v": obj.tid}, {"v": obj.orgId}, {"v": (obj.userId == undefined ? "NA" : obj.userId)}, {"v": "axapx"}, {"v": obj.ln}, {"v": obj.tn}, {
+                    "v": obj.reqId,
+                    "p": "id=\"" + obj.tid + "_" + obj.epoch + "\""
+                }, {"v": obj.runTime}, {"v": obj.cpuTime}, {"v": (obj.dbTime == undefined ? "NA" : obj.dbTime)}, {"v": (obj.dbHoldingTime ?? "NA")}, {"v": (obj.apexTime ?? "NA")}, {"v": (obj.dbCpu ?? "NA")}, {"v": (obj.gcTime ?? "NA")}, {"v": (obj.spTime ?? "NA")}, {"v": (obj.bytes ?? "NA")}, {"v": (obj.dqLatency == undefined ? "NA" : obj.dqLatency)});
+            } else {
+                row.push({"v": moment.utc(obj.epoch).format(dateTimeFormat)}, {"v": obj.tid}, {"v": obj.orgId}, {"v": (obj.userId == undefined ? "NA" : obj.userId)}, {"v": obj.logType}, {"v": obj.ln}, {"v": obj.tn}, {
+                    "v": obj.reqId,
+                    "p": "id=\"" + obj.tid + "_" + obj.epoch + "\""
+                }, {"v": obj.runTime}, {"v": obj.cpuTime}, {"v": (obj.dbTime == undefined ? "NA" : obj.dbTime)}, {"v": (obj.dbHoldingTime ?? "NA")}, {"v": (obj.apexTime ?? "NA")}, {"v": (obj.dbCpu ?? "NA")}, {"v": (obj.gcTime ?? "NA")}, {"v": (obj.spTime ?? "NA")}, {"v": (obj.bytes ?? "NA")}, {"v": (obj.dqLatency == undefined ? "NA" : obj.dqLatency)});
+            }
+        } else {
+            if (obj.type == 4) {
+                row.push({"v": moment.utc(obj.epoch).format(dateTimeFormat)}, {"v": obj.tid}, {"v": obj.orgId}, {"v": (obj.userId == undefined ? "NA" : obj.userId)}, {"v": "axapx"}, {"v": obj.ln}, {"v": obj.tn}, {
+                    "v": obj.reqId,
+                    "p": "id=\"" + obj.tid + "_" + obj.epoch + "\""
+                }, {"v": (100 * obj.runTime / obj.runTime).toFixed(2)}, {"v": (100 * obj.cpuTime / obj.runTime).toFixed(2)}, {"v": (obj.dbTime == undefined ? "NA" : (100 * obj.dbTime / obj.runTime).toFixed(2))}, {"v": (obj.dbHoldingTime === undefined ? "NA" : (100 * obj.dbHoldingTime / obj.runTime).toFixed(2))}, {"v": (obj.apexTime === undefined ? "NA" : (100 * obj.apexTime / obj.runTime).toFixed(2))}, {"v": (obj.dbCpu === undefined ? "NA" : (100 * obj.dbCpu / obj.runTime).toFixed(2))}, {"v": (obj.gcTime === undefined ? "NA" : (100 * obj.gcTime / obj.runTime).toFixed(2))}, {"v": (obj.spTime === undefined ? "NA" : (100 * obj.spTime / obj.runTime).toFixed(2))}, {"v": (obj.bytes ?? "NA")}, {"v": (obj.dqLatency ?? "NA")});
+            } else {
+                row.push({"v": moment.utc(obj.epoch).format(dateTimeFormat)}, {"v": obj.tid}, {"v": obj.orgId}, {"v": (obj.userId == undefined ? "NA" : obj.userId)}, {"v": obj.logType}, {"v": obj.ln}, {"v": obj.tn}, {
+                    "v": obj.reqId,
+                    "p": "id=\"" + obj.tid + "_" + obj.epoch + "\""
+                }, {"v": (100 * obj.runTime / obj.runTime).toFixed(2)}, {"v": (100 * obj.cpuTime / obj.runTime).toFixed(2)}, {"v": (obj.dbTime == undefined ? "NA" : (100 * obj.dbTime / obj.runTime).toFixed(2))}, {"v": (obj.dbHoldingTime === undefined ? "NA" : (100 * obj.dbHoldingTime / obj.runTime).toFixed(2))}, {"v": (obj.apexTime === undefined ? "NA" : (100 * obj.apexTime / obj.runTime).toFixed(2))}, {"v": (obj.dbCpu === undefined ? "NA" : (100 * obj.dbCpu / obj.runTime).toFixed(2))}, {"v": (obj.gcTime === undefined ? "NA" : (100 * obj.gcTime / obj.runTime).toFixed(2))}, {"v": (obj.spTime === undefined ? "NA" : (100 * obj.spTime / obj.runTime).toFixed(2))}, {"v": (obj.bytes ?? "NA")}, {"v": (obj.dqLatency ?? "NA")});
+            }
+        }
+        return "";
+    }
+    //Request context table crash temporary fix END
+
 </script>
 
 <div id="contextfilter" class="row" >
