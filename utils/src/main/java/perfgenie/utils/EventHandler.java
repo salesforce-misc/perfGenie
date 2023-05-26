@@ -34,7 +34,7 @@ public class EventHandler {
     private Map<String, Map<Integer, List<LogContext>>> records = new ConcurrentHashMap<>();
 
     private Map<String, List<String>> header = new ConcurrentHashMap<>();
-    private final Map<Integer, Integer> sampleCount = new ConcurrentHashMap<>();
+    //private final Map<Integer, Long> sampleCount = new ConcurrentHashMap<>();
 
     //aggregations
     private StackFrame calltreeAggregated = new StackFrame(ROOT.hashCode());
@@ -42,7 +42,7 @@ public class EventHandler {
     private Map<Integer, List<StackidTime>> pidDataAggregated = new ConcurrentHashMap<Integer, List<StackidTime>>();
 
     private Map<String, StackFrame> profiles = new ConcurrentHashMap<>();
-    private Map<String, Integer> eventCounts = new ConcurrentHashMap<>();
+    private Map<String, Long> eventCounts = new ConcurrentHashMap<>();
 
     private int eventCount = 0;
     private int threshold = 1;
@@ -85,7 +85,7 @@ public class EventHandler {
         threshold = 1;
         startEpoch = 0L;
         endEpoch = 0L;
-        sampleCount.clear();
+        //sampleCount.clear();
         clearProfile();
         frames.clear();
         for (Map.Entry<String, Map<Integer, List<StackidTime>>> entry : pidDatas.entrySet()) {
@@ -400,15 +400,19 @@ public class EventHandler {
         }
     }
 
-    private int getHash(final StringBuilder stringBuilder, final IMCStackTrace stackTrace) {
-        int hash = 0; //toddo, check if it causes any collisions due to int instead of long
-        for (int i = 0; i < stackTrace.getFrames().size(); i++) {
-            hash = CustomHash(hash, getFrameNm(stringBuilder, stackTrace.getFrames().get(i)));
+    private int getHash(int hash, final StringBuilder stringBuilder, final IMCStackTrace stackTrace) {
+        try {
+//            int hash = 0; //toddo, check if it causes any collisions due to int instead of long
+            for (int i = 0; i < stackTrace.getFrames().size(); i++) {
+                hash = CustomHash(hash, getFrameNm(stringBuilder, stackTrace.getFrames().get(i)));
+            }
+            return hash;
+        }catch (Exception e){
+            throw e;
         }
-        return hash;
     }
 
-    public void processEvent(final StringBuilder sb, final IMCStackTrace stackTrace, String type, int tid, long time) {
+    public void processEvent(final StringBuilder sb, final IMCStackTrace stackTrace, String type, int tid, long time, long weight, String cls) {
         if (startEpoch == 0L || time < startEpoch) {
             setStartEpoch(time);
         }
@@ -416,37 +420,58 @@ public class EventHandler {
             setEndEpoch(time);
         }
         StackFrame frame = profiles.get(type);
-        final int hash = getHash(sb, stackTrace);
-        int sz = 1;
+        final int hash = getHash(cls == null ? 0 : cls.hashCode(), sb, stackTrace);
+
+        long sz = weight;
         if (!pidDatas.get(type).containsKey(tid)) {
             pidDatas.get(type).put(tid, new ArrayList<StackidTime>());
         }
         pidDatas.get(type).get(tid).add(new StackidTime(hash, time));
 
-        if (sampleCount.containsKey(hash)) {
-            sz = sampleCount.get(hash);
-            frame = profiles.get(type);
-        }
+        //if (sampleCount.containsKey(hash)) {
+        //    sz = sampleCount.get(hash);
+        //    frame = profiles.get(type);
+        //}
+
         if (!eventCounts.containsKey(type)) {
-            eventCounts.put(type, 1);
+            eventCounts.put(type, weight);
         } else {
-            eventCounts.put(type, eventCounts.get(type) + 1);
+            eventCounts.put(type, eventCounts.get(type) + weight);
         }
 
         if (sz >= 0) {
             frame.sz += sz;
-            int sf = 0;
+            long sf = 0;
             final int count = stackTrace.getFrames().size();
-            for (int i = 0; i < count; i++) {
-                final int fN = getFrameNm(sb, stackTrace.getFrames().get(i));
+            if(cls == null) {
+                for (int i = 0; i < count; i++) {
+                    final int fN = getFrameNm(sb, stackTrace.getFrames().get(i));
 
-                if (i == count - 1) {
-                    sf = sz;
+                    if (i == count - 1) {
+                        sf = sz;
+                    }
+                    if (i == 0 || i == count - 1) {
+                        frame = frame.addFrame(fN, sz, sf, true, hash);
+                    } else {
+                        frame = frame.addFrame(fN, sz, sf, false, 0);
+                    }
                 }
-                if (i == 0 || i == count - 1) {
-                    frame = frame.addFrame(fN, sz, sf, true, hash);
-                } else {
-                    frame = frame.addFrame(fN, sz, sf, false, 0);
+            }else{
+                frame = frame.addFrame(cls.hashCode(), sz, sf, true, hash);
+                if(!frames.containsKey(cls.hashCode())) {
+                    frames.put(cls.hashCode(), cls);
+                }
+                for (int i = 0; i < count; i++) {
+                    final int fN = getFrameNm(sb, stackTrace.getFrames().get(i));
+
+                    if (i == count - 1) {
+                        sf = sz;
+                    }
+                    if (i == count - 1) {
+                        frame = frame.addFrame(fN, sz, sf, true, hash);
+                    } else {
+                        frame = frame.addFrame(fN, sz, sf, false, 0);
+                    }
                 }
             }
         }
@@ -462,7 +487,7 @@ public class EventHandler {
         int sz = 1;
 
         if (!eventCounts.containsKey(type)) {
-            eventCounts.put(type, 1);
+            eventCounts.put(type, 1L);
         } else {
             eventCounts.put(type, eventCounts.get(type) + 1);
         }
@@ -845,22 +870,22 @@ public class EventHandler {
             this.nm = nm;
         }
 
-        public void setSz(int sz) {
+        public void setSz(long sz) {
             this.sz = sz;
         }
 
-        public void setSf(int sf) {
+        public void setSf(long sf) {
             this.sf = sf;
         }
 
         int nm;
-        int sz = 0;
+        long sz = 0;
 
-        public int getSf() {
+        public long getSf() {
             return sf;
         }
 
-        int sf = 0;
+        long sf = 0;
         List<StackFrame> ch = null;
         transient Map<Integer, StackFrame> chMap = new HashMap<>(1);
         transient Map<Integer, Integer> sm = new HashMap<>(1);//to tell a stack start and end in tree
@@ -879,7 +904,7 @@ public class EventHandler {
             ch.add(frame);
         }
 
-        public StackFrame addFrame(final int frameNm, final int sz, final int sf, final boolean start, final int hash) {
+        public StackFrame addFrame(final int frameNm, final long sz, final long sf, final boolean start, final int hash) {
             if (ch == null) {
                 ch = new ArrayList<>();
             }
@@ -897,7 +922,7 @@ public class EventHandler {
             return frame;
         }
 
-        public int getSz() {
+        public long getSz() {
             return sz;
         }
 
@@ -1528,16 +1553,16 @@ public class EventHandler {
     static double plotThreshold = 0.01;
     private final Map<String, List<String>> surfaceData = new ConcurrentHashMap<String, List<String>>();
     private final List<String> uniquePaths = new ArrayList<String>();
-    private final Map<String, Integer> uniquePathsSize = new HashMap<>();
+    private final Map<String, Long> uniquePathsSize = new HashMap<>();
     private boolean useTimeSeries = true;
-    private int totalSize = 0;
+    private long totalSize = 0;
     private Map<String, Integer> chunkSurfaceData = new ConcurrentHashMap<>();
 
     class SurfaceDataResponse {
         private List cpuSamplesList;
         private List<Integer> chunkSamplesTotalList;
         private List<String> pathList = new ArrayList<String>();
-        private List<Integer> pathSizeList = new ArrayList<Integer>();
+        private List<Long> pathSizeList = new ArrayList<Long>();
         private Map<Integer, List<Integer>> data = new HashMap<>();
 
         SurfaceDataResponse(List cpuSamplesList, List<Integer> chunkSamplesTotalList, Map<String, List<String>> surfaceData) {
@@ -1596,11 +1621,11 @@ public class EventHandler {
             this.pathList = pathList;
         }
 
-        public List<Integer> getPathSizeList() {
+        public List<Long> getPathSizeList() {
             return pathSizeList;
         }
 
-        public void setPathSizeList(List<Integer> pathSizeList) {
+        public void setPathSizeList(List<Long> pathSizeList) {
             this.pathSizeList = pathSizeList;
         }
 
