@@ -10,6 +10,7 @@ package perfgenie.utils;
 import com.google.common.base.Stopwatch;
 import org.openjdk.jmc.common.IMCStackTrace;
 import org.openjdk.jmc.common.IMCThread;
+import org.openjdk.jmc.common.IMCType;
 import org.openjdk.jmc.common.item.*;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.ITypedQuantity;
@@ -106,7 +107,7 @@ public class CustomJfrParser {
             processJfrEvents(handler, events);
             logger.info("doParseStream parse time sec: {}", timer.stop().elapsed(TimeUnit.SECONDS));
             return handler;
-        } catch (CouldNotLoadRecordingException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -120,6 +121,8 @@ public class CustomJfrParser {
                 Map k = iterable_element.getType().getAccessorKeys();
                 int tid = -1;
                 long epoc = -1;
+                int weight = 1;
+                String classStr = null;
                 handler.initializeProfile(iterable_element.getType().getIdentifier());
                 handler.initializePid(iterable_element.getType().getIdentifier());
                 System.out.println(iterable_element.getType().getIdentifier());
@@ -128,6 +131,13 @@ public class CustomJfrParser {
                 for (final IItem item : iterable_element) {
                     final IMCStackTrace stackTrace = accessor.getMember(item);
                     for (Object key : k.keySet()) {
+                        if(((Attribute) key).getName().equals("Allocation Size")){
+                            ITypedQuantity<LinearUnit> v = (ITypedQuantity<LinearUnit>) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(item);
+                            weight = (int)v.longValue();
+                        }
+                        if (((Attribute) key).getContentType().getIdentifier().equals("class")) {
+                            classStr=((IMCType)iterable_element.getType().getAccessor((IAccessorKey) key).getMember(item)).getTypeName();
+                        }
                         if (((Attribute) key).getContentType().getIdentifier().equals("thread")) {
                             final IMCThread thread = (IMCThread) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(item);
                             tid = thread.getThreadId().intValue();
@@ -136,7 +146,13 @@ public class CustomJfrParser {
                             epoc = v.longValue();
                         }
                     }
-                    handler.processEvent(sb, stackTrace, iterable_element.getType().getIdentifier(), tid, epoc);
+                    try {
+                        if(stackTrace != null) {
+                            handler.processEvent(sb, stackTrace, iterable_element.getType().getIdentifier(), tid, epoc, weight, classStr);
+                        }
+                    }catch (Exception e){
+                        throw e;
+                    }
                 }
             } else if (config.isCustomEvent(iterable_element.getType().getIdentifier())) {
                 List l = iterable_element.getType().getAttributes();

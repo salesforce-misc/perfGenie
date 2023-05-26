@@ -230,16 +230,16 @@ public class PerfGenieService implements IPerfGenieService {
     static double threshold = 0.01;
     private final Map<String, List<String>> surfaceData = new ConcurrentHashMap<String, List<String>>();
     private final List<String> uniquePaths = new ArrayList<String>();
-    private final Map<String, Integer> uniquePathsSize = new HashMap<>();
+    private final Map<String, Long> uniquePathsSize = new HashMap<>();
     private boolean useTimeSeries = true;
-    private int totalSize = 0;
+    private long totalSize = 0;
     private Map<String, Integer> chunkSurfaceData = new ConcurrentHashMap<>();
 
     class SurfaceDataResponse {
         private List cpuSamplesList;
         private List<Integer> chunkSamplesTotalList;
         private List<String> pathList = new ArrayList<String>();
-        private List<Integer> pathSizeList = new ArrayList<Integer>();
+        private List<Long> pathSizeList = new ArrayList<Long>();
         private Map<Integer, List<Integer>> data = new HashMap<>();
 
         SurfaceDataResponse(List cpuSamplesList, List<Integer> chunkSamplesTotalList, Map<String, List<String>> surfaceData) {
@@ -298,11 +298,11 @@ public class PerfGenieService implements IPerfGenieService {
             this.pathList = pathList;
         }
 
-        public List<Integer> getPathSizeList() {
+        public List<Long> getPathSizeList() {
             return pathSizeList;
         }
 
-        public void setPathSizeList(List<Integer> pathSizeList) {
+        public void setPathSizeList(List<Long> pathSizeList) {
             this.pathSizeList = pathSizeList;
         }
 
