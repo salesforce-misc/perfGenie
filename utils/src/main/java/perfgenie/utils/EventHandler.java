@@ -7,6 +7,7 @@
 
 package perfgenie.utils;
 
+import com.google.common.collect.ImmutableSet;
 import org.openjdk.jmc.common.IMCFrame;
 import org.openjdk.jmc.common.IMCMethod;
 import org.openjdk.jmc.common.IMCStackTrace;
@@ -26,6 +27,7 @@ public class EventHandler {
     private static final Logger logger = Logger.getLogger(EventHandler.class.getName());
     private static final String ROOT = "root";
     private static final int WRAP_MESSAGE_HASH = "wrapped.single stack in profile".hashCode();
+    private static final int FILTER_MESSAGE_HASH = "below threshold ...".hashCode();
     private static final String patternString = "\"(.*)\" #(\\w+) .*\\n|.*java.lang.Thread.State: (\\w+).*\\n|at (.*)\\(.*\\n";
     private static final Pattern pattern = Pattern.compile(patternString);
 
@@ -45,11 +47,17 @@ public class EventHandler {
     private Map<String, Long> eventCounts = new ConcurrentHashMap<>();
 
     private int eventCount = 0;
-    private int threshold = 1;
+    private double threshold = 0.01;
     private Long startEpoch = 0L;
     private Long endEpoch = 0L;
     private Long startEpochAggerated = 0L;
     private Long endEpochAggerated = 0L;
+
+    public void setMaxStackDepth(int maxStackDepth) {
+        this.maxStackDepth = maxStackDepth;
+    }
+
+    private int maxStackDepth = 64;
 
     private enum ThreadState {
         RUNNABLE,
@@ -82,7 +90,7 @@ public class EventHandler {
     public void reset() {
         eventCount = 0;
         eventCounts.clear();
-        threshold = 1;
+        threshold = 0.01;
         startEpoch = 0L;
         endEpoch = 0L;
         //sampleCount.clear();
@@ -130,7 +138,7 @@ public class EventHandler {
     }
 
     public void setThreshold(double percentThreshold) {
-        threshold = (int) (eventCount * percentThreshold / 100);
+        threshold = percentThreshold;
     }
 
     public void setStartEpoch(long epoch) {
@@ -171,8 +179,8 @@ public class EventHandler {
         }
         Map<String, String> meta = new HashMap<>();
         try {
-            SurfaceDataResponse res = genSurfaceData(profiles.get(type), pidDatas.get(type));
-            meta.put("data", Utils.toJson(res));
+           // SurfaceDataResponse res = genSurfaceData(profiles.get(type), pidDatas.get(type));
+            meta.put("data", "{}");//Utils.toJson(res));
         } catch (Exception e) {
             meta.put("exception", Utils.toJson(e));
         }
@@ -224,6 +232,9 @@ public class EventHandler {
         } else {
             profiles.get(type).setSz(0);
         }
+
+        frames.put(FILTER_MESSAGE_HASH,"below parsing threshold ...");
+        frames.put(WRAP_MESSAGE_HASH, "single stack in profile");
 
         return new JfrParserResponse(profiles.get(type), null, null, new JfrContext(pidDatas.get(type), frames, startEpoch, endEpoch));
     }
@@ -281,13 +292,23 @@ public class EventHandler {
         } else {
             final List<StackFrame> ch = p.getCh();
             if (ch != null) {
-                final Iterator<StackFrame> chIterator = ch.iterator();
+                //final Iterator<StackFrame> chIterator = ch.iterator();
+                final ListIterator<StackFrame> chIterator = ch.listIterator();
+                boolean check = true;
                 while (chIterator.hasNext()) {
                     final StackFrame child = chIterator.next();
                     if (child.getSz() == 1) {
                         //truncate if single stack after maxD
                         filterChild(child, totalSz, maxD, true, depth + 1);
-                    } else {
+                    } else if( 100.0 *child.getSz()/totalSz < threshold){
+                        if(check){
+                            check=false;
+                            child.nm = FILTER_MESSAGE_HASH;
+                            child.setCh(null);
+                        }else {
+                            chIterator.remove();
+                        }
+                    }else {
                         filterChild(child, totalSz, maxD, false, depth + 1);
                     }
                 }
@@ -442,9 +463,15 @@ public class EventHandler {
         if (sz >= 0) {
             frame.sz += sz;
             long sf = 0;
-            final int count = stackTrace.getFrames().size();
+            int count = stackTrace.getFrames().size();
             if(cls == null) {
                 for (int i = 0; i < count; i++) {
+
+                    if(i>=maxStackDepth){
+                        i = count-1; //skip other frames
+                        frame = frame.addFrame("...".hashCode(), sz, sf, false, 0);
+                    }
+
                     final int fN = getFrameNm(sb, stackTrace.getFrames().get(i));
 
                     if (i == count - 1) {
@@ -462,6 +489,12 @@ public class EventHandler {
                     frames.put(cls.hashCode(), cls);
                 }
                 for (int i = 0; i < count; i++) {
+
+                    if(i>=maxStackDepth){
+                        i = count-1; //skip other frames
+                        frame = frame.addFrame("...".hashCode(), sz, sf, false, 0);
+                    }
+
                     final int fN = getFrameNm(sb, stackTrace.getFrames().get(i));
 
                     if (i == count - 1) {

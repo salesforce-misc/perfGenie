@@ -65,12 +65,13 @@ public class PerfGenieService implements IPerfGenieService {
 
                     List<String> l = handler.getProfileList();
                     for (int i = 0; i < l.size(); i++) {
-                        Object profile = handler.getProfileTree(l.get(i));
+                        Object profile = handler.getProfileTree(config.getFilterDepth(),l.get(i));
                         queryMap.put("type", "jfrprofile");
                         queryMap.put("name", l.get(i));
                         final String payload = Utils.toJson(profile);
                         int payloadSize = payload.length();
                         queryMap.put("size", String.valueOf(payloadSize));
+                        System.out.println(payloadSize);
                         eventStore.addEvent(timestamp, queryMap, dimMap, payload);
                     }
                     Object logContext = handler.getLogContext();
