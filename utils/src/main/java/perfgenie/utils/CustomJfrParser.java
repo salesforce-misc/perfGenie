@@ -63,6 +63,8 @@ public class CustomJfrParser {
 
     public EventHandler parseStream(final EventHandler builder, final ByteArrayInputStream stream) throws IOException {
         try {
+            builder.setThreshold(config.getThreshold());
+            builder.setMaxStackDepth(config.getMaxStackDepth());
             return executor.submit(() -> doParseStream(builder, stream)).get();
         } catch (RejectedExecutionException e) {
             logger.warn("JFR parser is busy please try after some time");
@@ -74,6 +76,8 @@ public class CustomJfrParser {
 
     public EventHandler parseStream(final EventHandler builder, final String path) throws IOException {
         try {
+            builder.setThreshold(config.getThreshold());
+            builder.setMaxStackDepth(config.getMaxStackDepth());
             return executor.submit(() -> doParseStream(builder, path)).get();
         } catch (RejectedExecutionException e) {
             logger.warn("JFR parser is busy please try after some time");
@@ -125,7 +129,7 @@ public class CustomJfrParser {
                 String classStr = null;
                 handler.initializeProfile(iterable_element.getType().getIdentifier());
                 handler.initializePid(iterable_element.getType().getIdentifier());
-                System.out.println(iterable_element.getType().getIdentifier());
+                System.out.println("profile:" + iterable_element.getType().getIdentifier());
                 final IMemberAccessor<IMCStackTrace, IItem> accessor = iterable_element.getType()
                         .getAccessor(EVENT_STACKTRACE.getKey());
                 for (final IItem item : iterable_element) {
@@ -155,6 +159,7 @@ public class CustomJfrParser {
                     }
                 }
             } else if (config.isCustomEvent(iterable_element.getType().getIdentifier())) {
+                System.out.println("event:" + iterable_element.getType().getIdentifier());
                 List l = iterable_element.getType().getAttributes();
                 Map k = iterable_element.getType().getAccessorKeys();
                 Object[] r = iterable_element.get().toArray();
@@ -211,6 +216,8 @@ public class CustomJfrParser {
                     }
                     handler.processContext(record, tid, iterable_element.getType().getIdentifier());
                 }
+            }else{
+                System.out.println("other:" + iterable_element.getType().getIdentifier());
             }
         }
     }
@@ -258,6 +265,29 @@ public class CustomJfrParser {
         String mySQL_host="localhost";
         int mySQL_port=3306;
         String mySQL_user="root";
+
+
+        public double getThreshold() {
+            return threshold;
+        }
+
+        public int getFilterDepth() {
+            return filterDepth;
+        }
+
+        public int getMaxStackDepth() {
+            return maxStackDepth;
+        }
+
+        public int filterDepth = 4;
+        public int maxStackDepth = 128;
+        public double threshold = 0.05; //percentage
+
+        public boolean isExperimental() {
+            return isExperimental;
+        }
+
+        public boolean isExperimental = false;
 
 
         public String getMySQL_host() {
@@ -341,6 +371,22 @@ public class CustomJfrParser {
                 }
                 if(prop.getProperty("mySQL.user") != null){
                     mySQL_user=prop.getProperty("mySQL.user");
+                }
+
+                if(prop.getProperty("threshold") != null){
+                    threshold=Double.parseDouble(prop.getProperty("threshold"));
+                }
+
+                if(prop.getProperty("filterDepth") != null){
+                    filterDepth=Integer.parseInt(prop.getProperty("filterDepth"));
+                }
+
+                if(prop.getProperty("maxStackDepth") != null){
+                    maxStackDepth=Integer.parseInt(prop.getProperty("maxStackDepth"));
+                }
+
+                if(prop.getProperty("isExperimental") != null){
+                    isExperimental= prop.getProperty("isExperimental").equals("true");
                 }
 
                 logger.info("profiles being parsed:" + profiles.toString());
