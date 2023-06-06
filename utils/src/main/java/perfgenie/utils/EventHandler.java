@@ -207,7 +207,7 @@ public class EventHandler {
         return new JfrParserResponse(profiles.get(type), null, meta, new JfrContext(pidDatas.get(type), frames, startEpoch, endEpoch));
     }
 
-    public Object getProfileTree(int filterDepth, String type) {
+    public Object getProfileTree(int filterDepth, String type, boolean experimental) {
 
         //sort pidData
         final Iterator<Map.Entry<Integer, List<StackidTime>>> itr = pidDatas.get(type).entrySet().iterator();
@@ -231,6 +231,37 @@ public class EventHandler {
             profiles.get(type).setSz(eventCounts.get(type));
         } else {
             profiles.get(type).setSz(0);
+        }
+
+        Map<String, String> meta = new HashMap<>();
+        try {
+            if(experimental){
+                SurfaceDataResponse res = genSurfaceData(profiles.get(type), pidDatas.get(type));
+            }else {
+                meta.put("data", "{}");//Utils.toJson(res));
+            }
+        } catch (Exception e) {
+            meta.put("exception", Utils.toJson(e));
+        }
+
+        for (final String event : header.keySet()) {
+            if (event.contains("CPUEvent")) {
+                List<Long> cpu = new ArrayList<>();
+                for (int i = 0; i < header.get(event).size(); i++) {
+                    if (header.get(event).get(i).equals("cpuPerc:number")) {
+                        for (final int tid : records.get(event).keySet()) {
+                            List l = records.get(event).get(tid);
+                            for (int k = 0; k < l.size(); k++) {
+                                cpu.add((Long) records.get(event).get(tid).get(k).record.get(i));
+                            }
+                        }
+                    }
+                }
+                //if(!meta.containsKey("cpuPerc")) {
+                meta.put("cpuPerc", Utils.toJson(cpu));
+                //break;
+                //}
+            }
         }
 
         frames.put(FILTER_MESSAGE_HASH,"below parsing threshold ...");

@@ -283,6 +283,12 @@ public class CustomJfrParser {
         public int maxStackDepth = 128;
         public double threshold = 0.05; //percentage
 
+        public boolean isExperimental() {
+            return isExperimental;
+        }
+
+        public boolean isExperimental = false;
+
 
         public String getMySQL_host() {
             return mySQL_host;
@@ -377,6 +383,10 @@ public class CustomJfrParser {
 
                 if(prop.getProperty("maxStackDepth") != null){
                     maxStackDepth=Integer.parseInt(prop.getProperty("maxStackDepth"));
+                }
+
+                if(prop.getProperty("isExperimental") != null){
+                    isExperimental= prop.getProperty("isExperimental").equals("true");
                 }
 
                 logger.info("profiles being parsed:" + profiles.toString());
