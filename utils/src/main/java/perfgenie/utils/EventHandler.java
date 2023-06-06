@@ -179,8 +179,8 @@ public class EventHandler {
         }
         Map<String, String> meta = new HashMap<>();
         try {
-           // SurfaceDataResponse res = genSurfaceData(profiles.get(type), pidDatas.get(type));
-            meta.put("data", "{}");//Utils.toJson(res));
+            SurfaceDataResponse res = genSurfaceData(profiles.get(type), pidDatas.get(type));
+            meta.put("data", Utils.toJson(res));
         } catch (Exception e) {
             meta.put("exception", Utils.toJson(e));
         }
