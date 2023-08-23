@@ -13,7 +13,7 @@ perfGenie can be deployed as a continuous profiling solution. It uses Cantor (ht
 
 ### Development
 
-#### Clone the repository
+#### Create a new Fork and Clone the repository
 
 ```sh
 $ git clone git@github.com:salesforce-misc/perfGenie.git
