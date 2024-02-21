@@ -121,7 +121,7 @@ public class CustomJfrParser {
         final Map<String, List> header = new HashMap<>();
         for (IItemIterable iterable_element : events) {
             if (config.isProfile(iterable_element.getType().getIdentifier())) {
-                Object[] r = iterable_element.get().toArray();
+                //Object[] r = iterable_element.get().toArray();
                 Map k = iterable_element.getType().getAccessorKeys();
                 int tid = -1;
                 long epoc = -1;
@@ -144,12 +144,18 @@ public class CustomJfrParser {
                         }
                         if (((Attribute) key).getContentType().getIdentifier().equals("thread")) {
                             final IMCThread thread = (IMCThread) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(item);
-                            tid = thread.getThreadId().intValue();
+                            if(thread != null){
+                                tid = thread.getThreadId().intValue();
+                            }else{
+                                logger.warn("null pointer, mall formed thread " + item.toString());
+                            }
+
                         } else if (((Attribute) key).getContentType().getIdentifier().equals("timestamp")) {
                             ITypedQuantity<LinearUnit> v = (ITypedQuantity<LinearUnit>) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(item);
                             epoc = v.longValue();
                         }
                     }
+
                     try {
                         if(stackTrace != null) {
                             handler.processEvent(sb, stackTrace, iterable_element.getType().getIdentifier(), tid, epoc, weight, classStr);
@@ -217,7 +223,7 @@ public class CustomJfrParser {
                     handler.processContext(record, tid, iterable_element.getType().getIdentifier());
                 }
             }else{
-                System.out.println("other:" + iterable_element.getType().getIdentifier());
+               // System.out.println("other:" + iterable_element.getType().getIdentifier());
             }
         }
     }
