@@ -59,6 +59,8 @@ public class EventHandler {
 
     private int maxStackDepth = 64;
 
+    private int exceptionCount = 0;
+
     private enum ThreadState {
         RUNNABLE,
         BLOCKED,
@@ -177,34 +179,8 @@ public class EventHandler {
         } else {
             profiles.get(type).setSz(0);
         }
-        Map<String, String> meta = new HashMap<>();
-        try {
-            SurfaceDataResponse res = genSurfaceData(profiles.get(type), pidDatas.get(type));
-            meta.put("data", Utils.toJson(res));
-        } catch (Exception e) {
-            meta.put("exception", Utils.toJson(e));
-        }
 
-        for (final String event : header.keySet()) {
-            if (event.contains("CPUEvent")) {
-                List<Long> cpu = new ArrayList<>();
-                for (int i = 0; i < header.get(event).size(); i++) {
-                    if (header.get(event).get(i).equals("cpuPerc:number")) {
-                        for (final int tid : records.get(event).keySet()) {
-                            List l = records.get(event).get(tid);
-                            for (int k = 0; k < l.size(); k++) {
-                                cpu.add((Long) records.get(event).get(tid).get(k).record.get(i));
-                            }
-                        }
-                    }
-                }
-                //if(!meta.containsKey("cpuPerc")) {
-                meta.put("cpuPerc", Utils.toJson(cpu));
-                //break;
-                //}
-            }
-        }
-        return new JfrParserResponse(profiles.get(type), null, meta, new JfrContext(pidDatas.get(type), frames, startEpoch, endEpoch));
+        return new JfrParserResponse(profiles.get(type), null, null, new JfrContext(pidDatas.get(type), frames, startEpoch, endEpoch));
     }
 
     public Object getProfileTree(int filterDepth, String type, boolean experimental) {
@@ -237,6 +213,24 @@ public class EventHandler {
         try {
             if(experimental){
                 SurfaceDataResponse res = genSurfaceData(profiles.get(type), pidDatas.get(type));
+                //get CPU events if exists
+                for (final String event : header.keySet()) {
+                    if (event.equals("CPUEvent")) {
+                        List<Long> cpu = res.getCpuSamplesList();
+                        for (int i = 0; i < header.get(event).size(); i++) {
+                            if (header.get(event).get(i).equals("cpuPerc:number")) {
+                                for (final int tid : records.get(event).keySet()) {
+                                    List l = records.get(event).get(tid);
+                                    for (int k = 0; k < l.size(); k++) {
+                                        cpu.add((Long) records.get(event).get(tid).get(k).record.get(i));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                meta.put("data", Utils.toJson(res));
             }else {
                 meta.put("data", "{}");//Utils.toJson(res));
             }
@@ -244,30 +238,9 @@ public class EventHandler {
             meta.put("exception", Utils.toJson(e));
         }
 
-        for (final String event : header.keySet()) {
-            if (event.contains("CPUEvent")) {
-                List<Long> cpu = new ArrayList<>();
-                for (int i = 0; i < header.get(event).size(); i++) {
-                    if (header.get(event).get(i).equals("cpuPerc:number")) {
-                        for (final int tid : records.get(event).keySet()) {
-                            List l = records.get(event).get(tid);
-                            for (int k = 0; k < l.size(); k++) {
-                                cpu.add((Long) records.get(event).get(tid).get(k).record.get(i));
-                            }
-                        }
-                    }
-                }
-                //if(!meta.containsKey("cpuPerc")) {
-                meta.put("cpuPerc", Utils.toJson(cpu));
-                //break;
-                //}
-            }
-        }
-
         frames.put(FILTER_MESSAGE_HASH,"below parsing threshold ...");
         frames.put(WRAP_MESSAGE_HASH, "single stack in profile");
-
-        return new JfrParserResponse(profiles.get(type), null, null, new JfrContext(pidDatas.get(type), frames, startEpoch, endEpoch));
+        return new JfrParserResponse(profiles.get(type), null, meta, new JfrContext(pidDatas.get(type), frames, startEpoch, endEpoch));
     }
 
     private void sortProfile(final StackFrame p) {
@@ -539,6 +512,172 @@ public class EventHandler {
                 }
             }
         }
+    }
+
+    public void processMemoryEvent(final StringBuilder sb, final IMCStackTrace stackTrace, String type, int tid, long time, long weight, String cls) {
+        if (startEpoch == 0L || time < startEpoch) {
+            setStartEpoch(time);
+        }
+        if (time > endEpoch) {
+            setEndEpoch(time);
+        }
+        StackFrame frame = profiles.get(type);
+        final int hash = getHash(cls == null ? 0 : cls.hashCode(), sb, stackTrace);
+
+        long sz = weight;
+        if (!pidDatas.get(type).containsKey(tid)) {
+            pidDatas.get(type).put(tid, new ArrayList<StackidTime>());
+        }
+        pidDatas.get(type).get(tid).add(new StackidTime(hash, time));
+
+        //if (sampleCount.containsKey(hash)) {
+        //    sz = sampleCount.get(hash);
+        //    frame = profiles.get(type);
+        //}
+
+        if (!eventCounts.containsKey(type)) {
+            eventCounts.put(type, weight);
+        } else {
+            eventCounts.put(type, eventCounts.get(type) + weight);
+        }
+
+        if (sz >= 0) {
+            frame.sz += sz;
+            long sf = 0;
+            int count = stackTrace.getFrames().size();
+            if(cls == null) {
+                for (int i = 0; i < count; i++) {
+
+                    if(i>=maxStackDepth){
+                        i = count-1; //skip other frames
+                        frame = frame.addFrame("...".hashCode(), sz, sf, false, 0);
+                    }
+
+                    final int fN = getFrameNm(sb, stackTrace.getFrames().get(i));
+
+                    if (i == count - 1) {
+                        sf = sz;
+                    }
+                    if (i == 0 || i == count - 1) {
+                        frame = frame.addFrame(fN, sz, sf, true, hash);
+                    } else {
+                        frame = frame.addFrame(fN, sz, sf, false, 0);
+                    }
+                }
+            }else{
+                frame = frame.addFrame(cls.hashCode(), sz, sf, true, hash);
+                if(!frames.containsKey(cls.hashCode())) {
+                    frames.put(cls.hashCode(), cls);
+                }
+                int prevFn = -1;
+                final Map<Integer, Integer> occuranceCount = new HashMap<>();
+                for (int i = 0; i < count; i++) {
+                    int fN;
+                    try {
+                        if (i == count - 1) {
+                            //if (i == count - 1 || sz < threshold) {
+                            fN = getPackageNm(stackTrace.getFrames().get(i), sb, occuranceCount);
+                        } else if (i < 8 ) {
+                            fN = getFrameNm(sb, stackTrace.getFrames().get(i));
+                        } else if (i < 48) {
+                            fN = getFrameClassNm(stackTrace.getFrames().get(i), sb, occuranceCount);
+                        } else {
+                            fN = getPackageNm(stackTrace.getFrames().get(i), sb, occuranceCount);
+                        }
+                    } catch (NullPointerException e) {
+                        if (exceptionCount == 0) {
+                            System.out.println("Warning: processMemoryEvent NullPointerException");
+                            e.printStackTrace(System.out);
+                        }
+                        exceptionCount++;
+                        continue; //Sometimes package name is null
+                    }
+                    if(fN == jetty){
+                        i=count-1;
+                    }
+                    //if(sz < threshold || !(i < 8 || i != (count - 1))) {
+                    if( !(i < 8 || i != (count - 1))) {
+                        if (occuranceCount.size() > 0 && occuranceCount.containsKey(fN) && occuranceCount.get(fN) > 1) {
+                            continue;
+                        }
+                    }
+
+                    if (prevFn == -1 || prevFn != fN) {
+                        prevFn = fN;
+                        if (i == (count - 1)) {
+                            sf = sz;
+                            frame = frame.addFrame(fN, sz, sf, true, hash);
+                        } else {
+                            frame = frame.addFrame(fN, sz, sf, false, 0);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private final int jetty = "org.eclipse.jetty".hashCode();
+
+    private int getPackageNm(final IMCFrame frame, final StringBuilder stringBuilder, final Map<Integer, Integer> occuranceCount) {
+        String name = frame.getMethod().getType().getPackage().getName();
+        stringBuilder.setLength(0);
+        if (Utils.trimAfterNthMatchingCharacter(name, stringBuilder, 3, '.')) {
+            name = stringBuilder.toString();
+        }
+        if(name.startsWith("org.eclipse.jetty")){
+            if (!frames.containsKey(jetty)) {
+                frames.put(jetty, "org.eclipse.jetty");
+            }
+            return jetty;
+        }
+        int hash = name.hashCode();
+        //if (occuranceCount.size() > 0 || (name.contains("jetty") || name.contains("eclipse"))) {
+        if (occuranceCount.containsKey(hash)) {
+            occuranceCount.put(hash, occuranceCount.get(hash) + 1);
+        } else {
+            occuranceCount.put(hash, 1);
+            if (!frames.containsKey(hash)) {
+                frames.put(hash, name);
+            }
+        }
+        //}
+        return hash;
+    }
+
+    private int getFrameClassNm(final IMCFrame frame, final StringBuilder stringBuilder,  final Map<Integer, Integer> occuranceCount) {
+        final IMCMethod method = frame.getMethod();
+        String fullNm = null;
+        try {
+            fullNm = method.getType().getFullName();
+        } catch (StringIndexOutOfBoundsException e) {
+            fullNm = "unknown";
+        }
+        if(fullNm.startsWith("org.eclipse.jetty")){
+            if (!frames.containsKey(jetty)) {
+                frames.put(jetty, "org.eclipse.jetty");
+            }
+            return jetty;
+        }
+        final String methodNm = method.getMethodName();
+        int hash = CustomHash(0,fullNm.hashCode());
+        if (!frames.containsKey(hash)) {
+            stringBuilder.setLength(0);
+            if (Utils.normalizeFrame(fullNm, stringBuilder, 0)) {
+                String nm = stringBuilder.toString();
+                hash = CustomHash(0,nm.hashCode());
+                if (!frames.containsKey(hash)) {
+                    frames.put(hash, nm);
+                }
+            } else {
+                frames.put(hash, fullNm);
+            }
+        }
+        if (occuranceCount.containsKey(hash)) {
+            occuranceCount.put(hash, occuranceCount.get(hash) + 1);
+        } else {
+            occuranceCount.put(hash, 1);
+        }
+        return hash;
     }
 
     public void processEvent(final int tid, final long time, final String ctx, final List<String> stackTrace, String type) {

@@ -126,6 +126,7 @@ public class CustomJfrParser {
                 int tid = -1;
                 long epoc = -1;
                 int weight = 1;
+                boolean memoryEvent = false;
                 String classStr = null;
                 handler.initializeProfile(iterable_element.getType().getIdentifier());
                 handler.initializePid(iterable_element.getType().getIdentifier());
@@ -138,6 +139,7 @@ public class CustomJfrParser {
                         if(((Attribute) key).getName().equals("Allocation Size")){
                             ITypedQuantity<LinearUnit> v = (ITypedQuantity<LinearUnit>) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(item);
                             weight = (int)v.longValue();
+                            memoryEvent = true;
                         }
                         if (((Attribute) key).getContentType().getIdentifier().equals("class")) {
                             classStr=((IMCType)iterable_element.getType().getAccessor((IAccessorKey) key).getMember(item)).getTypeName();
@@ -158,7 +160,11 @@ public class CustomJfrParser {
 
                     try {
                         if(stackTrace != null) {
-                            handler.processEvent(sb, stackTrace, iterable_element.getType().getIdentifier(), tid, epoc, weight, classStr);
+                            if(memoryEvent){//experiment to reduce size
+                                handler.processMemoryEvent(sb, stackTrace, iterable_element.getType().getIdentifier(), tid, epoc, weight, classStr);
+                            }else {
+                                handler.processEvent(sb, stackTrace, iterable_element.getType().getIdentifier(), tid, epoc, weight, classStr);
+                            }
                         }
                     }catch (Exception e){
                         throw e;

@@ -176,10 +176,10 @@
             'y': newplotdata.cpuSamplesList,
             mode: 'lines',
             line: {
-                color: 'red',
+                color: 'blue',
                 width: 3
             },
-            name: "CPU%"
+            name: "Application CPU%"
         };
         tmpdata.push(trace);
         for (let i = 0; i < sortedPlotOrder.length; i++) {
