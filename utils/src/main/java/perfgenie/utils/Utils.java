@@ -27,6 +27,21 @@ public class Utils {
     private static char sfdcGeneratedBeginningCharacter = sfdcGeneratedFrameIndicator.charAt(0);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
+    public static boolean trimAfterNthMatchingCharacter(final String str, final StringBuilder builder, final int count, char trimAfter){
+        int length = str.length();
+        int c=0;
+        for (int i = 0; i < length; i++) {
+            final char character = str.charAt(i);
+            if(character == trimAfter){
+                c++;
+            }
+            if(c >= count){
+                return true;
+            }
+            builder.append(character);
+        }
+        return false;
+    }
     public static boolean normalizeFrame(final String frame, final StringBuilder builder, final int startIndex) {
         boolean previousCharacterDollarSign = false;
         boolean previousCharacterNormalized = false;

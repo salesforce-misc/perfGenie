@@ -32,11 +32,36 @@ add profiles and custom events to be parsed in config.properties file
 
 ```sh
 ex:
-customevents=LogContext;MqFrm;CPUEvent;MemoryEvent
-profiles=ExecutionS;Socket
+customevents=LogContext;MqFrm;CPUEvent;MemoryEvent;Search
+profiles=ExecutionS;Socket;NewTLAB;OutsideTLAB
 jfrdir=/tmp/jfrs
 tenant=dev
+
+#h2,grpc,mySQL
+storageType=h2
+
+#h2 config
 h2dir=/tmp/h2.db
+
+#mySQL config
+mySQL.host=xxxx
+mySQL.port=3306
+mySQL.user=xxxx
+mySQL.pwd=xxxx
+
+#grpc, cantor server
+grpc.target=localhost:7443
+
+#filtering
+threshold=0.05
+filterDepth=4
+maxStackDepth=10
+
+#experimental to enable river view and surface views
+isExperimental=false
+
+
+
 ```
 
 #### Start application server
