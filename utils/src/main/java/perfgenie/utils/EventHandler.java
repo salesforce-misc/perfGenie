@@ -1904,6 +1904,8 @@ public class EventHandler {
             }
             int chunkSamplesTotal = 0;
             chunkSurfaceData.clear();
+
+
             final ExecutorService executorService = Executors.newFixedThreadPool(10);
             for (Integer stackid : stackMap.keySet()) {
                 chunkSamplesTotal = chunkSamplesTotal + stackMap.get(stackid);
@@ -1916,6 +1918,12 @@ public class EventHandler {
             } catch (InterruptedException e) {
                 System.out.println(e);
             }
+
+            /*for (Integer stackid : stackMap.keySet()) {
+                chunkSamplesTotal = chunkSamplesTotal + stackMap.get(stackid);
+                getSurfaceData(source,stackid,stackMap.get(stackid));
+            }*/
+
             chunkSamplesTotalList.add(chunkSamplesTotal);
 
             for (String key : chunkSurfaceData.keySet()) {
@@ -2055,8 +2063,13 @@ public class EventHandler {
 
     public void getAllPaths(final StackFrame baseJsonTree, final List<Integer> list) {
         if (baseJsonTree.getCh() == null) {
-            if (baseJsonTree.getSz() > 0) { //do it for all counts
-                Map.Entry<Integer, Integer> entry = baseJsonTree.getSm().entrySet().iterator().next();
+            if (baseJsonTree.getSz() > 0 ) { //do it for all counts
+                try {
+                    Map.Entry<Integer, Integer> entry = baseJsonTree.getSm().entrySet().iterator().next();
+                }catch (Exception e){
+                    return;//check this, todo
+                    //e.printStackTrace();
+                }
                 final StringBuilder builder = new StringBuilder();
                 for (int i = 0; i < list.size(); i++) {
                     if (i == 0) {

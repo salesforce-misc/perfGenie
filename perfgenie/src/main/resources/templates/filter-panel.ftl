@@ -416,6 +416,9 @@
 
         sortBy = urlParams.get('sortBy') || '';
         cumulativeLine = urlParams.get('cumulative') || '0';
+        seriesCount = urlParams.get('seriesCount') || 5;
+        groupByMatch = urlParams.get('groupByMatch') || '';
+        groupByLength = urlParams.get('groupByLength') || '20';
         spanThreshold = urlParams.get('spanThreshold') || 200;
         spanInput = urlParams.get('spanInput') || 'duration';
         $("#statetabledrp").html(getToolBarOptions());
@@ -474,6 +477,9 @@
     let groupBy = "";
     let tableFormat = "";
     let cumulativeLine = "";
+    let seriesCount = 5;
+    let groupByLength = "20";
+    let groupByMatch = "";
     let filterBy = "";
     let filterReq = "";
     let filterStack = "";
@@ -2012,7 +2018,7 @@
                         .attr("fill", "white");
 
                     x = x + (tmpEpoch - curTime) / downScale;
-                    let key = record[groupByIndex];
+                    let key = record[groupByIndex].slice != undefined ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
                     let metricVal = record[sortByIndex];
                     let key1 = tmpColorMap.get(key);
                     key1 = key1.replace("#", "_");
@@ -2130,7 +2136,7 @@
         document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
         let xs = {};
         let columns = [];
-        let countMax = 6;
+        let countMax = seriesCount;
         let curI = 0;
         let color = {};
         let contextDataRecords = undefined;
@@ -2139,6 +2145,9 @@
         }
 
         for (let [type, value1] of groupByTypeSortByMetricMap) {
+            if((groupByMatch != '' && type.includes != undefined && !type.includes(groupByMatch))){
+                continue;
+            }
             if (curI >= countMax) {
                 break;
             }
@@ -2157,7 +2166,11 @@
                     let record = contextDataRecords[tid][index].record;
                     let tmpEpoch = record[timestampIndex];
                     let tmpRunTime = record[spanIndex];
-                    let key = record[groupByIndex];
+                    let key = record[groupByIndex].slice != undefined ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+
+                    if(tmpRunTime == undefined){ //this could be a metric without a duration span
+                        tmpRunTime=0;
+                    }
 
                     if (key == type) {
                         let diff = record[sortByIndex];
@@ -2237,18 +2250,18 @@
 
     function getEventTableHeader(groupby) {
         let header = "<thead><tr>";
-        if (!(groupby == undefined || groupby == "")) {
+        if (!(groupby == undefined || groupby == "" || groupby == "All records")) {
             header = header + "<th>" + groupby + "</th>";
         }
         if (contextData != undefined && contextData.header != undefined) {
             for (let val in contextData.header[customEvent]) {
                 const tokens = contextData.header[customEvent][val].split(":");
-                if (groupby == undefined || groupby == "" || tokens[1] == "number") {
+                if (groupby == undefined || groupby == "" || groupby == "All records" || tokens[1] == "number") {
                     header = header + "<th>" + tokens[0] + "</th>";
                 }
             }
         }
-        if (!(groupby == undefined || groupby == "")) {
+        if (!(groupby == undefined || groupby == "" || groupby == "All records")) {
             header = header + "<th>Count</th>";
         }
         header = header + "</tr></thead>";
@@ -2327,8 +2340,10 @@
 
     function genRequestTable() {
         console.log("genRequestTable start");
+        $("#statetabledrp").html(getToolBarOptions());
+
         let start1 = performance.now();
-        setCustomEvent();
+        //setCustomEvent();
 
         if (customEvent == "" || customEvent == undefined) {
             return;
@@ -2467,7 +2482,7 @@
                                 if ((record[spanIndex] + record[timestampIndex]) > maxEndTimeOfReq) {
                                     maxEndTimeOfReq = record[spanIndex] + record[timestampIndex];
                                 }
-                                let key = record[groupByIndex];
+                                let key = record[groupByIndex].slice != undefined ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
                                 if (!tmpColorMap.has(key)) {
                                     tmpColorMap.set(key, randomColor());
                                     groupByCount++;
@@ -2490,7 +2505,7 @@
                                     tmpTidSortByMetricMap.set(tid, metricValue);
                                 }
                             }
-                            if (groupBy == "" || groupBy == undefined) {
+                            if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
                                 if (record[metricsIndexMap[spanInput]] >= spanThreshold) {
                                     table = table + "<tr>";
                                     for (let field in record) {
@@ -2507,14 +2522,16 @@
                                     table = table + "</tr>";
                                 }
                             } else {
-                                if (metricSumMap[record[groupByIndex]] == undefined) {
-                                    metricSumMap[record[groupByIndex]] = Array(metricsIndexArray.length + 1).fill(0);
+                                let key = record[groupByIndex].slice != undefined ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+
+                                if (metricSumMap[key] == undefined) {
+                                    metricSumMap[key] = Array(metricsIndexArray.length + 1).fill(0);
                                 }
 
                                 for (let i = 0; i < metricsIndexArray.length; i++) {
-                                    metricSumMap[record[groupByIndex]][i] += record[metricsIndexArray[i]];
+                                    metricSumMap[key][i] += record[metricsIndexArray[i]];
                                 }
-                                metricSumMap[record[groupByIndex]][metricsIndexArray.length] += 1;
+                                metricSumMap[key][metricsIndexArray.length] += 1;
                             }
                         }
                     });
@@ -2566,7 +2583,7 @@
                                 if ((record[spanIndex] + record[timestampIndex]) > maxEndTimeOfReq) {
                                     maxEndTimeOfReq = record[spanIndex] + record[timestampIndex];
                                 }
-                                let key = record[groupByIndex];
+                                let key = record[groupByIndex].slice != undefined ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
                                 if (!tmpColorMap.has(key)) {
                                     tmpColorMap.set(key, randomColor());
                                     groupByCount++;
@@ -2589,7 +2606,7 @@
                                     tmpTidSortByMetricMap.set(tid, metricValue);
                                 }
                             }
-                            if (groupBy == "" || groupBy == undefined) {
+                            if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
                                 if (record[metricsIndexMap[spanInput]] >= spanThreshold) {
                                     table = table + "<tr>";
                                     for (let field in record) {
@@ -2606,14 +2623,15 @@
                                     table = table + "</tr>";
                                 }
                             } else {
-                                if (metricSumMap[record[groupByIndex]] == undefined) {
-                                    metricSumMap[record[groupByIndex]] = Array(metricsIndexArray.length + 1).fill(0);
+                                let key = record[groupByIndex].slice != undefined ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                if (metricSumMap[key] == undefined) {
+                                    metricSumMap[key] = Array(metricsIndexArray.length + 1).fill(0);
                                 }
 
                                 for (let i = 0; i < metricsIndexArray.length; i++) {
-                                    metricSumMap[record[groupByIndex]][i] += record[metricsIndexArray[i]];
+                                    metricSumMap[key][i] += record[metricsIndexArray[i]];
                                 }
-                                metricSumMap[record[groupByIndex]][metricsIndexArray.length] += 1;
+                                metricSumMap[key][metricsIndexArray.length] += 1;
                             }
                         }
                     });
@@ -2653,7 +2671,7 @@
                 drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex);
             }
         } else {
-            if (!(groupBy == "" || groupBy == undefined)) {
+            if (!(groupBy == "" || groupBy == undefined || groupBy == "All records")) {
                 for (let dim in metricSumMap) {
                     table = table + "<tr>";
                     table = table + "<td hint='"+groupBy+"' class='context-menu-two'>" + dim + "</td>";
@@ -2674,6 +2692,7 @@
             updateUrl("customevent", $("#event-input").val(), true);
             customEvent = $("#event-input").val();
             tmpColorMap.clear();
+            $("#statetabledrp").html(getToolBarOptions());
             genRequestTable();
             updateRequestView();
         });
@@ -2703,6 +2722,25 @@
             genRequestTable();
             updateRequestView();
         });
+        $("#line-count").on("change", (event) => {
+            updateUrl("seriesCount", $("#line-count").val(), true);
+            seriesCount = $("#line-count").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#groupby-match").on("change", (event) => {
+            updateUrl("groupByMatch", $("#groupby-match").val(), true);
+            groupByMatch = $("#groupby-match").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#groupby-length").on("change", (event) => {
+            updateUrl("groupByLength", $("#groupby-length").val(), true);
+            groupByLength = $("#groupby-length").val();
+            genRequestTable();
+            updateRequestView();
+        });
+
         $("#span-input").on("change", (event) => {
             updateUrl("spanInput", $("#span-input").val(), true);
             spanInput = $("#span-input").val();
@@ -2753,36 +2791,119 @@
     }
 
     function getToolBarOptions() {
-        let toolBarOptions = 'Event: <select  style="height:30px;text-align: center; " class="filterinput"  name="event-input" id="event-input">\n';
+
+        console.log("getToolBarOptions1 customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " spanInput:"+spanInput);
+
+
+        let toolBarOptions = 'Event: <select  style="height:30px;width:250px;text-align: center; " class="filterinput"  name="event-input" id="event-input">\n';
         if (contextData != undefined && contextData.records != undefined) {
+            let customEventFound = false;
+            if(!(customEvent == '' || customEvent == undefined)) {
+                for (let value in contextData.records) {
+                    if(customEvent == value){
+                        customEventFound = true;
+                        break;
+                    }
+                }
+            }
+
             for (let value in contextData.records) {
+                if(customEvent == '' || customEvent == undefined || !customEventFound){
+                    customEvent = value;
+                    customEventFound=true;
+                }
                 toolBarOptions += '<option ' + (customEvent == value ? "selected" : "") + " value='" + value + "'>" + value + "</option>\n";
             }
         }
         toolBarOptions += '             </select>';
-        toolBarOptions += '&nbsp;&nbsp;Group by: <select  style="height:30px;text-align: center; " class="filterinput"  name="filter-input" id="filter-input">\n';
-        toolBarOptions += "<option value=''> ... </option>";
+        toolBarOptions += '&nbsp;&nbsp;Group by: <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="filter-input" id="filter-input">\n';
+        toolBarOptions += "<option value='All records'>Show all records</option>";
+
+
         if (contextData != undefined && contextData.header != undefined) {
+            let groups = [];
             for (let val in contextData.header[customEvent]) {
                 const tokens = contextData.header[customEvent][val].split(":");
+                if (tokens[1] == "text" || tokens[1] == "timestamp") {
+                    groups.push(tokens[0]);
+                }
+            }
+            groups.sort();
+
+            let groupByFound = false;
+            if(!(groupBy == '' || groupBy == undefined || groupBy == "All records")) {
+                for (let val in contextData.header[customEvent]) {
+                    const tokens = contextData.header[customEvent][val].split(":");
+                    if(groupBy == tokens[0]){
+                        groupByFound = true;
+                        break;
+                    }
+                }
+            }
+
+            if(groupBy == "All records"){
+                groupByFound=true;
+            }
+
+            for (let i = 0; i < groups.length; i++) {
+                if((groupBy == '' || groupBy == undefined || !groupByFound) ){
+                    groupBy = groups[i];
+                    groupByFound=true;
+                }
+                toolBarOptions += '<option ' + (groupBy == groups[i] ? "selected" : "") + " value='" + groups[i] + "'>" + groups[i] + "</option>\n";
+            }
+
+/*
+            for (let val in contextData.header[customEvent]) {
+                const tokens = contextData.header[customEvent][val].split(":");
+                if((groupBy == '' || groupBy == undefined || !groupByFound) && (tokens[1] == "text" || tokens[1] == "timestamp") ){
+                    groupBy = tokens[0];
+                    groupByFound=true;
+                }
                 if (tokens[1] == "text" || tokens[1] == "timestamp") {
                     toolBarOptions += '<option ' + (groupBy == tokens[0] ? "selected" : "") + " value='" + tokens[0] + "'>" + tokens[0] + "</option>\n";
                 }
             }
+ */
         }
-        toolBarOptions += '             </select>' +
-            '&nbsp;&nbsp;Format: <select  style="height:30px;text-align: center; " class="filterinput"  name="format-input" id="format-input">\n' +
+        toolBarOptions += '             </select>';
+
+        toolBarOptions +=    '&nbsp;&nbsp;Len: <input  style="height:30px;width:35px;text-align: left;" class="filterinput" id="groupby-length" type="text" value="'+groupByLength+'">\n';
+        toolBarOptions +=    '&nbsp;&nbsp;Match: <input  style="height:30px;width:120px;text-align: left;" class="filterinput" id="groupby-match" type="text" value="'+groupByMatch+'">\n';
+
+
+        toolBarOptions += '&nbsp;&nbsp;Format: <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="format-input" id="format-input">\n' +
             '                            <option ' + (tableFormat == 0 ? "selected" : "") + ' value=0>table</option>\n' +
             //'                            <option ' + (tableFormat == 1 ? "selected" : "") + ' value=1>percent</option>\n' +
             '                            <option ' + (tableFormat == 2 ? "selected" : "") + ' value=2>thread request view</option>\n' +
             '                            <option ' + (tableFormat == 3 ? "selected" : "") + ' value=3>metric timeline view</option>\n' +
             '                    </select>';
+
+
+
+
         if (tableFormat == 2 || tableFormat == 3) {
             toolBarOptions += '                        </select>' +
-                '&nbsp;&nbsp;Sort by: <select  style="height:30px;text-align: center; " class="filterinput"  name="sort-input" id="sort-input">\n';
+                '&nbsp;&nbsp;Sort by: <select  style="height:30px;width:60px;text-align: center; " class="filterinput"  name="sort-input" id="sort-input">\n';
             if (contextData != undefined && contextData.header != undefined) {
+
+                let sortByFound = false;
+                if(!(sortBy == '' || sortBy == undefined)) {
+                    for (let val in contextData.header[customEvent]) {
+                        const tokens = contextData.header[customEvent][val].split(":");
+                        if(sortBy == tokens[0]){
+                            sortByFound = true;
+                            break;
+                        }
+                    }
+                }
+
                 for (let val in contextData.header[customEvent]) {
                     const tokens = contextData.header[customEvent][val].split(":");
+                    if(sortBy == '' || sortBy == undefined || !sortByFound && !(tokens[1] == "text" || tokens[1] == "timestamp")){
+                        sortBy = tokens[0];
+                        sortByFound = true;
+                    }
                     if (!(tokens[1] == "text" || tokens[1] == "timestamp")) {
                         toolBarOptions += '<option ' + (sortBy == tokens[0] ? "selected" : "") + " value='" + tokens[0] + "'>" + tokens[0] + "</option>\n";
                     }
@@ -2796,14 +2917,43 @@
                 '                            <option ' + (cumulativeLine == 0 ? "selected" : "") + ' value=0>cumulative</option>\n' +
                 '                            <option ' + (cumulativeLine == 1 ? "selected" : "") + ' value=1>absolute diff</option>\n' +
                 '                            </select> ';
+
+            toolBarOptions += '                        </select>' +
+                '&nbsp;&nbsp;Top: <select  style="height:30px;text-align: center; " class="filterinput"  name="line-count" id="line-count">\n' +
+                '                            <option ' + (seriesCount == 5 ? "selected" : "") + ' value=5>5</option>\n' +
+                '                            <option ' + (seriesCount == 10 ? "selected" : "") + ' value=10>10</option>\n' +
+                '                            <option ' + (seriesCount == 15 ? "selected" : "") + ' value=15>15</option>\n' +
+                '                            <option ' + (seriesCount == 20 ? "selected" : "") + ' value=20>20</option>\n' +
+                '                            <option ' + (seriesCount == 25 ? "selected" : "") + ' value=25>25</option>\n' +
+                '                            <option ' + (seriesCount == 30 ? "selected" : "") + ' value=30>30</option>\n' +
+                '                            <option ' + (seriesCount == 40 ? "selected" : "") + ' value=40>40</option>\n' +
+                '                            </select> ';
+
+
         }
 
-        if (groupBy == "" || groupBy == undefined) {
+        if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
             toolBarOptions += '                        </select>' +
                 '&nbsp;&nbsp;Threshold: <select  style="height:30px;text-align: center; " class="spanMetric"  name="span-input" id="span-input">\n';
             if (contextData != undefined && contextData.header != undefined) {
+                let spanInputFound = false;
+                if(!(spanInput == '' || spanInput == undefined)) {
+                    for (let val in contextData.header[customEvent]) {
+                        const tokens = contextData.header[customEvent][val].split(":");
+                        if(spanInput == tokens[0]){
+                            spanInputFound = true;
+                            break;
+                        }
+                    }
+                }
+
                 for (let val in contextData.header[customEvent]) {
                     const tokens = contextData.header[customEvent][val].split(":");
+
+                    if(spanInput == '' || spanInput == undefined || !spanInputFound && !(tokens[1] == "text" || tokens[1] == "timestamp")){
+                        spanInput = tokens[0];
+                        spanInputFound = true;
+                    }
                     if (!(tokens[1] == "text" || tokens[1] == "timestamp")) {
                         toolBarOptions += '<option ' + (spanInput == tokens[0] ? "selected" : "") + " value='" + tokens[0] + "'>" + tokens[0] + "</option>\n";
                     }
@@ -2817,6 +2967,8 @@
                 '                            <option ' + (spanThreshold == 0 ? "selected" : "") + " value='0'>0</option>\n" +
                 '                            </select> ';
         }
+
+        console.log("getToolBarOptions2 customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " spanInput:"+spanInput);
 
         return toolBarOptions;
     }
@@ -4149,6 +4301,24 @@
         $("#line-type").on("change", (event) => {
             updateUrl("cumulative", $("#line-type").val(), true);
             cumulativeLine = $("#line-type").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#line-count").on("change", (event) => {
+            updateUrl("seriesCount", $("#line-count").val(), true);
+            seriesCount = $("#line-count").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#groupby-match").on("change", (event) => {
+            updateUrl("groupByMatch", $("#groupby-match").val(), true);
+            groupByMatch = $("#groupby-match").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#groupby-length").on("change", (event) => {
+            updateUrl("groupByLength", $("#groupby-length").val(), true);
+            groupByLength = $("#groupby-length").val();
             genRequestTable();
             updateRequestView();
         });
