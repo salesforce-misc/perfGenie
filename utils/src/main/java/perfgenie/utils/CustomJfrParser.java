@@ -186,6 +186,7 @@ public class CustomJfrParser {
                     IUnit u = null;
                     List<Object> record = new ArrayList<>();
                     int tid = -1;
+                    boolean textFound = false;
                     for (Object key : k.keySet()) {
                         if (((Attribute) key).getContentType().getIdentifier().equals("thread")) {
                             final IMCThread thread = (IMCThread) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i]);
@@ -194,6 +195,7 @@ public class CustomJfrParser {
                             record.add(thread.getThreadId());
                             record.add(thread.getThreadName());
                             if (addHeader) {
+                                textFound=true;
                                 header.get(iterable_element.getType().getIdentifier()).add("tid:text");
                                 header.get(iterable_element.getType().getIdentifier()).add("threadname:text");
                             }
@@ -211,6 +213,7 @@ public class CustomJfrParser {
                                 header.get(iterable_element.getType().getIdentifier()).add("duration:number");
                             }
                         } else if (((Attribute) key).getContentType().getIdentifier().equals("text")) {
+                            textFound=true;
                             record.add(iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i]));
                             if (addHeader) {
                                 header.get(iterable_element.getType().getIdentifier()).add(((Attribute) key).getIdentifier() + ":text");
@@ -227,12 +230,14 @@ public class CustomJfrParser {
                             }
                         }
                     }
-                    if(iterable_element.getType().getIdentifier().equals("jdk.CPULoad")){
-                        record.add("CPULoad");
+
+                    if(!textFound){
+                        record.add(iterable_element.getType().getIdentifier());
                         if (addHeader) {
-                            header.get(iterable_element.getType().getIdentifier()).add( "CPULoad:text");
+                            header.get(iterable_element.getType().getIdentifier()).add( iterable_element.getType().getIdentifier()+":text");
                         }
                     }
+
                     if (addHeader) {
                         handler.initializeEvent(iterable_element.getType().getIdentifier());
                         handler.addHeader(iterable_element.getType().getIdentifier(), header.get(iterable_element.getType().getIdentifier()));
