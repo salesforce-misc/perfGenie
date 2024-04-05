@@ -119,6 +119,7 @@ public class CustomJfrParser {
     void processJfrEvents(final EventHandler handler, final IItemCollection events){
         final StringBuilder sb = new StringBuilder();
         final Map<String, List> header = new HashMap<>();
+        final Map<String, Integer> unique = new HashMap<>();
         for (IItemIterable iterable_element : events) {
             if (config.isProfile(iterable_element.getType().getIdentifier())) {
                 //Object[] r = iterable_element.get().toArray();
@@ -219,6 +220,17 @@ public class CustomJfrParser {
                             if (addHeader) {
                                 header.get(iterable_element.getType().getIdentifier()).add(((Attribute) key).getIdentifier() + ":number");
                             }
+                        } else if (((Attribute) key).getContentType().getIdentifier().equals("percentage")) {
+                            record.add(((int)(((IQuantity) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i])).doubleValue()*10000))/100.0);
+                            if (addHeader) {
+                                header.get(iterable_element.getType().getIdentifier()).add(((Attribute) key).getIdentifier() + ":number");
+                            }
+                        }
+                    }
+                    if(iterable_element.getType().getIdentifier().equals("jdk.CPULoad")){
+                        record.add("CPULoad");
+                        if (addHeader) {
+                            header.get(iterable_element.getType().getIdentifier()).add( "CPULoad:text");
                         }
                     }
                     if (addHeader) {
@@ -229,9 +241,17 @@ public class CustomJfrParser {
                     handler.processContext(record, tid, iterable_element.getType().getIdentifier());
                 }
             }else{
-               // System.out.println("other:" + iterable_element.getType().getIdentifier());
+                if(!unique.containsKey(iterable_element.getType().getIdentifier())){
+                    unique.put(iterable_element.getType().getIdentifier(),1);
+                }else{
+                    unique.put(iterable_element.getType().getIdentifier(),unique.get(iterable_element.getType().getIdentifier()) + 1);
+                }
             }
         }
+        for (Map.Entry<String, Integer> entry : unique.entrySet()) {
+            //System.out.println(entry.getKey() + " : " + entry.getValue());
+        }
+
     }
 
 
