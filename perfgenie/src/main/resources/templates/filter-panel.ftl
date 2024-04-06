@@ -2018,7 +2018,7 @@
                         .attr("fill", "white");
 
                     x = x + (tmpEpoch - curTime) / downScale;
-                    let key = record[groupByIndex].slice != undefined ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                    let key = (groupByIndex != -1 &&  record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
                     let metricVal = record[sortByIndex];
                     let key1 = tmpColorMap.get(key);
                     key1 = key1.replace("#", "_");
@@ -2166,7 +2166,7 @@
                     let record = contextDataRecords[tid][index].record;
                     let tmpEpoch = record[timestampIndex];
                     let tmpRunTime = record[spanIndex];
-                    let key = record[groupByIndex].slice != undefined ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                    let key = (groupByIndex != -1 && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
 
                     if(tmpRunTime == undefined){ //this could be a metric without a duration span
                         tmpRunTime=0;
@@ -2482,7 +2482,7 @@
                                 if ((record[spanIndex] + record[timestampIndex]) > maxEndTimeOfReq) {
                                     maxEndTimeOfReq = record[spanIndex] + record[timestampIndex];
                                 }
-                                let key = record[groupByIndex].slice != undefined ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                let key = (groupByIndex != -1 && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
                                 if (!tmpColorMap.has(key)) {
                                     tmpColorMap.set(key, randomColor());
                                     groupByCount++;
@@ -2522,7 +2522,7 @@
                                     table = table + "</tr>";
                                 }
                             } else {
-                                let key = record[groupByIndex].slice != undefined ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                let key = (groupByIndex != -1 && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
 
                                 if (metricSumMap[key] == undefined) {
                                     metricSumMap[key] = Array(metricsIndexArray.length + 1).fill(0);
@@ -2583,7 +2583,7 @@
                                 if ((record[spanIndex] + record[timestampIndex]) > maxEndTimeOfReq) {
                                     maxEndTimeOfReq = record[spanIndex] + record[timestampIndex];
                                 }
-                                let key = record[groupByIndex].slice != undefined ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                let key = (groupByIndex != -1 &&  record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
                                 if (!tmpColorMap.has(key)) {
                                     tmpColorMap.set(key, randomColor());
                                     groupByCount++;
@@ -2623,7 +2623,7 @@
                                     table = table + "</tr>";
                                 }
                             } else {
-                                let key = record[groupByIndex].slice != undefined ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                let key = (groupByIndex != -1 &&  record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
                                 if (metricSumMap[key] == undefined) {
                                     metricSumMap[key] = Array(metricsIndexArray.length + 1).fill(0);
                                 }
