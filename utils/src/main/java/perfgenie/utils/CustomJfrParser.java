@@ -194,8 +194,8 @@ public class CustomJfrParser {
                             tid = thread.getThreadId().intValue();
                             record.add(thread.getThreadId());
                             record.add(thread.getThreadName());
+                            textFound=true;
                             if (addHeader) {
-                                textFound=true;
                                 header.get(iterable_element.getType().getIdentifier()).add("tid:text");
                                 header.get(iterable_element.getType().getIdentifier()).add("threadname:text");
                             }
