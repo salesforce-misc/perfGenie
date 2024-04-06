@@ -2028,7 +2028,7 @@
     function drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, chartHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered) {
         let viewNote = '';
         if(!isContextViewFiltered){
-            viewNote = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getContextHintNote()+"</div>";
+            viewNote = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getContextHintNote(false)+"</div>";
         }
 
         document.getElementById("statetable").innerHTML = viewNote+"<div class='row col-lg-12' style='padding: 0 !important;'>"
@@ -2213,7 +2213,7 @@
         if(isContextViewFiltered){
             document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
         }else{
-            document.getElementById("statetable").innerHTML = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getContextHintNote()+"</div><div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
+            document.getElementById("statetable").innerHTML = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getContextHintNote(false)+"</div><div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
         }
         let xs = {};
         let columns = [];
@@ -2456,7 +2456,7 @@
         return flag;
     }
 
-    function getContextHintNote(){
+    function getContextHintNote(treeview){
         let note = "Note: Context hint(s) ";
         let filterSkipped = false;
         if(contextData.header != undefined && contextData.header[customEvent] != undefined) {
@@ -2469,11 +2469,11 @@
                     }
                 }
             }
-            if(frameFilterString !== ""){
+            if(frameFilterString !== "" && !treeview){
                 note = note + " 'frame'";
                 filterSkipped=true;
             }
-            note = note + " not applied, event " + customEvent + " do not have 'duration' span";
+            note = note + " not applied on this view, event " + customEvent + " do not have 'duration' span";
         }
         if(filterSkipped){
             return note;
@@ -2841,7 +2841,7 @@
                 }
             }
             if(!isContextViewFiltered) {
-                table = table + "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getContextHintNote()+"</div>";
+                table = table + "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getContextHintNote(false)+"</div>";
             }
             table = table + "</table>";
             document.getElementById("statetable").innerHTML = table;
