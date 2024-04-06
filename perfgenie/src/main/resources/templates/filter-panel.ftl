@@ -264,20 +264,27 @@
     }
 
     $(document).ready(function () {
+
         $("#queryfilter").on("change", (event) => {
             //validate manually edited filters
             $("#queryfilter").val($("#queryfilter").val().replace(/\s/g, ''));
-            let array = $("#queryfilter").val().split(";");
-            for (let i = 0; i < array.length; i++) {
-                if (array[i] != "") {
-                    let pair = array[i].split("=");
-                    if (pair.length != 2) {
-                        toastr_warning("Invalid filter(s) provided");
-                        break;
+            if($("#queryfilter").val() == ''){
+                setApplyDisabled(true);
+                pStart='';
+                pEnd='';
+            }else {
+                let array = $("#queryfilter").val().split(";");
+                for (let i = 0; i < array.length; i++) {
+                    if (array[i] != "") {
+                        let pair = array[i].split("=");
+                        if (pair.length != 2) {
+                            toastr_warning("Invalid filter(s) provided");
+                            break;
+                        }
                     }
                 }
+                setApplyDisabled(false);
             }
-            setApplyDisabled(false);
         });
 
         $("#filter-reset").on("click", (event) => {
@@ -296,6 +303,11 @@
             updateUrl("filterStack", "", true);
             filterFrame = "";
             frameFilterString = "";
+            $("#filtertimepickerstart").val('');
+            $("#filtertimepickerend").val('');
+            pStart='';
+            pEnd='';
+            isFilterOnType=true;
 
             resetTreeInvertedLevel(FilterLevel.LEVEL1);
             resetTreeInvertedLevel(FilterLevel.LEVEL2);
@@ -324,8 +336,11 @@
                     if (pair[0] == "frame") {
                         filterFrame = pair[1];
                         frameFilterString = pair[1];
-                    }
-                    if (pair[0] == "req") {
+                    }else if(pair[0] == "pStart"){
+                        pStart=pair[1];
+                    }else if(pair[0] == "pEnd"){
+                        pEnd=pair[1];
+                    }else if (pair[0] == "req") {
                         hasReqIDFilter = true;
                         if (filterReq == "" || filterReq == undefined) {
                             //find matching request to show time line
@@ -393,6 +408,10 @@
                     if (pair[0] == "frame") {
                         filterFrame = pair[1];
                         frameFilterString = pair[1];
+                    }else if(pair[0] == "pStart"){
+                        pStart = pair[1];
+                    }else if(pair[0] == "pEnd"){
+                        pEnd = pair[1];
                     }
                     filterMap[pair[0]] = pair[1];
                 }
@@ -425,7 +444,7 @@
         groupByLength = urlParams.get('groupByLength') || '20';
         spanThreshold = urlParams.get('spanThreshold') || 200;
         spanInput = urlParams.get('spanInput') || 'duration';
-        $("#statetabledrp").html(getToolBarOptions());
+        setToolBarOptions("statetabledrp");
         $("#filter-input").on("change", (event) => {
             genRequestTable();
         });
@@ -491,6 +510,7 @@
     let filterEvent = 'jdk.ExecutionSample';
     let spanThreshold = 200;
     let spanInput = "duration";
+    let isFilterOnType = true;
 
     let multiSelect = {};
 
@@ -1400,6 +1420,7 @@
         let groupByIndex = -1;
         let spanIndex = -1;
         let timestampIndex = -1;
+        isFilterOnType = true;
 
         for (let val in contextData.header[customEvent]) {
             const tokens = contextData.header[customEvent][val].split(":");
@@ -1435,104 +1456,112 @@
             filteredStackMap[FilterLevel.LEVEL1] = {};
         }
 
-        if (isFilterEmpty(dimIndexMap) && tidDatalistVal == undefined && !(pStart == '' && pEnd == '')) { //range filter alone
-            for (var tid in contextTidMap) {
-                for (let i = 0; i < contextTidMap[tid].length; i++) {
-                    if ((contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {
-                        if (stackMap[contextTidMap[tid][i].hash] !== undefined) {
-                            stackMap[contextTidMap[tid][i].hash] = stackMap[contextTidMap[tid][i].hash] + 1;
-                        } else {
-                            stackMap[contextTidMap[tid][i].hash] = 1;
-                        }
-                        if (isJstack) {
-                            if (filteredStackMap[FilterLevel.LEVEL1][tid] == undefined) {
-                                filteredStackMap[FilterLevel.LEVEL1][tid] = [];
-                            }
-                            filteredStackMap[FilterLevel.LEVEL1][tid].push(contextTidMap[tid][i]);
-                        }
-                    }
-                }
-            }
-        } else if (isFilterEmpty(dimIndexMap) && tidDatalistVal != undefined) {
+        if (isFilterEmpty(dimIndexMap) && tidDatalistVal != undefined) {
             if (contextTidMap[tidDatalistVal] != undefined) { //check if the thread has samples
                 for (let i = 0; i < contextTidMap[tidDatalistVal].length; i++) {
-                    if (stackMap[contextTidMap[tidDatalistVal][i].hash] !== undefined) {
-                        stackMap[contextTidMap[tidDatalistVal][i].hash] = stackMap[contextTidMap[tidDatalistVal][i].hash] + 1;
-                    } else {
-                        stackMap[contextTidMap[tidDatalistVal][i].hash] = 1;
-                    }
-                    if (isJstack) {
-                        if (filteredStackMap[FilterLevel.LEVEL1][tidDatalistVal] == undefined) {
-                            filteredStackMap[FilterLevel.LEVEL1][tidDatalistVal] = [];
+                    if ((pStart == '' && pEnd == '') || ((contextTidMap[tidDatalistVal][i].time + contextStart) >= pStart && (contextTidMap[tidDatalistVal][i].time + contextStart) <= pEnd)) {
+                        if (stackMap[contextTidMap[tidDatalistVal][i].hash] !== undefined) {
+                            stackMap[contextTidMap[tidDatalistVal][i].hash] = stackMap[contextTidMap[tidDatalistVal][i].hash] + 1;
+                        } else {
+                            stackMap[contextTidMap[tidDatalistVal][i].hash] = 1;
                         }
-                        filteredStackMap[FilterLevel.LEVEL1][tidDatalistVal].push(contextTidMap[tidDatalistVal][i]);
+                        if (isJstack) {
+                            if (filteredStackMap[FilterLevel.LEVEL1][tidDatalistVal] == undefined) {
+                                filteredStackMap[FilterLevel.LEVEL1][tidDatalistVal] = [];
+                            }
+                            filteredStackMap[FilterLevel.LEVEL1][tidDatalistVal].push(contextTidMap[tidDatalistVal][i]);
+                        }
                     }
                 }
             }
         } else {
             //we are here means one of DatalistVal is not empty
-            //contextData.tidlist.forEach(function (tid) {
-            for (var tid in contextDataRecords) {
-                contextDataRecords[tid].forEach(function (obj) {
-                    let flag = false;
-                    let record = obj.record;
-                    let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
-                    if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
-                        flag = true;
-                    }
-                    if (flag) {
-                        let end = record[timestampIndex] - contextStart + recordSpan;
-                        let start = record[timestampIndex] - contextStart;
-
-                        try {
-                            //do a binary search
-                            let entryIndex = isinRequest(contextTidMap[tid], start, end);
-                            if (entryIndex != -1) {
-                                let requestArr = contextTidMap[tid];
-                                let curIndex = entryIndex;
-                                //consider all matching samples downward
-                                while (curIndex >= 0 && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
-                                    //TODO check if sample time is within time filter range (tidDatalistVal][i].time + contextStart) > pStart && (tidDatalistVal][i].time + contextStart) < pEnd
-                                    if((pStart == '' && pEnd == '') || (requestArr[curIndex].time + contextStart) >= pStart && (requestArr[curIndex].time + contextStart) <= pEnd ) {
-                                        if (isJstack) {
-                                            if (filteredStackMap[FilterLevel.LEVEL1][tid] == undefined) {
-                                                filteredStackMap[FilterLevel.LEVEL1][tid] = [];
-                                            }
-                                            filteredStackMap[FilterLevel.LEVEL1][tid].push(requestArr[curIndex]);
-                                        }
-                                        if (stackMap[requestArr[curIndex].hash] !== undefined) {
-                                            stackMap[requestArr[curIndex].hash] = stackMap[requestArr[curIndex].hash] + 1;
-                                        } else {
-                                            stackMap[requestArr[curIndex].hash] = 1;
-                                        }
-                                        scount++;
-                                    }
-                                    curIndex--;
+            if (spanIndex == -1) { // record duration span not available
+                //Context hints cannot be applied, apply only time range filter and tid filter
+                isFilterOnType=false;
+                for (var tid in contextDataRecords) {
+                    if ((tidDatalistVal == undefined || tidDatalistVal == tid) && contextTidMap[tid] != undefined) {
+                        for (let i = 0; i < contextTidMap[tid].length; i++) {
+                            if ((pStart == '' && pEnd == '') || ((contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd)) {
+                                if (stackMap[contextTidMap[tid][i].hash] !== undefined) {
+                                    stackMap[contextTidMap[tid][i].hash] = stackMap[contextTidMap[tid][i].hash] + 1;
+                                } else {
+                                    stackMap[contextTidMap[tid][i].hash] = 1;
                                 }
-                                curIndex = entryIndex + 1;
-                                //consider all matching samples upward
-                                while (curIndex < requestArr.length && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
-                                    if((pStart == '' && pEnd == '') || (requestArr[curIndex].time + contextStart) >= pStart && (requestArr[curIndex].time + contextStart) <= pEnd ) {
-                                        if (isJstack) {
-                                            filteredStackMap[FilterLevel.LEVEL1][tid].push(requestArr[curIndex]);
-                                        }
-                                        if (stackMap[requestArr[curIndex].hash] !== undefined) {
-                                            stackMap[requestArr[curIndex].hash] = stackMap[requestArr[curIndex].hash] + 1;
-                                        } else {
-                                            stackMap[requestArr[curIndex].hash] = 1;
-                                        }
-                                        scount++;
+                                if (isJstack) {
+                                    if (filteredStackMap[FilterLevel.LEVEL1][tid] == undefined) {
+                                        filteredStackMap[FilterLevel.LEVEL1][tid] = [];
                                     }
-                                    curIndex++;
+                                    filteredStackMap[FilterLevel.LEVEL1][tid].push(contextTidMap[tid][i]);
                                 }
                             }
-                        } catch (err) {
-                            console.log("tid not found in JFR" + tid + " " + err.message);
                         }
                     }
-                });
+                }
+            } else {
+                for (var tid in contextDataRecords) {
+                    contextDataRecords[tid].forEach(function (obj) {
+                        if (tidDatalistVal == undefined || tidDatalistVal == tid) {
+                            let record = obj.record;
+                            let flag = false;
+                            let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
+                            if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
+                                flag = true;
+                            }
+                            if (flag) {
+                                let end = record[timestampIndex] - contextStart + recordSpan;
+                                let start = record[timestampIndex] - contextStart;
+
+                                try {
+                                    //do a binary search
+                                    let entryIndex = isinRequest(contextTidMap[tid], start, end);
+                                    if (entryIndex != -1) {
+                                        let requestArr = contextTidMap[tid];
+                                        let curIndex = entryIndex;
+                                        //consider all matching samples downward
+                                        while (curIndex >= 0 && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
+                                            //TODO check if sample time is within time filter range (tidDatalistVal][i].time + contextStart) > pStart && (tidDatalistVal][i].time + contextStart) < pEnd
+                                            if ((pStart == '' && pEnd == '') || (requestArr[curIndex].time + contextStart) >= pStart && (requestArr[curIndex].time + contextStart) <= pEnd) {
+                                                if (isJstack) {
+                                                    if (filteredStackMap[FilterLevel.LEVEL1][tid] == undefined) {
+                                                        filteredStackMap[FilterLevel.LEVEL1][tid] = [];
+                                                    }
+                                                    filteredStackMap[FilterLevel.LEVEL1][tid].push(requestArr[curIndex]);
+                                                }
+                                                if (stackMap[requestArr[curIndex].hash] !== undefined) {
+                                                    stackMap[requestArr[curIndex].hash] = stackMap[requestArr[curIndex].hash] + 1;
+                                                } else {
+                                                    stackMap[requestArr[curIndex].hash] = 1;
+                                                }
+                                                scount++;
+                                            }
+                                            curIndex--;
+                                        }
+                                        curIndex = entryIndex + 1;
+                                        //consider all matching samples upward
+                                        while (curIndex < requestArr.length && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
+                                            if ((pStart == '' && pEnd == '') || (requestArr[curIndex].time + contextStart) >= pStart && (requestArr[curIndex].time + contextStart) <= pEnd) {
+                                                if (isJstack) {
+                                                    filteredStackMap[FilterLevel.LEVEL1][tid].push(requestArr[curIndex]);
+                                                }
+                                                if (stackMap[requestArr[curIndex].hash] !== undefined) {
+                                                    stackMap[requestArr[curIndex].hash] = stackMap[requestArr[curIndex].hash] + 1;
+                                                } else {
+                                                    stackMap[requestArr[curIndex].hash] = 1;
+                                                }
+                                                scount++;
+                                            }
+                                            curIndex++;
+                                        }
+                                    }
+                                } catch (err) {
+                                    console.log("tid not found in JFR" + tid + " " + err.message);
+                                }
+                            }
+                        }
+                    });
+                }
             }
-            // });
         }
         for (stack in stackMap) {
             getTreeStackLevel(getActiveTree(getEventType(), false), stack, stackMap[stack], FilterLevel.LEVEL1);
@@ -1996,8 +2025,13 @@
             .style("text-anchor", "start");
     }
 
-    function drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, chartHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex) {
-        document.getElementById("statetable").innerHTML = "<div class='row col-lg-12' style='padding: 0 !important;'>"
+    function drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, chartHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered) {
+        let viewNote = '';
+        if(!isContextViewFiltered){
+            viewNote = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getContextHintNote()+"</div>";
+        }
+
+        document.getElementById("statetable").innerHTML = viewNote+"<div class='row col-lg-12' style='padding: 0 !important;'>"
             + "<div  style='width: 4%;float: left;'></div>"
             + "<div style=\"max-height: 50px;overflow: hidden;width: 96%;float: right;\">"
             + " <div class='row col-lg-12' style='padding: 0 !important;'>"
@@ -2175,8 +2209,12 @@
         $(id).html(table);
     }
 
-    function drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex) {
-        document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
+    function drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered) {
+        if(isContextViewFiltered){
+            document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
+        }else{
+            document.getElementById("statetable").innerHTML = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getContextHintNote()+"</div><div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
+        }
         let xs = {};
         let columns = [];
         let countMax = seriesCount;
@@ -2308,20 +2346,64 @@
     }
 
     function addContextHints() {
-        let table = "<table style='border-spacing: 5px; border-collapse: separate;'><tr><td id='filter-heading'>Context hints:</td>";
+        let table = "<table style='border-spacing: 2px; border-collapse: separate;border: hidden'><tr><td style='border: hidden'  id='filter-heading'>Context hints:</td>";
         if (contextData != undefined && contextData.header != undefined) {
             for (let val in contextData.header[customEvent]) {
                 const tokens = contextData.header[customEvent][val].split(":");
                 if (tokens[1] == "text") {
-                    table += "<td class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('" + tokens[0] + "=xxxx');\" title='Narrows down a filter to a single "+tokens[0]+". For example " + tokens[0] + "=xxxx' tabindex='-1'>" + tokens[0] + "</a></td>";
+                    table += "<td style='border: hidden' class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('" + tokens[0] + "=xxxx');\" title='Narrows down a filter to a single "+tokens[0]+". For example " + tokens[0] + "=xxxx' tabindex='-1'>" + tokens[0] + "</a></td>";
                 }
                 if(tokens[0] == "threadname"){
-                    table += "<td class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('frame=xxxx');\" title='Narrows down a filter to a single frame. For example frame=xxxx' tabindex='-1'>frame</a></td>";
+                    table += "<td style='border: hidden' class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('frame=xxxx');\" title='Narrows down a filter to a single frame. For example frame=xxxx' tabindex='-1'>frame</a></td>";
                 }
             }
+            table += "<td style='border: hidden' class='all-hints'>Start:<input  style='height:30px;text-align: center;' class='filterinput' id='filtertimepickerstart' type='text'></td>";
+            table += "<td style='border: hidden' class='all-hints'>End:<input  style='height:30px;text-align: center;' class='filterinput' id='filtertimepickerend' type='text'></td>";
         }
         table += "</tr></table>";
         $("#contexthints").html(table);
+        if (contextData != undefined && contextData.header != undefined) {
+            jQuery("#filtertimepickerstart").datetimepicker({
+                format: 'Y-m-d H:i:s',
+                formatDate: 'Y-m-d',
+                formatTime: 'H:i',
+                step: 1
+            });
+            jQuery("#filtertimepickerend").datetimepicker({
+                format: 'Y-m-d H:i:s',
+                formatDate: 'Y-m-d',
+                formatTime: 'H:i',
+                step: 1
+            });
+            $("#filtertimepickerstart").change(function (event) {
+                if (moment($("#filtertimepickerstart").val()).valueOf() < getContextTree(1).context.start) {
+                    $("#filtertimepickerstart").val(moment.utc(getContextTree(1).context.start).format('YYYY-MM-DD HH:mm:ss'));
+                    pStart = getContextTree(1).context.start;
+                }else{
+                    pStart = moment.utc($("#filtertimepickerstart").val()).valueOf();
+                }
+                addToFilter("pStart="+pStart);
+            });
+            $("#filtertimepickerend").change(function (event) {
+                if (moment.utc($("#filtertimepickerend").val()).valueOf() > getContextTree(1).context.end) {
+                    $("#filtertimepickerend").val(moment.utc(getContextTree(1).context.end).format('YYYY-MM-DD HH:mm:ss'));
+                    pEnd = getContextTree(1).context.end;
+                }else{
+                    pEnd = moment.utc($("#filtertimepickerend").val()).valueOf();
+                }
+                addToFilter("pEnd="+pEnd);
+            });
+            if(pStart != '') {
+                $("#filtertimepickerstart").val(moment.utc(Number(pStart)).format('YYYY-MM-DD HH:mm:ss'));
+            }else{
+                $("#filtertimepickerstart").val(moment.utc( getContextTree(1).context.start).format('YYYY-MM-DD HH:mm:ss'));
+            }
+            if(pEnd != '') {
+                $("#filtertimepickerend").val(moment.utc(Number(pEnd)).format('YYYY-MM-DD HH:mm:ss'));
+            }else{
+                $("#filtertimepickerend").val(moment.utc( getContextTree(1).context.end).format('YYYY-MM-DD HH:mm:ss'));
+            }
+        }
     }
 
     function setCustomEvent() {
@@ -2374,12 +2456,38 @@
         return flag;
     }
 
+    function getContextHintNote(){
+        let note = "Note: Context hint(s) ";
+        let filterSkipped = false;
+        if(contextData.header != undefined && contextData.header[customEvent] != undefined) {
+            for (let val in contextData.header[customEvent]) {
+                const tokens = contextData.header[customEvent][val].split(":");
+                if (tokens[1] == "text" || tokens[1] == "timestamp") {
+                    if(tokens[0] != "tid" && filterMap[tokens[0]] != undefined) {
+                        note = note + " '" + tokens[0] + "'";
+                        filterSkipped=true;
+                    }
+                }
+            }
+            if(frameFilterString !== ""){
+                note = note + " 'frame'";
+                filterSkipped=true;
+            }
+            note = note + " not applied, event " + customEvent + " do not have 'duration' span";
+        }
+        if(filterSkipped){
+            return note;
+        }else{
+            return "";
+        }
+    }
+
     let tidIndex = {};
     let tmpColorMap = new Map();
 
     function genRequestTable() {
         console.log("genRequestTable start");
-        $("#statetabledrp").html(getToolBarOptions());
+        setToolBarOptions("statetabledrp");
 
         let start1 = performance.now();
         //setCustomEvent();
@@ -2422,6 +2530,7 @@
         let spanIndex = -1;
         let timestampIndex = -1;
         let tidRowIndex = -1;
+        let isContextViewFiltered = true;
 
 
         let sortByFound = false;
@@ -2477,7 +2586,10 @@
 
         let table = "<table   style=\"width: 100%;\" id=\"state-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\">" + getEventTableHeader(groupBy);
 
-        //if only frame filter is selected then we need to include stacks that are not part of any requests.
+        if((!isFilterEmpty(dimIndexMap) || frameFilterString !== "") && spanIndex == -1 ){
+            isContextViewFiltered = false;//record do not have duration span to apply context filters
+        }
+        //if only frame filter is selected then we need to include stacks that are not part of any request spans.
         if (frameFilterString !== "" && tidDatalistVal == undefined && isFilterEmpty(dimIndexMap)) {
             for (var tid in contextTidMap) {
                 if (isJstack  ) {
@@ -2502,7 +2614,7 @@
                         let flag = false;
                         recordIndex++;
                         let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
-                        if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
+                        if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan) && record[spanIndex] != undefined) {
                             let end = record[timestampIndex] - contextStart + recordSpan;
                             let start = record[timestampIndex] - contextStart;
                             try {
@@ -2515,6 +2627,8 @@
                             } catch (err) {
                                 //console.log("tid not found in JFR" + tid.key + " " + err.message);
                             }
+                        }else if(record[spanIndex] == undefined){
+                            flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
                         }
 
                         if (flag) {
@@ -2548,7 +2662,7 @@
                                 }
                             }
                             if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
-                                if (record[metricsIndexMap[spanInput]] >= spanThreshold) {
+                                if (record[metricsIndexMap[spanInput]] >= spanThreshold) {//todo change names spanInput to recordInput, spanThreshold to recordThreshold
                                     table = table + "<tr>";
                                     for (let field in record) {
                                         if (field == timestampIndex) {
@@ -2595,12 +2709,14 @@
                         let flag = false;
                         recordIndex++;
                         let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
-                        if (filterMatch(record, dimIndexMap, timestampIndex,recordSpan)) {
+                        if (filterMatch(record, dimIndexMap, timestampIndex,recordSpan) && record[spanIndex] != undefined) {
                             flag = true;
+                        }else if(record[spanIndex] == undefined){
+                            flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
                         }
 
                         //context filter matched, but check if samples of request is matching frame filter
-                        if (flag == true && frameFilterString !== "") {
+                        if (flag == true && frameFilterString !== "" && record[spanIndex] != undefined) {
                             flag = false;
 
                             //check if the request has a stack and if stack is in frameFilterStackMap
@@ -2706,12 +2822,12 @@
                 index++;
             }
             if (tableFormat == 2) {
-                drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex);
+                drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered);
                 addLegend("#legendid", groupByTypeSortByMetricMap, groupByCount, groupByCountSum);
                 addYAxis("#yaxisid", 0, 0, 0, 17, 0, lineCount, 500, totalRows * rowHeight);
                 addXAxis("#xaxisid", 15, 0, 0, 0, 0, chartWidth, chartWidth, 50, minStart, downScale);
             } else {
-                drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex);
+                drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered);
             }
         } else {
             if (!(groupBy == "" || groupBy == undefined || groupBy == "All records")) {
@@ -2724,18 +2840,21 @@
                     table = table + "</tr>";
                 }
             }
+            if(!isContextViewFiltered) {
+                table = table + "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getContextHintNote()+"</div>";
+            }
             table = table + "</table>";
             document.getElementById("statetable").innerHTML = table;
 
             enableDataTable(order);
         }
-        $("#statetabledrp").html(getToolBarOptions());
+        setToolBarOptions("statetabledrp");
 
         $("#event-input").on("change", (event) => {
             updateUrl("customevent", $("#event-input").val(), true);
             customEvent = $("#event-input").val();
             tmpColorMap.clear();
-            $("#statetabledrp").html(getToolBarOptions());
+            setToolBarOptions("statetabledrp");
             genRequestTable();
             updateRequestView();
         });
@@ -2833,7 +2952,7 @@
         });
     }
 
-    function getToolBarOptions() {
+    function setToolBarOptions(id) {
 
         console.log("getToolBarOptions1 customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " spanInput:"+spanInput);
 
@@ -2971,8 +3090,6 @@
                 '                            <option ' + (seriesCount == 30 ? "selected" : "") + ' value=30>30</option>\n' +
                 '                            <option ' + (seriesCount == 40 ? "selected" : "") + ' value=40>40</option>\n' +
                 '                            </select> ';
-
-
         }
 
         if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
@@ -3013,7 +3130,7 @@
 
         console.log("getToolBarOptions2 customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " spanInput:"+spanInput);
 
-        return toolBarOptions;
+        $('#'+id).html(toolBarOptions);
     }
 
     function invertTree(tree) {
@@ -4321,7 +4438,7 @@
             console.log("DataTable 0");
         }
         console.log("DataTable 1");
-        $("#statetabledrp").html(getToolBarOptions());
+        setToolBarOptions("statetabledrp");
         $("#filter-input").on("change", (event) => {
             updateUrl("groupBy", $("#filter-input").val(), true);
             groupBy = $("#filter-input").val();

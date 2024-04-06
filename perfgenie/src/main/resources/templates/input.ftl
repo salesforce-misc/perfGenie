@@ -27,9 +27,9 @@
         <table>
             <tr>
                 <td><label >Time range from: </label></td>
-                <td><input  style="height:30px;text-align: center;" class="filterinput" id="startpicker1" type="text"></td>
+                <td><input  style="border: hidden;height:30px;text-align: center;" class="filterinput" id="startpicker1" type="text"></td>
                 <td><label>to: </label></td>
-                <td><input  style="height:30px;text-align: center;" class="filterinput" id="endpicker1" type="text"></td>
+                <td><input  style="border: hidden;height:30px;text-align: center;" class="filterinput" id="endpicker1" type="text"></td>
                 <td><label  for="tenant-input1" id="tenant-label1">Tenant: </label></td>
                 <td>
                     <input  style="height:30px;text-align: center;" class="filterinput" id="tenant-input1" name="tenant1"
