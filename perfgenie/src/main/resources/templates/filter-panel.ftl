@@ -2965,7 +2965,7 @@
         console.log("getToolBarOptions1 customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " spanInput:"+spanInput);
 
 
-        let toolBarOptions = 'Event: <select  style="height:30px;width:250px;text-align: center; " class="filterinput"  name="event-input" id="event-input">\n';
+        let toolBarOptions = '<span title="JFR Event type">Event:</span> <select  style="height:30px;width:250px;text-align: center; " class="filterinput"  name="event-input" id="event-input">\n';
         if (contextData != undefined && contextData.records != undefined) {
             let customEventFound = false;
             if(!(customEvent == '' || customEvent == undefined)) {
@@ -2986,7 +2986,7 @@
             }
         }
         toolBarOptions += '             </select>';
-        toolBarOptions += '&nbsp;&nbsp;Group by: <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="filter-input" id="filter-input">\n';
+        toolBarOptions += '&nbsp;&nbsp;<span title="Group by event measure">Group by:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="filter-input" id="filter-input">\n';
         toolBarOptions += "<option value='All records'>Show all records</option>";
 
 
@@ -3038,11 +3038,11 @@
         }
         toolBarOptions += '             </select>';
 
-        toolBarOptions +=    '&nbsp;&nbsp;Len: <input  style="height:30px;width:35px;text-align: left;" class="filterinput" id="groupby-length" type="text" value="'+groupByLength+'">\n';
-        toolBarOptions +=    '&nbsp;&nbsp;Match: <input  style="height:30px;width:120px;text-align: left;" class="filterinput" id="groupby-match" type="text" value="'+groupByMatch+'">\n';
+        toolBarOptions +=    '&nbsp;&nbsp;<span title="Consider first N characters of group by option values">Len:</span> <input  style="height:30px;width:35px;text-align: left;" class="filterinput" id="groupby-length" type="text" value="'+groupByLength+'">\n';
+        toolBarOptions +=    '&nbsp;&nbsp;<span title="Sub string match with group by option values">Match:</span><input  style="height:30px;width:120px;text-align: left;" class="filterinput" id="groupby-match" type="text" value="'+groupByMatch+'">\n';
 
 
-        toolBarOptions += '&nbsp;&nbsp;Format: <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="format-input" id="format-input">\n' +
+        toolBarOptions += '&nbsp;&nbsp;<span title="Context view format">Format:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="format-input" id="format-input">\n' +
             '                            <option ' + (tableFormat == 0 ? "selected" : "") + ' value=0>table</option>\n' +
             //'                            <option ' + (tableFormat == 1 ? "selected" : "") + ' value=1>percent</option>\n' +
             '                            <option ' + (tableFormat == 2 ? "selected" : "") + ' value=2>thread request view</option>\n' +
@@ -3054,7 +3054,7 @@
 
         if (tableFormat == 2 || tableFormat == 3) {
             toolBarOptions += '                        </select>' +
-                '&nbsp;&nbsp;Sort by: <select  style="height:30px;width:60px;text-align: center; " class="filterinput"  name="sort-input" id="sort-input">\n';
+                '&nbsp;&nbsp;<span title="Sort context view by event metric">Sort by:</span> <select  style="height:30px;width:60px;text-align: center; " class="filterinput"  name="sort-input" id="sort-input">\n';
             if (contextData != undefined && contextData.header != undefined) {
 
                 let sortByFound = false;
@@ -3083,13 +3083,13 @@
         }
         if (tableFormat == 3) {
             toolBarOptions += '                        </select>' +
-                '&nbsp;&nbsp;Line: <select  style="height:30px;text-align: center; " class="filterinput"  name="line-type" id="line-type">\n' +
+                '&nbsp;&nbsp;<span title="Show time series by cumulative/abolute diff">Line:</span> <select  style="height:30px;text-align: center; " class="filterinput"  name="line-type" id="line-type">\n' +
                 '                            <option ' + (cumulativeLine == 0 ? "selected" : "") + ' value=0>cumulative</option>\n' +
                 '                            <option ' + (cumulativeLine == 1 ? "selected" : "") + ' value=1>absolute diff</option>\n' +
                 '                            </select> ';
 
             toolBarOptions += '                        </select>' +
-                '&nbsp;&nbsp;Top: <select  style="height:30px;text-align: center; " class="filterinput"  name="line-count" id="line-count">\n' +
+                '&nbsp;&nbsp;<span title="Show top N">Top:</span> <select  style="height:30px;text-align: center; " class="filterinput"  name="line-count" id="line-count">\n' +
                 '                            <option ' + (seriesCount == 5 ? "selected" : "") + ' value=5>5</option>\n' +
                 '                            <option ' + (seriesCount == 10 ? "selected" : "") + ' value=10>10</option>\n' +
                 '                            <option ' + (seriesCount == 15 ? "selected" : "") + ' value=15>15</option>\n' +
@@ -3102,7 +3102,7 @@
 
         if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
             toolBarOptions += '                        </select>' +
-                '&nbsp;&nbsp;Threshold: <select  style="height:30px;text-align: center; " class="spanMetric"  name="span-input" id="span-input">\n';
+                '&nbsp;&nbsp;<span title="Show events above selected metric value">Threshold:</span> <select  style="height:30px;text-align: center; " class="spanMetric"  name="span-input" id="span-input">\n';
             if (contextData != undefined && contextData.header != undefined) {
                 let spanInputFound = false;
                 if(!(spanInput == '' || spanInput == undefined)) {
