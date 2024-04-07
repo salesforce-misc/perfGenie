@@ -2216,7 +2216,7 @@
         }
 
         for (let [type, value1] of groupByTypeSortByMetricMap) {
-            if((groupByMatch != '' && type.includes != undefined && !type.includes(groupByMatch))){
+            if((groupByMatch != '' && type!= undefined && type.includes != undefined && !type.includes(groupByMatch))){
                 continue;
             }
             if (curI >= countMax) {
