@@ -9,8 +9,10 @@
     function addTabNote(toggle, msg){
         if(toggle){
             if($( "#view-info" ).css("display") === "none"){
-                $( "#view-info-text" ).html(msg);
-                $( "#view-info" ).toggle( "slide", { direction: "right" }, 500 );
+                if(msg !== "") {
+                    $("#view-info-text").html(msg);
+                    $("#view-info").toggle("slide", {direction: "right"}, 500);
+                }
             }
         }else{
             if($( "#view-info-text" ).html("") != "") {
