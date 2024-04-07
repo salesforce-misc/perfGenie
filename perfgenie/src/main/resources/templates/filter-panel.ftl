@@ -270,8 +270,6 @@
             $("#queryfilter").val($("#queryfilter").val().replace(/\s/g, ''));
             if($("#queryfilter").val() == ''){
                 setApplyDisabled(true);
-                pStart='';
-                pEnd='';
             }else {
                 let array = $("#queryfilter").val().split(";");
                 for (let i = 0; i < array.length; i++) {
@@ -328,6 +326,8 @@
             filterMap = {};
             filterFrame = "";
             frameFilterString = "";
+            pStart='';
+            pEnd='';
             let hasReqIDFilter = false;
             let array = $("#queryfilter").val().split(";");
             for (let i = 0; i < array.length; i++) {
@@ -337,9 +337,15 @@
                         filterFrame = pair[1];
                         frameFilterString = pair[1];
                     }else if(pair[0] == "pStart"){
-                        pStart=pair[1];
+                        pStart=Number(pair[1]);
+                        if(pEnd === ''){
+                            pEnd = moment.utc( getContextTree(1).context.end);
+                        }
                     }else if(pair[0] == "pEnd"){
-                        pEnd=pair[1];
+                        pEnd=Number(pair[1]);
+                        if(pStart === ''){
+                            pStart = moment.utc( getContextTree(1).context.start);
+                        }
                     }else if (pair[0] == "req") {
                         hasReqIDFilter = true;
                         if (filterReq == "" || filterReq == undefined) {
@@ -350,6 +356,7 @@
                     filterMap[pair[0]] = pair[1];
                 }
             }
+
             filterBy = $("#queryfilter").val();
 
             setApplyDisabled(true);
@@ -556,23 +563,6 @@
         setApplyDisabled(false);
     }
 
-    $("#queryfilter").on("change", (event) => {
-        alert(test);
-        //validate manually edited filters
-        $("#queryfilter").val($("#queryfilter").val().replace(/\s/g, ''));
-        let array = $("#queryfilter").val().split(";");
-        for (let i = 0; i < array.length; i++) {
-            if (array[i] != "") {
-                let pair = array[i].split("=");
-                if (pair.length != 2) {
-                    toastr_warning("Invalid filter(s) provided");
-                    break;
-                }
-            }
-        }
-        setApplyDisabled(false);
-    });
-
     function getFrameName(id) {
         if (isJfrContext == false) {
             return id;
@@ -633,7 +623,7 @@
 
     function onLevel1Filter() {
         console.log("onLevel1Filter start");
-        if (filterMap["tid"] == undefined && isFilterEmpty() && (pStart == '' && pEnd == '')) {
+        if (filterMap["tid"] == undefined && isFilterEmpty() && (pStart === '' || pEnd === '')) {
             //none
         } else {
             updateStackIndex(getActiveTree(getEventType(), false));//need this as stacks identified based on index
@@ -1459,7 +1449,7 @@
         if (isFilterEmpty(dimIndexMap) && tidDatalistVal != undefined) {
             if (contextTidMap[tidDatalistVal] != undefined) { //check if the thread has samples
                 for (let i = 0; i < contextTidMap[tidDatalistVal].length; i++) {
-                    if ((pStart == '' && pEnd == '') || ((contextTidMap[tidDatalistVal][i].time + contextStart) >= pStart && (contextTidMap[tidDatalistVal][i].time + contextStart) <= pEnd)) {
+                    if ((pStart === '' || pEnd === '') || ((contextTidMap[tidDatalistVal][i].time + contextStart) >= pStart && (contextTidMap[tidDatalistVal][i].time + contextStart) <= pEnd)) {
                         if (stackMap[contextTidMap[tidDatalistVal][i].hash] !== undefined) {
                             stackMap[contextTidMap[tidDatalistVal][i].hash] = stackMap[contextTidMap[tidDatalistVal][i].hash] + 1;
                         } else {
@@ -1482,7 +1472,7 @@
                 for (var tid in contextDataRecords) {
                     if ((tidDatalistVal == undefined || tidDatalistVal == tid) && contextTidMap[tid] != undefined) {
                         for (let i = 0; i < contextTidMap[tid].length; i++) {
-                            if ((pStart == '' && pEnd == '') || ((contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd)) {
+                            if ((pStart === '' || pEnd === '') || ((contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd)) {
                                 if (stackMap[contextTidMap[tid][i].hash] !== undefined) {
                                     stackMap[contextTidMap[tid][i].hash] = stackMap[contextTidMap[tid][i].hash] + 1;
                                 } else {
@@ -1521,7 +1511,7 @@
                                         //consider all matching samples downward
                                         while (curIndex >= 0 && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
                                             //TODO check if sample time is within time filter range (tidDatalistVal][i].time + contextStart) > pStart && (tidDatalistVal][i].time + contextStart) < pEnd
-                                            if ((pStart == '' && pEnd == '') || (requestArr[curIndex].time + contextStart) >= pStart && (requestArr[curIndex].time + contextStart) <= pEnd) {
+                                            if ((pStart === '' || pEnd === '') || (requestArr[curIndex].time + contextStart) >= pStart && (requestArr[curIndex].time + contextStart) <= pEnd) {
                                                 if (isJstack) {
                                                     if (filteredStackMap[FilterLevel.LEVEL1][tid] == undefined) {
                                                         filteredStackMap[FilterLevel.LEVEL1][tid] = [];
@@ -1540,7 +1530,7 @@
                                         curIndex = entryIndex + 1;
                                         //consider all matching samples upward
                                         while (curIndex < requestArr.length && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
-                                            if ((pStart == '' && pEnd == '') || (requestArr[curIndex].time + contextStart) >= pStart && (requestArr[curIndex].time + contextStart) <= pEnd) {
+                                            if ((pStart === '' || pEnd === '') || (requestArr[curIndex].time + contextStart) >= pStart && (requestArr[curIndex].time + contextStart) <= pEnd) {
                                                 if (isJstack) {
                                                     filteredStackMap[FilterLevel.LEVEL1][tid].push(requestArr[curIndex]);
                                                 }
@@ -1655,7 +1645,7 @@
                 }
                 if (getContextTree(1, "Jstack") !== undefined && getContextTree(1, "Jstack").context != undefined && getContextTree(1, "Jstack").context.tidMap[tid] !== undefined) {
                     getContextTree(1, "Jstack").context.tidMap[tid].forEach(function (obj) {
-                        if((pStart == '' && pEnd == '') || ((obj.time + jstackstart) >= pStart && (obj.time + jstackstart) <= pEnd)) { //check time rang
+                        if((pStart === '' || pEnd === '') || ((obj.time + jstackstart) >= pStart && (obj.time + jstackstart) <= pEnd)) { //check time rang
                             if (obj.time >= jstackstart && obj.time <= jstackstart + runTime) {
                                 if (getEventType() == "Jstack") {
                                     if (applyFilter) {
@@ -1678,7 +1668,7 @@
             } else {
                 if (getContextTree(1, eventType) != undefined && getContextTree(1, eventType).context != undefined && getContextTree(1, eventType).context.tidMap[tid] !== undefined) {
                     getContextTree(1, eventType).context.tidMap[tid].forEach(function (obj) {
-                        if((pStart == '' && pEnd == '') || ((obj.time + profilestart) >= pStart && (obj.time + profilestart) <= pEnd)) { //check time rang
+                        if((pStart === '' || pEnd === '') || ((obj.time + profilestart) >= pStart && (obj.time + profilestart) <= pEnd)) { //check time rang
                             if (obj.time >= start && obj.time <= start + runTime) {
                                 tmpIdMap.set(obj.hash + "_" + eventTypeCount + "_" + obj.time, obj.time);
                                 scount++;
@@ -2382,7 +2372,14 @@
                 }else{
                     pStart = moment.utc($("#filtertimepickerstart").val()).valueOf();
                 }
+                if ($("#filtertimepickerend").val() != '' && moment.utc($("#filtertimepickerend").val()).valueOf() > getContextTree(1).context.end) {
+                    $("#filtertimepickerend").val(moment.utc(getContextTree(1).context.end).format('YYYY-MM-DD HH:mm:ss'));
+                    pEnd = getContextTree(1).context.end;
+                }else{
+                    pEnd = moment.utc($("#filtertimepickerend").val()).valueOf();
+                }
                 addToFilter("pStart="+pStart);
+                addToFilter("pEnd="+pEnd);
             });
             $("#filtertimepickerend").change(function (event) {
                 if (moment.utc($("#filtertimepickerend").val()).valueOf() > getContextTree(1).context.end) {
@@ -2391,6 +2388,13 @@
                 }else{
                     pEnd = moment.utc($("#filtertimepickerend").val()).valueOf();
                 }
+                if ($("#filtertimepickerstart").val() != '' && moment($("#filtertimepickerstart").val()).valueOf() < getContextTree(1).context.start) {
+                    $("#filtertimepickerstart").val(moment.utc(getContextTree(1).context.start).format('YYYY-MM-DD HH:mm:ss'));
+                    pStart = getContextTree(1).context.start;
+                }else{
+                    pStart = moment.utc($("#filtertimepickerstart").val()).valueOf();
+                }
+                addToFilter("pStart="+pStart);
                 addToFilter("pEnd="+pEnd);
             });
             if(pStart != '') {
@@ -2594,7 +2598,7 @@
             for (var tid in contextTidMap) {
                 if (isJstack  ) {
                     for (let index = 0; index < contextTidMap[tid].length; index++) {
-                        if ((pStart == '' && pEnd == '') || (contextTidMap[tid][index].time + contextStart) >= pStart && (contextTidMap[tid][index].time + contextStart) <= pEnd) { // apply time range filter
+                        if ((pStart === '' || pEnd === '') || (contextTidMap[tid][index].time + contextStart) >= pStart && (contextTidMap[tid][index].time + contextStart) <= pEnd) { // apply time range filter
                             if (frameFilterStackMap[event][contextTidMap[tid][index].hash] !== undefined) {
                                 if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
                                     filteredStackMap[FilterLevel.LEVEL3][tid] = [];
@@ -2614,21 +2618,23 @@
                         let flag = false;
                         recordIndex++;
                         let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
-                        if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan) && record[spanIndex] != undefined) {
-                            let end = record[timestampIndex] - contextStart + recordSpan;
-                            let start = record[timestampIndex] - contextStart;
-                            try {
-                                //do a binary search
-                                let entryIndex = isinRequest(contextTidMap[tid], start, end);
-                                if (entryIndex != -1) {
-                                    let requestArr = contextTidMap[tid];
-                                    flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false);
+                        if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
+                            if(record[spanIndex] == undefined){
+                                flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
+                            }else {
+                                let end = record[timestampIndex] - contextStart + recordSpan;
+                                let start = record[timestampIndex] - contextStart;
+                                try {
+                                    //do a binary search
+                                    let entryIndex = isinRequest(contextTidMap[tid], start, end);
+                                    if (entryIndex != -1) {
+                                        let requestArr = contextTidMap[tid];
+                                        flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false);
+                                    }
+                                } catch (err) {
+                                    //console.log("tid not found in JFR" + tid.key + " " + err.message);
                                 }
-                            } catch (err) {
-                                //console.log("tid not found in JFR" + tid.key + " " + err.message);
                             }
-                        }else if(record[spanIndex] == undefined){
-                            flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
                         }
 
                         if (flag) {
@@ -2709,29 +2715,29 @@
                         let flag = false;
                         recordIndex++;
                         let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
-                        if (filterMatch(record, dimIndexMap, timestampIndex,recordSpan) && record[spanIndex] != undefined) {
-                            flag = true;
-                        }else if(record[spanIndex] == undefined){
-                            flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
-                        }
+                        if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
+                            if (record[spanIndex] == undefined) {
+                                flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
+                            } else {
+                                //context filter matched, but check if samples of request is matching frame filter
+                                if (frameFilterString !== "") {
+                                    flag = false;
 
-                        //context filter matched, but check if samples of request is matching frame filter
-                        if (flag == true && frameFilterString !== "" && record[spanIndex] != undefined) {
-                            flag = false;
+                                    //check if the request has a stack and if stack is in frameFilterStackMap
+                                    let end = record[timestampIndex] - contextStart + recordSpan;
+                                    let start = record[timestampIndex] - contextStart;
 
-                            //check if the request has a stack and if stack is in frameFilterStackMap
-                            let end = record[timestampIndex] - contextStart + recordSpan;
-                            let start = record[timestampIndex] - contextStart;
-
-                            try {
-                                //do a binary search
-                                let entryIndex = isinRequest(contextTidMap[tid], start, end);
-                                if (entryIndex != -1) {
-                                    let requestArr = contextTidMap[tid];
-                                    flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false);
+                                    try {
+                                        //do a binary search
+                                        let entryIndex = isinRequest(contextTidMap[tid], start, end);
+                                        if (entryIndex != -1) {
+                                            let requestArr = contextTidMap[tid];
+                                            flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false);
+                                        }
+                                    } catch (err) {
+                                        //console.log("tid not found in JFR" + tid + " " + err.message);
+                                    }
                                 }
-                            } catch (err) {
-                                //console.log("tid not found in JFR" + tid + " " + err.message);
                             }
                         }
 
