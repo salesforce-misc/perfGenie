@@ -496,6 +496,7 @@
         console.log("updateProfilerView start");
         addTabNote(false,"");
 
+
         if (!skipFilter) {
             if (level == undefined) {
                 level = FilterLevel.LEVEL1;
@@ -605,9 +606,13 @@
             let end = performance.now();
             console.log("updateProfilerView 4 time:" + (end - start));
         }
+        if(!isFilterOnType){
+            addTabNote(true,getContextHintNote(true));
+        }
     }
 
 </script>
+<div id="cctnote"></div>
 <div style="padding-left: 25px;">
     <a title='Compress' href='javascript:treeView(1)'><i style="font-size:18px" class="fa fa-minus-square-o"
                                                          aria-hidden="true"></i></a>

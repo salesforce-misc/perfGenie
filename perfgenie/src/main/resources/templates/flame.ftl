@@ -261,5 +261,8 @@ In other words, data that's in the second set but not in the first will not be d
             let end = performance.now();
             console.log("updateProfilerView 4 time:" + (end - start));
         }
+        if(!isFilterOnType){
+            addTabNote(true,getContextHintNote(true));
+        }
     }
 </script>
