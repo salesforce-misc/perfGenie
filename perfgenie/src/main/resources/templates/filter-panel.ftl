@@ -2588,7 +2588,7 @@
             contextDataRecords = contextData.records[customEvent];
         }
 
-        let table = "<table   style=\"width: 100%;\" id=\"state-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\">" + getEventTableHeader(groupBy);
+        let table = "<table   style=\"border:none;padding=0px;width: 100%;\" id=\"state-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\">" + getEventTableHeader(groupBy);
 
         if((!isFilterEmpty(dimIndexMap) || frameFilterString !== "") && spanIndex == -1 ){
             isContextViewFiltered = false;//record do not have duration span to apply context filters
