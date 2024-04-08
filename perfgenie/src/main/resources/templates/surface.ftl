@@ -33,8 +33,8 @@
     });
 
     function createRiverModal(modalId, data) {
-        $('#modals-guid')[0].innerHTML = "<div   id='" + modalId + "' class='modal fade' tabindex='-1' role='dialog' aria-labelledby='cctmodel' aria-hidden='true'>" +
-            "<div class='modal-dialog'  role=\"document\">" +
+        $('#modals-guid')[0].innerHTML = "<div  id='" + modalId + "' class='modal fade' tabindex='-1' role='dialog' aria-labelledby='cctmodel' aria-hidden='true'>" +
+            "<div  class='modal-dialog'  role=\"document\">" +
             "<div class='modal-content'>" +
             "<div id='data-modal-body' class='modal-body' style='overflow: auto'>" +
             "<ul class='tree'>" +
@@ -233,8 +233,8 @@
     function surfacePlot() {
         console.log("surfacePlot");
         let baseJsonTree = getContextTree(1, getEventType());
-        if (baseJsonTree.meta.data == undefined) {
-            addTabNote(true,"Data not available to show this view")
+        if (baseJsonTree.meta.data == undefined || baseJsonTree.meta.data.length < 3) {
+            addTabNote(true,"Data not available to show this view, check if isExperimental is enabled in config.properties")
             return;
         }
         let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
