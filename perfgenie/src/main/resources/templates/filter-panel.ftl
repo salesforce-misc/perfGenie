@@ -3038,19 +3038,6 @@
                 }
                 toolBarOptions += '<option ' + (groupBy == groups[i] ? "selected" : "") + " value='" + groups[i] + "'>" + groups[i] + "</option>\n";
             }
-
-/*
-            for (let val in contextData.header[customEvent]) {
-                const tokens = contextData.header[customEvent][val].split(":");
-                if((groupBy == '' || groupBy == undefined || !groupByFound) && (tokens[1] == "text" || tokens[1] == "timestamp") ){
-                    groupBy = tokens[0];
-                    groupByFound=true;
-                }
-                if (tokens[1] == "text" || tokens[1] == "timestamp") {
-                    toolBarOptions += '<option ' + (groupBy == tokens[0] ? "selected" : "") + " value='" + tokens[0] + "'>" + tokens[0] + "</option>\n";
-                }
-            }
- */
         }
         toolBarOptions += '             </select>';
 
