@@ -19,6 +19,10 @@
     <select  style="height:30px;text-align: center;" class="filterinput"  name="smpl-grp-by" id="smpl-grp-by">
 
     </select>
+
+    <span title="Consider first N characters of group by option values">Len:</span><input  style="height:30px;width:35px;text-align: left;" class="filterinput" id="samples-groupby-length" type="text" value="">
+    <span title="Sub string match with group by option values">Match:</span><input  style="height:30px;width:120px;text-align: left;" class="filterinput" id="samples-groupby-match" type="text" value="">
+
 </div>
 
 
@@ -49,46 +53,79 @@
     let sampleTablePage = 0;
     let stack_id = undefined;
     let smplBy = 'tid';
-
+    let samplesCustomEvent = '';
+    let samplesgroupByLength = '';
+    let samplesgroupByMatch = '';
     function updateEventInputOptions(id){
         $('#'+id).empty();
-        if(contextData != undefined && contextData.records != undefined){
-            for (let value in contextData.records) {
-                if(customEvent == value) {
-                    $('#'+id).append($('<option>', {
-                        value: value,
-                        text: value,
-                        selected: true
-                    }));
-                }else{
-                    $('#'+id).append($('<option>', {
-                        value: value,
-                        text: value
-                    }));
+
+
+        if (contextData != undefined && contextData.records != undefined) {
+            let samplesCustomEventFound = false;
+            if(!(samplesCustomEvent == '' || samplesCustomEvent == undefined)) {
+                for (let value in contextData.records) {
+                    if(samplesCustomEvent == value){
+                        samplesCustomEventFound = true;
+                        break;
+                    }
                 }
             }
+
+            for (let value in contextData.records) {
+                if(samplesCustomEvent == '' || samplesCustomEvent == undefined || !samplesCustomEventFound){
+                    samplesCustomEvent = value;
+                    samplesCustomEventFound=true;
+                }
+                $('#'+id).append($('<option>', {
+                    value: value,
+                    text: value,
+                    selected: (samplesCustomEvent == value)
+                }));
+            }
         }
+        $("#samples-groupby-length").val(samplesgroupByLength);
+        $("#samples-groupby-match").val(samplesgroupByMatch);
     }
 
     function updateGroupByOptions(id){
         $('#'+id).empty();
-        if(contextData != undefined && contextData.header != undefined){
-            for (let val in contextData.header[customEvent]) {
-                const tokens = contextData.header[customEvent][val].split(":");
-                if(tokens[1] == "text" || tokens[1] == "timestamp") {
+        if (contextData != undefined && contextData.header != undefined) {
+            let groups = [];
+            for (let val in contextData.header[samplesCustomEvent]) {
+                const tokens = contextData.header[samplesCustomEvent][val].split(":");
+                if (tokens[1] == "text" || tokens[1] == "timestamp") {
+                    groups.push(tokens[0]);
+                }
+            }
+            groups.sort();
 
-                    if(smplBy == tokens[0]) {
-                        $('#'+id).append($('<option>', {
-                            value: tokens[0],
-                            text: tokens[0],
-                            selected: true
-                        }));
-                    }else{
-                        $('#'+id).append($('<option>', {
-                            value: tokens[0],
-                            text: tokens[0]
-                        }));
+            let groupByFound = false;
+            if(!(smplBy == '' || smplBy == undefined)) {
+                for (let val in contextData.header[samplesCustomEvent]) {
+                    const tokens = contextData.header[samplesCustomEvent][val].split(":");
+                    if(smplBy == tokens[0]){
+                        groupByFound = true;
+                        break;
                     }
+                }
+            }
+
+            for (let i = 0; i < groups.length; i++) {
+                if ((smplBy == '' || smplBy == undefined || !groupByFound)) {
+                    smplBy = groups[i];
+                    groupByFound = true;
+                }
+                if (smplBy == groups[i]) {
+                    $('#' + id).append($('<option>', {
+                        value: groups[i],
+                        text: groups[i],
+                        selected: true
+                    }));
+                } else {
+                    $('#' + id).append($('<option>', {
+                        value: groups[i],
+                        text: groups[i]
+                    }));
                 }
             }
         }
@@ -101,10 +138,8 @@
     });
 
     $("#event-input-smpl").on("change", (event) => {
-        updateUrl("customevent",$("#event-input-smpl").val(),true);
-        customEvent = $("#event-input-smpl").val();
-        tmpColorMap.clear();
-        //genRequestTable();//this is for sample table
+        updateUrl("scustomevent",$("#event-input-smpl").val(),true);
+        samplesCustomEvent = $("#event-input-smpl").val();
         updateProfilerViewSample(getSelectedLevel(getContextTree(1,getEventType())),true);
     });
 
@@ -112,11 +147,26 @@
         handleEventTypeChange($("#event-type-sample").val());
     });
 
+    $("#samples-groupby-match").on("change", (event) => {
+        updateUrl("sgroupByMatch", $("#samples-groupby-match").val(), true);
+        samplesgroupByMatch = $("#samples-groupby-match").val();
+        updateProfilerViewSample(getSelectedLevel(getContextTree(1,getEventType())),true);
+    });
+    $("#samples-groupby-length").on("change", (event) => {
+        updateUrl("sgroupByLength", $("#samples-groupby-length").val(), true);
+        samplesgroupByLength = $("#samples-groupby-length").val();
+        updateProfilerViewSample(getSelectedLevel(getContextTree(1,getEventType())),true);
+    });
+
     $(document).ready(function () {
 
         smplBy=urlParams.get('smplBy') || 'tid';
         sampleTablePage=urlParams.get('spage') || '0';
         stack_id=urlParams.get('stack_id') || '';
+        samplesCustomEvent=urlParams.get('scustomevent') || '';
+        samplesgroupByMatch = urlParams.get('sgroupByMatch') || '';
+        samplesgroupByLength = urlParams.get('sgroupByLength') || '20';
+
         let filterType = smplBy;
 
         let str = "<table   style=\"width: 100%;\" id=\"sample-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\"><thead><tr><th width=\"50%\">" + getHearderFor(filterType) + "</th><th width=\"10%\">Sample Count</th><th width=\"40%\">Samples</th></thead>";
@@ -134,15 +184,6 @@
 
         updateEventInputOptions('event-input-smpl');
 
-        /*let toolBarOptions = 'Event: <select  style="height:30px;text-align: center; " class="filterinput"  name="event-input-smpl" id="event-input-smpl">\n';
-        if(contextData != undefined && contextData.records != undefined){
-
-
-            for (let value in contextData.records) {
-                toolBarOptions += '<option ' + (customEvent == value ? "selected" : "") + " value='" + value + "'>" + value + "</option>\n";
-            }
-        }
-        toolBarOptions += '             </select>';*/
         updateGroupByOptions('smpl-grp-by');
         //validateInputAndcreateContextTree(true);
     });
@@ -152,8 +193,8 @@
         let contextTidMap = undefined;
         let treeToProcess = getContextTree(1,event);
         let contextData = getContextData();
-        if(contextData == undefined || treeToProcess[customEvent + event+"-context"] != undefined) {
-            console.log("addContextData skip:" + customEvent + event);
+        if(contextData == undefined || treeToProcess[samplesCustomEvent + event+"-context"] != undefined) {
+            console.log("addContextData skip:" + samplesCustomEvent + event);
             return false;
         }
 
@@ -179,24 +220,17 @@
         let dimIndexMap = {};
         let metricsIndexMap = {};
         let metricsIndexArray = [];
-        let groupByIndex = -1;
-        let sortByIndex = -1;
         let spanIndex = -1;
         let timestampIndex=-1;
         let tidRowIndex = -1;
 
-        for (let val in contextData.header[customEvent]) {
-            const tokens = contextData.header[customEvent][val].split(":");
+        for (let val in contextData.header[samplesCustomEvent]) {
+            const tokens = contextData.header[samplesCustomEvent][val].split(":");
             if (tokens[1] == "number") {
                 metricsIndexArray.push(val);
                 metricsIndexMap[tokens[0]]=val;
             }
-            if (groupBy == tokens[0]) {
-                groupByIndex = val;
-            }
-            if (sortBy == tokens[0]) {
-                sortByIndex = val;
-            }
+
             if ("tid" == tokens[0]) {
                 tidRowIndex = val;
             }
@@ -214,7 +248,7 @@
 
         let contextDataRecords = undefined;
         if (contextData != undefined && contextData.records != undefined) {
-            contextDataRecords = contextData.records[customEvent];
+            contextDataRecords = contextData.records[samplesCustomEvent];
         }
 
         for(var tid in contextDataRecords) {
@@ -243,10 +277,10 @@
                                     stackMap[requestArr[curIndex].hash] = 1;
                                 }
                                 requestArr[curIndex].obj = record;
-                                if(requestArr[curIndex][customEvent] == undefined){
-                                    requestArr[curIndex][customEvent]={};
+                                if(requestArr[curIndex][samplesCustomEvent] == undefined){
+                                    requestArr[curIndex][samplesCustomEvent]={};
                                 }
-                                requestArr[curIndex][customEvent].obj = record;
+                                requestArr[curIndex][samplesCustomEvent].obj = record;
                                 scount++;
                                 curIndex--;
                             }
@@ -259,17 +293,17 @@
                                     stackMap[requestArr[curIndex].hash] = 1;
                                 }
                                 requestArr[curIndex].obj = record;
-                                if(requestArr[curIndex][customEvent] == undefined){
-                                    requestArr[curIndex][customEvent]={};
+                                if(requestArr[curIndex][samplesCustomEvent] == undefined){
+                                    requestArr[curIndex][samplesCustomEvent]={};
                                 }
-                                requestArr[curIndex][customEvent].obj = record;
+                                requestArr[curIndex][samplesCustomEvent].obj = record;
                                 scount++;
                                 curIndex++;
                             }
                             reqCount++;
                             obj[event] = stackMap;
 
-                            obj[event+customEvent] = stackMap;
+                            obj[event+samplesCustomEvent] = stackMap;
                         }
                     } catch (err) {
                         console.log("tid not found in JFR" + tid + " " + err.message);
@@ -282,9 +316,9 @@
             addContextDataJstack();
         }
 
-        treeToProcess[customEvent + event+"-context"] = "done";
+        treeToProcess[samplesCustomEvent + event+"-context"] = "done";
         let end = performance.now();
-        console.log("addContextData time:" + (end - start) + ":" + customEvent + ":" + event + ":" +scount+":"+reqCount);
+        console.log("addContextData time:" + (end - start) + ":" + samplesCustomEvent + ":" + event + ":" +scount+":"+reqCount);
         return true;
     }
 
@@ -293,8 +327,8 @@
 
         let treeToProcess = getContextTree(1,"Jstack");
         let contextData = getContextData();
-        if(contextData == undefined || treeToProcess[customEvent +"Jstack-context"] != undefined) {
-            console.log("addContextData skip:" + customEvent + event);
+        if(contextData == undefined || treeToProcess[samplesCustomEvent +"Jstack-context"] != undefined) {
+            console.log("addContextData skip:" + samplesCustomEvent + event);
             return false;
         }
 
@@ -327,7 +361,7 @@
         let end = performance.now();
         console.log("addContextDataJstack time:" + (end - start) + ":" + event);
 
-        treeToProcess[customEvent +"Jstack-context"] = "done";
+        treeToProcess[samplesCustomEvent +"Jstack-context"] = "done";
 
         return true;
     }
@@ -335,31 +369,22 @@
     let sampleSortMap = undefined;
     function genSampleTable() {
         updateEventInputOptions('event-input-smpl');
-
         updateGroupByOptions('smpl-grp-by');
-
 
         let dimIndexMap = {};
         let metricsIndexMap = {};
         let metricsIndexArray = [];
-        let groupByIndex = -1;
-        let sortByIndex = -1;
         let spanIndex = -1;
         let timestampIndex=-1;
         let tidRowIndex = -1;
 
-        for (let val in contextData.header[customEvent]) {
-            const tokens = contextData.header[customEvent][val].split(":");
+        for (let val in contextData.header[samplesCustomEvent]) {
+            const tokens = contextData.header[samplesCustomEvent][val].split(":");
             if (tokens[1] == "number") {
                 metricsIndexArray.push(val);
                 metricsIndexMap[tokens[0]]=val;
             }
-            if (groupBy == tokens[0]) {
-                groupByIndex = val;
-            }
-            if (sortBy == tokens[0]) {
-                sortByIndex = val;
-            }
+
             if ("tid" == tokens[0]) {
                 tidRowIndex = val;
             }
@@ -393,7 +418,7 @@
 
         let contextDataRecords = undefined;
         if (contextData != undefined && contextData.records != undefined) {
-            contextDataRecords = contextData.records[customEvent];
+            contextDataRecords = contextData.records[samplesCustomEvent];
         }
 
         let tidDatalistVal = filterMap["tid"];
@@ -509,7 +534,8 @@
                                         if(groupBySamples === "tid"){
                                             key = tid;
                                         }else if(groupBySamples === "threadname"){
-                                            key = threadNameTidMap[tid];
+                                            key = threadNameTidMap[tid].slice(0, samplesgroupByLength);
+                                            //key = threadNameTidMap[tid];
                                         }else{
                                             if (contextTidMap[tid][i].obj != undefined) {
                                                 key = eval("contextTidMap[tid][i].obj." + groupBySamples);
@@ -554,6 +580,9 @@
                                         key = eval("contextTidMap[tid][i].obj." + groupBySamples);
                                     } else {
                                         key = eval("contextTidMap[tid][i]." + groupBySamples);
+                                    }
+                                    if( key.slice != undefined){
+                                        key = key.slice(0, samplesgroupByLength);
                                     }
                                     //consider
                                     if (sampleSortMap.has(key)) {
@@ -616,6 +645,9 @@
                                                 key = eval("contextTidMap[tid][i]." + groupBySamples);
                                             }
                                         }
+                                        if( key.slice != undefined){
+                                            key = key.slice(0, samplesgroupByLength);
+                                        }
 
                                         //consider
                                         if (sampleSortMap.has(key)) {
@@ -656,6 +688,9 @@
                                         flag = true;
                                         //TODO: we are including all the samples in a matching request, some of them may not be part of timerange filter
                                         let key = record[dimIndexMap[groupBySamples]];
+                                        if( key.slice != undefined){
+                                            key = key.slice(0, samplesgroupByLength);
+                                        }
                                         //check if request samples match frame filter string
                                         for (var stack in obj[event]) {
                                             if (frameFilterString == "" || frameFilterStackMap[event][stack] !== undefined) {
@@ -711,6 +746,11 @@
 
         moreSamples = {};
         for (let [key, value] of sampleSortMap) {
+
+            if ((samplesgroupByMatch != '' && key.includes != undefined && !key.includes(samplesgroupByMatch))) {
+                continue;
+            }
+
             let str = "";
             let more = "";
             let morec= 0;
@@ -771,7 +811,7 @@
                     sampleTablePage = sampleTable.page.info().page * sampleTable.page.len();
                     updateUrl("spage", sampleTablePage, true);
                 }
-                addClickActionsToFilterTable("sample-table");
+                //addClickActionsToFilterTable("sample-table"); // todo check what is this
             },
             "displayStart": sampleTablePage,
             aoColumnDefs: [

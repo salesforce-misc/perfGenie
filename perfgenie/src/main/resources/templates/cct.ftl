@@ -584,6 +584,29 @@
             let start = performance.now();
             let treeToProcess = getActiveTree(getEventType(), isCalltree);
             let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
+
+            let timeRange = "";
+            if (compareTree) {
+                let $profile1 = "";
+                let $profile2 = "";
+                $profile1 = $("#bases1 :selected").text();
+                $profile2 = $("#bases2 :selected").text();
+                timeRange = ", Profile(s): <span class=\"bclr\">" + $profile1 + "</span> <span class=\"tclr\">" + $profile2 + "</span>";
+            } else {
+                timeRange = ", Profile: <span>" + $("#bases1 :selected").text() + "</span>";
+            }
+
+            let graphType = isCalltree ? "Call tree view" : "Backtrace view";
+            if (isJfrContext && !compareTree) {
+                resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + " Total samples: "
+                    + treeToProcess.sz + ", <span title=\"Exclude samples below threshold %\">Threshold</span>: " + threshold + timeRange + (isAggregation() ? getTextForAggregationInput(contextTree1["1"]) : ""));
+            } else {
+                resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + " Total samples: "
+                    + (((treeToProcess.bsize !== undefined) ? treeToProcess.bsize : treeToProcess.bsz) + ((treeToProcess.csize !== undefined) ? treeToProcess.csize : treeToProcess.csz)) + ", <span title=\"Exclude samples below threshold %\">Threshold</span>: "
+                    + threshold + timeRange);
+            }
+
+
             if (compareTree && isJfrContext) {
                 showTreeV1Compare(treeToProcess);
             } else if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
