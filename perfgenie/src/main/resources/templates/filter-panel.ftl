@@ -4887,9 +4887,9 @@
 
 </script>
 
-<div id="contextfilter" class="row" >
+<div style="padding: 0px" id="contextfilter" class="row" >
     <h3 style="width:100%">Context filter</h3>
-    <div  id="cct-panel" class="col-lg-12" >
+    <div  style="padding-top: 0px;padding-bottom: 0px" id="cct-panel" class="col-lg-12" >
             <span id="filter-view-status" style="" class="hide"></span>
             <div id="contextpanel"  class="hide" >
                 <div id="contexthints" class="row col-lg-12">

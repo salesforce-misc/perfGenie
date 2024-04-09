@@ -20,9 +20,9 @@
 
 <div  style="padding: 0px" id="accordion" class="row">
     <div style="width:100%">Data source selector</div>
-    <div class="col-lg-12">
+    <div  style="padding-bottom: 0px;" class="col-lg-12">
 
-        <form  style="padding: 0px" id="compare-context-selector-form" action="javascript:submitTo()" method="get"
+        <form  id="compare-context-selector-form" action="javascript:submitTo()" method="get"
                content="application/x-www-form-urlencoded">
         <table style="border: hidden;">
             <tr style="border: hidden;">
