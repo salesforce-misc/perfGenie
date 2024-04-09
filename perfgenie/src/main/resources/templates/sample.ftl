@@ -482,88 +482,214 @@
             }
             //if only frame filter is selected then we need to include stacks that are any stack sample and containing frame filter string
         }else if(frameFilterString !== "" && isFilterEmpty()){
-            for(var tid in contextDataRecords){
-                if(contextTidMap[tid] != undefined && (tidDatalistVal == undefined || tidDatalistVal == tid)) {
-                    for (let i = 0; i < contextTidMap[tid].length; i++) {
-                        if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
-                            let stack = contextTidMap[tid][i].hash;
-                            if (frameFilterStackMap[event][stack] !== undefined) {
-                                let key = "";
-                                if (contextTidMap[tid][i].obj != undefined) {
-                                    key = eval("contextTidMap[tid][i].obj." + groupBySamples);
-                                } else {
-                                    key = eval("contextTidMap[tid][i]." + groupBySamples);
-                                }
-                                //consider
-                                if (sampleSortMap.has(key)) {
-                                    sampleSortMap.set(key, sampleSortMap.get(key) + 1);
-                                } else {
-                                    sampleSortMap.set(key, 1);
-                                }
-                                if (sampleCountMap.has(key)) {
-                                    let tmpMap = sampleCountMap.get(key);
-                                    if (tmpMap.has(stack)) {
-                                        tmpMap.set(stack, tmpMap.get(stack) + 1);
-                                    } else {
-                                        tmpMap.set(stack, 1);
-                                    }
-                                } else {
-                                    let tmpMap = new Map();
-                                    tmpMap.set(stack, 1);
-                                    sampleCountMap.set(key, tmpMap);
-                                }
+            if (spanIndex == -1) { // record duration span not available
+                //Context hints cannot be applied, apply only time range filter and tid, threadname filter
+                isFilterOnType=false;
+                let threadNameTidMap = {};
+                if(dimIndexMap["threadname"] != undefined && (filterMap["threadname"] != undefined || groupBySamples == "threadname")) {
+                    for (var tid in contextDataRecords) {
+                        if ((tidDatalistVal == undefined || tidDatalistVal == tid) && contextTidMap[tid] != undefined) {
+
+                            //contextDataRecords[tid].forEach(function (obj) {
+                            if(contextDataRecords[tid][0].record != undefined && contextDataRecords[tid][0].record[dimIndexMap["threadname"]] != undefined) {
+                                threadNameTidMap[tid] = contextDataRecords[tid][0].record[dimIndexMap["threadname"]];
                             }
+                            //});
                         }
                     }
-
                 }
-            }
-        }else {
-            if(contextData != undefined && contextData.records != undefined) {
-                for(var tid in contextDataRecords) {
-                    if (tidDatalistVal == undefined || tidDatalistVal == tid) {
-                        //context filter provided, check for matching requests and then find samples of those requests
-                        contextDataRecords[tid].forEach(function (obj) {
-                            let record = obj.record;
-                            let flag = false;
-                            if (filterMatch(record, dimIndexMap)) {
-                                if (obj[event] != undefined) {
-                                    flag = true;
-                                    //TODO: we are including all the samples in a matching request, some of them may not be part of timerange filter
-                                    let key = record[dimIndexMap[groupBySamples]];
-                                    //check if request samples match frame filter string
-                                    for (var stack in obj[event]) {
-                                        if (frameFilterString == "" || frameFilterStackMap[event][stack] !== undefined) {
-                                            //consider
-                                            if (sampleSortMap.has(key)) {
-                                                sampleSortMap.set(key, sampleSortMap.get(key) + Number(obj[event][stack]));
+                for (var tid in contextDataRecords) {
+                    if ((tidDatalistVal == undefined || tidDatalistVal == tid) && contextTidMap[tid] != undefined) {
+                        if(dimIndexMap["threadname"] == undefined || filterMap["threadname"] == undefined || (threadNameTidMap[tid].includes(filterMap["threadname"]))) {
+                            for (let i = 0; i < contextTidMap[tid].length; i++) {
+                                if ((pStart === '' || pEnd === '') || ((contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd)) {
+                                    let stack = contextTidMap[tid][i].hash;
+                                    if (frameFilterString == "" || frameFilterStackMap[event][stack] !== undefined) {
+                                        let key = "";
+                                        if(groupBySamples === "tid"){
+                                            key = tid;
+                                        }else if(groupBySamples === "threadname"){
+                                            key = threadNameTidMap[tid];
+                                        }else{
+                                            if (contextTidMap[tid][i].obj != undefined) {
+                                                key = eval("contextTidMap[tid][i].obj." + groupBySamples);
                                             } else {
-                                                sampleSortMap.set(key, Number(obj[event][stack]));
+                                                key = eval("contextTidMap[tid][i]." + groupBySamples);
                                             }
-                                            if (sampleCountMap.has(key)) {
-                                                let tmpMap = sampleCountMap.get(key);
-                                                if (tmpMap.has(stack)) {
-                                                    tmpMap.set(stack, tmpMap.get(stack) + Number(obj[event][stack]));
-                                                } else {
-                                                    tmpMap.set(stack, Number(obj[event][stack]));
-                                                }
+                                        }
+
+                                        //consider
+                                        if (sampleSortMap.has(key)) {
+                                            sampleSortMap.set(key, sampleSortMap.get(key) + 1);
+                                        } else {
+                                            sampleSortMap.set(key, 1);
+                                        }
+                                        if (sampleCountMap.has(key)) {
+                                            let tmpMap = sampleCountMap.get(key);
+                                            if (tmpMap.has(stack)) {
+                                                tmpMap.set(stack, tmpMap.get(stack) + 1);
                                             } else {
-                                                let tmpMap = new Map();
-                                                tmpMap.set(stack, Number(obj[event][stack]));
-                                                sampleCountMap.set(key, tmpMap);
+                                                tmpMap.set(stack, 1);
                                             }
+                                        } else {
+                                            let tmpMap = new Map();
+                                            tmpMap.set(stack, 1);
+                                            sampleCountMap.set(key, tmpMap);
                                         }
                                     }
                                 }
                             }
-                        });
+                        }
                     }
                 }
-            }else{
-                if(getEventType() == "Jstack"){
-                    updateFilterViewStatus("Note: Failed to get Request context, only tid and threadName group by options supported.");
-                }else{
-                    updateFilterViewStatus("Note: Failed to get Request context, only tid group by option supported.");
+            } else {
+                for (var tid in contextDataRecords) {
+                    if (contextTidMap[tid] != undefined && (tidDatalistVal == undefined || tidDatalistVal == tid)) {
+                        for (let i = 0; i < contextTidMap[tid].length; i++) {
+                            if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
+                                let stack = contextTidMap[tid][i].hash;
+                                if (frameFilterStackMap[event][stack] !== undefined) {
+                                    let key = "";
+                                    if (contextTidMap[tid][i].obj != undefined) {
+                                        key = eval("contextTidMap[tid][i].obj." + groupBySamples);
+                                    } else {
+                                        key = eval("contextTidMap[tid][i]." + groupBySamples);
+                                    }
+                                    //consider
+                                    if (sampleSortMap.has(key)) {
+                                        sampleSortMap.set(key, sampleSortMap.get(key) + 1);
+                                    } else {
+                                        sampleSortMap.set(key, 1);
+                                    }
+                                    if (sampleCountMap.has(key)) {
+                                        let tmpMap = sampleCountMap.get(key);
+                                        if (tmpMap.has(stack)) {
+                                            tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                        } else {
+                                            tmpMap.set(stack, 1);
+                                        }
+                                    } else {
+                                        let tmpMap = new Map();
+                                        tmpMap.set(stack, 1);
+                                        sampleCountMap.set(key, tmpMap);
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+                }
+            }
+        }else {
+            if (spanIndex == -1) { // record duration span not available
+                //Context hints cannot be applied, apply only time range filter and tid, threadname filter
+                isFilterOnType=false;
+                let threadNameTidMap = {};
+                if(dimIndexMap["threadname"] != undefined && (filterMap["threadname"] != undefined || groupBySamples == "threadname")) {
+                    for (var tid in contextDataRecords) {
+                        if ((tidDatalistVal == undefined || tidDatalistVal == tid) && contextTidMap[tid] != undefined) {
+
+                            //contextDataRecords[tid].forEach(function (obj) {
+                            if(contextDataRecords[tid][0].record != undefined && contextDataRecords[tid][0].record[dimIndexMap["threadname"]] != undefined) {
+                                threadNameTidMap[tid] = contextDataRecords[tid][0].record[dimIndexMap["threadname"]];
+                            }
+                            //});
+                        }
+                    }
+                }
+                for (var tid in contextDataRecords) {
+                    if ((tidDatalistVal == undefined || tidDatalistVal == tid) && contextTidMap[tid] != undefined) {
+                        if(dimIndexMap["threadname"] == undefined || filterMap["threadname"] == undefined || (threadNameTidMap[tid].includes(filterMap["threadname"]))) {
+                            for (let i = 0; i < contextTidMap[tid].length; i++) {
+                                if ((pStart === '' || pEnd === '') || ((contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd)) {
+                                    let stack = contextTidMap[tid][i].hash;
+                                    if (frameFilterString == "" || frameFilterStackMap[event][stack] !== undefined) {
+                                        let key = "";
+                                        if(groupBySamples === "tid"){
+                                            key = tid;
+                                        }else if(groupBySamples === "threadname"){
+                                            key = threadNameTidMap[tid];
+                                        }else{
+                                            if (contextTidMap[tid][i].obj != undefined) {
+                                                key = eval("contextTidMap[tid][i].obj." + groupBySamples);
+                                            } else {
+                                                key = eval("contextTidMap[tid][i]." + groupBySamples);
+                                            }
+                                        }
+
+                                        //consider
+                                        if (sampleSortMap.has(key)) {
+                                            sampleSortMap.set(key, sampleSortMap.get(key) + 1);
+                                        } else {
+                                            sampleSortMap.set(key, 1);
+                                        }
+                                        if (sampleCountMap.has(key)) {
+                                            let tmpMap = sampleCountMap.get(key);
+                                            if (tmpMap.has(stack)) {
+                                                tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                            } else {
+                                                tmpMap.set(stack, 1);
+                                            }
+                                        } else {
+                                            let tmpMap = new Map();
+                                            tmpMap.set(stack, 1);
+                                            sampleCountMap.set(key, tmpMap);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                if (contextData != undefined && contextData.records != undefined) {
+                    for (var tid in contextDataRecords) {
+                        if (tidDatalistVal == undefined || tidDatalistVal == tid) {
+                            //context filter provided, check for matching requests and then find samples of those requests
+                            contextDataRecords[tid].forEach(function (obj) {
+                                let record = obj.record;
+                                let flag = false;
+                                let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
+
+                                if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
+                                    if (obj[event] != undefined) {
+                                        flag = true;
+                                        //TODO: we are including all the samples in a matching request, some of them may not be part of timerange filter
+                                        let key = record[dimIndexMap[groupBySamples]];
+                                        //check if request samples match frame filter string
+                                        for (var stack in obj[event]) {
+                                            if (frameFilterString == "" || frameFilterStackMap[event][stack] !== undefined) {
+                                                //consider
+                                                if (sampleSortMap.has(key)) {
+                                                    sampleSortMap.set(key, sampleSortMap.get(key) + Number(obj[event][stack]));
+                                                } else {
+                                                    sampleSortMap.set(key, Number(obj[event][stack]));
+                                                }
+                                                if (sampleCountMap.has(key)) {
+                                                    let tmpMap = sampleCountMap.get(key);
+                                                    if (tmpMap.has(stack)) {
+                                                        tmpMap.set(stack, tmpMap.get(stack) + Number(obj[event][stack]));
+                                                    } else {
+                                                        tmpMap.set(stack, Number(obj[event][stack]));
+                                                    }
+                                                } else {
+                                                    let tmpMap = new Map();
+                                                    tmpMap.set(stack, Number(obj[event][stack]));
+                                                    sampleCountMap.set(key, tmpMap);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+                } else {
+                    if (getEventType() == "Jstack") {
+                        updateFilterViewStatus("Note: Failed to get Request context, only tid and threadName group by options supported.");
+                    } else {
+                        updateFilterViewStatus("Note: Failed to get Request context, only tid group by option supported.");
+                    }
                 }
             }
         }
@@ -772,6 +898,10 @@
 
             let end = performance.now();
             console.log("updateProfilerViewSample 4 time:" + (end - start));
+
+            if(!isFilterOnType){
+                addTabNote(true,getContextHintNote(true));
+            }
         }
     }
 

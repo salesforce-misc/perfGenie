@@ -1467,22 +1467,36 @@
         } else {
             //we are here means one of DatalistVal is not empty
             if (spanIndex == -1) { // record duration span not available
-                //Context hints cannot be applied, apply only time range filter and tid filter
+                //Context hints cannot be applied, apply only time range filter and threadname, tid filter
                 isFilterOnType=false;
+                let threadNameTidMap = {};//assuming thread name do not change
+                if(dimIndexMap["threadname"] != undefined && filterMap["threadname"] != undefined) {
+                    for (var tid in contextDataRecords) {
+                        if ((tidDatalistVal == undefined || tidDatalistVal == tid) && contextTidMap[tid] != undefined) {
+                            //contextDataRecords[tid].forEach(function (obj) {
+                            if(contextDataRecords[tid][0].record != undefined && contextDataRecords[tid][0].record[dimIndexMap["threadname"]] != undefined) {
+                                threadNameTidMap[tid] = contextDataRecords[tid][0].record[dimIndexMap["threadname"]];
+                            }
+                            //});
+                        }
+                    }
+                }
                 for (var tid in contextDataRecords) {
                     if ((tidDatalistVal == undefined || tidDatalistVal == tid) && contextTidMap[tid] != undefined) {
-                        for (let i = 0; i < contextTidMap[tid].length; i++) {
-                            if ((pStart === '' || pEnd === '') || ((contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd)) {
-                                if (stackMap[contextTidMap[tid][i].hash] !== undefined) {
-                                    stackMap[contextTidMap[tid][i].hash] = stackMap[contextTidMap[tid][i].hash] + 1;
-                                } else {
-                                    stackMap[contextTidMap[tid][i].hash] = 1;
-                                }
-                                if (isJstack) {
-                                    if (filteredStackMap[FilterLevel.LEVEL1][tid] == undefined) {
-                                        filteredStackMap[FilterLevel.LEVEL1][tid] = [];
+                        if(dimIndexMap["threadname"] == undefined || filterMap["threadname"] == undefined || (threadNameTidMap[tid].includes(filterMap["threadname"]))) {
+                            for (let i = 0; i < contextTidMap[tid].length; i++) {
+                                if ((pStart === '' || pEnd === '') || ((contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd)) {
+                                    if (stackMap[contextTidMap[tid][i].hash] !== undefined) {
+                                        stackMap[contextTidMap[tid][i].hash] = stackMap[contextTidMap[tid][i].hash] + 1;
+                                    } else {
+                                        stackMap[contextTidMap[tid][i].hash] = 1;
                                     }
-                                    filteredStackMap[FilterLevel.LEVEL1][tid].push(contextTidMap[tid][i]);
+                                    if (isJstack) {
+                                        if (filteredStackMap[FilterLevel.LEVEL1][tid] == undefined) {
+                                            filteredStackMap[FilterLevel.LEVEL1][tid] = [];
+                                        }
+                                        filteredStackMap[FilterLevel.LEVEL1][tid].push(contextTidMap[tid][i]);
+                                    }
                                 }
                             }
                         }
@@ -2468,8 +2482,10 @@
                 const tokens = contextData.header[customEvent][val].split(":");
                 if (tokens[1] == "text" || tokens[1] == "timestamp") {
                     if(tokens[0] != "tid" && filterMap[tokens[0]] != undefined) {
-                        note = note + " '" + tokens[0] + "'";
-                        filterSkipped=true;
+                        if(!treeview || tokens[0] != "threadname") {
+                            note = note + " '" + tokens[0] + "'";
+                            filterSkipped = true;
+                        }
                     }
                 }
             }
@@ -4889,7 +4905,7 @@
 
 <div style="padding: 0px" id="contextfilter" class="row" >
     <h3 style="width:100%">Context filter</h3>
-    <div  style="padding-top: 0px;padding-bottom: 0px" id="cct-panel" class="col-lg-12" >
+    <div  style="padding-top: 0px;" id="cct-panel" class="col-lg-12" >
             <span id="filter-view-status" style="" class="hide"></span>
             <div id="contextpanel"  class="hide" >
                 <div id="contexthints" class="row col-lg-12">

@@ -149,6 +149,9 @@ public class CustomJfrParser {
                             final IMCThread thread = (IMCThread) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(item);
                             if(thread != null){
                                 tid = thread.getThreadId().intValue();
+                                if(tid == 0){//zing hack
+                                    tid = 0-thread.getThreadName().hashCode();
+                                }
                             }else{
                                 logger.warn("null pointer, mall formed thread " + item.toString());
                             }
@@ -191,8 +194,10 @@ public class CustomJfrParser {
                         if (((Attribute) key).getContentType().getIdentifier().equals("thread")) {
                             final IMCThread thread = (IMCThread) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i]);
                             tid = thread.getThreadId().intValue();
-                            tid = thread.getThreadId().intValue();
-                            record.add(thread.getThreadId());
+                            if(tid == 0){//zing hack
+                                tid = 0-thread.getThreadName().hashCode();
+                            }
+                            record.add(tid);
                             record.add(thread.getThreadName());
                             textFound=true;
                             if (addHeader) {
