@@ -156,7 +156,7 @@
     function initSearchTree(word) {
         let treeToProcess;
 
-        treeToProcess = getActiveTree(getEventType(), isCalltree);
+        treeToProcess = getActiveTree(getEventType(), isCalltree, 1);
 
         // if no data returned from our call don't try to parse it
         if (treeToProcess === undefined) {
@@ -193,7 +193,7 @@
 
     function expandTree(index, element) {
 
-        let treeToProcess = getActiveTree(getEventType(), isCalltree); //getTreeToProcess();
+        let treeToProcess = getActiveTree(getEventType(), isCalltree, 1); //getTreeToProcess();
 
         // if no data returned from our call don't try to parse it
         if (treeToProcess === undefined) {
@@ -511,8 +511,8 @@
             let end = performance.now();
             console.log("filterToLevel time:" + (end - start));
 
-            let treeToProcess = getActiveTree(getEventType(), isCalltree);
-            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
+            let treeToProcess = getActiveTree(getEventType(), isCalltree, 1);
+            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false, 1));
 
             if (currentLoadedTree === treeToProcess && prevOption === currentOption && isRefresh === false && isLevelRefresh === false && prevSelectedLevel === selectedLevel) {
                 console.log("no change in tree, option:" + (currentLoadedTree === treeToProcess)+":"+ (prevOption === currentOption) +" isRefresh:"+(isRefresh === false)+":"+" isLevelRefresh:"+(isLevelRefresh === false)+" selectedLevel:"+ (prevSelectedLevel === selectedLevel));
@@ -582,8 +582,8 @@
             console.log("updateProfilerView 3 time:" + (end - start));
         } else {
             let start = performance.now();
-            let treeToProcess = getActiveTree(getEventType(), isCalltree);
-            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
+            let treeToProcess = getActiveTree(getEventType(), isCalltree, 1);
+            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false, 1));
 
             let timeRange = "";
             if (compareTree) {

@@ -222,8 +222,8 @@
             let end = performance.now();
             console.log("filterToLevel time:" + (end - start));
 
-            let treeToProcess = getActiveTree(getEventType(), isCalltree);
-            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
+            let treeToProcess = getActiveTree(getEventType(), isCalltree, 1);
+            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false, 1));
 
             if (currentLoadedTree === treeToProcess && prevOption === currentOption && isRefresh === false && isLevelRefresh === false && prevSelectedLevel === selectedLevel) {
                 console.log("no change in tree, option:" + (currentLoadedTree === treeToProcess)+":"+ (prevOption === currentOption) +" isRefresh:"+(isRefresh === false)+":"+" isLevelRefresh:"+(isLevelRefresh === false)+" selectedLevel:"+ (prevSelectedLevel === selectedLevel));
@@ -269,7 +269,7 @@
             var tableInnerHTML = "";
 
             jstack = getContextTree(1,"Jstack");
-            context = getContextData();
+            context = getContextData(1);
             let startMilli = getContextTree(1,"Jstack").context.start;
 
             addContextData(selectedLevel, "Jstack");
@@ -282,7 +282,7 @@
 
             // build header row containing number of colums equal to number of unique timestamps/samples
             tableInnerHTML += timestampHeader;
-            let treeToProcesstmp = getActiveTree(getEventType(), false);
+            let treeToProcesstmp = getActiveTree(getEventType(), false, 1);
             if(selectedLevel !== FilterLevel.UNDEFINED) {
                 console.log("tsview show level:"+selectedLevel +":"+getEventType());
                 $.each(filteredStackMap[selectedLevel], function (tid, samples) {
@@ -322,11 +322,11 @@
 
             let start = performance.now();
 
-            let selectedLevel = getSelectedLevel(getActiveTree("Jstack", false));
+            let selectedLevel = getSelectedLevel(getActiveTree("Jstack", false, 1));
 
             var tableInnerHTML = "";
             jstack = getContextTree(1,"Jstack");
-            context = getContextData();
+            context = getContextData(1);
             let startMilli = getContextTree(1,"Jstack").context.start;
             addContextData(selectedLevel, "Jstack");
 
@@ -337,7 +337,7 @@
 
             // build header row containing number of colums equal to number of unique timestamps/samples
             tableInnerHTML += timestampHeader;
-            let treeToProcesstmp = getActiveTree(getEventType(), false);
+            let treeToProcesstmp = getActiveTree(getEventType(), false, 1);
             if(selectedLevel !== FilterLevel.UNDEFINED) {
                 console.log("tsview show level:"+selectedLevel +":"+getEventType());
                 $.each(filteredStackMap[selectedLevel], function (tid, samples) {
@@ -440,7 +440,7 @@
         let javaStack = "";
 
         let tmpcontextTree1Level1 = getStackFrameV1("root");
-        let tmpActiveTree = getActiveTree("Jstack", false);
+        let tmpActiveTree = getActiveTree("Jstack", false, 1);
         //updateStackIndex(tmpActiveTree);
         let arr = getTreeStack(tmpActiveTree, stackid, tmpcontextTree1Level1, 1);
 
@@ -458,7 +458,6 @@
         $('.stack-badge').removeClass("badge-warning");
         $('.stack-' + hashCode(stackid)).addClass("badge-warning");
         updateUrl("stack_guid", stackid, true);
-
     }
 
     function getJstackContextTable(tid, time, hash) {
@@ -469,7 +468,7 @@
         let spanIndex = -1;
         let timestampIndex = -1;
 
-        let localContextData = getContextData();
+        let localContextData = getContextData(1);
 
         for (let val in localContextData.header[customEvent]) {
             const tokens = localContextData.header[customEvent][val].split(":");

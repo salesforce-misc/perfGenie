@@ -59,7 +59,7 @@
     function updateEventInputOptions(id){
         $('#'+id).empty();
 
-        let localContextData = getContextData();
+        let localContextData = getContextData(1);
 
         if (localContextData != undefined && localContextData.records != undefined) {
             let samplesCustomEventFound = false;
@@ -89,7 +89,7 @@
     }
 
     function updateGroupByOptions(id){
-        let localContextData = getContextData();
+        let localContextData = getContextData(1);
         $('#'+id).empty();
         if (localContextData != undefined && localContextData.header != undefined) {
             let groups = [];
@@ -194,7 +194,7 @@
     function addContextData(selectedLevel, event){
         let contextTidMap = undefined;
         let treeToProcess = getContextTree(1,event);
-        let localContextData = getContextData();
+        let localContextData = getContextData(1);
         if(localContextData == undefined || treeToProcess[samplesCustomEvent + event+"-context"] != undefined) {
             console.log("addContextData skip:" + samplesCustomEvent + event);
             return false;
@@ -328,7 +328,7 @@
         return;
 
         let treeToProcess = getContextTree(1,"Jstack");
-        let localContextData = getContextData();
+        let localContextData = getContextData(1);
         if(localContextData == undefined || treeToProcess[samplesCustomEvent +"Jstack-context"] != undefined) {
             console.log("addContextData skip:" + samplesCustomEvent + event);
             return false;
@@ -380,7 +380,7 @@
         let timestampIndex=-1;
         let tidRowIndex = -1;
 
-        let localContextData = getContextData();
+        let localContextData = getContextData(1);
 
         for (let val in localContextData.header[samplesCustomEvent]) {
             const tokens = localContextData.header[samplesCustomEvent][val].split(":");
@@ -862,7 +862,7 @@
     function updateProfilerViewSample(level, skipFilter) {
         addTabNote(false,"");
 
-        let localContextData = getContextData();
+        let localContextData = getContextData(1);
         if(localContextData == undefined) {
             if(compareTree){
                 addTabNote(true,"This view is not supported when Compare option is selected.")
@@ -898,8 +898,8 @@
             console.log("filterToLevel time:" + (end - start));
 
 
-            let treeToProcess = getActiveTree(getEventType(), isCalltree);
-            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
+            let treeToProcess = getActiveTree(getEventType(), isCalltree, 1);
+            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false, 1));
 
             if (currentLoadedTree === treeToProcess && prevOption === currentOption && isRefresh === false && isLevelRefresh === false && prevSelectedLevel === selectedLevel) {
                 console.log("no change in tree, option:" + (currentLoadedTree === treeToProcess)+":"+ (prevOption === currentOption) +" isRefresh:"+(isRefresh === false)+":"+" isLevelRefresh:"+(isLevelRefresh === false)+" selectedLevel:"+ (prevSelectedLevel === selectedLevel));
@@ -933,7 +933,7 @@
         }else{
             let start = performance.now();
 
-            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
+            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false, 1));
             addContextData(selectedLevel, getEventType());
 
             resetTreeHeader("");

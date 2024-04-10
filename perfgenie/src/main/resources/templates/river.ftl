@@ -83,7 +83,7 @@
             addTabNote(true,"Data not available to show this view, check if isExperimental is enabled in config.properties")
             return;
         }
-        let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
+        let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false, 1));
         if(selectedLevel !== FilterLevel.UNDEFINED){
             addTabNote(true,"Filters not applied on this view.")
         }

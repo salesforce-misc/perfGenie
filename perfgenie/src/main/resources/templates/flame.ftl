@@ -143,8 +143,8 @@ In other words, data that's in the second set but not in the first will not be d
             let end = performance.now();
             console.debug("filterToLevel time:" + (end - start));
 
-            let treeToProcess = getActiveTree(getEventType(), isCalltree);
-            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
+            let treeToProcess = getActiveTree(getEventType(), isCalltree, 1);
+            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false, 1));
 
             if (currentLoadedTree === treeToProcess && prevOption === currentOption && isRefresh === false && isLevelRefresh === false && prevSelectedLevel === selectedLevel) {
                 console.log("no change in tree, option:" + prevOption + ":" + isRefresh + ":" + ":" + isLevelRefresh + ":" + selectedLevel);
@@ -224,8 +224,8 @@ In other words, data that's in the second set but not in the first will not be d
             console.debug("updateProfilerView 3 time:" + (end - start));
         } else {
             let start = performance.now();
-            let treeToProcess = getActiveTree(getEventType(), isCalltree);
-            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
+            let treeToProcess = getActiveTree(getEventType(), isCalltree, 1);
+            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false, 1));
 
             if (compareTree && isJfrContext) {
                 sFlameGraph.setIsCompare(true);

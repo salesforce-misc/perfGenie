@@ -11,6 +11,7 @@
     let threshold = 0.01;
     let treeThreshold = 0.01;
     let levelThreshold = 0;
+    let cmpExp = true;
 
     function handleTreeViewType(isCalltree){
         if(isCalltree){
@@ -400,9 +401,9 @@
                     contextTrees[0].context.end = Math.round(contextTrees[0].context.end / 1000000);
                     if (getEventType() == eventType) {
                         if(uploads[0] == "true" && fileIds[0] != "") {
-                            setContextData({"records": {}, "tidlist": [], "header": {}});
+                            setContextData({"records": {}, "tidlist": [], "header": {}}, 1);
                         }else{
-                            getLogContext(dateRanges[0], pods[0], queries[0], profilers[0], tenants[0], profiles[0], hosts[0], uploads[0], fileIds[0], uploadTimes[0], aggregates[0], eventType, contextTrees[0].context.start, contextTrees[0].context.end);
+                            getLogContext(1, dateRanges[0], pods[0], queries[0], profilers[0], tenants[0], profiles[0], hosts[0], uploads[0], fileIds[0], uploadTimes[0], aggregates[0], eventType, contextTrees[0].context.start, contextTrees[0].context.end);
                         }
                         for (var type in jfrprofiles1) {
                             if(type != eventType) {
@@ -483,11 +484,15 @@
                     }
 
                     if (isCalltree) {
-                        setmergedContextTree(mergeTreesV1(invertTreeV1(contextTrees[0], 1), invertTreeV1(contextTrees[1], 2), 1), eventType);
+                        setContextTree(contextTrees[0], 1, eventType);
+                        setContextTree(contextTrees[1], 2, eventType);
+                        setContextTreeInverted(invertTreeV1(contextTrees[0], 1), 1, eventType);
+                        setContextTreeInverted(invertTreeV1(contextTrees[1], 2), 2, eventType);
+                        //setmergedContextTree(mergeTreesV1(invertTreeV1(contextTrees[0], 1), invertTreeV1(contextTrees[1], 2), 1), eventType);
                     } else {
                         setContextTree(contextTrees[0], 1, eventType);
                         setContextTree(contextTrees[1], 2, eventType);
-                        setmergedBacktraceTree(mergeTreesV1(contextTrees[0], contextTrees[1], 1), eventType);
+                        //setmergedBacktraceTree(mergeTreesV1(contextTrees[0], contextTrees[1], 1), eventType);
                     }
                     console.log("Skipping context data for compare tree");
                     updateFilterViewStatus("Note: Context filter is disabled when compare option selected.");
@@ -495,7 +500,14 @@
                     unhideFilterViewStatus();
                     $("#cct-panel").css("height","100%");
 
+                    contextTrees[0].context.start = Math.round(contextTrees[0].context.start / 1000000);
+                    contextTrees[0].context.end = Math.round(contextTrees[0].context.end / 1000000);
+                    contextTrees[1].context.start = Math.round(contextTrees[1].context.start / 1000000);
+                    contextTrees[1].context.end = Math.round(contextTrees[1].context.end / 1000000);
                     if (eventType == getEventType()) {
+                        getLogContext(1,dateRanges[0], pods[0], queries[0], profilers[0], tenants[0], profiles[0], hosts[0], uploads[0], fileIds[0], uploadTimes[0], aggregates[0], eventType, contextTrees[0].context.start, contextTrees[0].context.end);
+                        getLogContext(2,dateRanges[1], pods[1], queries[1], profilers[1], tenants[1], profiles[1], hosts[1], uploads[1], fileIds[1], uploadTimes[1], aggregates[1], eventType, contextTrees[1].context.start, contextTrees[1].context.end);
+
                         for (var type in jfrprofiles1) {
                             if(type != eventType) {
                                 retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, type);
@@ -535,7 +547,7 @@
         console.log("retrievAndcreateContextTree 5 time:" + (end - start) + " event:" + eventType);
     }
 
-    function getLogContext(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, eventType, start, end) {
+    function getLogContext(count, timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, eventType, start, end) {
         unhideFilterViewStatus();
         updateFilterViewStatus("Note: Retrieving request context from jfr, this may take few sec  ...");
         const callTreeUrl = getCallTreeUrl(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, "customEvent");
@@ -549,21 +561,21 @@
                 console.log("log context not available in JFR, will fetch from Splunk");
                 updateFilterViewStatus("Note: Failed to get Request context.");
                 toastr_warning("Failed to get Request context.");
-                setContextData({"records": {}, "tidlist": [], "header": {}});
+                setContextData({"records": {}, "tidlist": [], "header": {}}, count);
             }else {
                 if(response.tidlist == undefined && response.error != undefined){
                     updateFilterViewStatus("Note: Failed to get Request context.");
                     toastr_warning("Failed to get Request context.");
-                    setContextData({"records": {}, "tidlist": [], "header": {}});
+                    setContextData({"records": {}, "tidlist": [], "header": {}}, count);
                 }else {
-                    setContextData(response);
+                    setContextData(response, count);
                     showContextFilter();
                     hideFilterViewStatus();
                     refreshTree();
                 }
             }
         }, function (error) {
-            setContextData({"records": {}, "tidlist": [], "header": {}});
+            setContextData({"records": {}, "tidlist": [], "header": {}}, count);
             updateFilterViewStatus("Note: Failed to get Request context.");
             toastr_warning("Failed to get Request context.");
             console.error(error);
@@ -725,7 +737,7 @@
         updateUrl("isCalltree", false, true);
         isCalltree = false;
 
-        if (getActiveTree(getEventType(), isCalltree) === undefined) {
+        if (getActiveTree(getEventType(), isCalltree, 1) === undefined) {
             validateInputAndcreateContextTree(true);
         } else {
             updateProfilerView();
@@ -738,7 +750,7 @@
         }
         updateUrl("isCalltree", true, true);
         isCalltree = true;
-        if (getActiveTree(getEventType(), isCalltree) === undefined) {
+        if (getActiveTree(getEventType(), isCalltree, 1) === undefined) {
             validateInputAndcreateContextTree(true);
         } else {
             updateProfilerView();
