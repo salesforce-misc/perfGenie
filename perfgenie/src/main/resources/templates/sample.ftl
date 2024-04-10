@@ -59,11 +59,12 @@
     function updateEventInputOptions(id){
         $('#'+id).empty();
 
+        let localContextData = getContextData();
 
-        if (contextData != undefined && contextData.records != undefined) {
+        if (localContextData != undefined && localContextData.records != undefined) {
             let samplesCustomEventFound = false;
             if(!(samplesCustomEvent == '' || samplesCustomEvent == undefined)) {
-                for (let value in contextData.records) {
+                for (let value in localContextData.records) {
                     if(samplesCustomEvent == value){
                         samplesCustomEventFound = true;
                         break;
@@ -71,7 +72,7 @@
                 }
             }
 
-            for (let value in contextData.records) {
+            for (let value in localContextData.records) {
                 if(samplesCustomEvent == '' || samplesCustomEvent == undefined || !samplesCustomEventFound){
                     samplesCustomEvent = value;
                     samplesCustomEventFound=true;
@@ -88,11 +89,12 @@
     }
 
     function updateGroupByOptions(id){
+        let localContextData = getContextData();
         $('#'+id).empty();
-        if (contextData != undefined && contextData.header != undefined) {
+        if (localContextData != undefined && localContextData.header != undefined) {
             let groups = [];
-            for (let val in contextData.header[samplesCustomEvent]) {
-                const tokens = contextData.header[samplesCustomEvent][val].split(":");
+            for (let val in localContextData.header[samplesCustomEvent]) {
+                const tokens = localContextData.header[samplesCustomEvent][val].split(":");
                 if (tokens[1] == "text" || tokens[1] == "timestamp") {
                     groups.push(tokens[0]);
                 }
@@ -101,8 +103,8 @@
 
             let groupByFound = false;
             if(!(smplBy == '' || smplBy == undefined)) {
-                for (let val in contextData.header[samplesCustomEvent]) {
-                    const tokens = contextData.header[samplesCustomEvent][val].split(":");
+                for (let val in localContextData.header[samplesCustomEvent]) {
+                    const tokens = localContextData.header[samplesCustomEvent][val].split(":");
                     if(smplBy == tokens[0]){
                         groupByFound = true;
                         break;
@@ -192,8 +194,8 @@
     function addContextData(selectedLevel, event){
         let contextTidMap = undefined;
         let treeToProcess = getContextTree(1,event);
-        let contextData = getContextData();
-        if(contextData == undefined || treeToProcess[samplesCustomEvent + event+"-context"] != undefined) {
+        let localContextData = getContextData();
+        if(localContextData == undefined || treeToProcess[samplesCustomEvent + event+"-context"] != undefined) {
             console.log("addContextData skip:" + samplesCustomEvent + event);
             return false;
         }
@@ -202,11 +204,11 @@
         contextTidMap = treeToProcess.context.tidMap;
 
         //sort records based on time, do we really need? move to jmc code?
-        if(contextData != undefined && contextData.records != undefined){
-            for (var customevent in contextData.records) {
-                for(var tid in contextData.records[customevent]) {
+        if(localContextData != undefined && localContextData.records != undefined){
+            for (var customevent in localContextData.records) {
+                for(var tid in localContextData.records[customevent]) {
                     //sort by timestamp
-                    contextData.records[customevent][tid].sort(function (a, b) {
+                    localContextData.records[customevent][tid].sort(function (a, b) {
                         return a.record[0] - b.record[0];
                     });
                 }
@@ -224,8 +226,8 @@
         let timestampIndex=-1;
         let tidRowIndex = -1;
 
-        for (let val in contextData.header[samplesCustomEvent]) {
-            const tokens = contextData.header[samplesCustomEvent][val].split(":");
+        for (let val in localContextData.header[samplesCustomEvent]) {
+            const tokens = localContextData.header[samplesCustomEvent][val].split(":");
             if (tokens[1] == "number") {
                 metricsIndexArray.push(val);
                 metricsIndexMap[tokens[0]]=val;
@@ -247,8 +249,8 @@
         }
 
         let contextDataRecords = undefined;
-        if (contextData != undefined && contextData.records != undefined) {
-            contextDataRecords = contextData.records[samplesCustomEvent];
+        if (localContextData != undefined && localContextData.records != undefined) {
+            contextDataRecords = localContextData.records[samplesCustomEvent];
         }
 
         for(var tid in contextDataRecords) {
@@ -326,8 +328,8 @@
         return;
 
         let treeToProcess = getContextTree(1,"Jstack");
-        let contextData = getContextData();
-        if(contextData == undefined || treeToProcess[samplesCustomEvent +"Jstack-context"] != undefined) {
+        let localContextData = getContextData();
+        if(localContextData == undefined || treeToProcess[samplesCustomEvent +"Jstack-context"] != undefined) {
             console.log("addContextData skip:" + samplesCustomEvent + event);
             return false;
         }
@@ -378,8 +380,10 @@
         let timestampIndex=-1;
         let tidRowIndex = -1;
 
-        for (let val in contextData.header[samplesCustomEvent]) {
-            const tokens = contextData.header[samplesCustomEvent][val].split(":");
+        let localContextData = getContextData();
+
+        for (let val in localContextData.header[samplesCustomEvent]) {
+            const tokens = localContextData.header[samplesCustomEvent][val].split(":");
             if (tokens[1] == "number") {
                 metricsIndexArray.push(val);
                 metricsIndexMap[tokens[0]]=val;
@@ -403,7 +407,7 @@
         $('#stack-view-guid').text("");
         let start1 = performance.now();
         let groupBySamples = smplBy;
-        if(contextData == undefined) {
+        if(localContextData == undefined) {
             //support only tid or tn
             if(!(groupBySamples === "threadname" || groupBySamples === "tid")){
                 //set default tid
@@ -417,8 +421,8 @@
         }
 
         let contextDataRecords = undefined;
-        if (contextData != undefined && contextData.records != undefined) {
-            contextDataRecords = contextData.records[samplesCustomEvent];
+        if (localContextData != undefined && localContextData.records != undefined) {
+            contextDataRecords = localContextData.records[samplesCustomEvent];
         }
 
         let tidDatalistVal = filterMap["tid"];
@@ -674,7 +678,7 @@
                     }
                 }
             } else {
-                if (contextData != undefined && contextData.records != undefined) {
+                if (localContextData != undefined && localContextData.records != undefined) {
                     for (var tid in contextDataRecords) {
                         if (tidDatalistVal == undefined || tidDatalistVal == tid) {
                             //context filter provided, check for matching requests and then find samples of those requests
@@ -858,8 +862,8 @@
     function updateProfilerViewSample(level, skipFilter) {
         addTabNote(false,"");
 
-        let contextData = getContextData();
-        if(contextData == undefined) {
+        let localContextData = getContextData();
+        if(localContextData == undefined) {
             if(compareTree){
                 addTabNote(true,"This view is not supported when Compare option is selected.")
             }else{

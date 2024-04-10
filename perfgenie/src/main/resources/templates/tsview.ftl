@@ -469,9 +469,10 @@
         let spanIndex = -1;
         let timestampIndex = -1;
 
+        let localContextData = getContextData();
 
-        for (let val in contextData.header[customEvent]) {
-            const tokens = contextData.header[customEvent][val].split(":");
+        for (let val in localContextData.header[customEvent]) {
+            const tokens = localContextData.header[customEvent][val].split(":");
             if (tokens[1] == "number") {
                 metricsIndexArray.push(val);
                 metricsIndexMap[tokens[0]] = val;

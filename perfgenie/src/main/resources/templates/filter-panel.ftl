@@ -473,8 +473,7 @@
     let contextTree1 = {};
     let contextTree2 = {};
 
-    let contextTreeInverted1 = {};
-    let contextTreeInverted2 = {};
+    let contextTreeInverted = {};
 
     let mergedContextTree = {};
     let mergedBacktraceTree = {};
@@ -489,16 +488,17 @@
     let isCalltree = false;
     let uploadIDMap = {};
 
-    let contextData;
+    let contextData = {};
     let contextTree1Frames;
     let contextTree2Frames;
     let contextTree1JstackFrames=false;
     let contextTree2JstackFrames=false;
+
     let isJfrContext = false;
     let isS3 = "true";
 
     //1 for LEVEL1, 2 for LEVEL2 and 3 for LEVEL3
-    let contextTree1InvertedLevel = {};
+    let contextTreeInvertedLevel = {};
 
     let prevReqTid = "";
     let prevReqTime = "";
@@ -654,7 +654,7 @@
     function filterToLevel(level) {
         let eventType = getEventType();
         console.log("filterToLevel start:" + level + " eventType:" + eventType);
-        if (contextData === undefined || isJfrContext == false) {
+        if (getContextData() === undefined || isJfrContext == false) {
             return true;
         }
         if (filterStarted) {
@@ -729,8 +729,8 @@
                     if (getContextTreeInverted(1, eventType) === undefined) {
                         setContextTreeInverted(invertTreeV1(getContextTree(1, eventType), 1), 1, eventType);
                     }
-                } else if (getcontextTree1InvertedLevel(eventType, getSelectedLevel(getActiveTree(eventType, false))) === undefined) {
-                    setcontextTree1InvertedLevel(invertTreeV1AtLevel(getActiveTree(eventType, false), 1), eventType, getSelectedLevel(getActiveTree(eventType, false)));
+                } else if (getcontextTreeInvertedLevel(eventType, getSelectedLevel(getActiveTree(eventType, false)),1) === undefined) {
+                    setcontextTreeInvertedLevel(invertTreeV1AtLevel(getActiveTree(eventType, false), 1), eventType, getSelectedLevel(getActiveTree(eventType, false)),1);
                 }
             }
 
@@ -757,7 +757,7 @@
 
     function resetTreeInvertedLevel(level) {
         for (var key in jfrevents1) {
-            setcontextTree1InvertedLevel(undefined, key, level);
+            setcontextTreeInvertedLevel(undefined, key, level,1);
         }
     }
 
@@ -797,11 +797,12 @@
     }
 
     function findRequest(reqId) {
-        if (contextData !== undefined) {
+        let localContextData = getContextData();
+        if (localContextData !== undefined) {
             var BreakException = {};
             try {
-                for (var tid in contextData.records) {
-                    contextData.records[tid].forEach(function (obj) {
+                for (var tid in localContextData.records) {
+                    localContextData.records[tid].forEach(function (obj) {
                         if (obj.type == 2 || obj.type == 6) {//do not include sub requests
                             if (obj.reqId !== undefined && obj.reqId == reqId) {
                                 filterReq = obj.tid + "_" + obj.epoch;
@@ -1412,8 +1413,10 @@
         let timestampIndex = -1;
         isFilterOnType = true;
 
-        for (let val in contextData.header[customEvent]) {
-            const tokens = contextData.header[customEvent][val].split(":");
+        let localContextData = getContextData();
+
+        for (let val in localContextData.header[customEvent]) {
+            const tokens = localContextData.header[customEvent][val].split(":");
             if (tokens[1] == "number") {
                 metricsIndexArray.push(val);
                 metricsIndexMap[tokens[0]] = val;
@@ -1433,8 +1436,8 @@
         }
 
         let contextDataRecords = undefined;
-        if (contextData != undefined && contextData.records != undefined) {
-            contextDataRecords = contextData.records[customEvent];
+        if (localContextData != undefined && localContextData.records != undefined) {
+            contextDataRecords = localContextData.records[customEvent];
         }
 
         let contextStart = getContextTree(1).context.start;
@@ -1604,9 +1607,10 @@
         let spanIndex = -1;
         let timestampIndex = -1;
 
+        let localContextData = getContextData();
 
-        for (let val in contextData.header[customEvent]) {
-            const tokens = contextData.header[customEvent][val].split(":");
+        for (let val in localContextData.header[customEvent]) {
+            const tokens = localContextData.header[customEvent][val].split(":");
             if (tokens[1] == "number") {
                 metricsIndexArray.push(val);
                 metricsIndexMap[tokens[0]] = val;
@@ -1626,8 +1630,8 @@
         }
 
         let contextDataRecords = undefined;
-        if (contextData != undefined && contextData.records != undefined) {
-            contextDataRecords = contextData.records[customEvent];
+        if (localContextData != undefined && localContextData.records != undefined) {
+            contextDataRecords = localContextData.records[customEvent];
         }
 
         contextDataRecords[tid].forEach(function (obj) {
@@ -1848,8 +1852,9 @@
     function isFilterEmpty(dimIndexMap) {
         if (dimIndexMap == undefined) {
             dimIndexMap = {};
-            for (let val in contextData.header[customEvent]) {
-                const tokens = contextData.header[customEvent][val].split(":");
+            let localContextData = getContextData();
+            for (let val in localContextData.header[customEvent]) {
+                const tokens = localContextData.header[customEvent][val].split(":");
                 if (tokens[1] == "text" || tokens[1] == "timestamp") {
                     dimIndexMap[tokens[0]] = val;
                 }
@@ -2075,8 +2080,9 @@
         let y = 0;
 
         let contextDataRecords = undefined;
-        if (contextData != undefined && contextData.records != undefined) {
-            contextDataRecords = contextData.records[customEvent];
+        let localContextData = getContextData();
+        if (localContextData != undefined && localContextData.records != undefined) {
+            contextDataRecords = localContextData.records[customEvent];
         }
 
         for (let [tid, value] of tidSortByMetricMap) {
@@ -2225,8 +2231,9 @@
         let curI = 0;
         let color = {};
         let contextDataRecords = undefined;
-        if (contextData != undefined && contextData.records != undefined) {
-            contextDataRecords = contextData.records[customEvent];
+        let localContextData = getContextData();
+        if (localContextData != undefined && localContextData.records != undefined) {
+            contextDataRecords = localContextData.records[customEvent];
         }
 
         for (let [type, value1] of groupByTypeSortByMetricMap) {
@@ -2334,9 +2341,10 @@
         if (!(groupby == undefined || groupby == "" || groupby == "All records")) {
             header = header + "<th>" + groupby + "</th>";
         }
-        if (contextData != undefined && contextData.header != undefined) {
-            for (let val in contextData.header[customEvent]) {
-                const tokens = contextData.header[customEvent][val].split(":");
+        let localContextData = getContextData();
+        if (localContextData != undefined && localContextData.header != undefined) {
+            for (let val in localContextData.header[customEvent]) {
+                const tokens = localContextData.header[customEvent][val].split(":");
                 if (groupby == undefined || groupby == "" || groupby == "All records" || tokens[1] == "number") {
                     header = header + "<th>" + tokens[0] + "</th>";
                 }
@@ -2350,10 +2358,11 @@
     }
 
     function addContextHints() {
+        let localContextData = getContextData();
         let table = "<table style='border-spacing: 2px; border-collapse: separate;border: hidden'><tr><td style='border: hidden'  id='filter-heading'>Context hints:</td>";
-        if (contextData != undefined && contextData.header != undefined) {
-            for (let val in contextData.header[customEvent]) {
-                const tokens = contextData.header[customEvent][val].split(":");
+        if (localContextData != undefined && localContextData.header != undefined) {
+            for (let val in localContextData.header[customEvent]) {
+                const tokens = localContextData.header[customEvent][val].split(":");
                 if (tokens[1] == "text") {
                     table += "<td style='border: hidden' class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('" + tokens[0] + "=xxxx');\" title='Narrows down a filter to a single "+tokens[0]+". For example " + tokens[0] + "=xxxx' tabindex='-1'>" + tokens[0] + "</a></td>";
                 }
@@ -2366,7 +2375,7 @@
         }
         table += "</tr></table>";
         $("#contexthints").html(table);
-        if (contextData != undefined && contextData.header != undefined) {
+        if (localContextData != undefined && localContextData.header != undefined) {
             jQuery("#filtertimepickerstart").datetimepicker({
                 format: 'Y-m-d H:i:s',
                 formatDate: 'Y-m-d',
@@ -2426,9 +2435,10 @@
 
     function setCustomEvent() {
         if (customEvent == "") {
+            let localContextData = getContextData();
             //try to get first available
-            if (contextData != undefined && contextData.records != undefined) {
-                for (let value in contextData.records) {
+            if (localContextData != undefined && localContextData.records != undefined) {
+                for (let value in localContextData.records) {
                     customEvent = value;
                     break;
                 }
@@ -2477,9 +2487,10 @@
     function getContextHintNote(treeview){
         let note = "Note: Context hint(s) ";
         let filterSkipped = false;
-        if(contextData.header != undefined && contextData.header[customEvent] != undefined) {
-            for (let val in contextData.header[customEvent]) {
-                const tokens = contextData.header[customEvent][val].split(":");
+        let localContextData = getContextData();
+        if(localContextData.header != undefined && localContextData.header[customEvent] != undefined) {
+            for (let val in localContextData.header[customEvent]) {
+                const tokens = localContextData.header[customEvent][val].split(":");
                 if (tokens[1] == "text" || tokens[1] == "timestamp") {
                     if(tokens[0] != "tid" && filterMap[tokens[0]] != undefined) {
                         if(!treeview || tokens[0] != "threadname") {
@@ -2556,8 +2567,10 @@
         let sortByFound = false;
         let groupByFound = false;
 
-        for (let val in contextData.header[customEvent]) {
-            const tokens = contextData.header[customEvent][val].split(":");
+        let localContextData = getContextData();
+
+        for (let val in localContextData.header[customEvent]) {
+            const tokens = localContextData.header[customEvent][val].split(":");
             if (tokens[1] == "number") {
                 metricsIndexArray.push(val);
                 metricsIndexMap[tokens[0]] = val;
@@ -2600,8 +2613,8 @@
         let contextStart = getContextTree(1).context.start;
         let contextTidMap = getContextTree(1).context.tidMap;
         let contextDataRecords = undefined;
-        if (contextData != undefined && contextData.records != undefined) {
-            contextDataRecords = contextData.records[customEvent];
+        if (localContextData != undefined && localContextData.records != undefined) {
+            contextDataRecords = localContextData.records[customEvent];
         }
 
         let table = "<table   style=\"border:none;padding=0px;width: 100%;\" id=\"state-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\">" + getEventTableHeader(groupBy);
@@ -2980,12 +2993,12 @@
 
         console.log("getToolBarOptions1 customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " spanInput:"+spanInput);
 
-
+        let localContextData = getContextData();
         let toolBarOptions = '<span title="JFR Event type">Event:</span> <select  style="height:30px;width:250px;text-align: center; " class="filterinput"  name="event-input" id="event-input">\n';
-        if (contextData != undefined && contextData.records != undefined) {
+        if (localContextData != undefined && localContextData.records != undefined) {
             let customEventFound = false;
             if(!(customEvent == '' || customEvent == undefined)) {
-                for (let value in contextData.records) {
+                for (let value in localContextData.records) {
                     if(customEvent == value){
                         customEventFound = true;
                         break;
@@ -2993,7 +3006,7 @@
                 }
             }
 
-            for (let value in contextData.records) {
+            for (let value in localContextData.records) {
                 if(customEvent == '' || customEvent == undefined || !customEventFound){
                     customEvent = value;
                     customEventFound=true;
@@ -3006,10 +3019,10 @@
         toolBarOptions += "<option value='All records'>Show all records</option>";
 
 
-        if (contextData != undefined && contextData.header != undefined) {
+        if (localContextData != undefined && localContextData.header != undefined) {
             let groups = [];
-            for (let val in contextData.header[customEvent]) {
-                const tokens = contextData.header[customEvent][val].split(":");
+            for (let val in localContextData.header[customEvent]) {
+                const tokens = localContextData.header[customEvent][val].split(":");
                 if (tokens[1] == "text" || tokens[1] == "timestamp") {
                     groups.push(tokens[0]);
                 }
@@ -3018,8 +3031,8 @@
 
             let groupByFound = false;
             if(!(groupBy == '' || groupBy == undefined || groupBy == "All records")) {
-                for (let val in contextData.header[customEvent]) {
-                    const tokens = contextData.header[customEvent][val].split(":");
+                for (let val in localContextData.header[customEvent]) {
+                    const tokens = localContextData.header[customEvent][val].split(":");
                     if(groupBy == tokens[0]){
                         groupByFound = true;
                         break;
@@ -3058,12 +3071,12 @@
         if (tableFormat == 2 || tableFormat == 3) {
             toolBarOptions += '                        </select>' +
                 '&nbsp;&nbsp;<span title="Sort context view by event metric">Sort by:</span> <select  style="height:30px;width:60px;text-align: center; " class="filterinput"  name="sort-input" id="sort-input">\n';
-            if (contextData != undefined && contextData.header != undefined) {
+            if (localContextData != undefined && localContextData.header != undefined) {
 
                 let sortByFound = false;
                 if(!(sortBy == '' || sortBy == undefined)) {
-                    for (let val in contextData.header[customEvent]) {
-                        const tokens = contextData.header[customEvent][val].split(":");
+                    for (let val in localContextData.header[customEvent]) {
+                        const tokens = localContextData.header[customEvent][val].split(":");
                         if(sortBy == tokens[0]){
                             sortByFound = true;
                             break;
@@ -3071,8 +3084,8 @@
                     }
                 }
 
-                for (let val in contextData.header[customEvent]) {
-                    const tokens = contextData.header[customEvent][val].split(":");
+                for (let val in localContextData.header[customEvent]) {
+                    const tokens = localContextData.header[customEvent][val].split(":");
                     if(sortBy == '' || sortBy == undefined || !sortByFound && !(tokens[1] == "text" || tokens[1] == "timestamp")){
                         sortBy = tokens[0];
                         sortByFound = true;
@@ -3106,11 +3119,11 @@
         if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
             toolBarOptions += '                        </select>' +
                 '&nbsp;&nbsp;<span title="Show events above selected metric value">Threshold:</span> <select  style="height:30px;text-align: center; " class="spanMetric"  name="span-input" id="span-input">\n';
-            if (contextData != undefined && contextData.header != undefined) {
+            if (localContextData != undefined && localContextData.header != undefined) {
                 let spanInputFound = false;
                 if(!(spanInput == '' || spanInput == undefined)) {
-                    for (let val in contextData.header[customEvent]) {
-                        const tokens = contextData.header[customEvent][val].split(":");
+                    for (let val in localContextData.header[customEvent]) {
+                        const tokens = localContextData.header[customEvent][val].split(":");
                         if(spanInput == tokens[0]){
                             spanInputFound = true;
                             break;
@@ -3118,8 +3131,8 @@
                     }
                 }
 
-                for (let val in contextData.header[customEvent]) {
-                    const tokens = contextData.header[customEvent][val].split(":");
+                for (let val in localContextData.header[customEvent]) {
+                    const tokens = localContextData.header[customEvent][val].split(":");
 
                     if(spanInput == '' || spanInput == undefined || !spanInputFound && !(tokens[1] == "text" || tokens[1] == "timestamp")){
                         spanInput = tokens[0];
@@ -3479,11 +3492,11 @@
         if (eventType == undefined) {
             eventType = getEventType();
         }
-        if (count == 1) {
-            contextTreeInverted1[eventType] = tree;
-        } else {
-            contextTreeInverted2[eventType] = tree;
+
+        if(contextTreeInverted[eventType] == undefined){
+            contextTreeInverted[eventType] = {};
         }
+        contextTreeInverted[eventType][count] = tree;
     }
 
     function getContextTreeInverted(count, eventType) {
@@ -3495,11 +3508,10 @@
             return undefined;
         }
 
-        if (count == 1) {
-            return contextTreeInverted1[eventType];
-        } else {
-            return contextTreeInverted2[eventType];
+        if(contextTreeInverted[eventType] != undefined) {
+            return contextTreeInverted[eventType][count];
         }
+        return undefined;
     }
 
     function setmergedContextTree(tree, eventType) {
@@ -3536,22 +3548,26 @@
         return mergedBacktraceTree[eventType];
     }
 
-    function setcontextTree1InvertedLevel(tree, eventType, level) {
+    function setcontextTreeInvertedLevel(tree, eventType, level, count) {
         if (eventType == undefined) {
             eventType = getEventType();
         }
-        if(contextTree1InvertedLevel[eventType] == undefined){
-            contextTree1InvertedLevel[eventType] = {};
+        if(contextTreeInvertedLevel[eventType] == undefined){
+            contextTreeInvertedLevel[eventType] = {};
+            contextTreeInvertedLevel[eventType][count] = {};
         }
-        contextTree1InvertedLevel[eventType][level] = tree;
+        contextTreeInvertedLevel[eventType][count][level] = tree;
     }
 
-    function getcontextTree1InvertedLevel(eventType, level) {
+    function getcontextTreeInvertedLevel(eventType, level, count) {
         if (eventType == undefined) {
             eventType = getEventType();
         }
-        if(contextTree1InvertedLevel[eventType] != undefined) {
-            return contextTree1InvertedLevel[eventType][level];
+        if(eventType == undefined){
+            return undefined;
+        }
+        if(contextTreeInvertedLevel[eventType] != undefined && contextTreeInvertedLevel[eventType][count] != undefined) {
+            return contextTreeInvertedLevel[eventType][count][level];
         }
         return undefined;
     }
@@ -3574,7 +3590,7 @@
                 if(getSelectedLevel(tree) === FilterLevel.UNDEFINED){
                     return getContextTreeInverted(1, eventType);
                 }else {
-                    return getcontextTree1InvertedLevel(eventType, getSelectedLevel(tree));
+                    return getcontextTreeInvertedLevel(eventType, getSelectedLevel(tree),1);
                 }
             }else {
                 return getmergedContextTree();
@@ -3592,8 +3608,8 @@
         }
     }
 
-    function setContextData(data){
-        contextData = data;
+    function setContextData(data,count){
+        contextData[count] = data;
         processCustomEvents();
     }
 
@@ -3603,16 +3619,17 @@
         }
     }
 
-    function getContextData() {
-        return contextData;
+    function getContextData(count) {
+        return contextData[count];
     }
 
     function processCustomEvents() {
-        if(contextData != undefined && contextData.records != undefined){
-            for (var customevent in contextData.records) {
-                for(var tid in contextData.records[customevent]) {
+        let localContextData = getContextData();
+        if(localContextData != undefined && localContextData.records != undefined){
+            for (var customevent in localContextData.records) {
+                for(var tid in localContextData.records[customevent]) {
                     //sort by timestamp
-                    contextData.records[customevent][tid].sort(function (a, b) {
+                    localContextData.records[customevent][tid].sort(function (a, b) {
                         return a.record[0] - b.record[0];
                     });
                 }
@@ -3992,7 +4009,7 @@
     //jfr context end
 
     //Request context table crash temporary fix START
-
+/*
     let tableRows = [];
     let tableHeader = [];
 
@@ -4009,7 +4026,7 @@
             contextDataTypeVal = 2;
         }
         let contextStart = getContextTree(1).context.start;
-
+        let localContextData = getContextData();
         //status graph start
         let downScale = 200;
         let maxEndTimeOfReq = 0;
@@ -4062,11 +4079,11 @@
                     }
                 }
                 //generate context table data, need to include requests that has frame filter found stacks
-                if (contextData.records[tid] != undefined) {
+                if (localContextData.records[tid] != undefined) {
                     let includeTid = false;
                     let reqArray = [];
                     let recordIndex = -1;
-                    contextData.records[tid].forEach(function (obj) {
+                    localContextData.records[tid].forEach(function (obj) {
                         let flag = false;
                         recordIndex++;
 
@@ -4211,12 +4228,12 @@
                 }
             }
         } else {
-            for (var tid in contextData.records) {
+            for (var tid in localContextData.records) {
                 let includeTid = false;
                 let reqArray = [];
                 let recordIndex = -1;
                 if (tidDatalistVal == undefined || tidDatalistVal == tid) {
-                    contextData.records[tid].forEach(function (obj) {
+                    localContextData.records[tid].forEach(function (obj) {
                         let flag = false;
                         recordIndex++;
                         if ((obj.type == undefined || (contextDataTypeVal == -1 && (obj.type == 2 || obj.type == 6)) || obj.type == contextDataTypeVal || (reqDatalistVal != undefined && obj.type == 4)) &&
@@ -4887,7 +4904,7 @@
         return "";
     }
     //Request context table crash temporary fix END
-
+*/
 </script>
 
 <div style="padding: 0px" id="contextfilter" class="row" >
