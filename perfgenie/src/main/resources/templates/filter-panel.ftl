@@ -2267,14 +2267,21 @@
             const tmpSort = new Map([...cumulative_map].sort((a, b) => a[0] - b[0]));
             let tmpValSum = 0;
             let prevTmpTime = 0;
+            let tmpValMax = 0;
             for (let [tmpTime, tmpVal] of tmpSort) {
                 tmpValSum += tmpVal;
+                if(tmpValMax < tmpVal){
+                    tmpValMax = tmpVal;
+                }
                 //make series points once every 1000ms to improve chart performance
                 if (prevTmpTime == 0 || (tmpTime - prevTmpTime) >= 1000) {
-                    series.push(tmpValSum);
                     series_x.push(tmpTime);
                     if (cumulativeLine != 0) {
+                        series.push(tmpValMax);
                         tmpValSum = 0;
+                        tmpValMax = 0;
+                    }else{
+                        series.push(tmpValSum);
                     }
                     prevTmpTime = tmpTime;
                 }
