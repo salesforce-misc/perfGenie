@@ -3128,7 +3128,7 @@
                 if(!(sortBy == '' || sortBy == undefined)) {
                     for (let val in contextData.header[customEvent]) {
                         const tokens = contextData.header[customEvent][val].split(":");
-                        if(sortBy == tokens[0]){
+                        if(sortBy == tokens[0] && sortBy != "timestamp"){
                             sortByFound = true;
                             break;
                         }
@@ -3137,7 +3137,7 @@
 
                 for (let val in contextData.header[customEvent]) {
                     const tokens = contextData.header[customEvent][val].split(":");
-                    if(sortBy == '' || sortBy == undefined || !sortByFound && !(tokens[1] == "text" || tokens[1] == "timestamp")){
+                    if((sortBy == '' || sortBy == undefined || !sortByFound) && !(tokens[1] == "text" || tokens[1] == "timestamp")){
                         sortBy = tokens[0];
                         sortByFound = true;
                     }
@@ -3186,7 +3186,7 @@
                 for (let val in contextData.header[customEvent]) {
                     const tokens = contextData.header[customEvent][val].split(":");
 
-                    if(spanInput == '' || spanInput == undefined || !spanInputFound && !(tokens[1] == "text" || tokens[1] == "timestamp")){
+                    if((spanInput == '' || spanInput == undefined || !spanInputFound) && !(tokens[1] == "text" || tokens[1] == "timestamp")){
                         spanInput = tokens[0];
                         spanInputFound = true;
                     }
