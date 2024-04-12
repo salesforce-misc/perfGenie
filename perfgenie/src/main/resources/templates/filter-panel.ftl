@@ -2218,16 +2218,27 @@
     }
 
     let pinCount = 0;
+    function addChart(){
+        for(let i=0; i<pinCount; i++) {
+            if ($('#pinid' + i).length) {
+                    charts['pinid' + i].load({
+                        xs: pinxs,
+                        columns: pincolumns
+                    });
+            }
+        }
+    }
+
     function pinChart(){
         let pinid = "pinid"+pinCount;
         let closepin = "pinclose"+pinCount;
+
         pinCount++;
         $('#statetablewrapper').append("<div id='"+closepin+"'style='border-style: dotted hidden hidden hidden;' class='statetable col-lg-12'><div style='float:right;cursor: pointer;' onclick='closePin(\""+closepin+"\")'>Close</div><div>Pinned chart Event:"+customEvent+", groupBy:"+groupBy+", Len:"+groupByLength+", Match:"+groupByMatch+", sortBy:"+sortBy+", Top:"+seriesCount+"</div><div id='"+pinid+"' class='col-lg-12' style='padding: 0 !important;'></div></div>");
-        var chart = c3.generate({
+        charts[pinid] = c3.generate({
             data: {
                 xs: pinxs,
-                columns: pincolumns,
-                colors: pincolor
+                columns: pincolumns
             },
             axis: {
                 x: {
@@ -2262,11 +2273,13 @@
                 show: false
             }
         });
-        $("#"+pinid).data('c3-chart', chart);
+
+        $("#"+pinid).data('c3-chart', charts[pinid]);
     }
     let pincolumns = [];//use this for pinning
     let pinxs = {};
     let pincolor = {};
+    let charts = {};
 
     let pinYlabel = "";
     function drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered) {
@@ -2292,7 +2305,7 @@
             if (curI >= countMax) {
                 break;
             }
-            let legend = (100 * value1 / groupByCountSum).toFixed(2) + "% " + type;
+            let legend = (100 * value1 / groupByCountSum).toFixed(2) + "% " + type + ":"+sortBy;
 
             curI++
             pincolor[type] = tmpColorMap.get(type);
@@ -3165,7 +3178,7 @@
                 '                            <option ' + (seriesCount == 30 ? "selected" : "") + ' value=30>30</option>\n' +
                 '                            <option ' + (seriesCount == 40 ? "selected" : "") + ' value=40>40</option>\n' +
                 '                            </select> ';
-            toolBarOptions += '<button id="pin-input" class="btn-info" type="submit">PIN</button>';
+            toolBarOptions += '<button style="cursor: pointer;" id="pin-input" class="btn-info" type="submit">PIN</button>&nbsp;<button style="cursor: pointer;" id="add-chart" class="btn-info" type="submit">LOAD</button>';
         }
 
         if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
@@ -3210,6 +3223,9 @@
 
         $("#pin-input").on("click", (event) => {
             pinChart();
+        });
+        $("#add-chart").on("click", (event) => {
+            addChart();
         });
     }
 
@@ -4981,10 +4997,10 @@
                     </div>
 
                     <div class="col-lg-2">
-                        <button id="filter-apply" class="btn btn-block btn-info" type="submit">Apply Filter(s)</button>
+                        <button style="cursor: pointer;" id="filter-apply" class="btn btn-block btn-info" type="submit">Apply Filter(s)</button>
                     </div>
                     <div class="col-lg-2">
-                        <button id="filter-reset" class="btn btn-block btn-info" type="submit">Reset Filter(s)</button>
+                        <button style="cursor: pointer;" id="filter-reset" class="btn btn-block btn-info" type="submit">Reset Filter(s)</button>
                     </div>
                 </div>
 
