@@ -2213,17 +2213,73 @@
         $(id).html(table);
     }
 
+    function closePin(id){
+        $("#"+id).remove();
+    }
+
+    let pinCount = 0;
+    function pinChart(){
+        let pinid = "pinid"+pinCount;
+        let closepin = "pinclose"+pinCount;
+        pinCount++;
+        $('#statetablewrapper').append("<div id='"+closepin+"'style='border-style: dotted hidden hidden hidden;' class='statetable col-lg-12'><div style='float:right;cursor: pointer;' onclick='closePin(\""+closepin+"\")'>Close</div><div>Pinned chart Event:"+customEvent+", groupBy:"+groupBy+", Len:"+groupByLength+", Match:"+groupByMatch+", sortBy:"+sortBy+", Top:"+seriesCount+"</div><div id='"+pinid+"' class='col-lg-12' style='padding: 0 !important;'></div></div>");
+        var chart = c3.generate({
+            data: {
+                xs: pinxs,
+                columns: pincolumns,
+                colors: pincolor
+            },
+            axis: {
+                x: {
+                    type: "timeseries",
+                    localtime: false,
+                    tick: {
+                        format: function (d) {
+                            const time = moment.utc(d);
+                            if (time.year() > 1970) {
+                                return time.format("D/M HH:mm:ss");
+                            }
+                            return (time.format("X") / 60).toFixed(2) + "m";
+                        },
+                        count: 100,
+                    }
+                },
+                y: {
+                    label: pinYlabel
+                },
+            },
+            bindto: document.getElementById(pinid),
+            size: {
+                height: 300
+            },
+            legend: {
+                position: 'right'
+            },
+            subchart: {
+                show: false
+            },
+            point: {
+                show: false
+            }
+        });
+        $("#"+pinid).data('c3-chart', chart);
+    }
+    let pincolumns = [];//use this for pinning
+    let pinxs = {};
+    let pincolor = {};
+
+    let pinYlabel = "";
     function drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered) {
         if(isContextViewFiltered){
             document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
         }else{
             document.getElementById("statetable").innerHTML = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getContextHintNote(false)+"</div><div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
         }
-        let xs = {};
-        let columns = [];
+        pinxs = {};//clear off while drawing new, this will be the source for next pinning
+        pincolumns = [];//clear off while drawing new, this will be the source for next pinning
         let countMax = seriesCount;
         let curI = 0;
-        let color = {};
+        pincolor = {};//clear off while drawing new, this will be the source for next pinning
         let contextDataRecords = undefined;
         if (contextData != undefined && contextData.records != undefined) {
             contextDataRecords = contextData.records[customEvent];
@@ -2239,11 +2295,11 @@
             let legend = (100 * value1 / groupByCountSum).toFixed(2) + "% " + type;
 
             curI++
-            color[type] = tmpColorMap.get(type);
+            pincolor[type] = tmpColorMap.get(type);
             let series = [];
             let series_x = [];
             let cumulative_map = new Map();
-            xs[legend] = legend + "_x";
+            pinxs[legend] = legend + "_x";
             series_x.push(legend + "_x");
             series.push(legend);
             for (let [tid, value] of tidSortByMetricMap) {
@@ -2286,15 +2342,16 @@
                     prevTmpTime = tmpTime;
                 }
             }
-            columns.push(series);
-            columns.push(series_x);
+            pincolumns.push(series);
+            pincolumns.push(series_x);
         }
 
+        pinYlabel = sortBy;
         var chart = c3.generate({
             data: {
-                xs: xs,
-                columns: columns,
-                colors: color
+                xs: pinxs,
+                columns: pincolumns,
+                colors: pincolor
             },
             axis: {
                 x: {
@@ -2304,7 +2361,7 @@
                         format: function (d) {
                             const time = moment.utc(d);
                             if (time.year() > 1970) {
-                                return time.format("HH:mm:ss");
+                                return time.format("D/M HH:mm:ss");
                             }
                             return (time.format("X") / 60).toFixed(2) + "m";
                         },
@@ -3108,6 +3165,7 @@
                 '                            <option ' + (seriesCount == 30 ? "selected" : "") + ' value=30>30</option>\n' +
                 '                            <option ' + (seriesCount == 40 ? "selected" : "") + ' value=40>40</option>\n' +
                 '                            </select> ';
+            toolBarOptions += '<button id="pin-input" class="btn-info" type="submit">PIN</button>';
         }
 
         if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
@@ -3149,6 +3207,10 @@
         console.log("getToolBarOptions2 customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " spanInput:"+spanInput);
 
         $('#'+id).html(toolBarOptions);
+
+        $("#pin-input").on("click", (event) => {
+            pinChart();
+        });
     }
 
     function invertTree(tree) {
