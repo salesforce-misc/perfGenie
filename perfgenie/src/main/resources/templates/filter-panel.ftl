@@ -2099,7 +2099,7 @@
                         .attr("fill", "white");
 
                     x = x + (tmpEpoch - curTime) / downScale;
-                    let key = (groupByIndex != -1 &&  record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                    let key = (groupByIndex != -1 &&  record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
                     let metricVal = record[sortByIndex];
                     let key1 = tmpColorMap.get(key);
                     key1 = key1.replace("#", "_");
@@ -2583,6 +2583,9 @@
     let tmpColorMap = new Map();
 
     function genRequestTable() {
+        genRequestTableTouse();
+        return;
+
         console.log("genRequestTable start");
         setToolBarOptions("statetabledrp");
 
@@ -2843,7 +2846,7 @@
                                 if ((recordSpan + record[timestampIndex]) > maxEndTimeOfReq) {
                                     maxEndTimeOfReq = recordSpan + record[timestampIndex];
                                 }
-                                let key = (groupByIndex != -1 &&  record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                let key = (groupByIndex != -1 &&   record[groupByIndex] != undefined &&record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
                                 if (!tmpColorMap.has(key)) {
                                     tmpColorMap.set(key, randomColor());
                                     groupByCount++;
@@ -2883,7 +2886,7 @@
                                     table = table + "</tr>";
                                 }
                             } else {
-                                let key = (groupByIndex != -1 &&  record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                let key = (groupByIndex != -1 &&  record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
                                 if (metricSumMap[key] == undefined) {
                                     metricSumMap[key] = Array(metricsIndexArray.length + 1).fill(0);
                                 }
@@ -3024,6 +3027,7 @@
     }
 
     function enableDataTable(order) {
+        /*
         if (contextTable != undefined) {
             contextTablePage = 0; //reset to 0 except 1st time
         }
@@ -3050,7 +3054,7 @@
                 }
             ],
             "sDom": '<"toolbar">tfp<"clear">'
-        });
+        });*/
     }
 
     function setToolBarOptions(id) {
@@ -4081,19 +4085,16 @@
     let tableRows = [];
     let tableHeader = [];
 
-    function genRequestTableNew() {
+    function genRequestTableTouse() {
+        console.log("genRequestTable start");
+        setToolBarOptions("statetabledrp");
+
         let start1 = performance.now();
-        let table = "";
-        let tidDatalistVal = filterMap["tid"];
-        let reqDatalistVal = filterMap["req"];
-        let contextDatalistVal = filterMap["context"];
-        let contextDataTypeVal = -1;
-        if (contextDatalistVal != undefined && contextDatalistVal == "async") {
-            contextDataTypeVal = 6;
-        } else if (contextDatalistVal != undefined && contextDatalistVal == "sync") {
-            contextDataTypeVal = 2;
+        //setCustomEvent();
+
+        if (customEvent == "" || customEvent == undefined) {
+            return;
         }
-        let contextStart = getContextTree(1).context.start;
 
         //status graph start
         let downScale = 200;
@@ -4111,103 +4112,150 @@
         let groupByCountSum = 0;
         //status graph end
 
-        let contextTidMap = getContextTree(1).context.tidMap;
-        let tmporgusrMap = new Map();
-        let tmpcpuTimeMap = new Map();
-        let tmprunTimeMap = new Map();
-        let tmpgcTimeMap = new Map();
-        let tmpbytesTimeMap = new Map();
-        let tmpdbTimeMap = new Map();
-        let tmpdbHoldingTimeMap = new Map();
-        let tmpapexTimeMap = new Map();
-        let tmpdbcpuTimeMap = new Map();
-        let tmpsfpTimeMap = new Map();
-        let rowCountMap = new Map();
-        let tmpdqLatencyMap = new Map();
+        let metricSumMap = {};
+        let tidDatalistVal = filterMap["tid"];
+
         let event = getEventType();
+        let isJstack = false;
+        if(event == "Jstack"){
+            isJstack = true;
+        }
+
+        let dimIndexMap = {};
+        let metricsIndexMap = {};
+        let metricsIndexArray = [];
+        let isDimIndexMap = {};
+        let groupByIndex = -1;
+        let sortByIndex = -1;
+        let spanIndex = -1;
+        let timestampIndex = -1;
+        let tidRowIndex = -1;
+        let isContextViewFiltered = true;
+
+
+        let sortByFound = false;
+        let groupByFound = false;
+
+        for (let val in contextData.header[customEvent]) {
+            const tokens = contextData.header[customEvent][val].split(":");
+            if (tokens[1] == "number") {
+                metricsIndexArray.push(val);
+                metricsIndexMap[tokens[0]] = val;
+            }
+            if (groupBy == tokens[0]) {
+                groupByIndex = val;
+                groupByFound = true;
+            }
+            if (sortBy == tokens[0]) {
+                sortByFound = true;
+                sortByIndex = val;
+            }
+            if ("tid" == tokens[0]) {
+                tidRowIndex = val;
+            }
+
+            if ("duration" == tokens[0]) { // TODO: take from user
+                spanIndex = val;
+            }
+            if ("timestamp" == tokens[0]) { // TODO: take from user
+                timestampIndex = val;
+            }
+            if (tokens[1] == "text" || tokens[1] == "timestamp") {
+                dimIndexMap[tokens[0]] = val;
+                isDimIndexMap[val]=tokens[0];
+            }
+        }
+
+        if (!groupByFound) {
+            //groupBy = "tid";
+            //groupByIndex=tidRowIndex;
+        }
+        if (!sortByFound) {
+            sortBy = "duration";
+            sortByIndex = spanIndex;
+        }
+
+        addContextHints();
+
+        let contextStart = getContextTree(1).context.start;
+        let contextTidMap = getContextTree(1).context.tidMap;
+        let contextDataRecords = undefined;
+        if (contextData != undefined && contextData.records != undefined) {
+            contextDataRecords = contextData.records[customEvent];
+        }
 
         let rowIndex = -1;
         tableHeader = [];
         tableRows = [];
-        getContextTableHeadernew(groupBy, contextDataTypeVal, tableHeader);
+        getContextTableHeadernew(groupBy, tableHeader);
 
-        filteredStackMap[FilterLevel.LEVEL3] = {};
+        let table = "<table   style=\"border:none;padding=0px;width: 100%;\" id=\"state-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\">" + getEventTableHeader(groupBy);
 
-        //if only frame filter is selected then we need to include stacks that are not part of any requests.
-        if (frameFilterString !== "" && tidDatalistVal == undefined && isFilterEmpty()) {
+        if((!isFilterEmpty(dimIndexMap) || frameFilterString !== "") && spanIndex == -1 ){
+            isContextViewFiltered = false;//record do not have duration span to apply context filters
+        }
+        //if only frame filter is selected then we need to include stacks that are not part of any request spans.
+        if (frameFilterString !== "" && tidDatalistVal == undefined && isFilterEmpty(dimIndexMap)) {
             for (var tid in contextTidMap) {
-                if (isTSView) {
+                if (isJstack  ) {
                     for (let index = 0; index < contextTidMap[tid].length; index++) {
-                        if (frameFilterStackMap[event][contextTidMap[tid][index].hash] !== undefined) {
-                            if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
-                                filteredStackMap[FilterLevel.LEVEL3][tid] = [];
+                        if ((pStart === '' || pEnd === '') || (contextTidMap[tid][index].time + contextStart) >= pStart && (contextTidMap[tid][index].time + contextStart) <= pEnd) { // apply time range filter
+                            if (frameFilterStackMap[event][contextTidMap[tid][index].hash] !== undefined) {
+                                if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
+                                    filteredStackMap[FilterLevel.LEVEL3][tid] = [];
+                                }
+                                filteredStackMap[FilterLevel.LEVEL3][tid].push(contextTidMap[tid][index]);
                             }
-                            filteredStackMap[FilterLevel.LEVEL3][tid].push(contextTidMap[tid][index]);
                         }
                     }
                 }
                 //generate context table data, need to include requests that has frame filter found stacks
-                if (contextData.records[tid] != undefined) {
+                if (contextDataRecords[tid] != undefined) {
                     let includeTid = false;
                     let reqArray = [];
                     let recordIndex = -1;
-                    contextData.records[tid].forEach(function (obj) {
+                    contextDataRecords[tid].forEach(function (obj) {
+                        let record = obj.record;
                         let flag = false;
                         recordIndex++;
-
-                        if ((obj.type == undefined || (contextDataTypeVal == -1 && (obj.type == 2 || obj.type == 6)) || obj.type == contextDataTypeVal || (reqDatalistVal != undefined && obj.type == 4)) &&
-                            filterMatch(obj, contextDataTypeVal)) {
-
-                            let end = obj.epoch - contextStart + obj.runTime;
-                            let start = obj.epoch - contextStart;
-
-                            try {
-                                //do a binary search
-                                let entryIndex = isinRequest(contextTidMap[tid], start, end);
-                                if (entryIndex != -1) {
-                                    let requestArr = contextTidMap[tid];
-                                    let curIndex = entryIndex;
-                                    //consider all matching requests downward
-                                    while (flag == false && curIndex >= 0 && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
-                                        if (frameFilterStackMap[event][requestArr[curIndex].hash] !== undefined) {
-                                            flag = true;
-                                        }
-                                        curIndex--;
+                        let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
+                        if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
+                            if(record[spanIndex] == undefined){
+                                flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
+                            }else {
+                                let end = record[timestampIndex] - contextStart + recordSpan;
+                                let start = record[timestampIndex] - contextStart;
+                                try {
+                                    //do a binary search
+                                    let entryIndex = isinRequest(contextTidMap[tid], start, end);
+                                    if (entryIndex != -1) {
+                                        let requestArr = contextTidMap[tid];
+                                        flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false);
                                     }
-                                    curIndex = entryIndex + 1;
-                                    //consider all matching requests upward
-                                    while (flag == false && curIndex < requestArr.length && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
-                                        if (frameFilterStackMap[event][requestArr[curIndex].hash] !== undefined) {
-                                            flag = true;
-                                        }
-                                        curIndex++;
-                                    }
+                                } catch (err) {
+                                    //console.log("tid not found in JFR" + tid.key + " " + err.message);
                                 }
-                            } catch (err) {
-                                //console.log("tid not found in JFR" + tid.key + " " + err.message);
                             }
                         }
 
                         if (flag) {
-                            if ((tableFormat == 2 || tableFormat == 3) && (obj.type == 2 || obj.type == 6)) {
+                            if ((tableFormat == 2 || tableFormat == 3)) {
                                 includeTid = true;
                                 reqArray.push(recordIndex);
-                                if ((obj.runTime + obj.epoch) > maxEndTimeOfReq) {
-                                    maxEndTimeOfReq = obj.runTime + obj.epoch;
+                                if ((recordSpan + record[timestampIndex]) > maxEndTimeOfReq) {
+                                    maxEndTimeOfReq = recordSpan + record[timestampIndex];
                                 }
-                                let key = eval("obj." + groupBy);
+                                let key = (groupByIndex != -1 && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
                                 if (!tmpColorMap.has(key)) {
                                     tmpColorMap.set(key, randomColor());
                                     groupByCount++;
                                 }
-
-                                let metricValue = eval("obj." + sortBy);
+                                let metricValue = record[metricsIndexMap[sortBy]];
                                 if (metricValue != undefined) {
                                     groupByCountSum += metricValue;
                                 } else {
                                     metricValue = 0;
                                 }
-
                                 if (tmpGgroupByTypeSortByMetricMap.has(key)) {
                                     tmpGgroupByTypeSortByMetricMap.set(key, tmpGgroupByTypeSortByMetricMap.get(key) + metricValue);
                                 } else {
@@ -4219,72 +4267,24 @@
                                 } else {
                                     tmpTidSortByMetricMap.set(tid, metricValue);
                                 }
-
                             }
-                            if (groupBy == "none") {
-                                if (obj.runTime > (filterMap["runTimeThreshold"] ?? defaultRunTimeThreshold) || reqDatalistVal !== undefined) {
+                            if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
+                                if (record[metricsIndexMap[spanInput]] >= spanThreshold) {//todo change names spanInput to recordInput, spanThreshold to recordThreshold
                                     rowIndex++;
                                     tableRows[rowIndex] = [];
-                                    table += getContextTableRownew(obj, tableFormat, tableRows[rowIndex]);
+                                    getContextTableRownew(record, isDimIndexMap, timestampIndex, tidRowIndex, tableRows[rowIndex]);
                                 }
-                            } else if (obj.type != 4) {
-                                if (groupBy == "userId") {
-                                    if (!tmporgusrMap.has(obj.userId)) {
-                                        tmporgusrMap.set(obj.userId, obj.orgId)
-                                    }
+                            } else {
+                                let key = (groupByIndex != -1 && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+
+                                if (metricSumMap[key] == undefined) {
+                                    metricSumMap[key] = Array(metricsIndexArray.length + 1).fill(0);
                                 }
-                                let key = eval("obj." + groupBy);
-                                if (tmpcpuTimeMap.has(key)) {
-                                    rowCountMap.set(key, rowCountMap.get(key) + 1);
-                                    tmpcpuTimeMap.set(key, tmpcpuTimeMap.get(key) + obj.cpuTime);
-                                    tmprunTimeMap.set(key, tmprunTimeMap.get(key) + obj.runTime);
-                                    if (obj.bytes != undefined) {
-                                        tmpbytesTimeMap.set(key, tmpbytesTimeMap.get(key) + obj.bytes);
-                                    }
-                                    tmpdbcpuTimeMap.set(key, tmpdbcpuTimeMap.get(key) + obj.dbCpu);
-                                } else {
-                                    rowCountMap.set(key, 1);
-                                    tmpcpuTimeMap.set(key, obj.cpuTime);
-                                    tmprunTimeMap.set(key, obj.runTime);
-                                    if (obj.bytes != undefined) {
-                                        tmpbytesTimeMap.set(key, obj.bytes);
-                                    }
-                                    tmpdbcpuTimeMap.set(key, obj.dbCpu);
+
+                                for (let i = 0; i < metricsIndexArray.length; i++) {
+                                    metricSumMap[key][i] += record[metricsIndexArray[i]];
                                 }
-                                if (tmpdbTimeMap.has(key)) {
-                                    if (obj.dbTime != undefined) {
-                                        tmpdbTimeMap.set(key, tmpdbTimeMap.get(key) + obj.dbTime);
-                                    }
-                                } else {
-                                    if (obj.dbTime != undefined) {
-                                        tmpdbTimeMap.set(key, obj.dbTime);
-                                    }
-                                }
-                                if (obj.hasOwnProperty("dbHoldingTime")) {
-                                    tmpdbHoldingTimeMap.set(key, (tmpdbHoldingTimeMap.get(key) ?? 0) + obj["dbHoldingTime"]);
-                                }
-                                if (tmpdqLatencyMap.has(key)) {
-                                    if (obj.dqLatency != undefined) {
-                                        tmpdqLatencyMap.set(key, tmpdqLatencyMap.get(key) + obj.dqLatency);
-                                    }
-                                } else {
-                                    if (obj.dqLatency != undefined) {
-                                        tmpdqLatencyMap.set(key, obj.dqLatency);
-                                    }
-                                }
-                                if (tmpsfpTimeMap.has(key)) {
-                                    if (obj.spTime != undefined) {
-                                        tmpapexTimeMap.set(key, tmpapexTimeMap.get(key) + obj.apexTime);
-                                        tmpgcTimeMap.set(key, tmpgcTimeMap.get(key) + obj.gcTime);
-                                        tmpsfpTimeMap.set(key, tmpsfpTimeMap.get(key) + obj.spTime);
-                                    }
-                                } else {
-                                    if (obj.spTime != undefined) {
-                                        tmpsfpTimeMap.set(key, obj.spTime);
-                                        tmpgcTimeMap.set(key, obj.gcTime);
-                                        tmpapexTimeMap.set(key, obj.apexTime);
-                                    }
-                                }
+                                metricSumMap[key][metricsIndexArray.length] += 1;
                             }
                         }
                     });
@@ -4296,93 +4296,62 @@
                 }
             }
         } else {
-            for (var tid in contextData.records) {
+            for (var tid in contextDataRecords) {
                 let includeTid = false;
                 let reqArray = [];
                 let recordIndex = -1;
                 if (tidDatalistVal == undefined || tidDatalistVal == tid) {
-                    contextData.records[tid].forEach(function (obj) {
+                    contextDataRecords[tid].forEach(function (obj) {
+                        let record = obj.record;
                         let flag = false;
                         recordIndex++;
-                        if ((obj.type == undefined || (contextDataTypeVal == -1 && (obj.type == 2 || obj.type == 6)) || obj.type == contextDataTypeVal || (reqDatalistVal != undefined && obj.type == 4)) &&
-                            filterMatch(obj, contextDataTypeVal)) {
-                            flag = true;
-                        }
+                        let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
+                        if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
+                            if (record[spanIndex] == undefined) {
+                                flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
+                            } else {
+                                //context filter matched, but check if samples of request is matching frame filter
+                                if (frameFilterString !== "") {
+                                    flag = false;
 
-                        //context filter matched, but check if samples of request is matching frame filter
-                        if (flag == true && frameFilterString !== "") {
-                            flag = false;
+                                    //check if the request has a stack and if stack is in frameFilterStackMap
+                                    let end = record[timestampIndex] - contextStart + recordSpan;
+                                    let start = record[timestampIndex] - contextStart;
 
-                            //check if the request has a stack and if stack is in frameFilterStackMap
-                            let end = obj.epoch - contextStart + obj.runTime;
-                            let start = obj.epoch - contextStart;
-
-                            try {
-                                //do a binary search
-                                let entryIndex = isinRequest(contextTidMap[tid], start, end);
-                                if (entryIndex != -1) {
-                                    let requestArr = contextTidMap[tid];
-                                    let curIndex = entryIndex;
-                                    //consider all matching requests downward
-                                    while (curIndex >= 0 && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
-                                        if (frameFilterStackMap[event][requestArr[curIndex].hash] !== undefined) {
-                                            flag = true;
-                                            if (isTSView) {
-                                                if (obj.type != 4) {//skip sub requests
-                                                    if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
-                                                        filteredStackMap[FilterLevel.LEVEL3][tid] = [];
-                                                    }
-                                                    filteredStackMap[FilterLevel.LEVEL3][tid].push(requestArr[curIndex]);
-                                                }
-                                            } else {
-                                                break;
-                                            }
+                                    try {
+                                        //do a binary search
+                                        let entryIndex = isinRequest(contextTidMap[tid], start, end);
+                                        if (entryIndex != -1) {
+                                            let requestArr = contextTidMap[tid];
+                                            flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false);
                                         }
-                                        curIndex--;
+                                    } catch (err) {
+                                        //console.log("tid not found in JFR" + tid + " " + err.message);
                                     }
-                                    curIndex = entryIndex + 1;
-                                    //consider all matching requests upward
-                                    while (curIndex < requestArr.length && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
-                                        if (frameFilterStackMap[event][requestArr[curIndex].hash] !== undefined) {
-                                            flag = true;
-                                            if (isTSView) {
-                                                if (obj.type != 4) {//skip sub requests
-                                                    if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
-                                                        filteredStackMap[FilterLevel.LEVEL3][tid] = [];
-                                                    }
-                                                    filteredStackMap[FilterLevel.LEVEL3][tid].push(requestArr[curIndex]);
-                                                }
-                                            } else {
-                                                break;
-                                            }
-                                        }
-                                        curIndex++;
-                                    }
+                                }else{
+                                    flag = true;
                                 }
-                            } catch (err) {
-                                //console.log("tid not found in JFR" + tid + " " + err.message);
                             }
                         }
 
                         if (flag) {
-                            if ((tableFormat == 2 || tableFormat == 3) && (obj.type == 2 || obj.type == 6)) {
+                            if ((tableFormat == 2 || tableFormat == 3)) {
                                 includeTid = true;
                                 reqArray.push(recordIndex);
-                                if ((obj.runTime + obj.epoch) > maxEndTimeOfReq) {
-                                    maxEndTimeOfReq = obj.runTime + obj.epoch;
+                                if ((recordSpan + record[timestampIndex]) > maxEndTimeOfReq) {
+                                    maxEndTimeOfReq = recordSpan + record[timestampIndex];
                                 }
-                                let key = eval("obj." + groupBy);
+                                let key = (groupByIndex != -1 &&   record[groupByIndex] != undefined &&record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
                                 if (!tmpColorMap.has(key)) {
                                     tmpColorMap.set(key, randomColor());
                                     groupByCount++;
                                 }
-                                let metricValue = eval("obj." + sortBy);
+                                let metricValue = record[metricsIndexMap[sortBy]];
                                 if (metricValue != undefined) {
                                     groupByCountSum += metricValue;
                                 } else {
                                     metricValue = 0;
                                 }
-
                                 if (tmpGgroupByTypeSortByMetricMap.has(key)) {
                                     tmpGgroupByTypeSortByMetricMap.set(key, tmpGgroupByTypeSortByMetricMap.get(key) + metricValue);
                                 } else {
@@ -4395,71 +4364,22 @@
                                     tmpTidSortByMetricMap.set(tid, metricValue);
                                 }
                             }
-
-                            if (groupBy == "none") {
-                                if (obj.runTime > (filterMap["runTimeThreshold"] ?? defaultRunTimeThreshold) || reqDatalistVal !== undefined) {
+                            if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
+                                if (record[metricsIndexMap[spanInput]] >= spanThreshold) {
                                     rowIndex++;
                                     tableRows[rowIndex] = [];
-                                    table += getContextTableRownew(obj, tableFormat, tableRows[rowIndex]);
+                                    getContextTableRownew(record, isDimIndexMap, timestampIndex, tidRowIndex, tableRows[rowIndex]);
                                 }
-                            } else if (obj.type != 4) {
-                                if (groupBy == "userId") {
-                                    if (!tmporgusrMap.has(obj.userId)) {
-                                        tmporgusrMap.set(obj.userId, obj.orgId)
-                                    }
+                            } else {
+                                let key = (groupByIndex != -1 &&  record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                if (metricSumMap[key] == undefined) {
+                                    metricSumMap[key] = Array(metricsIndexArray.length + 1).fill(0);
                                 }
-                                let key = eval("obj." + groupBy);
-                                if (tmpcpuTimeMap.has(key)) {
-                                    rowCountMap.set(key, rowCountMap.get(key) + 1);
-                                    tmpcpuTimeMap.set(key, tmpcpuTimeMap.get(key) + obj.cpuTime);
-                                    tmprunTimeMap.set(key, tmprunTimeMap.get(key) + obj.runTime);
-                                    if (obj.bytes != undefined) {
-                                        tmpbytesTimeMap.set(key, tmpbytesTimeMap.get(key) + obj.bytes);
-                                    }
-                                    tmpdbcpuTimeMap.set(key, tmpdbcpuTimeMap.get(key) + obj.dbCpu);
-                                } else {
-                                    rowCountMap.set(key, 1);
-                                    tmpcpuTimeMap.set(key, obj.cpuTime);
-                                    tmprunTimeMap.set(key, obj.runTime);
-                                    if (obj.bytes != undefined) {
-                                        tmpbytesTimeMap.set(key, obj.bytes);
-                                    }
-                                    tmpdbcpuTimeMap.set(key, obj.dbCpu);
+
+                                for (let i = 0; i < metricsIndexArray.length; i++) {
+                                    metricSumMap[key][i] += record[metricsIndexArray[i]];
                                 }
-                                if (tmpdbTimeMap.has(key)) {
-                                    if (obj.dbTime != undefined) {
-                                        tmpdbTimeMap.set(key, tmpdbTimeMap.get(key) + obj.dbTime);
-                                    }
-                                } else {
-                                    if (obj.dbTime != undefined) {
-                                        tmpdbTimeMap.set(key, obj.dbTime);
-                                    }
-                                }
-                                if (obj.hasOwnProperty("dbHoldingTime")) {
-                                    tmpdbHoldingTimeMap.set(key, (tmpdbHoldingTimeMap.get(key) ?? 0) + obj["dbHoldingTime"]);
-                                }
-                                if (tmpdqLatencyMap.has(key)) {
-                                    if (obj.dqLatency != undefined) {
-                                        tmpdqLatencyMap.set(key, tmpdqLatencyMap.get(key) + obj.dqLatency);
-                                    }
-                                } else {
-                                    if (obj.dqLatency != undefined) {
-                                        tmpdqLatencyMap.set(key, obj.dqLatency);
-                                    }
-                                }
-                                if (tmpsfpTimeMap.has(key)) {
-                                    if (obj.spTime != undefined) {
-                                        tmpapexTimeMap.set(key, tmpapexTimeMap.get(key) + obj.apexTime);
-                                        tmpgcTimeMap.set(key, tmpgcTimeMap.get(key) + obj.gcTime);
-                                        tmpsfpTimeMap.set(key, tmpsfpTimeMap.get(key) + obj.spTime);
-                                    }
-                                } else {
-                                    if (obj.spTime != undefined) {
-                                        tmpsfpTimeMap.set(key, obj.spTime);
-                                        tmpgcTimeMap.set(key, obj.gcTime);
-                                        tmpapexTimeMap.set(key, obj.apexTime);
-                                    }
-                                }
+                                metricSumMap[key][metricsIndexArray.length] += 1;
                             }
                         }
                     });
@@ -4471,14 +4391,12 @@
                 }
             }
         }
-
         let end1 = performance.now();
         console.log("genRequestTable 0 time:" + (end1 - start1))
         let start = performance.now();
-        let [order, tp] = getOrderandType();
-
+        let order = getOrderandType();
         if (tableFormat == 2 || tableFormat == 3) {
-            let minStart = getContextTree(1, EventType.METHOD).context.start; //records are aligned to method profile context start
+            let minStart = getContextTree(1, getEventType()).context.start; //records are aligned to method profile context start
             let chartWidth = maxEndTimeOfReq - minStart;
             if (chartWidth < 600000) {//min 10 min
                 chartWidth = 600000;
@@ -4493,48 +4411,46 @@
                 index++;
             }
             if (tableFormat == 2) {
-                drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap);
-                addLegend("#legendid", groupByTypeSortByMetricMap, groupByCount, groupByCountSum, tp);
+                drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered);
+                addLegend("#legendid", groupByTypeSortByMetricMap, groupByCount, groupByCountSum);
                 addYAxis("#yaxisid", 0, 0, 0, 17, 0, lineCount, 500, totalRows * rowHeight);
                 addXAxis("#xaxisid", 15, 0, 0, 0, 0, chartWidth, chartWidth, 50, minStart, downScale);
             } else {
-                drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum);
+                drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered);
             }
         } else {
-            for (let [key, value] of tmpcpuTimeMap) {
-                if (tableFormat == 0) {
-                    if (tmprunTimeMap.get(key) > (filterMap["runTimeThreshold"] ?? defaultRunTimeThreshold)) {
-                        rowIndex++;
-                        tableRows[rowIndex] = [];
-                        if (groupBy == "userId") {
-                            tableRows[rowIndex].push({"v": (key == undefined ? "NA" : key)}, {"v": tmporgusrMap.get(key)}, {"v": tmprunTimeMap.get(key)}, {"v": value}, {"v": (tmpdbTimeMap.get(key) == undefined ? "NA" : tmpdbTimeMap.get(key))}, {"v": (tmpdbHoldingTimeMap.get(key) ?? "NA")}, {"v": (tmpapexTimeMap.get(key) == undefined ? "NA" : tmpapexTimeMap.get(key))}, {"v": tmpdbcpuTimeMap.get(key)}, {"v": (tmpgcTimeMap.get(key) == undefined ? "NA" : tmpgcTimeMap.get(key))}, {"v": (tmpsfpTimeMap.get(key) == undefined ? "NA" : tmpsfpTimeMap.get(key))}, {"v": tmpbytesTimeMap.get(key)}, {"v": (tmpdqLatencyMap.get(key) == undefined ? "NA" : tmpdqLatencyMap.get(key))}, {"v": rowCountMap.get(key)});
-                        } else {
-                            tableRows[rowIndex].push({"v": (key == undefined ? "NA" : key)}, {"v": tmprunTimeMap.get(key)}, {"v": value}, {"v": (tmpdbTimeMap.get(key) == undefined ? "NA" : tmpdbTimeMap.get(key))}, {"v": (tmpdbHoldingTimeMap.get(key) ?? "NA")}, {"v": (tmpapexTimeMap.get(key) == undefined ? "NA" : tmpapexTimeMap.get(key))}, {"v": tmpdbcpuTimeMap.get(key)}, {"v": (tmpgcTimeMap.get(key) == undefined ? "NA" : tmpgcTimeMap.get(key))}, {"v": (tmpsfpTimeMap.get(key) == undefined ? "NA" : tmpsfpTimeMap.get(key))}, {"v": tmpbytesTimeMap.get(key)}, {"v": (tmpdqLatencyMap.get(key) == undefined ? "NA" : tmpdqLatencyMap.get(key))}, {"v": rowCountMap.get(key)});
-                        }
+            if (!(groupBy == "" || groupBy == undefined || groupBy == "All records")) {
+                for (let dim in metricSumMap) {
+                    rowIndex++;
+                    tableRows[rowIndex] = [];
+                    if(groupBy == "tid"){
+                        tableRows[rowIndex].push({"v": (dim == undefined ? "NA" : Number(dim)), "p": "hint='"+groupBy+"'"});
+                    }else {
+                        tableRows[rowIndex].push({"v": (dim == undefined ? "NA" : dim), "p": "hint='"+groupBy+"'"});
                     }
-                } else {
-                    if (tmprunTimeMap.get(key) > (filterMap["runTimeThreshold"] ?? defaultRunTimeThreshold)) {
-                        rowIndex++;
-                        tableRows[rowIndex] = [];
-                        if (groupBy == "userId") {
-                            tableRows[rowIndex].push({"v": (key == undefined ? "NA" : key)}, {"v": tmporgusrMap.get(key)}, {"v": (100 * tmprunTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2)}, {"v": (100 * value / tmprunTimeMap.get(key)).toFixed(2)}, {"v": (tmpdbTimeMap.get(key) == undefined ? "NA" : (100 * tmpdbTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": (!tmpdbHoldingTimeMap.has(key) ? "NA" : (100 * tmpdbHoldingTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": (tmpapexTimeMap.get(key) == undefined ? "NA" : (100 * tmpapexTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": (100 * tmpdbcpuTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2)}, {"v": (tmpgcTimeMap.get(key) == undefined ? "NA" : (100 * tmpgcTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": (tmpsfpTimeMap.get(key) == undefined ? "NA" : (100 * tmpsfpTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": tmpbytesTimeMap.get(key)}, {"v": (tmpdqLatencyMap.get(key) == undefined ? "NA" : tmpdqLatencyMap.get(key))}, {"v": rowCountMap.get(key)});
-                        } else {
-                            tableRows[rowIndex].push({"v": (key == undefined ? "NA" : key)}, {"v": (100 * tmprunTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2)}, {"v": (100 * value / tmprunTimeMap.get(key)).toFixed(2)}, {"v": (tmpdbTimeMap.get(key) == undefined ? "NA" : (100 * tmpdbTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": (!tmpdbHoldingTimeMap.has(key) ? "NA" : (100 * tmpdbHoldingTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": (tmpapexTimeMap.get(key) == undefined ? "NA" : (100 * tmpapexTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": (100 * tmpdbcpuTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2)}, {"v": (tmpgcTimeMap.get(key) == undefined ? "NA" : (100 * tmpgcTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": (tmpsfpTimeMap.get(key) == undefined ? "NA" : (100 * tmpsfpTimeMap.get(key) / tmprunTimeMap.get(key)).toFixed(2))}, {"v": tmpbytesTimeMap.get(key)}, {"v": (tmpdqLatencyMap.get(key) == undefined ? "NA" : tmpdqLatencyMap.get(key))}, {"v": rowCountMap.get(key)});
-                        }
+
+                    for (let i = 0; i < metricSumMap[dim].length; i++) {
+                        tableRows[rowIndex].push({"v": Math.round(metricSumMap[dim][i] * 100) / 100});
+
                     }
                 }
             }
-            table = table + "</table>";
-
             SFDataTable(tableRows, tableHeader, "statetable", order);
-
-            if (contextTable != undefined) {
-                contextTablePage = 0; //reset to 0 except 1st time
+            if(!isContextViewFiltered) {
+                $('#statetable').append("<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getContextHintNote(false)+"</div>");
             }
-            console.log("DataTable 0");
         }
-        console.log("DataTable 1");
         setToolBarOptions("statetabledrp");
+
+        $("#event-input").on("change", (event) => {
+            updateUrl("customevent", $("#event-input").val(), true);
+            customEvent = $("#event-input").val();
+            tmpColorMap.clear();
+            setToolBarOptions("statetabledrp");
+            genRequestTable();
+            updateRequestView();
+        });
+
         $("#filter-input").on("change", (event) => {
             updateUrl("groupBy", $("#filter-input").val(), true);
             groupBy = $("#filter-input").val();
@@ -4578,9 +4494,31 @@
             genRequestTable();
             updateRequestView();
         });
+
+        $("#span-input").on("change", (event) => {
+            updateUrl("spanInput", $("#span-input").val(), true);
+            spanInput = $("#span-input").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#span-threshold").on("change", (event) => {
+            updateUrl("spanThreshold", $("#span-threshold").val(), true);
+            spanThreshold = $("#span-threshold").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#cct-panel").css("height", "100%");
+
+
         let end = performance.now();
-        console.log("genRequestTable 1 time:" + (end - start))
+        console.log("genRequestTable 1 time:")
     }
+
+
+
+
+
+
 
     //SF Data table
     let SFDataTablePage = 0;
@@ -4887,89 +4825,48 @@
         SFDataTable();
     }
 
-    function getContextTableHeadernew(groupBy, contextDataTypeVal, row) {
-        if (groupBy == "none") {
-            row.push({"v": "time", "t": -1, "p": "class='context-menu-two'"}, {
-                "v": "tid",
-                "t": 1,
-                "p": "tp=6 class='context-menu-two'"
-            }, {"v": "orgId", "t": -1, "p": "tp=0 class='context-menu-two'"}, {
-                "v": "userId",
-                "t": -1,
-                "p": "tp=1 class='context-menu-two'"
-            }, {"v": "log", "t": -1, "p": "tp=2 class='context-menu-two'"}, {
-                "v": "uri",
-                "t": -1,
-                "p": "tp=4 class='context-menu-two'"
-            }, {"v": "threadName", "t": -1, "p": "tp=8 class='context-menu-two'"}, {
-                "v": "reqId",
-                "t": -1,
-                "p": "tp=3 class='context-menu-one'"
-            }, {"v": "runTime", "t": 1}, {"v": "cpuTime", "t": 1}, {"v": "dbTime", "t": 1}, {
-                "v": "dbHoldingTime",
-                "t": 1
-            }, {"v": "apexTime", "t": 1}, {"v": "dbCpuTime", "t": 1}, {"v": "gcTime", "t": 1}, {
-                "v": "spTime",
-                "t": 1
-            }, {"v": "bytesAllocated", "t": 1}, {"v": "dequeueLatency", "t": 1});
-        } else {
-            if (groupBy == "userId") {
-                row.push({"v": "userId", "t": -1, "p": "tp=1 class=\"context-menu-two\""}, {
-                    "v": "orgId",
-                    "t": -1,
-                    "p": "tp=0 class=\"context-menu-two\""
-                }, {"v": "runTime", "t": 1}, {"v": "cpuTime", "t": 1}, {"v": "dbTime", "t": 1}, {
-                    "v": "dbHoldingTime",
-                    "t": 1
-                }, {"v": "apexTime", "t": 1}, {"v": "dbCpuTime", "t": 1}, {"v": "gcTime", "t": 1}, {
-                    "v": "spTime",
-                    "t": 1
-                }, {"v": "bytesAllocated", "t": 1}, {"v": "dequeueLatency", "t": 1}, {"v": "reqCount", "t": 1});
-            } else {
-                let [order, tp] = getOrderandType();
-                row.push({
-                    "v": getHearderFor(groupBy),
-                    "o": -1,
-                    "p": "tp=" + tp + " class=\"context-menu-two\""
-                }, {"v": "runTime", "t": 1}, {"v": "cpuTime", "t": 1}, {"v": "dbTime", "t": 1}, {
-                    "v": "dbHoldingTime",
-                    "t": 1
-                }, {"v": "apexTime", "t": 1}, {"v": "dbCpuTime", "t": 1}, {"v": "gcTime", "t": 1}, {
-                    "v": "spTime",
-                    "t": 1
-                }, {"v": "bytesAllocated", "t": 1}, {"v": "dequeueLatency", "t": 1}, {"v": "reqCount", "t": 1});
+    function getContextTableHeadernew(groupBy, row) {
+        if (!(groupBy == undefined || groupBy == "" || groupBy == "All records")) {
+            if(groupBy == "tid") {
+                row.push({"v": groupBy, "t": 1, "p": "class='context-menu-two'"});
+            }else{
+                row.push({"v": groupBy, "t": -1, "p": "class='context-menu-two'"});
             }
         }
-        return "";
+        if (contextData != undefined && contextData.header != undefined) {
+            for (let val in contextData.header[customEvent]) {
+                const tokens = contextData.header[customEvent][val].split(":");
+                if (groupBy == undefined || groupBy == "" || groupBy == "All records" || tokens[1] == "number") {
+                    if(tokens[1] == "number") {
+                        row.push({"v": tokens[0], "t": 1});
+                    }else if(tokens[1] == "timestamp"){
+                        row.push({"v": tokens[0], "t": -1, "p": "class='context-menu-one'"});
+                    }else if(tokens[0] == "tid"){
+                        row.push({"v": tokens[0], "t": 1, "p": "class='context-menu-two'"});
+                    }else{
+                        row.push({"v": tokens[0], "t": -1, "p": "class='context-menu-two'"});
+                    }
+                }
+            }
+        }
+        if (!(groupBy == undefined || groupBy == "" || groupBy == "All records")) {
+            row.push({"v": "Count", "t": 1});
+        }
     }
-
-    function getContextTableRownew(obj, tableFormat, row) {
-        if (tableFormat == 0) {
-            if (obj.type == 4) {
-                row.push({"v": moment.utc(obj.epoch).format(dateTimeFormat)}, {"v": obj.tid}, {"v": obj.orgId}, {"v": (obj.userId == undefined ? "NA" : obj.userId)}, {"v": "axapx"}, {"v": obj.ln}, {"v": obj.tn}, {
-                    "v": obj.reqId,
-                    "p": "id=\"" + obj.tid + "_" + obj.epoch + "\""
-                }, {"v": obj.runTime}, {"v": obj.cpuTime}, {"v": (obj.dbTime == undefined ? "NA" : obj.dbTime)}, {"v": (obj.dbHoldingTime ?? "NA")}, {"v": (obj.apexTime ?? "NA")}, {"v": (obj.dbCpu ?? "NA")}, {"v": (obj.gcTime ?? "NA")}, {"v": (obj.spTime ?? "NA")}, {"v": (obj.bytes ?? "NA")}, {"v": (obj.dqLatency == undefined ? "NA" : obj.dqLatency)});
-            } else {
-                row.push({"v": moment.utc(obj.epoch).format(dateTimeFormat)}, {"v": obj.tid}, {"v": obj.orgId}, {"v": (obj.userId == undefined ? "NA" : obj.userId)}, {"v": obj.logType}, {"v": obj.ln}, {"v": obj.tn}, {
-                    "v": obj.reqId,
-                    "p": "id=\"" + obj.tid + "_" + obj.epoch + "\""
-                }, {"v": obj.runTime}, {"v": obj.cpuTime}, {"v": (obj.dbTime == undefined ? "NA" : obj.dbTime)}, {"v": (obj.dbHoldingTime ?? "NA")}, {"v": (obj.apexTime ?? "NA")}, {"v": (obj.dbCpu ?? "NA")}, {"v": (obj.gcTime ?? "NA")}, {"v": (obj.spTime ?? "NA")}, {"v": (obj.bytes ?? "NA")}, {"v": (obj.dqLatency == undefined ? "NA" : obj.dqLatency)});
-            }
-        } else {
-            if (obj.type == 4) {
-                row.push({"v": moment.utc(obj.epoch).format(dateTimeFormat)}, {"v": obj.tid}, {"v": obj.orgId}, {"v": (obj.userId == undefined ? "NA" : obj.userId)}, {"v": "axapx"}, {"v": obj.ln}, {"v": obj.tn}, {
-                    "v": obj.reqId,
-                    "p": "id=\"" + obj.tid + "_" + obj.epoch + "\""
-                }, {"v": (100 * obj.runTime / obj.runTime).toFixed(2)}, {"v": (100 * obj.cpuTime / obj.runTime).toFixed(2)}, {"v": (obj.dbTime == undefined ? "NA" : (100 * obj.dbTime / obj.runTime).toFixed(2))}, {"v": (obj.dbHoldingTime === undefined ? "NA" : (100 * obj.dbHoldingTime / obj.runTime).toFixed(2))}, {"v": (obj.apexTime === undefined ? "NA" : (100 * obj.apexTime / obj.runTime).toFixed(2))}, {"v": (obj.dbCpu === undefined ? "NA" : (100 * obj.dbCpu / obj.runTime).toFixed(2))}, {"v": (obj.gcTime === undefined ? "NA" : (100 * obj.gcTime / obj.runTime).toFixed(2))}, {"v": (obj.spTime === undefined ? "NA" : (100 * obj.spTime / obj.runTime).toFixed(2))}, {"v": (obj.bytes ?? "NA")}, {"v": (obj.dqLatency ?? "NA")});
-            } else {
-                row.push({"v": moment.utc(obj.epoch).format(dateTimeFormat)}, {"v": obj.tid}, {"v": obj.orgId}, {"v": (obj.userId == undefined ? "NA" : obj.userId)}, {"v": obj.logType}, {"v": obj.ln}, {"v": obj.tn}, {
-                    "v": obj.reqId,
-                    "p": "id=\"" + obj.tid + "_" + obj.epoch + "\""
-                }, {"v": (100 * obj.runTime / obj.runTime).toFixed(2)}, {"v": (100 * obj.cpuTime / obj.runTime).toFixed(2)}, {"v": (obj.dbTime == undefined ? "NA" : (100 * obj.dbTime / obj.runTime).toFixed(2))}, {"v": (obj.dbHoldingTime === undefined ? "NA" : (100 * obj.dbHoldingTime / obj.runTime).toFixed(2))}, {"v": (obj.apexTime === undefined ? "NA" : (100 * obj.apexTime / obj.runTime).toFixed(2))}, {"v": (obj.dbCpu === undefined ? "NA" : (100 * obj.dbCpu / obj.runTime).toFixed(2))}, {"v": (obj.gcTime === undefined ? "NA" : (100 * obj.gcTime / obj.runTime).toFixed(2))}, {"v": (obj.spTime === undefined ? "NA" : (100 * obj.spTime / obj.runTime).toFixed(2))}, {"v": (obj.bytes ?? "NA")}, {"v": (obj.dqLatency ?? "NA")});
+    function getContextTableRownew(record, isDimIndexMap, timestampIndex, tidRowIndex, row) {
+        for (let field in record) {
+            if (field == timestampIndex) {
+                row.push({"v": moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'), "p": "id='"+record[tidRowIndex] + "_" + record[field]+"'"});
+            } else if(field == tidRowIndex) {
+                row.push({"v": Number(record[field])});
+            }else {
+                if(isDimIndexMap[field] == "number") {
+                    row.push({"v": record[field]});
+                }else{
+                    row.push({"v": record[field], "p" : "id='"+record[tidRowIndex] + "_" + record[field]+"' hint='"+isDimIndexMap[field]+"'"});
+                }
             }
         }
-        return "";
     }
     //Request context table crash temporary fix END
 
