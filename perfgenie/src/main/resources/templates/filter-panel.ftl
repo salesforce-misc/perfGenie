@@ -2579,12 +2579,9 @@
         }
     }
 
-    let tidIndex = {};
-    let tmpColorMap = new Map();
 
-    function genRequestTable() {
-        genRequestTableTouse();
-        return;
+
+    function genRequestTableWithDataTables() { //deprecated
 
         console.log("genRequestTable start");
         setToolBarOptions("statetabledrp");
@@ -4080,13 +4077,20 @@
     }
     //jfr context end
 
-    //Request context table crash temporary fix START
+    //Request context table crash  fix START
 
     let tableRows = [];
     let tableHeader = [];
 
-    function genRequestTableTouse() {
+    const sfContextDataTable = new SFDataTable("sfContextDataTable");
+    Object.freeze(sfContextDataTable);
+
+    let tidIndex = {};
+    let tmpColorMap = new Map();
+
+    function genRequestTable() {
         console.log("genRequestTable start");
+
         setToolBarOptions("statetabledrp");
 
         let start1 = performance.now();
@@ -4272,7 +4276,19 @@
                                 if (record[metricsIndexMap[spanInput]] >= spanThreshold) {//todo change names spanInput to recordInput, spanThreshold to recordThreshold
                                     rowIndex++;
                                     tableRows[rowIndex] = [];
-                                    getContextTableRownew(record, isDimIndexMap, timestampIndex, tidRowIndex, tableRows[rowIndex]);
+                                    for (let field in record) {
+                                        if (field == timestampIndex) {
+                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'),"id='"+record[tidRowIndex] + "_" + record[field]+"'");
+                                        } else if(field == tidRowIndex) {
+                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],Number(record[field]));
+                                        }else {
+                                            if(isDimIndexMap[field] == "number") {
+                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field]);
+                                            }else{
+                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field],"id='"+record[tidRowIndex] + "_" + record[field]+"' hint='"+isDimIndexMap[field]+"'");
+                                            }
+                                        }
+                                    }
                                 }
                             } else {
                                 let key = (groupByIndex != -1 && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
@@ -4368,7 +4384,19 @@
                                 if (record[metricsIndexMap[spanInput]] >= spanThreshold) {
                                     rowIndex++;
                                     tableRows[rowIndex] = [];
-                                    getContextTableRownew(record, isDimIndexMap, timestampIndex, tidRowIndex, tableRows[rowIndex]);
+                                    for (let field in record) {
+                                        if (field == timestampIndex) {
+                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'),"id='"+record[tidRowIndex] + "_" + record[field]+"'");
+                                        } else if(field == tidRowIndex) {
+                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],Number(record[field]));
+                                        }else {
+                                            if(isDimIndexMap[field] == "number") {
+                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field]);
+                                            }else{
+                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field],"id='"+record[tidRowIndex] + "_" + record[field]+"' hint='"+isDimIndexMap[field]+"'");
+                                            }
+                                        }
+                                    }
                                 }
                             } else {
                                 let key = (groupByIndex != -1 &&  record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
@@ -4424,18 +4452,16 @@
                     rowIndex++;
                     tableRows[rowIndex] = [];
                     if(groupBy == "tid"){
-                        tableRows[rowIndex].push({"v": (dim == undefined ? "NA" : Number(dim)), "p": "hint='"+groupBy+"'"});
+                        sfContextDataTable.addContextTableRow(tableRows[rowIndex],(dim == undefined ? "NA" : Number(dim)),"hint='"+groupBy+"'");
                     }else {
-                        tableRows[rowIndex].push({"v": (dim == undefined ? "NA" : dim), "p": "hint='"+groupBy+"'"});
+                        sfContextDataTable.addContextTableRow(tableRows[rowIndex],(dim == undefined ? "NA" : dim),"hint='"+groupBy+"'");
                     }
-
                     for (let i = 0; i < metricSumMap[dim].length; i++) {
-                        tableRows[rowIndex].push({"v": Math.round(metricSumMap[dim][i] * 100) / 100});
-
+                        sfContextDataTable.addContextTableRow(tableRows[rowIndex],Math.round(metricSumMap[dim][i] * 100) / 100);
                     }
                 }
             }
-            SFDataTable(tableRows, tableHeader, "statetable", order);
+            sfContextDataTable.SFDataTable(tableRows, tableHeader, "statetable", order);
             if(!isContextViewFiltered) {
                 $('#statetable').append("<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getContextHintNote(false)+"</div>");
             }
@@ -4514,323 +4540,12 @@
         console.log("genRequestTable 1 time:")
     }
 
-
-
-
-
-
-
-    //SF Data table
-    let SFDataTablePage = 0;
-    let SFDataTablePageSize = 10;
-    let sfdtsci = 0;
-    let SFDataTableHeader = "";
-    let SFDataTableRows = "";
-    let SFDataTableSearchStr = undefined;
-    let SFDataTableSearchMatchedRows = [];
-    let SFDataTableID = undefined;
-    let sortIcon = "down";
-
-    //First time data table loading, entry point
-    function SFDataTable(rows, header, id, sortColIndex) {
-        if (rows !== undefined) {
-            //reset
-            SFDataTableSearchMatchedRows = [];
-            SFDataTableRows = rows;
-            SFDataTableHeader = header;
-            SFDataTableID = id;
-            SFDataTablePage = 0;
-            if (sortColIndex != undefined) {
-                sfdtsci = sortColIndex;
-            }
-            SFDataTableSearchStr = undefined;
-            //sort data
-            SFDataTableSort(1);
-        }
-
-        let table = "<table id='SFDataTable' class='alternate_color'>\n";
-        table += SFDataTableGetHeader();
-        table += SFDataTableGetRows();
-        table += "</table>";
-        table += SFDataTableGetToolBar();
-        document.getElementById(SFDataTableID).innerHTML = table;
-    }
-
-    function SFDataTableSearch() {
-        SFDataTableSearchMatchedRows = []; //reset search matched rows
-        if (SFDataTableSearchStr !== undefined) {
-            for (let i = SFDataTablePageSize * SFDataTablePage; i < SFDataTableRows.length; i++) {
-                for (let j = 0; j < SFDataTableRows[i].length; j++) {
-                    if (isNaN(SFDataTableRows[i][j].v)) {
-                        if (SFDataTableRows[i][j].v.includes(SFDataTableSearchStr)) {
-                            SFDataTableSearchMatchedRows.push(i);
-                            break;
-                        }
-                    } else {
-                        if (SFDataTableRows[i][j].v != null && SFDataTableRows[i][j].v.toString().includes(SFDataTableSearchStr)) {
-                            SFDataTableSearchMatchedRows.push(i);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    function SFhandlePaginationClick(pageno) {
-        SFDataTablePage = pageno - 1;
-        SFDataTable();
-    }
-
-    function SFhandlePrevious(x) {
-        SFDataTablePage--;
-        SFDataTable();
-    }
-
-    function SFhandleNext(x) {
-        SFDataTablePage++;
-        SFDataTable();
-    }
-
-    function SFDataTableSetSortIndex(x) {
-        let sortorder = 1;
-        if (sfdtsci == x.cellIndex) {
-            if (x.getElementsByTagName("i")[0].className.includes("down")) {
-                sortIcon = "up";
-            } else {
-                sortIcon = "down";
-            }
-            sortorder = -1;//reverse
-        } else {
-            sortIcon = "down";
-            sfdtsci = x.cellIndex;
-        }
-
-        SFDataTablePage = 0; //reset to first page on sort
-        SFDataTableSearchMatchedRows = []; //invalidate any matched search rows
-
-        SFDataTableSort(sortorder);
-
-        SFDataTableSearch();
-
-        SFDataTable();
-    }
-
-
-    function SFDataTableSort(sortorder) {
-        if (SFDataTableHeader[sfdtsci].t == undefined) {
-            SFDataTableAutoFillColType(SFDataTableRows);
-        }
-        if (sortorder === 1) {
-            if (SFDataTableHeader[sfdtsci].t > 0) {
-                SFDataTableRows.sort(SFDataTableSortCompareDescNumber);
-            } else {
-                SFDataTableRows.sort(SFDataTableSortCompareDescString);
-            }
-        } else {
-            SFDataTableRows.reverse();
-        }
-    }
-
-    function SFDataTableGetRows() {
-        let rows = "";
-        let rowsAdded = 0;
-        if (SFDataTableSearchStr != undefined) {
-            for (let i = SFDataTablePageSize * SFDataTablePage; i < SFDataTableSearchMatchedRows.length && rowsAdded < SFDataTablePageSize; i++) {
-                if (rowsAdded < SFDataTablePageSize) {
-                    rows += "<tr>"
-                    for (let j = 0; j < SFDataTableRows[SFDataTableSearchMatchedRows[i]].length; j++) {
-                        rows += "<td>" + SFDataTableRows[SFDataTableSearchMatchedRows[i]][j].v + "</td>";
-                    }
-                    rows += "</tr>\n"
-                    rowsAdded++;
-                }
-            }
-        } else {
-            for (let i = SFDataTablePageSize * SFDataTablePage; i < SFDataTableRows.length && rowsAdded < SFDataTablePageSize; i++) {
-                if (rowsAdded < SFDataTablePageSize) {
-                    rows += "<tr>"
-                    for (let j = 0; j < SFDataTableRows[i].length; j++) {
-                        rows += "<td " + (SFDataTableHeader[j].p == undefined ? "" : SFDataTableHeader[j].p) + " " + (SFDataTableRows[i][j].p == undefined ? "" : SFDataTableRows[i][j].p) + " >" + SFDataTableRows[i][j].v + "</td>";
-                    }
-                    rows += "</tr>\n"
-                    rowsAdded++;
-                }
-            }
-        }
-        return rows;
-    }
-
-    function SFDataTableGetToolBar() {
-        let toolbar = "";
-        toolbar += " Search: <input type='text' style='border: 1px solid #E8EAEC;' id='SFSearch' class='' name='SFSearch'  value='" + (SFDataTableSearchStr == undefined ? "" : SFDataTableSearchStr) + "'onkeypress='if(event.keyCode == 13) javascript:SFSearch()'>";
-
-        if (SFDataTablePage == 0) {
-            toolbar += "<button disabled=true id='pagination' style='border-color: #f9f9f9;' class='' type='submit' onClick='JavaScript:SFhandlePrevious()'>Previous</button>";
-        } else {
-            toolbar += "<button  id='pagination' style='border-color: #f9f9f9;' type='submit' onClick='JavaScript:SFhandlePrevious()'>Previous</button>";
-        }
-
-        let total = 0;
-        if (SFDataTableSearchStr != undefined) {
-            while (SFDataTablePageSize * total < SFDataTableSearchMatchedRows.length) {
-                total++;
-            }
-        } else {
-            while (SFDataTablePageSize * total < SFDataTableRows.length) {
-                total++;
-            }
-        }
-
-        if (total > 7) {
-            if (0 == SFDataTablePage) {
-                toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='JavaScript:SFhandlePaginationClick(" + 1 + ")'>" + 1 + "</button>";
-            } else {
-                toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='JavaScript:SFhandlePaginationClick(" + 1 + ")'>" + 1 + "</button>";
-            }
-
-            if (total - (SFDataTablePage + 1) < 4) {//is it in the last 5
-                toolbar += "<button active style='border-color: #f9f9f9;' class=''>...</button>";
-                for (let i = total - 5; i < total - 1; i++) {
-                    if (i == SFDataTablePage) {
-                        toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='JavaScript:SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
-                    } else {
-                        toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='JavaScript:SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
-                    }
-                }
-            } else if ((SFDataTablePage + 1) - 1 < 4) {//is it in the first 5
-                for (let i = 1; i < 5; i++) {
-                    if (i == SFDataTablePage) {
-                        toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='JavaScript:SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
-                    } else {
-                        toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='JavaScript:SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
-                    }
-                }
-                toolbar += "<button active style='border-color: #f9f9f9;' class=''>...</button>";
-            } else {//in the middle
-                toolbar += "<button active style='border-color: #f9f9f9;' class=''>...</button>";
-                for (let i = SFDataTablePage - 1; i < SFDataTablePage + 2; i++) {
-                    if (i == SFDataTablePage) {
-                        toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='JavaScript:SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
-                    } else {
-                        toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='JavaScript:SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
-                    }
-                }
-                toolbar += "<button active style='border-color: #f9f9f9;' class=''>...</button>";
-            }
-            if (total == SFDataTablePage + 1) {
-                toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='JavaScript:SFhandlePaginationClick(" + total + ")'>" + total + "</button>";
-            } else {
-                toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='JavaScript:SFhandlePaginationClick(" + total + ")'>" + total + "</button>";
-            }
-        } else {
-            //all
-            for (let i = 0; i < total; i++) {
-                if (i == SFDataTablePage) {
-                    toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='JavaScript:SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
-                } else {
-                    toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='JavaScript:SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
-                }
-            }
-        }
-
-
-        if (SFDataTableSearchStr != undefined) {
-            if (SFDataTablePageSize * SFDataTablePage + SFDataTablePageSize < SFDataTableSearchMatchedRows.length) {
-                toolbar += "<button id='pagination' class='' style='border-color: #f9f9f9;' type='submit' onClick='JavaScript:SFhandleNext()'>Next</button>";
-            } else {
-                toolbar += "<button disabled=true id='pagination' class='' style='border-color: #f9f9f9;' type='submit' onClick='JavaScript:SFhandleNext()'>Next</button>";
-            }
-        } else {
-            if (SFDataTablePageSize * SFDataTablePage + SFDataTablePageSize < SFDataTableRows.length) {
-                toolbar += "<button id='pagination' class='' style='border-color: #f9f9f9;' type='submit' onClick='JavaScript:SFhandleNext()'>Next</button>";
-            } else {
-                toolbar += "<button disabled=true id='pagination' style='border-color: #f9f9f9;' class='' type='submit' onClick='JavaScript:SFhandleNext()'>Next</button>";
-            }
-        }
-        return toolbar;
-    }
-
-    function SFDataTableGetHeader() {
-        let header = "<thead style='height: 30px;'><tr>";
-        for (let i = 0; i < SFDataTableHeader.length; i++) {
-            if (i == sfdtsci) {
-                header += "<th onclick='SFDataTableSetSortIndex(this)' style='cursor: pointer;padding: 5px; white-space: nowrap;'>" + SFDataTableHeader[i].v + " <i class='fa fa-caret-" + sortIcon + "' style='color:black'></i></th>";
-            } else {
-                header += "<th onclick='SFDataTableSetSortIndex(this)' style='cursor: pointer;padding: 5px; white-space: nowrap;'>" + SFDataTableHeader[i].v + " <i class='fa fa-caret-down' style='color:#d3d3d4'></i></th>";
-            }
-        }
-        header += "</tr></thead>\n";
-        return header;
-    }
-
-    function SFDataTableAutoFillColType(rows) {
-        return;
-
-        //check first 5 rows and find what is the type
-        for (let i = 0; i < rows.length && i < 5; i++) {
-            for (let j = 0; j < rows[i].length; j++) {
-                if (isNaN(rows[i][j].v)) {
-                    if (SFDataTableHeader[j].t == undefined) {
-                        SFDataTableHeader[j].t = -1;
-                    } else {
-                        SFDataTableHeader[j].t += -1;
-                    }
-                } else {
-                    if (SFDataTableHeader[j].t == undefined) {
-                        SFDataTableHeader[j].t = 1;
-                    } else {
-                        SFDataTableHeader[j].t += 1;
-                    }
-                }
-            }
-        }
-    }
-
-    function SFDataTableSortCompareDescString(a, b) {
-        let tmp1 = a[sfdtsci].v == null ? "null" : a[sfdtsci].v.toLowerCase();
-        let tmp2 = b[sfdtsci].v == null ? "null" : b[sfdtsci].v.toLowerCase();
-
-        if (tmp1 > tmp2) {
-            return -1;
-        }
-        if (tmp1 < tmp2) {
-            return 1;
-        }
-        return 0;
-    }
-
-    function SFDataTableSortCompareDescNumber(a, b) {
-        let tmp1 = isNaN(a[sfdtsci].v) ? -1 : a[sfdtsci].v;
-        let tmp2 = isNaN(b[sfdtsci].v) ? -1 : b[sfdtsci].v;
-
-        if (tmp1 > tmp2) {
-            return -1;
-        }
-        if (tmp1 < tmp2) {
-            return 1;
-        }
-        return 0;
-    }
-
-    function SFSearch() {
-        SFDataTablePage = 0;
-        SFDataTableSearchMatchedRows = [];
-        if ($('#SFSearch').val() === '') {
-            SFDataTableSearchStr = undefined;
-        } else {
-            SFDataTableSearchStr = $('#SFSearch').val();
-        }
-        SFDataTableSearch();
-        SFDataTable();
-    }
-
     function getContextTableHeadernew(groupBy, row) {
         if (!(groupBy == undefined || groupBy == "" || groupBy == "All records")) {
             if(groupBy == "tid") {
-                row.push({"v": groupBy, "t": 1, "p": "class='context-menu-two'"});
+                sfContextDataTable.addContextTableHeader(row,groupBy,1,"class='context-menu-two'");
             }else{
-                row.push({"v": groupBy, "t": -1, "p": "class='context-menu-two'"});
+                sfContextDataTable.addContextTableHeader(row,groupBy,-1,"class='context-menu-two'");
             }
         }
         if (contextData != undefined && contextData.header != undefined) {
@@ -4838,37 +4553,21 @@
                 const tokens = contextData.header[customEvent][val].split(":");
                 if (groupBy == undefined || groupBy == "" || groupBy == "All records" || tokens[1] == "number") {
                     if(tokens[1] == "number") {
-                        row.push({"v": tokens[0], "t": 1});
+                        sfContextDataTable.addContextTableHeader(row,tokens[0],1);
                     }else if(tokens[1] == "timestamp"){
-                        row.push({"v": tokens[0], "t": -1, "p": "class='context-menu-one'"});
+                        sfContextDataTable.addContextTableHeader(row,tokens[0],-1,"class='context-menu-one'");
                     }else if(tokens[0] == "tid"){
-                        row.push({"v": tokens[0], "t": 1, "p": "class='context-menu-two'"});
+                        sfContextDataTable.addContextTableHeader(row,tokens[0],1,"class='context-menu-two'");
                     }else{
-                        row.push({"v": tokens[0], "t": -1, "p": "class='context-menu-two'"});
+                        sfContextDataTable.addContextTableHeader(row,tokens[0],-1,"class='context-menu-two'");
                     }
                 }
             }
         }
         if (!(groupBy == undefined || groupBy == "" || groupBy == "All records")) {
-            row.push({"v": "Count", "t": 1});
+            sfContextDataTable.addContextTableHeader(row,"Count",1);
         }
     }
-    function getContextTableRownew(record, isDimIndexMap, timestampIndex, tidRowIndex, row) {
-        for (let field in record) {
-            if (field == timestampIndex) {
-                row.push({"v": moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'), "p": "id='"+record[tidRowIndex] + "_" + record[field]+"'"});
-            } else if(field == tidRowIndex) {
-                row.push({"v": Number(record[field])});
-            }else {
-                if(isDimIndexMap[field] == "number") {
-                    row.push({"v": record[field]});
-                }else{
-                    row.push({"v": record[field], "p" : "id='"+record[tidRowIndex] + "_" + record[field]+"' hint='"+isDimIndexMap[field]+"'"});
-                }
-            }
-        }
-    }
-    //Request context table crash temporary fix END
 
 </script>
 
