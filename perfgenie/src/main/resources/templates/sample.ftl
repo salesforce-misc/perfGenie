@@ -366,6 +366,35 @@
         return true;
     }
 
+    function getSamplesTableHeader(groupBySamples, row, event) {
+
+        /*if(event === EventType.MEMORY) {
+            totalSampleCount = totalSampleCount * 1024 * 1024;
+            if(groupBySamples == "tid") {
+                sfContextDataTable.addContextTableHeader(row,groupBySamples,1,"class='context-menu-two'");
+            }else{
+                sfContextDataTable.addContextTableHeader(row,groupBySamples,-1,"class='context-menu-two'");
+            }
+            sfContextDataTable.addContextTableHeader(row,"Memory Mb",1);
+            sfContextDataTable.addContextTableHeader(row,"Samples",1);
+        }else{*/
+            if(groupBySamples == "tid") {
+                sfSampleTable.addContextTableHeader(row,groupBySamples,1,"class='context-menu-two'");
+            }else{
+                sfSampleTable.addContextTableHeader(row,groupBySamples,-1,"class='context-menu-two'");
+            }
+            sfSampleTable.addContextTableHeader(row,"Sample Count",1);
+            sfSampleTable.addContextTableHeader(row,"Samples",1);
+        //}
+    }
+
+    let sampleTableRows = [];
+    let sampleTableHeader = [];
+    let moreSamples = [];
+
+    const sfSampleTable = new SFDataTable("sfSampleTable");
+    Object.freeze(sfSampleTable);
+
     let sampleSortMap = undefined;
     function genSampleTable() {
         updateEventInputOptions('event-input-smpl');
@@ -437,9 +466,16 @@
 
         let table = "<table   style=\"width: 100%;\" id=\"sample-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\"><thead><tr><th width=\"50%\">"+getHearderFor(groupBySamples)+"</th><th width=\"10%\">Sample Count</th><th width=\"40%\">Samples</th></thead>";
 
+
         if (getEventType() == "Jstack") {
             filteredStackMap[FilterLevel.LEVEL3] = {};
         }
+
+        let samplerowIndex = -1;
+        sampleTableHeader = [];
+        sampleTableRows = [];
+        moreSamples = [];
+        getSamplesTableHeader(groupBySamples, sampleTableHeader, event);
 
         //every sample of jstack has a tn
         if (getEventType() == "Jstack" && groupBySamples == "threadname" && isFilterEmpty(dimIndexMap)) {
@@ -757,6 +793,8 @@
             let skipc=0;
             let count = 0;
             let order = 0;
+            samplerowIndex++;
+
             for(let [key1, value1] of sampleCountMap.get(key)){
                 if(count < 5) {
                     if(order == 0) {
@@ -783,16 +821,30 @@
                     str += "<div style=\"display: none;\"   class=\"stack-badge badge " + " hidden-stacks-" + hashCode(key) + "\"\">" + skipc + " more</div>";
                 }
             }
-            table = table + "<tr><td  hint=" + groupBySamples + " class=\"context-menu-two\"><label style=\"word-wrap: break-word; width: 300px\" >" + (key == undefined ? "NA" : key) + "</label></td><td data-order="+value+"><b>" +value+"</b>&nbsp;<div class=\"badge badge-info\"> "+ (100*value/totalSampleCount).toFixed(3) + "</div></td><td data-order="+order+">" + str + "</td></tr>";
+            sampleTableRows[samplerowIndex] = [];
+            /*if(event == EventType.MEMORY) {
+                addContextTableRow(sampleTableRows[samplerowIndex], ("<label style=\"word-wrap: break-word; width: 300px\" >" + (key == undefined ? "NA" : key) + "</label>"), "hint='"+groupBySamples+"'");
+                addContextTableOrderRow(sampleTableRows[samplerowIndex], ("<b>" + (value / (1024 * 1024)).toFixed(3) + "</b>&nbsp;<div class=\"badge badge-info\"> " + (100 * value / totalSampleCount).toFixed(3) + "</div>"), value);
+                addContextTableOrderRow(sampleTableRows[samplerowIndex], str, order);
+            }else{*/
+
+            sfSampleTable.addContextTableRow(sampleTableRows[samplerowIndex], ("<label style=\"cursor: pointer; word-wrap: break-word; width: 300px\" >" + (key == undefined ? "NA" : key) + "</label>"), "hint='"+groupBySamples+"'");
+            sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], ("<b>" + value+ "</b>&nbsp;<div class=\"badge badge-info\"> " + (100 * value / totalSampleCount).toFixed(3) + "</div>"), value);
+            sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], str, order);
+
+           // }
+            //table = table + "<tr><td  hint=" + groupBySamples + " class=\"context-menu-two\"><label style=\"word-wrap: break-word; width: 300px\" >" + (key == undefined ? "NA" : key) + "</label></td><td data-order="+value+"><b>" +value+"</b>&nbsp;<div class=\"badge badge-info\"> "+ (100*value/totalSampleCount).toFixed(3) + "</div></td><td data-order="+order+">" + str + "</td></tr>";
         }
 
-        table = table + "</table>";
+        sfSampleTable.SFDataTable(sampleTableRows, sampleTableHeader, "sampletable", order);
 
-        document.getElementById("sampletable").innerHTML = table;
+       /* //table = table + "</table>";
 
-        if(sampleTable != undefined) {
-            sampleTablePage = 0; //reset to 0 except 1st time
-        }
+        //document.getElementById("sampletable").innerHTML = table;
+
+        //if(sampleTable != undefined) {
+        //    sampleTablePage = 0; //reset to 0 except 1st time
+        //}
 
         sampleTable=$('#sample-table').DataTable({
             "order": [[ order, "desc" ]],
@@ -823,7 +875,7 @@
             "sDom": '<"sampletoolbar">tfp<"clear">'
 
         });
-
+*/
         updateEventInputOptions('event-input-smpl');
 
         updateGroupByOptions('smpl-grp-by');
