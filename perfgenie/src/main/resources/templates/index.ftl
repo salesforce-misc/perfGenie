@@ -36,6 +36,7 @@
     <script src="/js/input.js"></script>
     <script src="/js/utils.js"></script>
     <script src="/js/SFlameGraph.js"></script>
+    <script src="/js/SFDataTable.js"></script>
     <link rel="stylesheet" href="/css/SFlameGraph.css">
 
     <link rel="stylesheet" type="text/css" href="/plugins/dataTables.jqueryui.min.css"/>

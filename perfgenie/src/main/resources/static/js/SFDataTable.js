@@ -305,8 +305,8 @@ class SFDataTable {
     }
 
     SFDataTableSortCompareDescNumber(a, b) {
-        let tmp1 = isNaN(a[SFDCSortIndex].v) ? -1 : a[SFDCSortIndex].v;
-        let tmp2 = isNaN(b[SFDCSortIndex].v) ? -1 : b[SFDCSortIndex].v;
+        let tmp1 = isNaN(a[SFDCSortIndex].s ?? a[SFDCSortIndex].v) ? -1 : a[SFDCSortIndex].s ?? a[SFDCSortIndex].v;
+        let tmp2 = isNaN(b[SFDCSortIndex].s ?? b[SFDCSortIndex].v) ? -1 : b[SFDCSortIndex].s ?? b[SFDCSortIndex].v;
 
         if (tmp1 > tmp2) {
             return -1;
@@ -344,6 +344,15 @@ class SFDataTable {
             row.push({"v": val, "p": p});
         }else{
             row.push({"v": val});
+        }
+    }
+
+    addContextTableOrderRow(row, val, o, p){
+        if(p != undefined)
+        {
+            row.push({"v": val, "s": o, "p": p});
+        }else{
+            row.push({"v": val, "s": o});
         }
     }
 }
