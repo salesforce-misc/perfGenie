@@ -7,11 +7,14 @@
 
 package perfgenie.utils;
 
-import com.google.common.collect.ImmutableSet;
 import org.openjdk.jmc.common.IMCFrame;
 import org.openjdk.jmc.common.IMCMethod;
 import org.openjdk.jmc.common.IMCStackTrace;
+import org.slf4j.LoggerFactory;
 
+
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -19,12 +22,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class EventHandler {
-    private static final Logger logger = Logger.getLogger(EventHandler.class.getName());
+    private static final org.slf4j.Logger  logger =  LoggerFactory.getLogger(EventHandler.class);
     private static final String ROOT = "root";
     private static final int WRAP_MESSAGE_HASH = "wrapped.single stack in profile".hashCode();
     private static final int FILTER_MESSAGE_HASH = "below threshold ...".hashCode();
@@ -69,11 +71,69 @@ public class EventHandler {
         UNKNOWN
     }
 
-    public void processContext(List l, int tid, String type) {
-        if (!records.get(type).containsKey(tid)) {
-            records.get(type).put(tid, Collections.synchronizedList(new ArrayList<LogContext>()));
+    public void processMonitorLog(String logfile){
+        try (BufferedReader reader = new BufferedReader(new FileReader(logfile))) {
+            String line;
+
+            List<String> header = new ArrayList<>();
+
+            header.add("timestamp:timestamp");
+            header.add("tid:text");
+            header.add("CPU:number");
+            header.add("threadname:text");
+            initializeEvent("processcpu");
+            addHeader("processcpu", header);
+
+            // Read each line from the file
+            int span = 1;
+            while ((line = reader.readLine()) != null) {
+                // Split the line into parts using ":" as the separator
+                String[] parts = line.split(":");
+
+                if (parts.length >= 4) {
+                    if(span < 2) {
+                        List<Object> record = new ArrayList<>();
+                        record.add(Long.parseLong(parts[0])*1000);
+                        record.add(parts[1]);
+                        record.add(Double.parseDouble(parts[2]));
+                        if (parts[3].length() > 232) {
+                            if(parts[3].indexOf("jdk/") != -1){
+                                record.add(parts[3].substring(parts[3].indexOf("jdk/"), 200) + ".." + parts[3].substring(parts[3].length() - 30));
+                            }else {
+                                record.add(parts[3].substring(0, 200) + ".." + parts[3].substring(parts[3].length() - 30));
+                            }
+                        }else{
+                            if(parts[3].indexOf("jdk/") != -1){
+                                record.add(parts[3].substring(parts[3].indexOf("jdk/"), parts[3].length()));
+                            }else {
+                                record.add(parts[3]);
+                            }
+                        }
+                        processContext(record, Integer.parseInt(parts[1]), "processcpu");
+                    }
+                    //span++;
+                    if(span > 6){
+                        span = 1;
+                    }
+
+                } else {
+                    System.err.println("Invalid line format: " + line);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading file: " + logfile + ":" + e.getMessage());
         }
-        records.get(type).get(tid).add(new LogContext(l));
+    }
+
+    public void processContext(List l, int tid, String type) {
+        try {
+            if (!records.get(type).containsKey(tid)) {
+                records.get(type).put(tid, Collections.synchronizedList(new ArrayList<LogContext>()));
+            }
+            records.get(type).get(tid).add(new LogContext(l));
+        }catch(Exception e){
+           e.printStackTrace();
+        }
     }
 
     private ThreadState getThreadState(final String state) {
@@ -212,25 +272,30 @@ public class EventHandler {
         Map<String, String> meta = new HashMap<>();
         try {
             if(experimental){
-                SurfaceDataResponse res = genSurfaceData(profiles.get(type), pidDatas.get(type));
-                //get CPU events if exists
-                for (final String event : header.keySet()) {
-                    if (event.equals("CPUEvent")) {
-                        List<Long> cpu = res.getCpuSamplesList();
-                        for (int i = 0; i < header.get(event).size(); i++) {
-                            if (header.get(event).get(i).equals("cpuPerc:number")) {
-                                for (final int tid : records.get(event).keySet()) {
-                                    List l = records.get(event).get(tid);
-                                    for (int k = 0; k < l.size(); k++) {
-                                        cpu.add((Long) records.get(event).get(tid).get(k).record.get(i));
+                try {
+                    SurfaceDataResponse res = genSurfaceData(profiles.get(type), pidDatas.get(type));
+                    //get CPU events if exists
+                    for (final String event : header.keySet()) {
+                        if (event.equals("CPUEvent")) {
+                            List<Long> cpu = res.getCpuSamplesList();
+                            for (int i = 0; i < header.get(event).size(); i++) {
+                                if (header.get(event).get(i).equals("cpuPerc:number")) {
+                                    for (final int tid : records.get(event).keySet()) {
+                                        List l = records.get(event).get(tid);
+                                        for (int k = 0; k < l.size(); k++) {
+                                            cpu.add((Long) records.get(event).get(tid).get(k).record.get(i));
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+
+                    meta.put("data", Utils.toJson(res));
+                }catch(Exception e){
+                    meta.put("data", "{}");//Utils.toJson(res));
                 }
 
-                meta.put("data", Utils.toJson(res));
             }else {
                 meta.put("data", "{}");//Utils.toJson(res));
             }

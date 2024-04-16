@@ -7,6 +7,7 @@
 package agent;
 
 import com.google.common.base.Stopwatch;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -18,22 +19,23 @@ import java.io.*;
 import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 @SpringBootApplication
 @EnableScheduling
 public class AgentApplication {
-    private static final Logger logger = Logger.getLogger(AgentApplication.class.getName());
+    private static final org.slf4j.Logger  logger =  LoggerFactory.getLogger(AgentApplication.class);
+
     private static String tenant = "dev";
     private static String host = "localhost";
-    final CustomJfrParser.Config config = new CustomJfrParser.Config();
+    final Config config;
 
     final EventStore eventStore;
     final CustomJfrParser parser;
 
-    public AgentApplication(EventStore eventStore, CustomJfrParser parser) {
+    public AgentApplication(EventStore eventStore, CustomJfrParser parser, Config config) {
         this.eventStore = eventStore;
         this.parser = parser;
+        this.config = config;
     }
 
     public static void main(String[] args) {
@@ -53,9 +55,8 @@ public class AgentApplication {
 
         for (File file : listOfFiles) {
 
-            logger.info("processing file: " + file.getName());
-
             if (file.isFile() && file.getName().contains(".jfr") || file.getName().contains(".jfr.gz")) {
+                logger.info("processing file: " + file.getName());
                 EventHandler handler = new EventHandler();
                 long timestamp = System.currentTimeMillis();
                 String guid = Utils.generateGuid();
@@ -86,7 +87,7 @@ public class AgentApplication {
                     eventStore.addEvent(timestamp, queryMap, dimMap, Utils.toJson(logContext));
                 } catch (Exception e) {
                     System.out.println(e);
-                    logger.warning("Exception parsing file " + file.getPath() + ":" + e.getStackTrace());
+                    logger.warn("Exception parsing file " + file.getPath() + ":" + e.getStackTrace());
                 }
                 new File(file.getPath()).delete();
                 logger.info("successfully parsed " + file.getPath() + " and stored " + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
@@ -120,7 +121,7 @@ public class AgentApplication {
                     eventStore.addEvent(timestamp, queryMap, dimMap, Utils.toJson(profile));
                 } catch (Exception e) {
                     System.out.println(e);
-                    logger.warning("Exception parsing file " + file.getPath() + ":" + e.getStackTrace());
+                    logger.warn("Exception parsing file 1" + file.getPath() + ":" + e.getStackTrace());
                 }
                 new File(file.getPath()).delete();
                 logger.info("successfully parsed " + file.getPath() + " and stored event " + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));

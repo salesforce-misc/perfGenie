@@ -13,6 +13,7 @@ import com.salesforce.cantor.mysql.CantorOnMysql;
 import com.salesforce.cantor.grpc.CantorOnGrpc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import perfgenie.utils.Config;
 import perfgenie.utils.CustomJfrParser;
 import perfgenie.utils.EventStore;
 
@@ -20,10 +21,10 @@ import java.io.IOException;
 
 @Configuration
 public class PerfGenieConfiguration {
-    final CustomJfrParser.Config config = new CustomJfrParser.Config();
+    //final CustomJfrParser.Config config = new CustomJfrParser.Config();
 
     @Bean
-    public Cantor getCantor() throws IOException {
+    public Cantor getCantor(final Config config) throws IOException {
         if (config.getStorageType().equals("mySQL")) {
             return new CantorOnMysql(config.getMySQL_host(), config.getMySQL_port(), config.getMySQL_user(), config.getMySQL_pwd());
         } else if (config.getStorageType().equals("grpc")) {
@@ -34,8 +35,8 @@ public class PerfGenieConfiguration {
     }
 
     @Bean
-    public EventStore getEventStore(final Cantor cantor) throws IOException {
-        return new EventStore(cantor);
+    public EventStore getEventStore(final Cantor cantor, final Config config) throws IOException {
+        return new EventStore(cantor, config);
     }
 
     @Bean
@@ -44,7 +45,12 @@ public class PerfGenieConfiguration {
     }
 
     @Bean
-    public PerfGenieService getServerService(final EventStore eventStore, final CustomJfrParser parser) throws IOException {
-        return new PerfGenieService(eventStore, parser);
+    public PerfGenieService getServerService(final EventStore eventStore, final CustomJfrParser parser, final Config config) throws IOException {
+        return new PerfGenieService(eventStore, parser, config);
+    }
+
+    @Bean
+    public Config getConfig() throws IOException {
+        return new Config();
     }
 }

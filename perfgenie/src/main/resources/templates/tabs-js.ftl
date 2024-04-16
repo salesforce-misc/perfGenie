@@ -402,7 +402,15 @@
                         if(uploads[0] == "true" && fileIds[0] != "") {
                             setContextData({"records": {}, "tidlist": [], "header": {}});
                         }else{
-                            getLogContext(dateRanges[0], pods[0], queries[0], profilers[0], tenants[0], profiles[0], hosts[0], uploads[0], fileIds[0], uploadTimes[0], aggregates[0], eventType, contextTrees[0].context.start, contextTrees[0].context.end);
+                            let customEventCount = 0;
+                            for (var customEvent in jfrevents1) {
+                                getLogContext(dateRanges[0], pods[0], queries[0], profilers[0], tenants[0], profiles[0], hosts[0], uploads[0], fileIds[0], uploadTimes[0], aggregates[0], eventType, contextTrees[0].context.start, contextTrees[0].context.end, customEvent);
+                                customEventCount++;
+                                break;
+                            }
+                            if(customEventCount == 0){
+                                getLogContext(dateRanges[0], pods[0], queries[0], profilers[0], tenants[0], profiles[0], hosts[0], uploads[0], fileIds[0], uploadTimes[0], aggregates[0], eventType, contextTrees[0].context.start, contextTrees[0].context.end, "customEvent");
+                            }
                         }
                         for (var type in jfrprofiles1) {
                             if(type != eventType) {
@@ -535,10 +543,11 @@
         console.log("retrievAndcreateContextTree 5 time:" + (end - start) + " event:" + eventType);
     }
 
-    function getLogContext(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, eventType, start, end) {
+    function getLogContext(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, eventType, start, end, customEvent) {
         unhideFilterViewStatus();
         updateFilterViewStatus("Note: Retrieving request context from jfr, this may take few sec  ...");
-        const callTreeUrl = getCallTreeUrl(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, "customEvent");
+
+        const callTreeUrl = getCallTreeUrl(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, customEvent);
         let toTenant = tenant;
         if(isS3 == "true") {
             toTenant = "";
@@ -668,11 +677,19 @@
                 let array = profile.split(" - ");
                 const timestamp = array[0];
                 let guid = array[1];
-                endpoint = "/v1/profile/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
-                    "&metadata_query=" + encodeURIComponent("host=" + host) +
-                    "&metadata_query=" + encodeURIComponent("tenant=" + tenant) +
-                    "&metadata_query=" + encodeURIComponent("guid=" + guid) +
-                    "&metadata_query=" + encodeURIComponent("name=" + eventType);
+                if(eventType.includes("jfr_dump")){//sfdc
+                    endpoint = "/v1/profile/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
+                        "&metadata_query=" + encodeURIComponent("host=" + host) +
+                        "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+                        "&metadata_query=" + encodeURIComponent("guid=" + guid + eventType) +
+                        "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
+                }else {
+                    endpoint = "/v1/profile/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
+                        "&metadata_query=" + encodeURIComponent("host=" + host) +
+                        "&metadata_query=" + encodeURIComponent("tenant=" + tenant) +
+                        "&metadata_query=" + encodeURIComponent("guid=" + guid) +
+                        "&metadata_query=" + encodeURIComponent("name=" + eventType);
+                }
             } else {
                 const start = parseInt(timeRange.split(" - ")[0]);
                 const end = parseInt(timeRange.split(" - ")[1]);

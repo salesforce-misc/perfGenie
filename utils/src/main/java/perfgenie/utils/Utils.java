@@ -28,6 +28,9 @@ public class Utils {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static boolean trimAfterNthMatchingCharacter(final String str, final StringBuilder builder, final int count, char trimAfter){
+        if(str == null){
+            return false;
+        }
         int length = str.length();
         int c=0;
         for (int i = 0; i < length; i++) {

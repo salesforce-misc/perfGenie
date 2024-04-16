@@ -15,26 +15,36 @@ import perfgenie.utils.*;
 
 import java.io.*;
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
+
+import org.slf4j.LoggerFactory;
 
 public class PerfGenieService implements IPerfGenieService {
     final EventStore eventStore;
     final CustomJfrParser parser;
 
-    private static final Logger logger = Logger.getLogger(PerfGenieService.class.getName());
+    private final org.slf4j.Logger  logger =  LoggerFactory.getLogger(PerfGenieService.class);
     private static String tenant = "dev";
     private static String host = "localhost";
-    final CustomJfrParser.Config config = new CustomJfrParser.Config();
+    final Config config;
 
     //cronjob to parse jfrs placed in a directory
-    @Scheduled(cron = "*/10 * * ? * *")
+    @Scheduled(cron = "*/30 * * ? * *")
     private void cronJob() throws IOException {
+        runJob();
+    }
+
+    public void runJob() throws IOException{
+
         tenant = config.getTenant();
         host = InetAddress.getLocalHost().getHostName();
         logger.info("looking for Jfrs at " + config.getJfrdir());
@@ -44,18 +54,72 @@ public class PerfGenieService implements IPerfGenieService {
 
         if (listOfFiles == null)
             return;
+        /*
+        boolean hasJsonEvent = false;
+        for (File file : listOfFiles) {
+            if(file.isFile() && file.getName().contains(".json.gz")){
+                hasJsonEvent = true;
+                break;
+            }
+        }
+        if(hasJsonEvent) {
+            long timestamp = System.currentTimeMillis();
+            String guid = Utils.generateGuid();
+            final Stopwatch timer = Stopwatch.createStarted();
+            final Map<String, Double> dimMap = new HashMap<>();
+            final Map<String, String> queryMap = new HashMap<>();
+
+            queryMap.put("tenant-id", tenant);
+            queryMap.put("host", host);
+            queryMap.put("instance-id", host);
+
+            for (File file : listOfFiles) {
+                if (file.isFile() && file.getName().contains(".json.gz")) {
+                    if (file.getName().equals("jfr_dump_log.json.gz")){
+                        //queryMap.put("type", "jfrevent");
+                        queryMap.put("name", "jfr");
+                    }else{
+                        //queryMap.put("type", "jfrprofile");
+                        queryMap.put("name", "jfr");
+                    }
+                    queryMap.put("guid", guid+file.getName());
+                    queryMap.put("file-name", file.getName());
+
+                    String payload = new String(Utils.decompress(Files.readAllBytes(Paths.get(file.getPath()))), StandardCharsets.UTF_8);
+                    int payloadSize = payload.length();
+                    //queryMap.put("size", String.valueOf(payloadSize));
+                    System.out.println(payloadSize);
+                    eventStore.addEvent(timestamp, queryMap, dimMap, payload);
+                    logger.info("successfully loaded " + file.getName() + " and stored event.");
+                    Path path = Paths.get(file.getPath());
+                    try {
+                        Files.deleteIfExists(path);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            logger.info("successfully handled json events " + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+        }
+         */
 
         for (File file : listOfFiles) {
-
-            logger.info("processing file: " + file.getName());
-
             if (file.isFile() && file.getName().contains(".jfr") || file.getName().contains(".jfr.gz")) {
+                logger.info("processing file: " + file.getName());
                 EventHandler handler = new EventHandler();
                 long timestamp = System.currentTimeMillis();
                 String guid = Utils.generateGuid();
                 final Stopwatch timer = Stopwatch.createStarted();
                 try {
                     parser.parseStream(handler, file.getPath());
+                    handler.processMonitorLog("/tmp/jfrs/monitor.log");
+                    Path path = Paths.get("/tmp/jfrs/monitor.log");
+                    // deleteIfExists File
+                    try {
+                        Files.deleteIfExists(path);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     final Map<String, Double> dimMap = new HashMap<>();
                     final Map<String, String> queryMap = new HashMap<>();
                     queryMap.put("guid", guid);
@@ -81,7 +145,8 @@ public class PerfGenieService implements IPerfGenieService {
                     eventStore.addEvent(timestamp, queryMap, dimMap, Utils.toJson(logContext));
                 } catch (Exception e) {
                     System.out.println(e);
-                    logger.warning("Exception parsing file " + file.getPath() + ":" + e.getStackTrace());
+                    logger.warn("Exception parsing file 3" + file.getPath() + ":" + e.getStackTrace());
+                    e.printStackTrace();
                 }
                 new File(file.getPath()).delete();
                 logger.info("successfully parsed " + file.getPath() + " and stored " + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
@@ -115,7 +180,8 @@ public class PerfGenieService implements IPerfGenieService {
                     eventStore.addEvent(timestamp, queryMap, dimMap, Utils.toJson(profile));
                 } catch (Exception e) {
                     System.out.println(e);
-                    logger.warning("Exception parsing file " + file.getPath() + ":" + e.getStackTrace());
+                    logger.warn("Exception parsing file 4" + file.getPath() + ":" + e.getStackTrace());
+                    e.printStackTrace();
                 }
                 new File(file.getPath()).delete();
                 logger.info("successfully parsed " + file.getPath() + " and stored event " + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
@@ -124,9 +190,10 @@ public class PerfGenieService implements IPerfGenieService {
     }
 
     @Autowired
-    public PerfGenieService(final EventStore eventStore, final CustomJfrParser parser) throws IOException {
+    public PerfGenieService(final EventStore eventStore, final CustomJfrParser parser, final Config config) throws IOException {
         this.eventStore = eventStore;
         this.parser = parser;
+        this.config = config;
     }
 
     @Override
@@ -136,13 +203,34 @@ public class PerfGenieService implements IPerfGenieService {
 
     @Override
     public String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
-        return eventStore.getMeta(start, end, queryMap, dimMap);
+        if(queryMap.containsKey("tenant-id")){
+            return eventStore.getMeta(start, end, queryMap, dimMap, queryMap.get("tenant-id"));
+        }else {
+            return eventStore.getMeta(start, end, queryMap, dimMap, null);
+        }
+    }
+
+    @Override
+    public String getTenants(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
+        List<String> namespaces = new ArrayList<>();
+        namespaces.add("maiev-tenant-dev");//todo config.properties
+
+        return eventStore.getTenants(start, end, queryMap, dimMap, namespaces);
+    }
+
+    @Override
+    public String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String tenant) throws IOException {
+        return eventStore.getMeta(start, end, queryMap, dimMap, tenant);
     }
 
     @Override
     public String getProfile(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) {
         try {
-            return eventStore.getEvent(start, end, queryMap, dimMap);
+            if(queryMap.containsKey("tenant-id")) {
+                return eventStore.getEvent(start, end, queryMap, dimMap, "maiev-large-files-"+tenant);
+            }else{
+                return eventStore.getEvent(start, end, queryMap, dimMap, null);
+            }
         } catch (Exception e) {
             return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Profiles not found", queryMap, null));
         }

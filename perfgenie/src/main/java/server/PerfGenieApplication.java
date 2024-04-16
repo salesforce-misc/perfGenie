@@ -10,15 +10,10 @@ package server;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import perfgenie.utils.EventHandler;
-
-import java.util.logging.Logger;
 
 @SpringBootApplication
 @EnableScheduling
 public class PerfGenieApplication {
-    private static final Logger logger = Logger.getLogger(EventHandler.class.getName());
-
     public static void main(String[] args) {
         SpringApplication.run(PerfGenieApplication.class, args);
     }

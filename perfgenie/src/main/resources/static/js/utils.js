@@ -12,6 +12,13 @@ function getMetaDataURL(start,end,tenant='dev'){
     return URL;
 }
 
+function getTenantDataURL(start,end,tenant='dev'){
+    const URL = "http://localhost:8080/v1/tenants/"+tenant+
+        "/?start=" + start +
+        "&end=" + end;
+    return URL;
+}
+
 function spinnerToggle(id){
 //todo
 }

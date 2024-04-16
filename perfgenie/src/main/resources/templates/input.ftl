@@ -26,7 +26,7 @@
                content="application/x-www-form-urlencoded">
         <table style="border: hidden;">
             <tr style="border: hidden;">
-                <td style="border: none;"><label >Time range from: </label></td>
+                <td style="border: none;"><label >Time range UTC from: </label></td>
                 <td style="border: none;"><input  style="height:30px;text-align: center;" class="filterinput" id="startpicker1" type="text"></td>
                 <td style="border: none;"><label>to: </label></td>
                 <td style="border: none;"><input  style="height:30px;text-align: center;" class="filterinput" id="endpicker1" type="text"></td>

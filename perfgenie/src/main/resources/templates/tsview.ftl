@@ -479,7 +479,7 @@
             if (groupBy == tokens[0]) {
                 groupByIndex = val;
             }
-            if ("duration" == tokens[0]) { // TODO: take from user
+            if ("duration" == tokens[0] || "runTime" == tokens[0]) { // TODO: take from user
                 spanIndex = val;
             }
             if ("timestamp" == tokens[0]) { // TODO: take from user

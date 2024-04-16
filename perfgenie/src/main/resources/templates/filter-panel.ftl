@@ -450,7 +450,7 @@
         groupByMatch = urlParams.get('groupByMatch') || '';
         groupByLength = urlParams.get('groupByLength') || '20';
         spanThreshold = urlParams.get('spanThreshold') || 200;
-        spanInput = urlParams.get('spanInput') || 'duration';
+        tableThreshold = urlParams.get('tableThreshold') || 'duration';
         setToolBarOptions("statetabledrp");
         $("#filter-input").on("change", (event) => {
             genRequestTable();
@@ -516,7 +516,7 @@
     let filterFrame = "";
     let filterEvent = 'jdk.ExecutionSample';
     let spanThreshold = 200;
-    let spanInput = "duration";
+    let tableThreshold = "duration";
     let isFilterOnType = true;
 
     let multiSelect = {};
@@ -1421,7 +1421,7 @@
             if (groupBy == tokens[0]) {
                 groupByIndex = val;
             }
-            if ("duration" == tokens[0]) { // TODO: take from user
+            if ("duration" == tokens[0] || "runTime" == tokens[0] ) { // TODO: take from user
                 spanIndex = val;
             }
             if ("timestamp" == tokens[0]) { // TODO: take from user
@@ -1614,7 +1614,7 @@
             if (groupBy == tokens[0]) {
                 groupByIndex = val;
             }
-            if ("duration" == tokens[0]) { // TODO: take from user
+            if ("duration" == tokens[0] || "runTime" == tokens[0]) { // TODO: take from user
                 spanIndex = val;
             }
             if ("timestamp" == tokens[0]) { // TODO: take from user
@@ -2320,7 +2320,7 @@
                     let record = contextDataRecords[tid][index].record;
                     let tmpEpoch = record[timestampIndex];
                     let tmpRunTime = record[spanIndex] == undefined ? 0 : record[spanIndex];
-                    let key = (groupByIndex != -1 && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                    let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
 
                     if (key == type) {
                         let diff = record[sortByIndex];
@@ -2457,7 +2457,7 @@
                 step: 1
             });
             $("#filtertimepickerstart").change(function (event) {
-                if (moment($("#filtertimepickerstart").val()).valueOf() < getContextTree(1).context.start) {
+                if (moment.utc($("#filtertimepickerstart").val()).valueOf() < getContextTree(1).context.start) {
                     $("#filtertimepickerstart").val(moment.utc(getContextTree(1).context.start).format('YYYY-MM-DD HH:mm:ss'));
                     pStart = getContextTree(1).context.start;
                 }else{
@@ -2479,7 +2479,7 @@
                 }else{
                     pEnd = moment.utc($("#filtertimepickerend").val()).valueOf();
                 }
-                if ($("#filtertimepickerstart").val() != '' && moment($("#filtertimepickerstart").val()).valueOf() < getContextTree(1).context.start) {
+                if ($("#filtertimepickerstart").val() != '' && moment.utc($("#filtertimepickerstart").val()).valueOf() < getContextTree(1).context.start) {
                     $("#filtertimepickerstart").val(moment.utc(getContextTree(1).context.start).format('YYYY-MM-DD HH:mm:ss'));
                     pStart = getContextTree(1).context.start;
                 }else{
@@ -2651,7 +2651,7 @@
                 tidRowIndex = val;
             }
 
-            if ("duration" == tokens[0]) { // TODO: take from user
+            if ("duration" == tokens[0] || "runTime" == tokens[0]) { // TODO: take from user
                 spanIndex = val;
             }
             if ("timestamp" == tokens[0]) { // TODO: take from user
@@ -2668,8 +2668,8 @@
             //groupByIndex=tidRowIndex;
         }
         if (!sortByFound) {
-            sortBy = "duration";
-            sortByIndex = spanIndex;
+            //sortBy = "duration";
+            //sortByIndex = spanIndex;
         }
 
         addContextHints();
@@ -2737,7 +2737,7 @@
                                 if ((recordSpan + record[timestampIndex]) > maxEndTimeOfReq) {
                                     maxEndTimeOfReq = recordSpan + record[timestampIndex];
                                 }
-                                let key = (groupByIndex != -1 && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
                                 if (!tmpColorMap.has(key)) {
                                     tmpColorMap.set(key, randomColor());
                                     groupByCount++;
@@ -2761,7 +2761,7 @@
                                 }
                             }
                             if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
-                                if (record[metricsIndexMap[spanInput]] >= spanThreshold) {//todo change names spanInput to recordInput, spanThreshold to recordThreshold
+                                if (record[metricsIndexMap[tableThreshold]] >= spanThreshold) {//todo change names tableThreshold to recordInput, spanThreshold to recordThreshold
                                     table = table + "<tr>";
                                     for (let field in record) {
                                         if (field == timestampIndex) {
@@ -2777,7 +2777,7 @@
                                     table = table + "</tr>";
                                 }
                             } else {
-                                let key = (groupByIndex != -1 && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
 
                                 if (metricSumMap[key] == undefined) {
                                     metricSumMap[key] = Array(metricsIndexArray.length + 1).fill(0);
@@ -2867,7 +2867,7 @@
                                 }
                             }
                             if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
-                                if (record[metricsIndexMap[spanInput]] >= spanThreshold) {
+                                if (record[metricsIndexMap[tableThreshold]] >= spanThreshold) {
                                     table = table + "<tr>";
                                     for (let field in record) {
                                         if (field == timestampIndex) {
@@ -3004,9 +3004,9 @@
             updateRequestView();
         });
 
-        $("#span-input").on("change", (event) => {
-            updateUrl("spanInput", $("#span-input").val(), true);
-            spanInput = $("#span-input").val();
+        $("#table-threshold").on("change", (event) => {
+            updateUrl("tableThreshold", $("#table-threshold").val(), true);
+            tableThreshold = $("#table-threshold").val();
             genRequestTable();
             updateRequestView();
         });
@@ -3056,7 +3056,7 @@
 
     function setToolBarOptions(id) {
 
-        console.log("getToolBarOptions1 customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " spanInput:"+spanInput);
+        console.log("getToolBarOptions1 customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " tableThreshold:"+tableThreshold);
 
 
         let toolBarOptions = '<span title="JFR Event type">Event:</span> <select  style="height:30px;width:250px;text-align: center; " class="filterinput"  name="event-input" id="event-input">\n';
@@ -3179,19 +3179,19 @@
                 '                            <option ' + (seriesCount == 30 ? "selected" : "") + ' value=30>30</option>\n' +
                 '                            <option ' + (seriesCount == 40 ? "selected" : "") + ' value=40>40</option>\n' +
                 '                            </select> ';
-            toolBarOptions += '<button style="cursor: pointer;" id="pin-input" class="btn-info" type="submit">PIN</button>&nbsp;<button style="cursor: pointer;" id="add-chart" class="btn-info" type="submit">LOAD</button>';
+            toolBarOptions += '<button title="pin a copy of this chart below" style="cursor: pointer;" id="pin-input" class="btn-info" type="submit">PIN</button>&nbsp;<button title="copy this chart series onto pinned charts" style="cursor: pointer;" id="add-chart" class="btn-info" type="submit">LOAD</button>';
         }
 
         if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
             toolBarOptions += '                        </select>' +
-                '&nbsp;&nbsp;<span title="Show events above selected metric value">Threshold:</span> <select  style="height:30px;text-align: center; " class="spanMetric"  name="span-input" id="span-input">\n';
+                '&nbsp;&nbsp;<span title="Show events above selected metric value">Threshold:</span> <select  style="height:30px;text-align: center; " class="spanMetric"  name="table-threshold" id="table-threshold">\n';
             if (contextData != undefined && contextData.header != undefined) {
-                let spanInputFound = false;
-                if(!(spanInput == '' || spanInput == undefined)) {
+                let tableThresholdFound = false;
+                if(!(tableThreshold == '' || tableThreshold == undefined)) {
                     for (let val in contextData.header[customEvent]) {
                         const tokens = contextData.header[customEvent][val].split(":");
-                        if(spanInput == tokens[0]){
-                            spanInputFound = true;
+                        if(tableThreshold == tokens[0]){
+                            tableThresholdFound = true;
                             break;
                         }
                     }
@@ -3200,12 +3200,12 @@
                 for (let val in contextData.header[customEvent]) {
                     const tokens = contextData.header[customEvent][val].split(":");
 
-                    if((spanInput == '' || spanInput == undefined || !spanInputFound) && !(tokens[1] == "text" || tokens[1] == "timestamp")){
-                        spanInput = tokens[0];
-                        spanInputFound = true;
+                    if((tableThreshold == '' || tableThreshold == undefined || !tableThresholdFound) && !(tokens[1] == "text" || tokens[1] == "timestamp")){
+                        tableThreshold = tokens[0];
+                        tableThresholdFound = true;
                     }
                     if (!(tokens[1] == "text" || tokens[1] == "timestamp")) {
-                        toolBarOptions += '<option ' + (spanInput == tokens[0] ? "selected" : "") + " value='" + tokens[0] + "'>" + tokens[0] + "</option>\n";
+                        toolBarOptions += '<option ' + (tableThreshold == tokens[0] ? "selected" : "") + " value='" + tokens[0] + "'>" + tokens[0] + "</option>\n";
                     }
                 }
             }
@@ -3218,7 +3218,7 @@
                 '                            </select> ';
         }
 
-        console.log("getToolBarOptions2 customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " spanInput:"+spanInput);
+        console.log("getToolBarOptions2 customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " tableThreshold:"+tableThreshold);
 
         $('#'+id).html(toolBarOptions);
 
@@ -3694,9 +3694,90 @@
     }
 
     function processCustomEvents() {
+
         if(contextData != undefined && contextData.records != undefined){
+            if(contextData.header != undefined) {
+                for (var customevent in contextData.records) {
+                    for (var tid in contextData.records[customevent]) {
+                        //sort by timestamp
+                        contextData.records[customevent][tid].sort(function (a, b) {
+                            return a.record[0] - b.record[0];
+                        });
+                    }
+                }
+            }else{//convert to perfgene format sfdc
+                let records = {};
+                let header = {};
+                let logContext = "logContext";
+                for (var tid in contextData.records) {
+                    contextData.records[tid].forEach(function (obj) {
+                        logContext = getContextName(obj.record[0]);
+                        if(logContext != undefined){
+                            if(header[logContext] == undefined){
+                                header[logContext] = getContextHeader(obj.record[0]);
+                            }
+                            if(records[logContext] == undefined){
+                                records[logContext] = {};
+                            }
+                            if(records[logContext][tid] == undefined){
+                                records[logContext][tid] = [];
+                            }
+                            if(obj.record[0] == 9){
+                                obj.record[1] = obj.record[1] - obj.record[6];//need to reset start time curtime - runTime
+                            }
+                            records[logContext][tid].push(obj);
+                        }
+                    });
+                    records[logContext][tid].sort(function (a, b) {
+                        return a.record[1] - b.record[1];
+                    });
+                }
+
+                contextData.records = records;
+                contextData.header = header;
+            }
+            if(contextData.records["ActiveAsyncContext"] != undefined) {
+                for (var tid in contextData.records["ActiveAsyncContext"]) {
+                    let missingmq = [];
+                    let missingIDMap = {};
+                    contextData.records["ActiveAsyncContext"][tid].sort(function (a, b) {
+                        return a.record[0] - b.record[0];
+                    });
+                    contextData.records["ActiveAsyncContext"][tid].forEach(function (obj) {
+                        let found = false;
+                        if(contextData.records["AsyncContext"] != undefined && contextData.records["AsyncContext"][tid] != undefined) {
+                            contextData.records["AsyncContext"][tid].forEach(function (obj1) {
+                                if (!found) {
+                                        if (obj.record[7] === obj1.record[9]) {
+                                            found = true;
+                                            return false;
+                                        }
+                                }
+                            });
+                        }
+                        if (!found) {
+                            if(missingIDMap[obj.record[7]] == undefined) {
+                                missingmq.push({"record": [obj.record[0], obj.record[1], obj.record[2], obj.record[3], "mqfrm-active", obj.record[4], obj.record[5], obj.record[6], 0, obj.record[7], obj.record[8], 0, obj.record[9], obj.record[10], obj.record[11], 0, 0, "NA", "NA", "NA", "NA"]});
+                                console.log(obj);
+                                missingIDMap[obj.record[7]] = 1;
+                            }
+                        }
+                    });
+                    if(Object.keys(missingmq).length !== 0) {
+                        if (contextData.records["AsyncContext"] == undefined) {
+                            contextData.records["AsyncContext"] = {};
+                        }
+                        if (contextData.records["AsyncContext"][tid] == undefined) {
+                            contextData.records["AsyncContext"][tid] = [];
+                        }
+                        missingmq.forEach(function (obj) {
+                            contextData.records["AsyncContext"][tid].push(obj);
+                        });
+                    }
+                }
+            }
             for (var customevent in contextData.records) {
-                for(var tid in contextData.records[customevent]) {
+                for (var tid in contextData.records[customevent]) {
                     //sort by timestamp
                     contextData.records[customevent][tid].sort(function (a, b) {
                         return a.record[0] - b.record[0];
@@ -3704,6 +3785,48 @@
                 }
             }
         }
+    }
+
+    function getContextName(type){
+        if(type == 2){
+            return "SyncContext";
+        }else if(type == 6){
+            return "AsyncContext";
+        }else if(type == 5){
+            return "GlobalDescribeContext";
+        }else if(type == 4) {
+            return "AxapxContext";
+        }else if(type == 9){//todo merge with AsyncContext
+            return "ActiveAsyncContext";
+        }else if( type == 10){
+            return "DbConnectionContext";
+        }else if(type = 12){
+            return "CptskContext";
+        }else if(type == 13) {//todo test
+            return "SearchContext";
+        }
+        return undefined;
+    }
+
+    function getContextHeader(type){
+        if(type == 2){
+            return ["type:text","timestamp:timestamp","tid:text","uri:text","logType:text","orgId:text","userId:text","cpuTime:number","runTime:number","dbTime:number","reqId:text","racNode:text","gcTime:number","spTime:number","wTime:number","bTime:number","trust:number","apexTime:number","apexCoTime:number","cTime:number","odbTime:number","dbCpu:number","pRead:number","pWrite:number","dbCCT:number","dbGetc:number","gets:number","threadname:text","bytes:number"];
+        }else if(type == 6){
+            return ["type:text","timestamp:timestamp","tid:text","threadname:text","logType:text","orgId:text","cpuTime:number","runTime:number","dbTime:number","reqId:text","racNode:text","odbTime:number","dbCpu:number","uri:text","bytes:number","totalMsg:number","dqLatency:number","qTier:text","sfdcMsgId:text","dqTrnBhvr:text","connType:text"];
+        }else if(type == 5){
+            return ["type:text","timestamp:timestamp","tid:text","threadname:text","runTime:number","reqId:text","cMethod:text"];
+        }else if(type == 4) {
+            return ["type:text", "timestamp:timestamp", "tid:text", "threadname:text", "runTime:number", "reqId:text", "apexTime:number", "apexCoTime:number", "odbTime:number", "dbCpu:number", "cMethod:text", "cmplTime:number", "wfTime:number", "noSoql:number", "quidty:text", "isLog:number", "cpuTime:number", "orgId:text", "userId:text"];
+        }else if(type == 9){
+            return ["type:text","timestamp:timestamp","tid:text","threadname:text","orgId:text","cpuTime:number","runTime:number","reqId:text","racNode:text","dbCpu:number","uri:text","bytes:number"];
+        }else if( type == 10){//todo test
+            return ["type:text","timestamp:timestamp","tid:text","threadname:text","duration:number","orgId:text","userId:text","requestId:text","backendPid:text","backendStartUpperBound:number","sid:text","serialNumber:text","connPoolType:text","racNode:text"];
+        }else if(type = 12){//todo test
+            return ["type:text","timestamp:timestamp","tid:text","threadname:text","duration:number","gackId:text","spOid:text","spUrn:text","spRTime:number","spAppCpuTime:number","spAppMemoryAllocation:number","spDbCpuTime:number","spDbTime:number","spDbBufferGets:number","spDbDiskReads:number","spDbUndoBlocks:number","spTid:text","spKind:text","spStatusCode:text","spDbNodes","requestId:text"];
+        }else if(type == 13){//todo test
+            return ["type:text","timestamp:timestamp","tid:text","threadname:text","duration:number","OrgId:text","ThreadName:text","ReqId:text","RequestType:text","CoreName:text","PartitionId:text","RevisionId:text","ConsumerName:text","KeyPrefix:text"];
+        }
+        return undefined;
     }
 
     // merge trees
@@ -4158,7 +4281,7 @@
                 tidRowIndex = val;
             }
 
-            if ("duration" == tokens[0]) { // TODO: take from user
+            if ("duration" == tokens[0] || "runTime" == tokens[0]) { // TODO: take from user
                 spanIndex = val;
             }
             if ("timestamp" == tokens[0]) { // TODO: take from user
@@ -4175,8 +4298,8 @@
             //groupByIndex=tidRowIndex;
         }
         if (!sortByFound) {
-            sortBy = "duration";
-            sortByIndex = spanIndex;
+            //sortBy = "duration";
+            //sortByIndex = spanIndex;
         }
 
         addContextHints();
@@ -4249,7 +4372,7 @@
                                 if ((recordSpan + record[timestampIndex]) > maxEndTimeOfReq) {
                                     maxEndTimeOfReq = recordSpan + record[timestampIndex];
                                 }
-                                let key = (groupByIndex != -1 && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
                                 if (!tmpColorMap.has(key)) {
                                     tmpColorMap.set(key, randomColor());
                                     groupByCount++;
@@ -4273,25 +4396,25 @@
                                 }
                             }
                             if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
-                                if (record[metricsIndexMap[spanInput]] >= spanThreshold) {//todo change names spanInput to recordInput, spanThreshold to recordThreshold
+                                if (record[metricsIndexMap[tableThreshold]] >= spanThreshold) {//todo change names tableThreshold to recordInput, spanThreshold to recordThreshold
                                     rowIndex++;
                                     tableRows[rowIndex] = [];
                                     for (let field in record) {
                                         if (field == timestampIndex) {
                                             sfContextDataTable.addContextTableRow(tableRows[rowIndex],moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'),"id='"+record[tidRowIndex] + "_" + record[field]+"'");
                                         } else if(field == tidRowIndex) {
-                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],Number(record[field]));
+                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],Number(record[field]),"' hint='tid'");
                                         }else {
-                                            if(isDimIndexMap[field] == "number") {
+                                            if(isDimIndexMap[field] == undefined) {
                                                 sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field]);
                                             }else{
-                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field],"id='"+record[tidRowIndex] + "_" + record[field]+"' hint='"+isDimIndexMap[field]+"'");
+                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field],"' hint='"+isDimIndexMap[field]+"'");
                                             }
                                         }
                                     }
                                 }
                             } else {
-                                let key = (groupByIndex != -1 && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
 
                                 if (metricSumMap[key] == undefined) {
                                     metricSumMap[key] = Array(metricsIndexArray.length + 1).fill(0);
@@ -4381,19 +4504,19 @@
                                 }
                             }
                             if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
-                                if (record[metricsIndexMap[spanInput]] >= spanThreshold) {
+                                if (record[metricsIndexMap[tableThreshold]] >= spanThreshold) {
                                     rowIndex++;
                                     tableRows[rowIndex] = [];
                                     for (let field in record) {
                                         if (field == timestampIndex) {
                                             sfContextDataTable.addContextTableRow(tableRows[rowIndex],moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'),"id='"+record[tidRowIndex] + "_" + record[field]+"'");
                                         } else if(field == tidRowIndex) {
-                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],Number(record[field]));
+                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],Number(record[field]),"' hint='tid'");
                                         }else {
-                                            if(isDimIndexMap[field] == "number") {
+                                            if(isDimIndexMap[field] == undefined) {
                                                 sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field]);
                                             }else{
-                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field],"id='"+record[tidRowIndex] + "_" + record[field]+"' hint='"+isDimIndexMap[field]+"'");
+                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field],"' hint='"+isDimIndexMap[field]+"'");
                                             }
                                         }
                                     }
@@ -4521,9 +4644,9 @@
             updateRequestView();
         });
 
-        $("#span-input").on("change", (event) => {
-            updateUrl("spanInput", $("#span-input").val(), true);
-            spanInput = $("#span-input").val();
+        $("#table-threshold").on("change", (event) => {
+            updateUrl("tableThreshold", $("#table-threshold").val(), true);
+            tableThreshold = $("#table-threshold").val();
             genRequestTable();
             updateRequestView();
         });

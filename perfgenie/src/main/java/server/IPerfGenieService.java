@@ -33,6 +33,30 @@ public interface IPerfGenieService {
      */
     String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
 
+
+    /**
+     * get event metadata
+     *
+     * @param start    start time ms
+     * @param end      end time ms
+     * @param queryMap event filters
+     * @param dimMap   event dimentions
+     * @return none
+     */
+    String getTenants(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
+
+
+    /**
+     * get event metadata
+     *
+     * @param start    start time ms
+     * @param end      end time ms
+     * @param queryMap event filters
+     * @param dimMap   event dimentions
+     * @return none
+     */
+    String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String namespace) throws IOException;
+
     /**
      * get profile event data
      *

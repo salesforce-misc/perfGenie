@@ -7,6 +7,8 @@
 
 let metaData1 = undefined;
 let metaData2 = undefined;
+let tenantData1 = undefined;
+let tenantData2 = undefined;
 let startTime1 = undefined;
 let endTime1 = undefined;
 let startTime2 = undefined;
@@ -18,7 +20,7 @@ let tenant2 = undefined;
 let profile1 = undefined;
 let profile2 = undefined;
 let dateFormat = 'YYYY-MM-DD HH:mm:ss.SSS';
-let maxTimeRange = 60 * 60 * 1000;
+let maxTimeRange = 24*60 * 60 * 1000;
 
 let jfrprofiles1 = {};
 let jfrprofiles2 = {};
@@ -49,7 +51,7 @@ function validateDateRange(index) {
     }
 
     if ((endEpoch - startEpoch) > maxTimeRange) {
-        addInputNote(true,"Time ranges are limited to 1 hour. Given " + moment(startEpoch).format('YYYY-MM-DD HH:mm:ss') + " - " + moment(endEpoch).format('YYYY-MM-DD HH:mm:ss'));
+        addInputNote(true,"Time ranges are limited to 1 hour. Given " + moment.utc(startEpoch).format('YYYY-MM-DD HH:mm:ss') + " - " + moment.utc(endEpoch).format('YYYY-MM-DD HH:mm:ss'));
         startTimeE.style.borderColor = "red";
         endTimeE.style.borderColor = "red";
         setSubmitDisabled(true);
@@ -75,10 +77,10 @@ function addInputNote(toggle, msg){
 }
 
 $(function () {
-    startTime1 = Number(urlParams.get('startTime1')) || moment(moment().subtract('minute', 10).format('YYYY-MM-DD HH:mm:ss')).valueOf();
-    startTime2 = Number(urlParams.get('startTime2')) || moment(moment().subtract('minute', 24 * 60 + 10).format('YYYY-MM-DD HH:mm:ss')).valueOf();
-    endTime1 = Number(urlParams.get('endTime1')) || moment(moment().format('YYYY-MM-DD HH:mm:ss')).valueOf();
-    endTime2 = Number(urlParams.get('endTime2')) || moment(moment().subtract('minute', 24 * 60).format('YYYY-MM-DD HH:mm:ss')).valueOf();
+    startTime1 = Number(urlParams.get('startTime1')) || moment.utc(moment.utc().subtract('minute', 10).format('YYYY-MM-DD HH:mm:ss')).valueOf();
+    startTime2 = Number(urlParams.get('startTime2')) || moment.utc(moment.utc().subtract('minute', 24 * 60 + 10).format('YYYY-MM-DD HH:mm:ss')).valueOf();
+    endTime1 = Number(urlParams.get('endTime1')) || moment.utc(moment.utc().format('YYYY-MM-DD HH:mm:ss')).valueOf();
+    endTime2 = Number(urlParams.get('endTime2')) || moment.utc(moment.utc().subtract('minute', 24 * 60).format('YYYY-MM-DD HH:mm:ss')).valueOf();
     host1 = urlParams.get('host1') || undefined;
     host2 = urlParams.get('host2') || undefined;
     tenant1 = urlParams.get('tenant1') || undefined;
@@ -104,10 +106,10 @@ $(function () {
         });
     }
 
-    $("#startpicker1").val(moment(startTime1).format('YYYY-MM-DD HH:mm:ss'));
-    $("#endpicker1").val(moment(endTime1).format('YYYY-MM-DD HH:mm:ss'));
-    $("#startpicker2").val(moment(startTime2).format('YYYY-MM-DD HH:mm:ss'));
-    $("#endpicker2").val(moment(endTime2).format('YYYY-MM-DD HH:mm:ss'));
+    $("#startpicker1").val(moment.utc(startTime1).format('YYYY-MM-DD HH:mm:ss'));
+    $("#endpicker1").val(moment.utc(endTime1).format('YYYY-MM-DD HH:mm:ss'));
+    $("#startpicker2").val(moment.utc(startTime2).format('YYYY-MM-DD HH:mm:ss'));
+    $("#endpicker2").val(moment.utc(endTime2).format('YYYY-MM-DD HH:mm:ss'));
 
     $("#tenant-input1").val(tenant1);
     $("#tenant-input2").val(tenant2);
@@ -116,42 +118,49 @@ $(function () {
     $("#bases1").val(profile1);
     $("#bases2").val(profile2);
 
-    getMetaData1(getStart1(), getEnd1());
-    getMetaData2(getStart2(), getEnd2());
+    //getMetaData1(getStart1(), getEnd1());
+    //getMetaData2(getStart2(), getEnd2());
+
+    getTenantData1(getStart1(), getEnd1());
+    getTenantData2(getStart2(), getEnd2());
 
 
     $("#startpicker1").change(function (event) {
-        if (moment($("#startpicker1").val()).valueOf() != startTime1) {
-            startTime1 = moment($("#startpicker1").val()).valueOf();
+        if (moment.utc($("#startpicker1").val()).valueOf() != startTime1) {
+            startTime1 = moment.utc($("#startpicker1").val()).valueOf();
             if(validateDateRange(1)) {
-                getMetaData1(startTime1, endTime1);
+                getTenantData1(startTime1, endTime1);
+                //getMetaData1(startTime1, endTime1);
             }
         }
     });
 
     $("#startpicker2").change(function (event) {
-        if (moment($("#startpicker2").val()).valueOf() != startTime2) {
-            startTime2 = moment($("#startpicker2").val()).valueOf();
+        if (moment.utc($("#startpicker2").val()).valueOf() != startTime2) {
+            startTime2 = moment.utc($("#startpicker2").val()).valueOf();
             if(validateDateRange(2)) {
-                getMetaData2(startTime2, endTime2);
+                getTenantData2(startTime2, endTime2);
+                //getMetaData2(startTime2, endTime2);
             }
         }
     });
 
     $("#endpicker1").change(function (event) {
-        if (moment($("#endpicker1").val()).valueOf() != endTime1) {
-            endTime1 = moment($("#endpicker1").val()).valueOf();
+        if (moment.utc($("#endpicker1").val()).valueOf() != endTime1) {
+            endTime1 = moment.utc($("#endpicker1").val()).valueOf();
             if(validateDateRange(1)) {
-                getMetaData1(startTime1, endTime1);
+                getTenantData1(startTime1, endTime1);
+                //getMetaData1(startTime1, endTime1);
             }
         }
     });
 
     $("#endpicker2").change(function (event) {
-        if (moment($("#endpicker2").val()).valueOf() != endTime2) {
-            endTime2 = moment($("#endpicker2").val()).valueOf();
+        if (moment.utc($("#endpicker2").val()).valueOf() != endTime2) {
+            endTime2 = moment.utc($("#endpicker2").val()).valueOf();
             if(validateDateRange(2)) {
-                getMetaData2(startTime2, endTime2);
+                getTenantData2(startTime2, endTime2);
+                //getMetaData2(startTime2, endTime2);
             }
         }
     });
@@ -164,7 +173,10 @@ $(function () {
         $("#host-input1").val("");
         $("#bases1").empty();
 
-        populateHostsSelector1(tenant1);
+        startTime1 = moment.utc($("#startpicker1").val()).valueOf();
+        endTime1 = moment.utc($("#endpicker1").val()).valueOf();
+        getMetaData1(startTime1, endTime1, tenant1);
+        //populateHostsSelector1(tenant1);
     });
 
     $("#tenant-input2").on("change", (event) => {
@@ -174,7 +186,10 @@ $(function () {
         $("#hosts2").empty();
         $("#host-input2").val("");
         $("#bases2").empty();
-        populateHostsSelector2(tenant2);
+        startTime2 = moment.utc($("#startpicker2").val()).valueOf();
+        endTime2 = moment.utc($("#endpicker2").val()).valueOf();
+        getMetaData2(startTime2, endTime2, tenant2);
+        //populateHostsSelector2(tenant2);
     });
 
     $("#host-input1").on("change", (event) => {
@@ -238,23 +253,44 @@ $(function () {
 function submitTo() {
     window.location.reload(true);
 }
-
-function getMetaData1(start, end) {
-    let URL = getMetaDataURL(start, end);
+function getTenantData1(start, end) {
+    let URL = getTenantDataURL(start, end);
     $.ajax({
         url: URL, success: function (result) {
-            metaData1 = result;
-            updateTenantDropdown1();
+            tenantData1 = result;
+            updateTenantDropdown1(start, end);
         }
     });
 }
 
-function getMetaData2(start, end) {
-    let URL = getMetaDataURL(start, end);
+function getTenantData2(start, end) {
+    let URL = getTenantDataURL(start, end);
+    $.ajax({
+        url: URL, success: function (result) {
+            tenantData2 = result;
+            updateTenantDropdown2(start, end);
+        }
+    });
+}
+
+function getMetaData1(start, end, tenant) {
+    let URL = getMetaDataURL(start, end, tenant);
+    $.ajax({
+        url: URL, success: function (result) {
+            metaData1 = result;
+            populateHostsSelector1(tenant);
+            //updateTenantDropdown1();
+        }
+    });
+}
+
+function getMetaData2(start, end, tenant) {
+    let URL = getMetaDataURL(start, end, tenant);
     $.ajax({
         url: URL, success: function (result) {
             metaData2 = result;
-            updateTenantDropdown2();
+            populateHostsSelector2(tenant);
+            //updateTenantDropdown2();
         }
     });
 }
@@ -315,6 +351,9 @@ function addInputToURL() {
         updateUrl("profile2", "");
     }
 
+    updateTypes1(tenant1, host1);
+    updateTypes2(tenant2, host2);
+
     let types = "";
     for (var key in jfrprofiles1) {
         types = types + key + ":";
@@ -337,13 +376,18 @@ function addInputToURL() {
     updateUrl("spanThreshold", 200);
 }
 
-function updateTenantDropdown1() {
+function updateTenantDropdown1(start, end) {
     let tenants = {};
     let tenantOptionHtml = "";
     const tenantDatalist = $("#tenants1");
     tenantDatalist.empty();
+    if(tenantData1 != undefined) {
+        for (let val in tenantData1) {
+            tenantOptionHtml += "<option value=\"" + val + "\"></option>";
+        }
+    }
 
-    for (var key in metaData1) {
+    /*for (var key in metaData1) {
         if (metaData1[key].metadata.tenant != undefined && tenants[metaData1[key].metadata.tenant] == undefined) {
             tenantOptionHtml += "<option value=\"" + metaData1[key].metadata.tenant + "\"></option>";
             tenants[metaData1[key].metadata.tenant] = 1;
@@ -355,21 +399,28 @@ function updateTenantDropdown1() {
         } else if (metaData1[key].metadata.type == "jstack" && jfrprofiles1[metaData1[key].metadata.name] == undefined) {
             jfrprofiles1[metaData1[key].metadata.name] = true;
         }
-    }
+    }*/
     const optGroupTemplate = '<optgroup label="">OPTIONS</optgroup>';
     tenantDatalist.append(optGroupTemplate.replace("OPTIONS", tenantOptionHtml));
     if (tenant1 != undefined) {
-        populateHostsSelector1(tenant1);
+        getMetaData1(start, end, tenant1);
+        //populateHostsSelector1(tenant1);
     }
 }
 
-function updateTenantDropdown2() {
+function updateTenantDropdown2(start, end) {
     let tenants = {};
     let tenantOptionHtml = "";
     const tenantDatalist = $("#tenants2");
     tenantDatalist.empty();
 
-    for (var key in metaData2) {
+    if(tenantData2 != undefined) {
+        for (let val in tenantData2) {
+            tenantOptionHtml += "<option value=\"" + val + "\"></option>";
+        }
+    }
+
+    /*for (var key in metaData2) {
         if (metaData2[key].metadata.tenant != undefined && metaData2[key].metadata.tenant != undefined && tenants[metaData2[key].metadata.tenant] == undefined) {
             tenantOptionHtml += "<option value=\"" + metaData2[key].metadata.tenant + "\"></option>";
             tenants[metaData2[key].metadata.tenant] = 1;
@@ -381,11 +432,12 @@ function updateTenantDropdown2() {
         } else if (metaData2[key].metadata.type != undefined && metaData2[key].metadata.type == "jstack" && jfrprofiles2[metaData2[key].metadata.name] == undefined) {
             jfrprofiles2[metaData2[key].metadata.name] = true;
         }
-    }
+    }*/
     const optGroupTemplate = '<optgroup label="">OPTIONS</optgroup>';
     tenantDatalist.append(optGroupTemplate.replace("OPTIONS", tenantOptionHtml));
     if (tenant2 != undefined) {
-        populateHostsSelector2(tenant2);
+        getMetaData2(start, end, tenant2);
+        //populateHostsSelector2(tenant2);
     }
 }
 
@@ -399,8 +451,9 @@ function populateHostsSelector1(tenant) {
     const hostDatalist = $("#hosts1");
     hostDatalist.empty();
     $("#host-input1").val("");
+
     for (var key in metaData1) {
-        if (hosts[metaData1[key].metadata.host] == undefined && tenant === metaData1[key].metadata.tenant) {
+        if (hosts[metaData1[key].metadata.host] == undefined && (tenant === metaData1[key].metadata.tenant || tenant === metaData1[key].metadata["tenant-id"]) ) {
             if (host1 == metaData1[key].metadata.host || host1 == "") {
                 $("#host-input1").val(metaData1[key].metadata.host);
             }
@@ -424,8 +477,9 @@ function populateHostsSelector2(tenant) {
     const hostDatalist = $("#hosts2");
     hostDatalist.empty();
     $("#host-input2").val("");
+
     for (var key in metaData2) {
-        if (hosts[metaData2[key].metadata.host] == undefined && tenant === metaData2[key].metadata.tenant) {
+        if (hosts[metaData2[key].metadata.host] == undefined && (tenant === metaData2[key].metadata.tenant || tenant === metaData2[key].metadata["tenant-id"])) {
             if (host2 == metaData2[key].metadata.host || host2 == "") {
                 $("#host-input2").val(host2);
             }
@@ -440,10 +494,78 @@ function populateHostsSelector2(tenant) {
     }
 }
 
+function updateTypes1(tenant, host){
+    jfrevents1={};
+    jfrprofiles1={};
+    let profiles = {};
+    try {
+        for (var key in metaData1) {
+            let name = metaData1[key].metadata["file-name"];
+            let guid = metaData1[key].metadata["guid"];
+            if (profiles[metaData1[key].metadata.guid] == undefined && (tenant === metaData1[key].metadata.tenant || tenant === metaData1[key].metadata["tenant-id"]) && host === metaData1[key].metadata.host) {
+                let val = metaData1[key].timestampMillis + " - " + metaData1[key].metadata.guid;
+                if (profile1 == val || profile1 == "All") {//update only for matching profile
+                    if (name.includes("jfr_dump") && jfrprofiles1[name] == undefined && profile1 != "All") {//sfdc
+                            if (name.includes("dump_log")) {
+                                jfrevents1[name] = true;
+                            } else if(!name.includes("sql")){
+                                jfrprofiles1[name] = true;
+                            }
+                    }else if (metaData1[key].metadata.type == "jfrprofile" && jfrprofiles1[metaData1[key].metadata.name] == undefined) {
+                        jfrprofiles1[metaData1[key].metadata.name] = true;
+                    } else if (metaData1[key].metadata.type == "jfrevent" && jfrprofiles1[metaData1[key].metadata.name] == undefined) {
+                        jfrevents1[metaData1[key].metadata.name] = true;
+                    } else if (metaData1[key].metadata.type == "jstack" && jfrprofiles1[metaData1[key].metadata.name] == undefined) {
+                        jfrprofiles1[metaData1[key].metadata.name] = true;
+                    }
+                }
+            }
+        }
+    }catch(e){
+        console.log(e);
+    }
+    console.log(jfrprofiles1);
+}
+
+function updateTypes2(tenant, host){
+    jfrevents2={};
+    jfrprofiles2={};
+    let profiles = {};
+    try {
+        for (var key in metaData2) {
+            let name = metaData2[key].metadata["file-name"];
+            let guid = metaData2[key].metadata["guid"];
+            if (profiles[metaData2[key].metadata.guid] == undefined && (tenant === metaData2[key].metadata.tenant || tenant === metaData2[key].metadata["tenant-id"]) && host === metaData2[key].metadata.host) {
+                let val = metaData2[key].timestampMillis + " - " + metaData2[key].metadata.guid;
+                if (profile2 == val || profile2 == "All") {//update only for matching profile
+                    if (name.includes("jfr_dump") && jfrprofiles2[name] == undefined && profile2 != "All") {//sfdc
+                        if (name.includes("data")) {
+                            jfrevents2[name] = true;
+                        } else {
+                            jfrprofiles2[name] = true;
+                        }
+                    }else if (metaData2[key].metadata.type == "jfrprofile" && jfrprofiles2[metaData2[key].metadata.name] == undefined) {
+                        jfrprofiles2[metaData2[key].metadata.name] = true;
+                    } else if (metaData2[key].metadata.type == "jfrevent" && jfrprofiles2[metaData2[key].metadata.name] == undefined) {
+                        jfrevents2[metaData2[key].metadata.name] = true;
+                    } else if (metaData2[key].metadata.type == "jstack" && jfrprofiles2[metaData2[key].metadata.name] == undefined) {
+                        jfrprofiles2[metaData2[key].metadata.name] = true;
+                    }
+                }
+            }
+        }
+    }catch(e){
+        console.log(e);
+    }
+    console.log(jfrprofiles2);
+}
+
 function populateIDs1(tenant, host, clearInput) {
     if (tenant === undefined || tenant.length === 0 || host === undefined || host.length === 0) {
         return;
     }
+    jfrEventMap = {};
+
     let profiles = {};
     let profileOptionHtml = "<option  value=''> Choose a profile... </option>";
     const baseDatalist = $("#bases1");
@@ -455,14 +577,27 @@ function populateIDs1(tenant, host, clearInput) {
             jstackFound = true;
             continue;
         }
-        if (profiles[metaData1[key].metadata.guid] == undefined && tenant === metaData1[key].metadata.tenant && host === metaData1[key].metadata.host) {
-            let str = moment(metaData1[key].timestampMillis).format("YYYY-MM-DD HH:mm:ss");
+
+        const index = metaData1[key].metadata["guid"].indexOf("jfr_dump");
+        if (index !== -1) { //sfdc
+            let guid = metaData1[key].metadata["guid"].substring(0, index);
+            metaData1[key].metadata.guid = guid;
+        }
+
+        if (profiles[metaData1[key].metadata.guid] == undefined && (tenant === metaData1[key].metadata.tenant || tenant === metaData1[key].metadata["tenant-id"]) && host === metaData1[key].metadata.host) {
+            let str = moment.utc(metaData1[key].timestampMillis).format("YYYY-MM-DD HH:mm:ss");
+
             let val = metaData1[key].timestampMillis + " - " + metaData1[key].metadata.guid;
+
+            let name = metaData1[key].metadata["file-name"];
+            if(name.includes("jfr_dump")){
+                name = "jfr-sfdc"; //sfdc
+            }
             if (profile1 == val || profile1 == "") {
                 profile1 = val;
-                profileOptionHtml += "<option value=\"" + val + "\" selected>" + str + ":" + metaData1[key].metadata["file-name"] + "</option>";
+                profileOptionHtml += "<option value=\"" + val + "\" selected>" + str + ":" + name + "</option>";
             } else {
-                profileOptionHtml += "<option value=\"" + val + "\">" + str + ":" + metaData1[key].metadata["file-name"] + "</option>";
+                profileOptionHtml += "<option value=\"" + val + "\">" + str + ":" + name + "</option>";
             }
             profileFound = true;
             profiles[metaData1[key].metadata.guid] = 1;
@@ -483,6 +618,8 @@ function populateIDs1(tenant, host, clearInput) {
     }
     const optGroupTemplate = '<optgroup label="">OPTIONS</optgroup>';
     baseDatalist.append(optGroupTemplate.replace("OPTIONS", profileOptionHtml));
+
+
 }
 
 function populateIDs2(tenant, host, clearInput) {
@@ -500,14 +637,26 @@ function populateIDs2(tenant, host, clearInput) {
             jstackFound = true;
             continue;
         }
-        if (profiles[metaData2[key].metadata.guid] == undefined && tenant === metaData2[key].metadata.tenant && host === metaData2[key].metadata.host) {
-            let str = moment(metaData2[key].timestampMillis).format("YYYY-MM-DD HH:mm:ss");
+        const index = metaData2[key].metadata["guid"].indexOf("jfr_dump");
+        if (index !== -1) { //sfdc
+            let guid = metaData2[key].metadata["guid"].substring(0, index);
+            metaData2[key].metadata.guid = guid;
+        }
+
+        if (profiles[metaData2[key].metadata.guid] == undefined && (tenant === metaData2[key].metadata.tenant || tenant === metaData2[key].metadata["tenant-id"]) && host === metaData2[key].metadata.host) {
+            let str = moment.utc(metaData2[key].timestampMillis).format("YYYY-MM-DD HH:mm:ss");
             let val = metaData2[key].timestampMillis + " - " + metaData2[key].metadata.guid;
+
+            let name = metaData2[key].metadata["file-name"];
+            if(name.includes("jfr_dump")){
+                name = "jfr-sfdc"; //sfdc
+            }
+
             if (profile2 == val || profile2 == "") {
                 profile2 = val;
-                profileOptionHtml += "<option value=\"" + val + "\" selected>" + str + ":" + metaData2[key].metadata["file-name"] + "</option>";
+                profileOptionHtml += "<option value=\"" + val + "\" selected>" + str + ":" + name + "</option>";
             } else {
-                profileOptionHtml += "<option value=\"" + val + "\">" + str + ":" + metaData2[key].metadata["file-name"] + "</option>";
+                profileOptionHtml += "<option value=\"" + val + "\">" + str + ":" + name + "</option>";
             }
             profiles[metaData2[key].metadata.guid] = 1;
             profileFound = true;

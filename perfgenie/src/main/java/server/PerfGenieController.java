@@ -70,11 +70,24 @@ public class PerfGenieController {
     @GetMapping(path = {"/v1/meta", "/v1/meta/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String meta(@PathVariable(required = false, name = "tenant") String tenant,
                        @RequestParam(required = false, name = "start") final long start,
-                       @RequestParam(required = false, name = "end") final long end) throws IOException {
+                       @RequestParam(required = false, name = "end") final long end,
+                        @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
 
-        final Map<String, String> queryMap = new HashMap<>();
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
         final Map<String, String> dimMap = new HashMap<>();
-        return service.getMeta(start, end, queryMap, dimMap);
+        return service.getMeta(start, end, queryMap, dimMap, tenant);
+    }
+
+    @CrossOrigin
+    @GetMapping(path = {"/v1/tenants", "/v1/tenants/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String tenants(@PathVariable(required = false, name = "tenant") String tenant,
+                       @RequestParam(required = false, name = "start") final long start,
+                       @RequestParam(required = false, name = "end") final long end,
+                       @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
+
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        final Map<String, String> dimMap = new HashMap<>();
+        return service.getTenants(start, end, queryMap, dimMap);
     }
 
     @CrossOrigin
@@ -89,8 +102,10 @@ public class PerfGenieController {
     }
 
     private static Map<String, String> queryToMap(final List<String> queryList) {
-        if (queryList.isEmpty()) {
-            return Collections.emptyMap();
+        if (queryList == null || queryList.isEmpty()) {
+            final Map<String, String> queryMap = new HashMap<>();
+            return queryMap;
+            //return Collections.emptyMap();
         }
 
         final Map<String, String> queryMap = new HashMap<>();

@@ -4,6 +4,7 @@ import com.salesforce.cantor.h2.CantorOnH2;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
+import perfgenie.utils.Config;
 import perfgenie.utils.EventStore;
 
 import java.io.IOException;
@@ -17,10 +18,11 @@ public class DownloadUploadTest {
     private final long timestamp = System.currentTimeMillis();
 
     private static EventStore eventStore;
+    private static Config config = new Config();
 
     static {
         try {
-            eventStore = new EventStore(getCantorInstance());
+            eventStore = new EventStore(getCantorInstance(), config);
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -21,6 +21,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class EventStore {
     private final static Logger logger = LoggerFactory.getLogger(EventStore.class);
@@ -30,9 +33,14 @@ public class EventStore {
     public static final int LARGE_FILE_SIZE = 1024 * 1024;
     public static boolean enableLargeFile = true;
     private final Cantor cantor;
-    final CustomJfrParser.Config config = new CustomJfrParser.Config();
+    final Config config;
+    public static HashMap<String, Integer> tenantsCache = new HashMap<>();
+    public static Long tenantsCacheTime = System.currentTimeMillis();
 
-    public EventStore() throws IOException {
+    private static Lock cacheLock = new ReentrantLock();
+
+    public EventStore(final Config config) throws IOException {
+        this.config = config;
         if (config.getStorageType().equals("mySQL")) {
             this.cantor =  new CantorOnMysql(config.getMySQL_host(), config.getMySQL_port(), config.getMySQL_user(), config.getMySQL_pwd());
         } else if (config.getStorageType().equals("grpc")) {
@@ -54,8 +62,9 @@ public class EventStore {
         }
     }
 
-    public EventStore(final Cantor cantor) throws IOException {
+    public EventStore(final Cantor cantor, final Config config) throws IOException {
         this.cantor = cantor;
+        this.config = config;
         try {
             this.cantor.events().store(
                     NAMESPACE_JFR_JSON_CACHE,
@@ -65,46 +74,34 @@ public class EventStore {
                     null);
         } catch (Exception e) {
             this.cantor.events().create(NAMESPACE_JFR_JSON_CACHE);
+        }
+        try {
+            this.cantor.events().store(
+                    NAMESPACE_EVENT_LARGE_FILE,
+                    System.currentTimeMillis(),
+                    ImmutableMap.of(),
+                    ImmutableMap.of(),
+                    null);
+        } catch (Exception e) {
             this.cantor.events().create(NAMESPACE_EVENT_LARGE_FILE);
+        }
+        try {
+            this.cantor.events().store(
+                    NAMESPACE_EVENT_META,
+                    System.currentTimeMillis(),
+                    ImmutableMap.of(),
+                    ImmutableMap.of(),
+                    null);
+        } catch (Exception e) {
             this.cantor.events().create(NAMESPACE_EVENT_META);
         }
     }
 
     public String getEvent(final long start, final long end, final Map<String,
             String> queryMap, final Map<String, String> dimMap, int payloadSize) throws IOException {
-        if (enableLargeFile && payloadSize > LARGE_FILE_SIZE) {
-            return download(start, end, queryMap, dimMap);
-        } else {
-            final List<Events.Event> results1 = this.cantor.events().get(
-                    NAMESPACE_JFR_JSON_CACHE,
-                    start,
-                    end,
-                    queryMap,
-                    dimMap,
-                    true
-            );
-            if (results1.size() > 0) {
-                return new String(Utils.decompress(results1.get(0).getPayload()));
-            }
-        }
-        return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Profiles not found", queryMap, null));
-    }
-
-    public String getEvent(final long start, final long end, final Map<String,
-            String> queryMap, final Map<String, String> dimMap) throws IOException {
-
-        final List<Events.Event> results = this.cantor.events().get(
-                NAMESPACE_EVENT_META,
-                start,
-                end,
-                queryMap,
-                dimMap,
-                false
-        );
-        if (results.size() > 0) {
-            final Stopwatch timer = Stopwatch.createStarted();
-            if (enableLargeFile && Integer.parseInt(results.get(0).getMetadata().get("size")) > LARGE_FILE_SIZE) {
-                String res = download(start, end, queryMap, dimMap);
+            if (enableLargeFile && payloadSize > LARGE_FILE_SIZE) {
+                final Stopwatch timer = Stopwatch.createStarted();
+                String res = download(start, end, queryMap, dimMap, null);
                 logger.info("successfully fetched event from namespace: " + NAMESPACE_EVENT_LARGE_FILE + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
                 return res;
             } else {
@@ -117,13 +114,53 @@ public class EventStore {
                         true
                 );
                 if (results1.size() > 0) {
-                    String res = new String(Utils.decompress(results1.get(0).getPayload()));
-                    logger.info("successfully fetched event from namespace: " + NAMESPACE_JFR_JSON_CACHE + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
-                    return res;
+                    return new String(Utils.decompress(results1.get(0).getPayload()));
                 }
             }
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Profiles not found", queryMap, null));
+    }
+
+    public String getEvent(final long start, final long end, final Map<String,
+            String> queryMap, final Map<String, String> dimMap, final String namespace) throws IOException {
+
+        if(namespace != null){
+            final Stopwatch timer = Stopwatch.createStarted();
+            String res = download(start, end, queryMap, dimMap, namespace);
+            logger.info("successfully fetched event from namespace: " + namespace + " time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+            return res;
+        }else {
+            final List<Events.Event> results = this.cantor.events().get(
+                    NAMESPACE_EVENT_META,
+                    start,
+                    end,
+                    queryMap,
+                    dimMap,
+                    false
+            );
+            if (results.size() > 0) {
+                final Stopwatch timer = Stopwatch.createStarted();
+                if (enableLargeFile && Integer.parseInt(results.get(0).getMetadata().get("size")) > LARGE_FILE_SIZE) {
+                    String res = download(start, end, queryMap, dimMap, null);
+                    logger.info("successfully fetched event from namespace: " + NAMESPACE_EVENT_LARGE_FILE + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+                    return res;
+                } else {
+                    final List<Events.Event> results1 = this.cantor.events().get(
+                            NAMESPACE_JFR_JSON_CACHE,
+                            start,
+                            end,
+                            queryMap,
+                            dimMap,
+                            true
+                    );
+                    if (results1.size() > 0) {
+                        String res = new String(Utils.decompress(results1.get(0).getPayload()));
+                        logger.info("successfully fetched event from namespace: " + NAMESPACE_JFR_JSON_CACHE + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+                        return res;
+                    }
+                }
+            }
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Profiles not found", queryMap, null));
         }
-        return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Profiles not found", queryMap, null));
     }
 
     public boolean addEvent(final long timestamp, final Map<String, String> queryMap, final Map<String, Double> dimMap, final String payload) throws IOException {
@@ -174,6 +211,85 @@ public class EventStore {
         }
         return Utils.toJson(results);
     }
+    public String getTenants(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final List<String> namespaces) throws IOException {
+        Long currTime = System.currentTimeMillis();
+        if (tenantsCache.size() == 0 || (currTime - tenantsCacheTime) > 5*60*1000) {
+            currTime = System.currentTimeMillis();
+            cacheLock.lock();
+            logger.warn("acquired lock at" + currTime);
+            if(tenantsCache.size() == 0 || (currTime - tenantsCacheTime) > 5*60*1000) {
+                logger.warn("Updating tenantCache at " + currTime);
+                tenantsCache.clear();
+                final Collection<String> tenantst;
+                tenantst = this.cantor.objects().keys("tenants", 0, 20000);
+                for (String tenant : tenantst) {
+                    tenantsCache.put(tenant, 1);
+                }
+                tenantsCacheTime = System.currentTimeMillis();
+            }else{
+                logger.warn("updated at " + tenantsCacheTime);
+            }
+            cacheLock.unlock();
+        }
+        namespaces.add(NAMESPACE_EVENT_META);
+        for (final String namespace : namespaces) {
+            final List<Events.Event> results = this.cantor.events().get(
+                    NAMESPACE_EVENT_META,
+                    start,
+                    end,
+                    queryMap,
+                    dimMap,
+                    false
+            );
+            if (results.size() > 0) {
+                for (final Events.Event result : results) {
+                    if(result.getMetadata().containsKey("tenant")){
+                        tenantsCache.put(result.getMetadata().get("tenant"),1);
+                    }else if(result.getMetadata().containsKey("tenant-id")){
+                        tenantsCache.put(result.getMetadata().get("tenant-id"),1);
+                    }
+                }
+            }
+        }
+        return Utils.toJson(tenantsCache);
+    }
+
+    public String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String tenant) throws IOException {
+        final Map<String, String> queryMap1 = new HashMap<>();
+        final Map<String, String> dimMap1 = new HashMap<>();
+        if(tenant != null) {
+            queryMap1.put("tenant", tenant);
+        }
+        final List<Events.Event> results1 = this.cantor.events().get(
+                NAMESPACE_EVENT_META,
+                start,
+                end,
+                queryMap1,
+                dimMap1,
+                false
+        );
+
+        if(tenant != null) {
+            queryMap.put("tenant-id", tenant);
+
+            queryMap.put("name", "jfr");//get only jfr events
+            final List<Events.Event> results = this.cantor.events().get(
+                    "maiev-tenant-" + tenant,
+                    start,
+                    end,
+                    queryMap,
+                    dimMap,
+                    false
+            );
+            if (results.size() > 0) {
+                for (final Events.Event result : results) {
+                    results1.add(result);
+                }
+            }
+        }
+
+        return Utils.toJson(results1);
+    }
 
     public Map loadProfiles(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
         final List<Events.Event> results = this.cantor.events().get(
@@ -209,17 +325,34 @@ public class EventStore {
     }
 
     private String download(final long startTimestamp, final long endTimestamp, final Map<String,
-            String> metadataQuery, final Map<String, String> dimensionsQuery) throws IOException {
+            String> metadataQuery, final Map<String, String> dimensionsQuery, final String namespace) throws IOException {
         logger.info("Started downloading  {}", metadataQuery);
-        final DownloadIterator iterator = new DownloadIterator(NAMESPACE_EVENT_LARGE_FILE, startTimestamp, endTimestamp, metadataQuery, dimensionsQuery);
-        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        while (iterator.hasNext()) {
-            final Events.Event event = iterator.next();
-            outStream.write(event.getPayload());
-            outStream.flush();
+        if(namespace != null){
+            try {
+                final DownloadIterator iterator = new DownloadIterator(namespace, startTimestamp, endTimestamp, metadataQuery, dimensionsQuery);
+                ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+                while (iterator.hasNext()) {
+                    final Events.Event event = iterator.next();
+                    outStream.write(event.getPayload());
+                    outStream.flush();
+                }
+                logger.info("Completed downloading {}", metadataQuery);
+                return new String(Utils.decompress(Utils.decompress(outStream.toByteArray())));
+            }catch(Exception e){
+                e.printStackTrace();
+                return null;
+            }
+        }else {
+            final DownloadIterator iterator = new DownloadIterator(NAMESPACE_EVENT_LARGE_FILE, startTimestamp, endTimestamp, metadataQuery, dimensionsQuery);
+            ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+            while (iterator.hasNext()) {
+                final Events.Event event = iterator.next();
+                outStream.write(event.getPayload());
+                outStream.flush();
+            }
+            logger.info("Completed downloading {}", metadataQuery);
+            return new String(Utils.decompress(outStream.toByteArray()));
         }
-        logger.info("Completed downloading {}", metadataQuery);
-        return new String(Utils.decompress(outStream.toByteArray()));
     }
 
     private static class UploadIterator implements Iterator<Events.Event> {

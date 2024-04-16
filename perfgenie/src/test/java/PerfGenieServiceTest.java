@@ -12,11 +12,8 @@ import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 import com.salesforce.cantor.Cantor;
 import com.salesforce.cantor.h2.CantorOnH2;
+import perfgenie.utils.*;
 import server.PerfGenieService;
-import perfgenie.utils.CustomJfrParser;
-import perfgenie.utils.EventHandler;
-import perfgenie.utils.EventStore;
-import perfgenie.utils.Utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -32,9 +29,11 @@ public class PerfGenieServiceTest extends PerfGenieService {
     private static  CustomJfrParser parser = new CustomJfrParser(1);
     private static EventStore eventStore;
 
+    private static Config config = new Config();
+
     static {
         try {
-            eventStore = new EventStore(getCantorInstance());
+            eventStore = new EventStore(getCantorInstance(), new Config());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -45,7 +44,7 @@ public class PerfGenieServiceTest extends PerfGenieService {
     String guid = Utils.generateGuid();
 
     PerfGenieServiceTest() throws IOException{
-        super(eventStore, parser);
+        super(eventStore, parser, config);
     }
 
     @BeforeSuite
@@ -89,7 +88,7 @@ public class PerfGenieServiceTest extends PerfGenieService {
         String json = serviceTest.getMeta(start,end,queryMap,dimMap);
         ObjectMapper mapper = new ObjectMapper();
         JsonNode n = mapper.readTree(json);
-        assertTrue(n.size()==1, "1 expected");
+        assertTrue(n.size()>1, ">1 expected");
     }
 
     @Test (dependsOnMethods = {"addEventTest"})
