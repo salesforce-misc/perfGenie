@@ -109,61 +109,62 @@
         }
 
         for (var key in jfrprofiles1) {
+            let profileName = getProfileName(key);
             if(filterEvent == key) {
                 $('#event-type').append($('<option>', {
                     value: key,
-                    text: key,
+                    text: profileName,
                     selected: true
                 }));
                 $('#event-type-flame').append($('<option>', {
                     value: key,
-                    text: key,
+                    text: profileName,
                     selected: true
                 }));
                 $('#event-type-sample').append($('<option>', {
                     value: key,
-                    text: key,
+                    text: profileName,
                     selected: true
                 }));
                 $('#event-type-river').append($('<option>', {
                     value: key,
-                    text: key,
+                    text: profileName,
                     selected: true
                 }));
                 $('#event-type-surface').append($('<option>', {
                     value: key,
-                    text: key,
+                    text: profileName,
                     selected: true
                 }));
                 $('#event-type-tsview').append($('<option>', {
                     value: key,
-                    text: key,
+                    text: profileName,
                     selected: true
                 }));
             }else{
                 $('#event-type').append($('<option>', {
                     value: key,
-                    text: key
+                    text: profileName
                 }));
                 $('#event-type-flame').append($('<option>', {
                     value: key,
-                    text: key
+                    text: profileName
                 }));
                 $('#event-type-sample').append($('<option>', {
                     value: key,
-                    text: key
+                    text: profileName
                 }));
                 $('#event-type-river').append($('<option>', {
                     value: key,
-                    text: key
+                    text: profileName
                 }));
                 $('#event-type-surface').append($('<option>', {
                     value: key,
-                    text: key
+                    text: profileName
                 }));
                 $('#event-type-tsview').append($('<option>', {
                     value: key,
-                    text: key
+                    text: profileName
                 }));
             }
         }
@@ -282,6 +283,21 @@
                 setmergedContextTree(mergeTrees(invertTree(getContextTree(1)), invertTree(getContextTree(2))));
             }
         }
+    }
+
+    function getProfileName(profile){
+        if(profile === "jfr_dump.json.gz"){
+            return "Java (Thread State(s): Runnable, Sampling Frequency: 10 ms)";
+        }else if(profile === "jfr_dump_socket.json.gz"){
+            return "Java (Thread State(s): Socket R/W, Threshold: 200 ms)";
+        }else if(profile === "jfr_dump_apex.json.gz"){
+            return "Apex (Thread State(s): All, Sampling Frequency: 2 s)";
+        }else if(profile === "jfr_dump_memory.json.gz"){
+            return "Java Memory (Sampling after every: xxm)";
+        }else if(profile === "Jstack"){
+            return "Java (Thread State(s): All, Sampling Frequency: xx s)";
+        }
+        return profile;
     }
 
     function createContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry) {

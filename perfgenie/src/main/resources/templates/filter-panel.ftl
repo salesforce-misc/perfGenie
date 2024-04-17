@@ -883,7 +883,7 @@
 
         let arr = getTreeStack(tmpActiveTree, stackid, tmpcontextTree1Level1, 1);
         let ch = tmpcontextTree1Level1.ch;
-        stacktrace = stacktrace + sampleType + "\n\n";
+        stacktrace = stacktrace + getProfileName(sampleType) + "\n\n";
         while (ch !== undefined && ch != null && ch.length == 1) {
             stacktrace = stacktrace + getFrameName(ch[0].nm) + "\n";
             ch = ch[0].ch;
@@ -3807,6 +3807,7 @@
         }
         return undefined;
     }
+
 
     function getContextHeader(type){
         if(type == 2){
