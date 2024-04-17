@@ -235,7 +235,7 @@
                 tidRowIndex = val;
             }
 
-            if ("duration" == tokens[0]) { // TODO: take from user
+            if ("duration" == tokens[0] || "runTime" == tokens[0]) { // TODO: take from user
                 spanIndex = val;
             }
             if ("timestamp" == tokens[0]) { // TODO: take from user
@@ -418,7 +418,7 @@
                 tidRowIndex = val;
             }
 
-            if ("duration" == tokens[0]) { // TODO: take from user
+            if ("duration" == tokens[0] || "runTime" == tokens[0]) { // TODO: take from user
                 spanIndex = val;
             }
             if ("timestamp" == tokens[0]) { // TODO: take from user
@@ -617,7 +617,7 @@
                                     } else {
                                         key = eval("contextTidMap[tid][i]." + groupBySamples);
                                     }
-                                    if( key.slice != undefined){
+                                    if( key != undefined && key.slice != undefined){
                                         key = key.slice(0, samplesgroupByLength);
                                     }
                                     //consider
@@ -681,7 +681,7 @@
                                                 key = eval("contextTidMap[tid][i]." + groupBySamples);
                                             }
                                         }
-                                        if( key.slice != undefined){
+                                        if( key != undefined && key.slice != undefined){
                                             key = key.slice(0, samplesgroupByLength);
                                         }
 
@@ -724,7 +724,7 @@
                                         flag = true;
                                         //TODO: we are including all the samples in a matching request, some of them may not be part of timerange filter
                                         let key = record[dimIndexMap[groupBySamples]];
-                                        if( key.slice != undefined){
+                                        if( key != undefined && key.slice != undefined){
                                             key = key.slice(0, samplesgroupByLength);
                                         }
                                         //check if request samples match frame filter string
