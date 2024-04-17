@@ -15,15 +15,32 @@
     table {
         border-spacing: 25px;
     }
+
+    .spinner {
+        display: none;
+        width: 25px;
+        height: 25px;
+        margin: 0px auto;
+        border-radius: 50%;
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-top-color: #333;
+        animation: spin 1s infinite linear;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
 </style>
 
 
 <div  style="padding: 0px" id="accordion" class="row">
     <div style="width:100%">Data source selector</div>
     <div  style="padding-bottom: 0px;" class="col-lg-12">
-
+        <div style="float:right;" class="spinner" id="spinner"></div>
         <form  id="compare-context-selector-form" action="javascript:submitTo()" method="get"
                content="application/x-www-form-urlencoded">
+
+
         <table style="border: hidden;">
             <tr style="border: hidden;">
                 <td style="border: none;"><label >Time range UTC from: </label></td>
@@ -99,5 +116,15 @@
 </div>
 
 <script>
+
+
+    function showSpinner() {
+        document.getElementById('spinner').style.display = 'block';
+    }
+
+    // Function to hide the spinner
+    function hideSpinner() {
+        document.getElementById('spinner').style.display = 'none';
+    }
 
 </script>

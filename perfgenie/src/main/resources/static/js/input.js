@@ -247,7 +247,6 @@ $(function () {
             addInputToURL();
         }
     });
-
 });
 
 function submitTo() {
@@ -255,8 +254,10 @@ function submitTo() {
 }
 function getTenantData1(start, end) {
     let URL = getTenantDataURL(start, end);
+    showSpinner();
     $.ajax({
         url: URL, success: function (result) {
+            hideSpinner();
             tenantData1 = result;
             updateTenantDropdown1(start, end);
         }
@@ -275,8 +276,10 @@ function getTenantData2(start, end) {
 
 function getMetaData1(start, end, tenant) {
     let URL = getMetaDataURL(start, end, tenant);
+    showSpinner();
     $.ajax({
         url: URL, success: function (result) {
+            hideSpinner();
             metaData1 = result;
             populateHostsSelector1(tenant);
             //updateTenantDropdown1();
