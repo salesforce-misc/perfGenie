@@ -95,6 +95,19 @@
         $("#event-type-surface").empty();
         $("#event-type-river").empty();
         $("#event-type-tsview").empty();
+
+        let isSFProfile = false;
+        for (var key in jfrprofiles1) {//sfdc
+            if(key.includes("jfr_dump")){
+                isSFProfile = true;
+                break;
+            }
+        }
+
+        if(isSFProfile && !filterEvent.includes("jfr_dump")){
+            filterEvent = "jfr_dump.json.gz";
+        }
+
         for (var key in jfrprofiles1) {
             if(filterEvent == key) {
                 $('#event-type').append($('<option>', {
@@ -287,7 +300,12 @@
             return;
         }
         //data not available, retrieve and create context tree
-        retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, getEventType());
+        let eventType = getEventType();
+        if(eventType.includes("jfr_dump")) {
+            retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, "jfr_dump.json.gz");
+        }else{
+            retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, getEventType());
+        }
         let end = performance.now();
         console.log("createContextTree time:" + (end - start));
     }
@@ -398,7 +416,7 @@
                     }
                     contextTrees[0].context.start = Math.round(contextTrees[0].context.start / 1000000);
                     contextTrees[0].context.end = Math.round(contextTrees[0].context.end / 1000000);
-                    if (getEventType() == eventType) {
+                    if (getEventType() == eventType || eventType == "jfr_dump.json.gz") {
                         if(uploads[0] == "true" && fileIds[0] != "") {
                             setContextData({"records": {}, "tidlist": [], "header": {}});
                         }else{
@@ -503,7 +521,7 @@
                     unhideFilterViewStatus();
                     $("#cct-panel").css("height","100%");
 
-                    if (eventType == getEventType()) {
+                    if (eventType == getEventType() || eventType == "jfr_dump.json.gz") {
                         for (var type in jfrprofiles1) {
                             if(type != eventType) {
                                 retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, type);

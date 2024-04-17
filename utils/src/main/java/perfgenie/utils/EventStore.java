@@ -212,24 +212,26 @@ public class EventStore {
         return Utils.toJson(results);
     }
     public String getTenants(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final List<String> namespaces) throws IOException {
-        Long currTime = System.currentTimeMillis();
-        if (tenantsCache.size() == 0 || (currTime - tenantsCacheTime) > 5*60*1000) {
-            currTime = System.currentTimeMillis();
-            cacheLock.lock();
-            logger.warn("acquired lock at" + currTime);
-            if(tenantsCache.size() == 0 || (currTime - tenantsCacheTime) > 5*60*1000) {
-                logger.warn("Updating tenantCache at " + currTime);
-                tenantsCache.clear();
-                final Collection<String> tenantst;
-                tenantst = this.cantor.objects().keys("tenants", 0, 20000);
-                for (String tenant : tenantst) {
-                    tenantsCache.put(tenant, 1);
+        if(config.getStorageType().equals("grpc")) {
+            Long currTime = System.currentTimeMillis();
+            if (tenantsCache.size() == 0 || (currTime - tenantsCacheTime) > 5 * 60 * 1000) {
+                currTime = System.currentTimeMillis();
+                cacheLock.lock();
+                logger.warn("acquired lock at" + currTime);
+                if (tenantsCache.size() == 0 || (currTime - tenantsCacheTime) > 5 * 60 * 1000) {
+                    logger.warn("Updating tenantCache at " + currTime);
+                    tenantsCache.clear();
+                    final Collection<String> tenantst;
+                    tenantst = this.cantor.objects().keys("tenants", 0, 20000);
+                    for (String tenant : tenantst) {
+                        tenantsCache.put(tenant, 1);
+                    }
+                    tenantsCacheTime = System.currentTimeMillis();
+                } else {
+                    logger.warn("updated at " + tenantsCacheTime);
                 }
-                tenantsCacheTime = System.currentTimeMillis();
-            }else{
-                logger.warn("updated at " + tenantsCacheTime);
+                cacheLock.unlock();
             }
-            cacheLock.unlock();
         }
         namespaces.add(NAMESPACE_EVENT_META);
         for (final String namespace : namespaces) {
@@ -269,21 +271,23 @@ public class EventStore {
                 false
         );
 
-        if(tenant != null) {
-            queryMap.put("tenant-id", tenant);
+        if(config.getStorageType().equals("grpc")) {
+            if (tenant != null) {
+                queryMap.put("tenant-id", tenant);
 
-            queryMap.put("name", "jfr");//get only jfr events
-            final List<Events.Event> results = this.cantor.events().get(
-                    "maiev-tenant-" + tenant,
-                    start,
-                    end,
-                    queryMap,
-                    dimMap,
-                    false
-            );
-            if (results.size() > 0) {
-                for (final Events.Event result : results) {
-                    results1.add(result);
+                queryMap.put("name", "jfr");//get only jfr events
+                final List<Events.Event> results = this.cantor.events().get(
+                        "maiev-tenant-" + tenant,
+                        start,
+                        end,
+                        queryMap,
+                        dimMap,
+                        false
+                );
+                if (results.size() > 0) {
+                    for (final Events.Event result : results) {
+                        results1.add(result);
+                    }
                 }
             }
         }
