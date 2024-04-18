@@ -48,6 +48,8 @@ public class EventHandler {
     private Map<String, StackFrame> profiles = new ConcurrentHashMap<>();
     private Map<String, Long> eventCounts = new ConcurrentHashMap<>();
 
+    private Map<Integer, List<SFLogContext>> sfrecords = new ConcurrentHashMap();
+
     private int eventCount = 0;
     private double threshold = 0.01;
     private Long startEpoch = 0L;
@@ -2216,6 +2218,88 @@ public class EventHandler {
 
         }
         return null;
+    }
+
+
+    public static class SFContextResponse {
+        public Map<Integer, List<SFLogContext>> records; //map of pid and List where list is log context entries
+        public List<Entry> tidlist; // list of entry where entry is a map of k=pid and v=runtime in descending order
+
+        SFContextResponse() {
+
+        }
+
+        SFContextResponse(final Map<Integer, List<SFLogContext>> records, final List<Entry> tidlist) {
+            this.records = records;
+            this.tidlist = tidlist;
+        }
+
+        public Map<Integer, List<SFLogContext>> getRecords() {
+            return records;
+        }
+
+        public List<Entry> getTidlist() {
+            return tidlist;
+        }
+
+        public void setRecords(final Map<Integer, List<SFLogContext>> records) {
+            this.records = records;
+        }
+
+        public void setTidlist(final List<Entry> tidlist) {
+            this.tidlist = tidlist;
+        }
+    }
+    public static class SFLogContext {
+        public List<Object> getRecord() {
+            return record;
+        }
+        public void setRecord(List<Object> record) {
+            this.record = record;
+        }
+        List<Object> record = new ArrayList<>();
+        SFLogContext() {
+        }
+    }
+    public void aggregateSFLogContext(final SFContextResponse res) throws IOException {
+
+        if (this.sfrecords == null) {
+            sfrecords = res.records;
+        } else {
+            for (final Integer key : res.records.keySet()) {
+                if (this.sfrecords.containsKey(key)) {
+                    final List<SFLogContext> list = this.sfrecords.get(key);
+                    for (final SFLogContext lc : res.records.get(key)) {
+                        list.add(lc);
+                    }
+                } else {
+                    this.sfrecords.put(key, res.records.get(key));
+                }
+            }
+        }
+    }
+    public Object getSFLogContext() {
+        final Map<Integer, Long> tidMap = new HashMap<>();
+        int cpu = 0;
+        int pid = 0;
+        int type = 0;
+        for (final Integer key : this.sfrecords.keySet()) {
+            final List<SFLogContext> list = this.sfrecords.get(key);
+            for (final SFLogContext lc : list) {
+                type = (Integer) lc.record.get(0);
+                //include only context log types
+                if (type == EventType.CONTEXT.ordinal()) {
+                    cpu = (Integer) lc.record.get(7);
+                    pid = (Integer) lc.record.get(2);
+                    if (tidMap.containsKey(pid)) {
+                        tidMap.put(pid, cpu + tidMap.get(pid));
+                    } else {
+                        tidMap.put(pid, (long) cpu);
+                    }
+                }
+            }
+        }
+        return new SFContextResponse(sfrecords, sortMap(tidMap));
     }
 }
 

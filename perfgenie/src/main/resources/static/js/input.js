@@ -503,17 +503,27 @@ function updateTypes1(tenant, host){
     let profiles = {};
     try {
         for (var key in metaData1) {
+
+            if (metaData1[key].metadata["name"] != undefined && metaData1[key].metadata["name"] == "json-jstack" && (tenant === metaData1[key].metadata.tenant || tenant === metaData1[key].metadata["tenant-id"]) && host === metaData1[key].metadata.host) {
+                if(jfrprofiles1[metaData1[key].metadata.name] == undefined){
+                    jfrprofiles1[metaData1[key].metadata.name] = true;
+                }
+                continue;
+            }
+
             let name = metaData1[key].metadata["file-name"];
             let guid = metaData1[key].metadata["guid"];
             if (profiles[metaData1[key].metadata.guid] == undefined && (tenant === metaData1[key].metadata.tenant || tenant === metaData1[key].metadata["tenant-id"]) && host === metaData1[key].metadata.host) {
                 let val = metaData1[key].timestampMillis + " - " + metaData1[key].metadata.guid;
                 if (profile1 == val || profile1 == "All") {//update only for matching profile
-                    if (name.includes("jfr_dump") && jfrprofiles1[name] == undefined && profile1 != "All") {//sfdc
+                    if (name.includes("jfr_dump") && jfrprofiles1[name] == undefined) {//sfdc
                             if (name.includes("dump_log")) {
                                 jfrevents1[name] = true;
                             } else if(!name.includes("sql")){
                                 jfrprofiles1[name] = true;
                             }
+                    }else if (name == "json-stack" && jfrprofiles1[name] == undefined) {
+                        jfrprofiles1[name] = true;
                     }else if (metaData1[key].metadata.type == "jfrprofile" && jfrprofiles1[metaData1[key].metadata.name] == undefined) {
                         jfrprofiles1[metaData1[key].metadata.name] = true;
                     } else if (metaData1[key].metadata.type == "jfrevent" && jfrprofiles1[metaData1[key].metadata.name] == undefined) {
@@ -536,6 +546,13 @@ function updateTypes2(tenant, host){
     let profiles = {};
     try {
         for (var key in metaData2) {
+            if (metaData2[key].metadata["name"] != undefined && metaData2[key].metadata["name"] == "json-jstack" && (tenant === metaData2[key].metadata.tenant || tenant === metaData2[key].metadata["tenant-id"]) && host === metaData2[key].metadata.host) {
+                if(jfrprofiles2[metaData2[key].metadata.name] == undefined){
+                    jfrprofiles2[metaData2[key].metadata.name] = true;
+                }
+                continue;
+            }
+
             let name = metaData2[key].metadata["file-name"];
             let guid = metaData2[key].metadata["guid"];
             if (profiles[metaData2[key].metadata.guid] == undefined && (tenant === metaData2[key].metadata.tenant || tenant === metaData2[key].metadata["tenant-id"]) && host === metaData2[key].metadata.host) {
@@ -547,6 +564,8 @@ function updateTypes2(tenant, host){
                         } else {
                             jfrprofiles2[name] = true;
                         }
+                    }else if (name == "json-stack" && jfrprofiles2[name] == undefined) {
+                        jfrprofiles2[name] = true;
                     }else if (metaData2[key].metadata.type == "jfrprofile" && jfrprofiles2[metaData2[key].metadata.name] == undefined) {
                         jfrprofiles2[metaData2[key].metadata.name] = true;
                     } else if (metaData2[key].metadata.type == "jfrevent" && jfrprofiles2[metaData2[key].metadata.name] == undefined) {
@@ -576,7 +595,11 @@ function populateIDs1(tenant, host, clearInput) {
     let profileFound = false;
     let jstackFound = false;
     for (var key in metaData1) {
-        if (metaData1[key].metadata["name"] != undefined && metaData1[key].metadata["name"] == "Jstack") {
+        if (metaData1[key].metadata["name"] != undefined && metaData1[key].metadata["name"] == "Jstack" && (tenant === metaData1[key].metadata.tenant || tenant === metaData1[key].metadata["tenant-id"]) && host === metaData1[key].metadata.host) {
+            jstackFound = true;
+            continue;
+        }
+        if (metaData1[key].metadata["name"] != undefined && metaData1[key].metadata["name"] == "json-jstack" && (tenant === metaData1[key].metadata.tenant || tenant === metaData1[key].metadata["tenant-id"]) && host === metaData1[key].metadata.host) {
             jstackFound = true;
             continue;
         }
@@ -636,7 +659,7 @@ function populateIDs2(tenant, host, clearInput) {
     let profileFound = false;
     let jstackFound = false;
     for (var key in metaData2) {
-        if (metaData2[key].metadata["name"] != undefined && metaData2[key].metadata["name"] == "Jstack") {
+        if (metaData2[key].metadata["name"] != undefined && metaData2[key].metadata["name"] == "Jstack" && (tenant === metaData2[key].metadata.tenant || tenant === metaData2[key].metadata["tenant-id"]) && host === metaData2[key].metadata.host) {
             jstackFound = true;
             continue;
         }

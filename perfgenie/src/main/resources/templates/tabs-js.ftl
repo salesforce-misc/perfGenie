@@ -264,6 +264,8 @@
 
         if(isValidReq && getEventType() != undefined) {
             createContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, true);
+        }else{
+            console.log("Warn: Event type undefined.")
         }
     }
 
@@ -294,7 +296,7 @@
             return "Apex (Thread State(s): All, Sampling Frequency: 2 s)";
         }else if(profile === "jfr_dump_memory.json.gz"){
             return "Java Memory (Sampling after every: xxm)";
-        }else if(profile === "Jstack"){
+        }else if(profile === "Jstack" || profile === "json-jstack"){
             return "Java (Thread State(s): All, Sampling Frequency: xx s)";
         }
         return profile;
@@ -357,7 +359,7 @@
                         toastr_error("Failed to process profile: " + contextTree["error"]);
                     }
                     isError = true;
-                }else if(eventType == "Jstack"){
+                }else if(eventType == "Jstack" || eventType == "json-jstack"){
                     if(contextTree.meta != undefined && contextTree.meta['jstack-interval'] != undefined){
                         let jstackinterval = contextTree.meta['jstack-interval'];
                         $("#event-type option[value='jstack']").html("Java (Thread State(s): All, Sampling Frequency: "+jstackinterval+" s)");
@@ -395,7 +397,7 @@
                     //$("#framefilterId").removeClass("hide");
                     isJfrContext = true;
                     const defaultResult = {error_messages: [], sz: 0, ch: []};
-                    if (eventType === "Jstack") {
+                    if (eventType === "Jstack" || eventType === "json-jstack") {
                         console.log("add frames1:" + eventType);
                         if(contextTree1Frames === undefined){
                             contextTree1JstackFrames = true;
@@ -466,7 +468,7 @@
                 $("#framefilterId").addClass("hide");
                 if (contextTrees[0].context !== undefined && contextTrees[1].context !== undefined && contextTrees[0].context !== null && contextTrees[1].context !== null) {
                     isJfrContext = true;
-                    if (eventType === "Jstack") {
+                    if (eventType === "Jstack" || eventType === "json-jstack") {
                         console.log("add frames1:" + eventType);
                         if(contextTree1Frames === undefined){
                             contextTree1JstackFrames = true;
@@ -495,7 +497,7 @@
                         }
                     }
 
-                    if (eventType === "Jstack") {
+                    if (eventType === "Jstack" || eventType === "json-jstack") {
                         console.log("add frames2:" + eventType);
                         if(contextTree2Frames === undefined){
                             contextTree2JstackFrames = true;
@@ -697,6 +699,15 @@
                     "&metadata_query=" + encodeURIComponent("name=Jstack");
                 return endpoint;
             }
+            if (eventType == "json-jstack") {
+                const start = parseInt(timeRange.split(" - ")[0]);
+                const end = parseInt(timeRange.split(" - ")[1]);
+                endpoint = "/v1/jstack/" + tenant + "/?start=" + start + "&end=" + end +
+                    "&metadata_query=" + encodeURIComponent("host=" + host) +
+                    "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+                    "&metadata_query=" + encodeURIComponent("name=json-jstack");
+                return endpoint;
+            }
             if (profile == "Jstacks") {
                 const start = parseInt(timeRange.split(" - ")[0]);
                 const end = parseInt(timeRange.split(" - ")[1]);
@@ -727,16 +738,30 @@
             } else {
                 const start = parseInt(timeRange.split(" - ")[0]);
                 const end = parseInt(timeRange.split(" - ")[1]);
-                if(eventType == "customEvent"){
-                    endpoint = "/v1/customevents/" + tenant + "/?start=" + start + "&end=" + end +
-                        "&metadata_query=" + encodeURIComponent("host=" + host) +
-                        "&metadata_query=" + encodeURIComponent("tenant=" + tenant) +
-                        "&metadata_query=" + encodeURIComponent("name=customEvent");
-                }else {
-                    endpoint = "/v1/profiles/" + tenant + "/?start=" + start + "&end=" + end +
-                        "&metadata_query=" + encodeURIComponent("host=" + host) +
-                        "&metadata_query=" + encodeURIComponent("tenant=" + tenant) +
-                        "&metadata_query=" + encodeURIComponent("name=" + eventType);
+                if(eventType.includes("jfr_dump")) {//sfdc
+                    if (eventType.includes("jfr_dump_log")) {
+                        endpoint = "/v1/customevents/" + tenant + "/?start=" + start + "&end=" + end +
+                            "&metadata_query=" + encodeURIComponent("host=" + host) +
+                            "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+                            "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
+                    } else {
+                        endpoint = "/v1/profiles/" + tenant + "/?start=" + start + "&end=" + end +
+                            "&metadata_query=" + encodeURIComponent("host=" + host) +
+                            "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+                            "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
+                    }
+                }else{
+                    if (eventType == "customEvent") {
+                        endpoint = "/v1/customevents/" + tenant + "/?start=" + start + "&end=" + end +
+                            "&metadata_query=" + encodeURIComponent("host=" + host) +
+                            "&metadata_query=" + encodeURIComponent("tenant=" + tenant) +
+                            "&metadata_query=" + encodeURIComponent("name=customEvent");
+                    } else {
+                        endpoint = "/v1/profiles/" + tenant + "/?start=" + start + "&end=" + end +
+                            "&metadata_query=" + encodeURIComponent("host=" + host) +
+                            "&metadata_query=" + encodeURIComponent("tenant=" + tenant) +
+                            "&metadata_query=" + encodeURIComponent("name=" + eventType);
+                    }
                 }
             }
         }

@@ -289,28 +289,104 @@ public class EventStore {
                         results1.add(result);
                     }
                 }
+                final Map<String, String> queryMap2 = new HashMap<>();
+                queryMap2.put("tenant-id", tenant);
+
+                queryMap2.put("name", "json-jstack");//get only jfr events
+                final List<Events.Event> results2 = this.cantor.events().get(
+                        "maiev-tenant-" + tenant,
+                        start,
+                        end,
+                        queryMap2,
+                        dimMap,
+                        false
+                );
+                if (results2.size() > 0) {
+                    for (final Events.Event result : results2) {
+                        results1.add(result);
+                    }
+                }
             }
+
         }
 
         return Utils.toJson(results1);
     }
 
-    public Map loadProfiles(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
-        final List<Events.Event> results = this.cantor.events().get(
-                NAMESPACE_EVENT_META,
-                start,
-                end,
-                queryMap,
-                dimMap,
-                false
-        );
-        if (results.size() > 0) {
-            Map<String, Map<String, String>> profiles = new HashMap<>();
-            results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
-            for (final Events.Event result : results) {
-                profiles.put(result.getMetadata().get("guid"), result.getMetadata());
+    public List getPayLoads(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String namespace, final boolean payload) throws IOException {
+        if(namespace == null){
+            final List<Events.Event> results = this.cantor.events().get(
+                    NAMESPACE_EVENT_META,
+                    start,
+                    end,
+                    queryMap,
+                    dimMap,
+                    payload
+            );
+            if (results.size() > 0) {
+                List<String> payloads = new ArrayList<>();
+                results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
+                for (final Events.Event result : results) {
+                    payloads.add(new String(Utils.decompress(result.getPayload())));
+                }
+                return payloads;
             }
-            return profiles;
+        }else {
+            final List<Events.Event> results = this.cantor.events().get(
+                    namespace,
+                    start,
+                    end,
+                    queryMap,
+                    dimMap,
+                    payload
+            );
+            if (results.size() > 0) {
+                List<String> payloads = new ArrayList<>();
+                results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
+                for (final Events.Event result : results) {
+                    payloads.add(new String(Utils.decompress(result.getPayload())));
+                }
+                return payloads;
+            }
+        }
+        return null;
+    }
+
+    public Map loadProfiles(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String namespace, final boolean payload) throws IOException {
+        if(namespace == null){
+            final List<Events.Event> results = this.cantor.events().get(
+                    NAMESPACE_EVENT_META,
+                    start,
+                    end,
+                    queryMap,
+                    dimMap,
+                    payload
+            );
+            if (results.size() > 0) {
+                Map<String, Map<String, String>> profiles = new HashMap<>();
+                results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
+                for (final Events.Event result : results) {
+                    profiles.put(result.getMetadata().get("guid"), result.getMetadata());
+                }
+                return profiles;
+            }
+        }else {
+            final List<Events.Event> results = this.cantor.events().get(
+                    namespace,
+                    start,
+                    end,
+                    queryMap,
+                    dimMap,
+                    payload
+            );
+            if (results.size() > 0) {
+                Map<String, Map<String, String>> profiles = new HashMap<>();
+                results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
+                for (final Events.Event result : results) {
+                    profiles.put(result.getMetadata().get("guid"), result.getMetadata());
+                }
+                return profiles;
+            }
         }
         return null;
     }
