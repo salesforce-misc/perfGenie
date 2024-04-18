@@ -3708,6 +3708,7 @@
             }else{//convert to perfgene format sfdc
                 let records = {};
                 let header = {};
+                let tooltips = {};
                 let logContext = "logContext";
                 for (var tid in contextData.records) {
                     contextData.records[tid].forEach(function (obj) {
@@ -3715,6 +3716,12 @@
                         if(logContext != undefined){
                             if(header[logContext] == undefined){
                                 header[logContext] = getContextHeader(obj.record[0]);
+                                if(header[logContext] != undefined) {
+                                    for (let val in header[logContext]) {
+                                        const tokens = header[logContext][val].split(":");
+                                        tooltips[tokens[0]] = tokens[2];
+                                    }
+                                }
                             }
                             if(records[logContext] == undefined){
                                 records[logContext] = {};
@@ -3735,6 +3742,7 @@
 
                 contextData.records = records;
                 contextData.header = header;
+                contextData.tooltips = tooltips;
             }
             if(contextData.records["ActiveAsyncContext"] != undefined) {
                 for (var tid in contextData.records["ActiveAsyncContext"]) {
@@ -3789,15 +3797,15 @@
 
     function getContextName(type){
         if(type == 2){
-            return "SyncContext";
+            return "LogContext";
         }else if(type == 6){
-            return "AsyncContext";
+            return "MessageQueue";
         }else if(type == 5){
-            return "GlobalDescribeContext";
+            return "GlobalDescribe";
         }else if(type == 4) {
-            return "AxapxContext";
+            return "ApexExecutionLogInfo";
         }else if(type == 9){//todo merge with AsyncContext
-            return "ActiveAsyncContext";
+            return "MessageQueueActive";
         }else if( type == 10){
             return "DbConnectionContext";
         }else if(type = 12){
@@ -3811,24 +3819,25 @@
 
     function getContextHeader(type){
         if(type == 2){
-            return ["type:text","timestamp:timestamp","tid:text","uri:text","logType:text","orgId:text","userId:text","cpuTime:number","runTime:number","dbTime:number","reqId:text","racNode:text","gcTime:number","spTime:number","wTime:number","bTime:number","trust:number","apexTime:number","apexCoTime:number","cTime:number","odbTime:number","dbCpu:number","pRead:number","pWrite:number","dbCCT:number","dbGetc:number","gets:number","threadname:text","bytes:number"];
+            return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","uri:text:log name of the request","logType:text:log record type associated with the request","orgId:text:organization Id","userId:text:user Id","cpuTime:number:the amount of cpu time in ms this request took","runTime:number:the wall time in ms this request took (APT)","dbTime:number:time spent in database","reqId:text:request Id","racNode:text:rac node","gcTime:number:GC duraiton in ms that impacted this request","safepointTime:number:time spent waiting for and including a safepoint","waitTime:number:approximate accumulated time ms that the thread waited for notification","blockedTime:number:approximate accumulated time ms that the thread blocked to enter/reenter a monitor","trust:text:is this a trust request","apexTime:number:wall clock time ms spent in apex code","apexCalloutTime:number:wall clock time ms spent in apex call out","cacheTime:number:wall clock time ms spent in apex call out","oraDbTime:number:time spent ms in db","dbCpu:number:cpu time ms in db","physRead:number:number of physical reads in db","physWrite:number:number of physical writes in db","dbConChkOut:number:time ms for which the connection was checkedout from the pool","dbGetCon:number:time ms taken to acquire a db connection or hit the timout","gets:number:number of buffer gets in db","threadname:text","bytes:number"];
         }else if(type == 6){
-            return ["type:text","timestamp:timestamp","tid:text","threadname:text","logType:text","orgId:text","cpuTime:number","runTime:number","dbTime:number","reqId:text","racNode:text","odbTime:number","dbCpu:number","uri:text","bytes:number","totalMsg:number","dqLatency:number","qTier:text","sfdcMsgId:text","dqTrnBhvr:text","connType:text"];
+            return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","threadname:text","logType:text:log record type associated with the request","orgId:text:organization Id","cpuTime:number:the amount of cpu time in ms this request took","runTime:number:the wall time in ms this request took (APT)","dbTime:number:time spent in database","reqId:text:request Id","racNode:text:rac node","oraDbTime:number:time spent ms in db","dbCpu:number:cpu time ms in db","uri:text:log name of the request","bytes:number","totalMsg:number:total number of messages in dequeue set","dqLatency:number:time between enqueue and dequeue in ms","queueTier:text:tier of service for the queue where message is dequeued","sfdcMsgId:text:sfdc Id of the message","dqTrnBhvr:text:whether the handler is comitted or un-committed","connType:text:type of connection pool used by handler"];
         }else if(type == 5){
-            return ["type:text","timestamp:timestamp","tid:text","threadname:text","runTime:number","reqId:text","cMethod:text"];
+            return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","threadname:text","runTime:number:the wall time in ms this request took (APT)","reqId:text:request Id","classMethod:text:class and method calling getGlobalDescribe"];
         }else if(type == 4) {
-            return ["type:text", "timestamp:timestamp", "tid:text", "threadname:text", "runTime:number", "reqId:text", "apexTime:number", "apexCoTime:number", "odbTime:number", "dbCpu:number", "cMethod:text", "cmplTime:number", "wfTime:number", "noSoql:number", "quidty:text", "isLog:number", "cpuTime:number", "orgId:text", "userId:text"];
+            return ["type:text", "timestamp:timestamp:start time of the request", "tid:text:tid", "threadname:text", "runTime:number:the wall time in ms this request took (APT)", "reqId:text:request Id", "apexTime:number:wall clock time ms spent in apex code", "apexCalloutTime:number:wall clock time ms spent in apex call out", "oraDbTime:number:time spent ms in db", "dbCpu:number:cpu time ms in db", "classMethod:text:class and method calling getGlobalDescribe", "cmplTime:number:apex compilation time ms", "wfTime:number:time ms spent in workflow action and rules", "noSoql:number:number of soql query executions", "quidty:text:what kind of outer execution is this", "isLog:text:is apex debug logging enabled", "cpuTime:number:the amount of cpu time in ms this request took", "orgId:text:organization Id", "userId:text:user Id"];
         }else if(type == 9){
-            return ["type:text","timestamp:timestamp","tid:text","threadname:text","orgId:text","cpuTime:number","runTime:number","reqId:text","racNode:text","dbCpu:number","uri:text","bytes:number"];
+            return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","threadname:text","orgId:text:organization Id","cpuTime:number:the amount of cpu time in ms this request took","runTime:number:the wall time in ms this request took (APT)","reqId:text:request Id","racNode:text:rac node","dbCpu:number:cpu time ms in db","uri:text:log name of the request","bytes:number"];
         }else if( type == 10){//todo test
-            return ["type:text","timestamp:timestamp","tid:text","threadname:text","duration:number","orgId:text","userId:text","requestId:text","backendPid:text","backendStartUpperBound:number","sid:text","serialNumber:text","connPoolType:text","racNode:text"];
+            return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","threadname:text","duration:number","orgId:text:organization Id","userId:text:user Id","reqId:text:request Id","backendPid:text","backendStartUpperBound:number","sid:text","serialNumber:text","connPoolType:text:the connection pool type id","racNode:text:rac node"];
         }else if(type = 12){//todo test
-            return ["type:text","timestamp:timestamp","tid:text","threadname:text","duration:number","gackId:text","spOid:text","spUrn:text","spRTime:number","spAppCpuTime:number","spAppMemoryAllocation:number","spDbCpuTime:number","spDbTime:number","spDbBufferGets:number","spDbDiskReads:number","spDbUndoBlocks:number","spTid:text","spKind:text","spStatusCode:text","spDbNodes","requestId:text"];
+            return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","threadname:text","duration:number","gackId:text","spOid:text","spUrn:text","spRTime:number","spAppcpuTime:number","spAppMemoryAllocation:number","spDbcpuTime:number","spdblockedTime:number","spDbBufferGets:number","spDbDiskReads:number","spDbUndoBlocks:number","spTid:text","spKind:text","spStatusCode:text","spDbNodes","reqId:text:request Id"];
         }else if(type == 13){//todo test
-            return ["type:text","timestamp:timestamp","tid:text","threadname:text","duration:number","OrgId:text","ThreadName:text","ReqId:text","RequestType:text","CoreName:text","PartitionId:text","RevisionId:text","ConsumerName:text","KeyPrefix:text"];
+            return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","threadname:text","duration:number","orgId:text:organization Id","ThreadName:text","reqId:text:request Id","RequestType:text","CoreName:text","PartitionId:text","RevisionId:text","ConsumerName:text","KeyPrefix:text"];
         }
         return undefined;
     }
+
 
     // merge trees
     function mergeTrees(contextTreeMaster, contextTreeBranch) {
@@ -4667,9 +4676,9 @@
     function getContextTableHeadernew(groupBy, row) {
         if (!(groupBy == undefined || groupBy == "" || groupBy == "All records")) {
             if(groupBy == "tid") {
-                sfContextDataTable.addContextTableHeader(row,groupBy,1,"class='context-menu-two'");
+                sfContextDataTable.addContextTableHeader(row,groupBy,1,"class='context-menu-two' " , contextData.tooltips[groupBy]);
             }else{
-                sfContextDataTable.addContextTableHeader(row,groupBy,-1,"class='context-menu-two'");
+                sfContextDataTable.addContextTableHeader(row,groupBy,-1,"class='context-menu-two'" , contextData.tooltips[groupBy]);
             }
         }
         if (contextData != undefined && contextData.header != undefined) {
@@ -4677,19 +4686,23 @@
                 const tokens = contextData.header[customEvent][val].split(":");
                 if (groupBy == undefined || groupBy == "" || groupBy == "All records" || tokens[1] == "number") {
                     if(tokens[1] == "number") {
-                        sfContextDataTable.addContextTableHeader(row,tokens[0],1);
+                        sfContextDataTable.addContextTableHeader(row,tokens[0],1, undefined, contextData.tooltips[tokens[0]]);
                     }else if(tokens[1] == "timestamp"){
                         sfContextDataTable.addContextTableHeader(row,tokens[0],-1,"class='context-menu-one'");
                     }else if(tokens[0] == "tid"){
-                        sfContextDataTable.addContextTableHeader(row,tokens[0],1,"class='context-menu-two'");
+                        sfContextDataTable.addContextTableHeader(row,tokens[0],1,"class='context-menu-two'", contextData.tooltips[tokens[0]]);
                     }else{
-                        sfContextDataTable.addContextTableHeader(row,tokens[0],-1,"class='context-menu-two'");
+                        sfContextDataTable.addContextTableHeader(row,tokens[0],-1,"class='context-menu-two'", contextData.tooltips[tokens[0]]);
                     }
                 }
             }
         }
         if (!(groupBy == undefined || groupBy == "" || groupBy == "All records")) {
-            sfContextDataTable.addContextTableHeader(row,"Count",1);
+            if(contextData.tooltips["Count"] != undefined) {
+                sfContextDataTable.addContextTableHeader(row, "Count", 1, undefined, contextData.tooltips[groupBy]);
+            }else{
+                sfContextDataTable.addContextTableHeader(row, "Count", 1);
+            }
         }
     }
 

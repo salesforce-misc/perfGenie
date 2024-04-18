@@ -258,10 +258,18 @@ class SFDataTable {
     SFDataTableGetHeader() {
         let header = "<thead style='height: 30px;'><tr>";
         for (let i = 0; i < this.#SFDataTableHeader.length; i++) {
-            if (i == this.#sfdtsci) {
-                header += "<th onclick='javascript:"+this.#instanceName+".SFDataTableSetSortIndex(this)' style='cursor: pointer;padding: 5px; white-space: nowrap;'>" + this.#SFDataTableHeader[i].v + " <i class='fa fa-caret-" + this.#sortIcon + "' style='color:black'></i></th>";
-            } else {
-                header += "<th onclick='javascript:"+this.#instanceName+".SFDataTableSetSortIndex(this)' style='cursor: pointer;padding: 5px; white-space: nowrap;'>" + this.#SFDataTableHeader[i].v + " <i class='fa fa-caret-down' style='color:#d3d3d4'></i></th>";
+            if(this.#SFDataTableHeader[i].h != undefined) {
+                if (i == this.#sfdtsci) {
+                    header += "<th title='"+this.#SFDataTableHeader[i].h+"' onclick='javascript:" + this.#instanceName + ".SFDataTableSetSortIndex(this)' style='cursor: pointer;padding: 5px; white-space: nowrap;'>" + this.#SFDataTableHeader[i].v + " <i class='fa fa-caret-" + this.#sortIcon + "' style='color:black'></i></th>";
+                } else {
+                    header += "<th title='"+this.#SFDataTableHeader[i].h+"' onclick='javascript:" + this.#instanceName + ".SFDataTableSetSortIndex(this)' style='cursor: pointer;padding: 5px; white-space: nowrap;'>" + this.#SFDataTableHeader[i].v + " <i class='fa fa-caret-down' style='color:#d3d3d4'></i></th>";
+                }
+            }else{
+                if (i == this.#sfdtsci) {
+                    header += "<th onclick='javascript:" + this.#instanceName + ".SFDataTableSetSortIndex(this)' style='cursor: pointer;padding: 5px; white-space: nowrap;'>" + this.#SFDataTableHeader[i].v + " <i class='fa fa-caret-" + this.#sortIcon + "' style='color:black'></i></th>";
+                } else {
+                    header += "<th onclick='javascript:" + this.#instanceName + ".SFDataTableSetSortIndex(this)' style='cursor: pointer;padding: 5px; white-space: nowrap;'>" + this.#SFDataTableHeader[i].v + " <i class='fa fa-caret-down' style='color:#d3d3d4'></i></th>";
+                }
             }
         }
         header += "</tr></thead>\n";
@@ -329,12 +337,12 @@ class SFDataTable {
         this.SFDataTable();
     }
 
-    addContextTableHeader(row, val, t, p){
+    addContextTableHeader(row, val, t, p, h){
         if(p != undefined)
         {
-            row.push({"v": val, "t": t, "p": p});
+            row.push({"v": val, "t": t, "p": p, "h":h});
         }else{
-            row.push({"v": val, "t": t});
+            row.push({"v": val, "t": t, "h":h});
         }
     }
 

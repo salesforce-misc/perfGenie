@@ -379,9 +379,9 @@
             sfContextDataTable.addContextTableHeader(row,"Samples",1);
         }else{*/
             if(groupBySamples == "tid") {
-                sfSampleTable.addContextTableHeader(row,groupBySamples,1,"class='context-menu-two'");
+                sfSampleTable.addContextTableHeader(row,groupBySamples,1,"class='context-menu-two'",contextData.tooltips[groupBySamples]);
             }else{
-                sfSampleTable.addContextTableHeader(row,groupBySamples,-1,"class='context-menu-two'");
+                sfSampleTable.addContextTableHeader(row,groupBySamples,-1,"class='context-menu-two'",contextData.tooltips[groupBySamples]);
             }
             sfSampleTable.addContextTableHeader(row,"Sample Count",1);
             sfSampleTable.addContextTableHeader(row,"Samples",1);
