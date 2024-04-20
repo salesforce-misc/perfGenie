@@ -54,6 +54,9 @@
     <script src="/plugins/jquery.ui.position.js"></script>
     <link rel="stylesheet" href="/plugins/jquery.contextMenu.min.css">
 
+    <script type="text/javascript" src="/plugins/toastify/toastify.js"></script>
+    <link rel="stylesheet" href="/plugins/toastify/toastify.css">
+
     <link rel="stylesheet" href="/plugins/bootstrap-toggle.min.css">
     <script src="/plugins/bootstrap-toggle.min.js"></script>
     <script type="text/javascript" src="/plugins/plotly.min.js"></script>

@@ -202,14 +202,14 @@ public class PerfGenieService implements IPerfGenieService {
         return eventStore.addEvent(timestamp, queryMap, dimMap, payload);
     }
 
-    @Override
+    /*@Override
     public String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
         if(queryMap.containsKey("tenant-id")){
-            return eventStore.getMeta(start, end, queryMap, dimMap, queryMap.get("tenant-id"));
+            return eventStore.getMeta(start, end, queryMap, dimMap, queryMap.get("tenant-id"),queryMap.containsKey("instance-id") ? queryMap.get("tenant-id") : null);
         }else {
-            return eventStore.getMeta(start, end, queryMap, dimMap, null);
+            return eventStore.getMeta(start, end, queryMap, dimMap, null, queryMap.containsKey("host") ? queryMap.get("host") : null);
         }
-    }
+    }*/
 
     @Override
     public String getTenants(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
@@ -220,8 +220,16 @@ public class PerfGenieService implements IPerfGenieService {
     }
 
     @Override
-    public String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String tenant) throws IOException {
-        return eventStore.getMeta(start, end, queryMap, dimMap, tenant);
+    public String getInstances(long start, long end, final String tenant) throws IOException {
+        List<String> namespaces = new ArrayList<>();
+        namespaces.add("maiev-tenant-dev");//todo config.properties
+
+        return eventStore.getInstances(tenant, start, end);
+    }
+
+    @Override
+    public String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String tenant, final String instance) throws IOException {
+        return eventStore.getMeta(start, end, queryMap, dimMap, tenant, instance);
     }
 
     @Override
@@ -300,6 +308,41 @@ public class PerfGenieService implements IPerfGenieService {
             return response;
         } catch (Exception e) {
             return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate Jstack events " + e.getMessage(), queryMap, null));
+        }
+    }
+
+    @Override
+    public String getOtherEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
+        Map<Long,String> otherevents;
+        if(queryMap.containsKey("tenant-id")) {
+            queryMap.put("name", queryMap.get("name"));
+            otherevents = eventStore.getOtherPayLoads(tenant, start, end, queryMap, dimMap, "maiev-tenant-"+tenant, true);
+        }else {
+            //queryMap.put("name", "=customEvent");
+            //profiles = eventStore.getOtherPayLoads(tenant, start, end, queryMap, dimMap, null,false);
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Not implemented ", queryMap, null));
+        }
+        if (otherevents == null || otherevents.size() < 1) {
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "no profiles found for the given time range", queryMap, null));
+        }
+        try {
+            final EventHandler aggregator = new EventHandler();
+            List<Long> keys = new ArrayList<Long>(otherevents.keySet());
+            Collections.sort(keys);
+
+            for (int i=0; i< keys.size(); i++) {
+                if(queryMap.get("name").contains("=top")) {
+                    aggregator.aggregateTop(otherevents.get(keys.get(i)),keys.get(i));
+                }else if(queryMap.get("name").contains("=ps")){
+                    aggregator.aggregatePS(otherevents.get(keys.get(i)),keys.get(i));
+                }
+            }
+            final EventHandler.ContextResponse res = (EventHandler.ContextResponse) aggregator.getLogContext();
+            final String response = Utils.toJson(res);
+            logger.info(queryMap.get("name")+" response length: " + response.length());
+            return response;
+        } catch (Exception e) {
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate" + e.getMessage(), queryMap, null));
         }
     }
 

@@ -3705,6 +3705,7 @@
                         });
                     }
                 }
+                contextData.tooltips = {};
             }else{//convert to perfgene format sfdc
                 let records = {};
                 let header = {};

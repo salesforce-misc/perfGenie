@@ -36,10 +36,10 @@
 <div  style="padding: 0px" id="accordion" class="row">
     <div style="width:100%">Data source selector</div>
     <div  style="padding-bottom: 0px;" class="col-lg-12">
-        <div style="float:right;" class="spinner" id="spinner"></div>
+
         <form  id="compare-context-selector-form" action="javascript:submitTo()" method="get"
                content="application/x-www-form-urlencoded">
-
+            <span style="float:right;" class="spinner" id="spinner"></span>
 
         <table style="border: hidden;">
             <tr style="border: hidden;">

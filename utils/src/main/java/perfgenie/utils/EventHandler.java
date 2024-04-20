@@ -75,6 +75,7 @@ public class EventHandler {
 
     public void processMonitorLog(String logfile){
         try (BufferedReader reader = new BufferedReader(new FileReader(logfile))) {
+            logger.info("processing file: " + logfile);
             String line;
 
             List<String> header = new ArrayList<>();
@@ -796,7 +797,9 @@ public class EventHandler {
 
 
     public void addHeader(String type, List l) {
-        header.put(type, l);
+        if(!header.containsKey(type)) {
+            header.put(type, l);
+        }
     }
 
 
@@ -1103,6 +1106,240 @@ public class EventHandler {
         //skip merge pidData
     }
     //Aggregation with filter end
+    public void aggregatePS(final String psOutput, final Long timestamp) throws IOException {
+
+        int topCount = 11;
+        // Split the input into lines
+        String[] lines = psOutput.split("\n");
+
+        if (lines.length < 2) {
+            System.out.println("Invalid ps output format");
+        }
+
+        //PID  PPID   LWP NLWP    VSZ   RSS %MEM %CPU  MAJFL  MINFL CMD
+        List<String> header = new ArrayList<>();
+        header.add("timestamp:timestamp");
+        header.add("tid:text");
+        header.add("ppid:text");
+        //header.add("PR:number");
+        //header.add("NI:number");
+        //header.add("VIRT:text");
+        //header.add("RES:text");
+        //header.add("SHR:text");
+        //header.add("S:text");
+        header.add("%CPU:number");
+        header.add("%MEM:number");
+        //header.add("TIME+:text");
+        header.add("COMMAND:text");
+        initializeEvent("ps-processes");
+        addHeader("ps-processes", header);
+
+
+        // Regular expression to match process information based on the number of columns
+        String processInfoPattern = "^\\s{0,}(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+([\\d.]+)\\s+([\\d.]+)\\s+(\\d+)\\s+(\\d+)\\s+(.*)$";
+
+        // Pattern and Matcher for process information
+        Pattern processPattern = Pattern.compile(processInfoPattern);
+        for (int i = 1; i < lines.length; i++) {
+            Matcher processMatcher = processPattern.matcher(lines[i].trim());
+            if (processMatcher.matches()) {
+                List<Object> record = new ArrayList<>();
+                record.add(timestamp);//timestamp
+                int tid = Integer.parseInt(processMatcher.group(1));
+                record.add(tid);//tid
+                record.add(processMatcher.group(2));//ppid
+                record.add(Double.parseDouble(processMatcher.group(7)));//cpu
+                record.add(Double.parseDouble(processMatcher.group(8)));//mem
+                String cmd = processMatcher.group(11);//cmd
+                cmd.trim();
+                int index = cmd.indexOf("jdk/");
+                if (cmd.length() > 232) {
+                    if(index != -1){
+                        int index1 = cmd.indexOf("/java");
+                        record.add(cmd.substring(index,index1+5) + "..." + cmd.substring(cmd.length() - 30));
+                    }else {
+                        record.add(cmd.substring(0, 100) + "..." + cmd.substring(cmd.length() - 30));
+                    }
+                }else{
+                    if(index != -1){
+                        record.add(cmd.substring(cmd.indexOf("jdk/"), cmd.length()));
+                    }else {
+                        record.add(cmd);
+                    }
+                }
+                processContext(record, tid, "ps-processes");
+            }
+        }
+        System.out.println("aggregatePS");
+    }
+
+    public void aggregateTop(final String topOutput, final Long timestamp) throws IOException {
+        String[] sections = topOutput.split("\n\n");
+        if (sections.length >= 1) {
+            // Process host-level metrics
+            String hostMetrics = sections[0];
+            parseTopHostMetrics(hostMetrics, timestamp);
+        }
+        if (sections.length >= 2) {
+            // Process individual process details
+            String processDetails = sections[1];
+            parseTopProcessDetails(processDetails, timestamp);
+        }
+    }
+
+    public void parseTopHostMetrics(final String hostMetrics, final Long timestamp){
+// Regular expressions to match host-level metrics
+        String loadAvgPattern = "load average: ([\\d.]+), ([\\d.]+), ([\\d.]+)";
+        String taskInfoPattern = "Tasks: (\\d+) total,\\s{0,}(\\d+) running,\\s{0,}(\\d+) sleeping,\\s{0,}(\\d+) stopped,\\s{0,}(\\d+) zombie";
+        String cpuUsagePattern = "%Cpu\\(s\\): ([\\d.]+) us,\\s{0,}([\\d.]+) sy,\\s{0,}([\\d.]+) ni,\\s{0,}([\\d.]+) id,\\s{0,}([\\d.]+) wa,\\s{0,}([\\d.]+) hi,\\s{0,}([\\d.]+) si,\\s{0,}([\\d.]+) st";
+        String memInfoPattern = "KiB\\s{0,}Mem\\s{0,}:\\s{0,}(\\d+\\+?)\\s{0,}total,\\s{0,}(\\d+)\\s{0,}free,\\s{0,}(\\d+)\\s{0,}used,\\s{0,}(\\d+)\\s{0,}buff/cache";
+        String swapInfoPattern = "KiB Swap:\\s{0,}(\\d+)\\s{0,}total,\\s{0,}(\\d+)\\s{0,}free,\\s{0,}(\\d+)\\s{0,}used";
+
+        // Pattern and Matcher for host-level metrics
+        Pattern loadAvgPatternRegex = Pattern.compile(loadAvgPattern);
+        Pattern taskInfoPatternRegex = Pattern.compile(taskInfoPattern);
+        Pattern cpuUsagePatternRegex = Pattern.compile(cpuUsagePattern);
+        Pattern memInfoPatternRegex = Pattern.compile(memInfoPattern);
+        Pattern swapInfoPatternRegex = Pattern.compile(swapInfoPattern);
+
+        // Matcher for host-level metrics
+        Matcher loadAvgMatcher = loadAvgPatternRegex.matcher(hostMetrics);
+        Matcher taskInfoMatcher = taskInfoPatternRegex.matcher(hostMetrics);
+        Matcher cpuUsageMatcher = cpuUsagePatternRegex.matcher(hostMetrics);
+        Matcher memInfoMatcher = memInfoPatternRegex.matcher(hostMetrics);
+        Matcher swapInfoMatcher = swapInfoPatternRegex.matcher(hostMetrics);
+
+        List<String> header = new ArrayList<>();
+        header.add("timestamp:timestamp");
+        header.add("tid:text");
+        header.add("monitor:text");
+        header.add("LoadAvg1min:number");
+        header.add("LoadAvg5min:number");
+        header.add("LoadAvg15min:number");
+
+        /*
+        header.add("TotalTasks:number");
+        header.add("RunningTasks:number");
+        header.add("SleepingTasks:number");
+        header.add("StoppedTasks:number");
+        header.add("ZombieTasks:number");*/
+
+        header.add("UserCPU:number");
+        header.add("SystemCPU:number");
+        header.add("Nice:number");
+        header.add("IdleCPU:number");
+        header.add("I/O wait:number");
+        /*header.add("Hardware interrupt:number");
+        header.add("Software interrupt:number");
+        header.add("Steal:number");*/
+
+        /*header.add("TotalMem:number");
+        header.add("FreeMem:number");
+        header.add("UsedMem:number");
+        header.add("Buffer/Cache:number");*/
+
+        /*header.add("TotalSwap:number");
+        header.add("FreeSwap:number");
+        header.add("UsedSwap:number");*/
+
+        initializeEvent("top-hostmetrics");
+        addHeader("top-hostmetrics", header);
+
+        List<Object> record = new ArrayList<>();
+        record.add(timestamp);//timestamp
+        record.add("top-hostmetrics".hashCode());//tid
+        record.add("top-hostmetrics");//tid
+
+        // Find and display host-level metrics
+        if (loadAvgMatcher.find()) {
+            record.add(Double.parseDouble(loadAvgMatcher.group(1)));
+            record.add(Double.parseDouble(loadAvgMatcher.group(2)));
+            record.add(Double.parseDouble(loadAvgMatcher.group(3)));
+        }
+
+        if (taskInfoMatcher.find() && false) {
+            record.add(Integer.parseInt(taskInfoMatcher.group(1)));
+            record.add(Integer.parseInt(taskInfoMatcher.group(2)));
+            record.add(Integer.parseInt(taskInfoMatcher.group(3)));
+            record.add(Integer.parseInt(taskInfoMatcher.group(4)));
+            record.add(Integer.parseInt(taskInfoMatcher.group(5)));
+        }
+
+        if (cpuUsageMatcher.find()) {
+            record.add(Double.parseDouble(cpuUsageMatcher.group(1)));
+            record.add(Double.parseDouble(cpuUsageMatcher.group(2)));
+            record.add(Double.parseDouble(cpuUsageMatcher.group(3)));
+            record.add(Double.parseDouble(cpuUsageMatcher.group(4)));
+            record.add(Double.parseDouble(cpuUsageMatcher.group(5)));
+            //record.add(Double.parseDouble(cpuUsageMatcher.group(6)));
+            //record.add(Double.parseDouble(cpuUsageMatcher.group(7)));
+            //record.add(Double.parseDouble(cpuUsageMatcher.group(8)));
+        }
+
+        if (memInfoMatcher.find() && false) {
+            record.add(memInfoMatcher.group(1));
+            record.add(memInfoMatcher.group(2));
+            record.add(memInfoMatcher.group(3));
+            record.add(memInfoMatcher.group(4));
+        }
+
+        if (swapInfoMatcher.find() && false) {
+            record.add(swapInfoMatcher.group(1));
+            record.add(swapInfoMatcher.group(2));
+            record.add(swapInfoMatcher.group(3));
+        }
+        processContext(record, "top-hostmetrics".hashCode(), "top-hostmetrics");
+        System.out.println("parseTopHostMetrics");
+    }
+    public void parseTopProcessDetails(final String processDetails, final Long timestamp){
+        List<String> parsedProcesses = new ArrayList<>();
+        int topCount = 11;
+        // Split the input into lines
+        String[] lines = processDetails.split("\n");
+
+        if (lines.length < 2) {
+            System.out.println("Invalid top output format");
+            return;
+        }
+
+        List<String> header = new ArrayList<>();
+        header.add("timestamp:timestamp");
+        header.add("tid:text");
+        header.add("user:text");
+        header.add("cpu:number");
+        header.add("memory:number");
+        header.add("time:text");
+        header.add("command:text");
+        initializeEvent("top-processes");
+        addHeader("top-processes", header);
+
+        for (int i = 1; i < topCount; i++) {
+            String[] tokens = lines[i].trim().split("\\s+");
+            List<Object> record = new ArrayList<>();
+            record.add(timestamp);//timestamp
+            record.add(Integer.parseInt(tokens[0]));//tid
+            record.add(tokens[1]);//user
+            record.add(Double.parseDouble(tokens[8]));//cpu
+            record.add(Double.parseDouble(tokens[9]));//memory
+            record.add(tokens[10]);//time
+
+            int index = lines[i].indexOf("jdk/");
+            if(index != -1){
+                tokens[11] =  lines[i].substring( index,  lines[i].length());
+                if(tokens[11].length() > 100) {
+                    record.add(tokens[11].substring(0, 100) + "...");
+                }else{
+                    record.add(tokens[11]);
+                }
+            }else{
+                record.add(tokens[11] + " ... " + tokens[tokens.length - 1]);
+            }
+
+            processContext(record, Integer.parseInt(tokens[0]), "top-processes");
+        }
+        System.out.println("parseTopProcessDetails");
+    }
+
 
     public void aggregateLogContext(final ContextResponse res) throws IOException {
 

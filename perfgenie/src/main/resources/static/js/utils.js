@@ -5,8 +5,8 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 
-function getMetaDataURL(start,end,tenant='dev'){
-    const URL = "http://localhost:8080/v1/meta/"+tenant+
+function getMetaDataURL(start,end,tenant='dev', host){
+    const URL = "http://localhost:8080/v1/meta/"+tenant+"/"+host+
         "/?start=" + start +
         "&end=" + end;
     return URL;
@@ -14,6 +14,14 @@ function getMetaDataURL(start,end,tenant='dev'){
 
 function getTenantDataURL(start,end,tenant='dev'){
     const URL = "http://localhost:8080/v1/tenants/"+tenant+
+        "/?start=" + start +
+        "&end=" + end;
+    return URL;
+}
+
+
+function getInstanceDataURL(start,end,tenant='dev'){
+    const URL = "http://localhost:8080/v1/instances/"+tenant+
         "/?start=" + start +
         "&end=" + end;
     return URL;

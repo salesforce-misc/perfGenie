@@ -82,10 +82,12 @@ public class PerfGenieServiceTest extends PerfGenieService {
         final Map<String, String> dimMap = new HashMap<>();
         final Map<String, String> queryMap = new HashMap<>();
         queryMap.put("guid", guid);
+        queryMap.put("tenant", "test");
         queryMap.put("name", "testname");
+        queryMap.put("host", "localhost");
         long end = System.currentTimeMillis();
         long start = end-60000;
-        String json = serviceTest.getMeta(start,end,queryMap,dimMap);
+        String json = serviceTest.getMeta(start,end,queryMap,dimMap,"test","localhost");
         ObjectMapper mapper = new ObjectMapper();
         JsonNode n = mapper.readTree(json);
         assertTrue(n.size()>1, ">1 expected");

@@ -579,6 +579,12 @@
         console.log("retrievAndcreateContextTree 5 time:" + (end - start) + " event:" + eventType);
     }
 
+    function fetchOtherEvents(timeRange, tenant, host){
+        for (var key in otherEvents1) {
+            getOtherEvent(timeRange, tenant, host, key);
+        }
+    }
+
     function getLogContext(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, eventType, start, end, customEvent) {
         unhideFilterViewStatus();
         updateFilterViewStatus("Note: Retrieving request context from jfr, this may take few sec  ...");
@@ -595,13 +601,16 @@
                 updateFilterViewStatus("Note: Failed to get Request context.");
                 toastr_warning("Failed to get Request context.");
                 setContextData({"records": {}, "tidlist": [], "header": {}});
+                fetchOtherEvents(timeRange, tenant, host);
             }else {
                 if(response.tidlist == undefined && response.error != undefined){
                     updateFilterViewStatus("Note: Failed to get Request context.");
                     toastr_warning("Failed to get Request context.");
                     setContextData({"records": {}, "tidlist": [], "header": {}});
+                    fetchOtherEvents(timeRange, tenant, host);
                 }else {
                     setContextData(response);
+                    fetchOtherEvents(timeRange, tenant, host);
                     showContextFilter();
                     hideFilterViewStatus();
                     refreshTree();
@@ -609,9 +618,49 @@
             }
         }, function (error) {
             setContextData({"records": {}, "tidlist": [], "header": {}});
+            fetchOtherEvents(timeRange, tenant, host);
             updateFilterViewStatus("Note: Failed to get Request context.");
             toastr_warning("Failed to get Request context.");
             console.error(error);
+        });
+    }
+
+    function setOtherEventData(data){
+        if(contextData.records != undefined && data.records != undefined){
+            for (var customevent in data.records) {
+                contextData.records[customevent] = data.records[customevent];
+            }
+        }
+        if(contextData.header != undefined && data.header != undefined){
+            for (var customevent in data.header) {
+                contextData.header[customevent] = data.header[customevent];
+                $('#event-input').append($('<option>', {
+                    value: customevent,
+                    text: customevent
+                }));
+                Toastify({
+                    text: customevent + " data loaded",
+                    duration: 8000
+                }).showToast();
+            }
+        }
+        console.log("setOtherEventData done");
+    }
+    function getOtherEvent(timeRange, tenant, host, customEvent) {
+        const callTreeUrl = getEventUrl(timeRange, tenant, host, customEvent);
+        let toTenant = tenant;
+        if(isS3 == "true") {
+            toTenant = "";
+        }
+        let request = stackDigVizAjax(toTenant, "GET", callTreeUrl, function (response) { // success function
+            console.log("getOtherEvent done");
+            if(response == undefined || response === "" || response.header == undefined) {
+                console.log("Warn: unable to fetch other event" + customEvent);
+            }else {
+                setOtherEventData(response);
+            }
+        }, function (error) {
+            console.log("Warn: unable to fetch other event" + customEvent);
         });
     }
 
@@ -685,6 +734,16 @@
         return Promise.all(requests);
     }
 
+    function getEventUrl(timeRange, tenant, host, customEvent){
+        let endpoint = "";
+        const start = parseInt(timeRange.split(" - ")[0]);
+        const end = parseInt(timeRange.split(" - ")[1]);
+        endpoint = "/v1/otherevents/" + tenant + "/?start=" + start + "&end=" + end +
+            "&metadata_query=" + encodeURIComponent("host=" + host) +
+            "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+            "&metadata_query=" + encodeURIComponent("name=" + customEvent);
+        return endpoint;
+    }
     // the url to get calling context trees
     function getCallTreeUrl(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, eventType) {
         // for debug console.log("getCallTreeUrl timeRange:" + timeRange + " pod:" + pod + " query:"+query + " profiler:" + profiler + " tenant:"+tenant + " profile:" + profile + " host:" + host + " upload:" + upload + " fileId:" + fileId + " uploadTime:" + uploadTime + " aggregate:" + aggregate)

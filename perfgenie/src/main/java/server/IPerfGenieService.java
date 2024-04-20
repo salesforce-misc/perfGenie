@@ -30,9 +30,9 @@ public interface IPerfGenieService {
      * @param queryMap event filters
      * @param dimMap   event dimentions
      * @return none
-     */
-    String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
 
+    String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
+*/
 
     /**
      * get event metadata
@@ -55,7 +55,7 @@ public interface IPerfGenieService {
      * @param dimMap   event dimentions
      * @return none
      */
-    String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String namespace) throws IOException;
+    String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String namespace, final String instance) throws IOException;
 
     /**
      * get profile event data
@@ -94,5 +94,8 @@ public interface IPerfGenieService {
     String getCustomEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
 
     String getJstack(final String tenant, final long start, final long end, final Map<String, String> queryMap) throws IOException;
+
+    public String getInstances(long start, long end, final String tenant) throws IOException;
+    public String getOtherEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
 
 }

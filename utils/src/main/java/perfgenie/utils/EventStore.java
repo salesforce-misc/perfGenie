@@ -256,11 +256,14 @@ public class EventStore {
         return Utils.toJson(tenantsCache);
     }
 
-    public String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String tenant) throws IOException {
+    public String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String tenant, final String instance) throws IOException {
         final Map<String, String> queryMap1 = new HashMap<>();
         final Map<String, String> dimMap1 = new HashMap<>();
         if(tenant != null) {
             queryMap1.put("tenant", tenant);
+        }
+        if(instance != null) {
+            queryMap1.put("host", instance);
         }
         final List<Events.Event> results1 = this.cantor.events().get(
                 NAMESPACE_EVENT_META,
@@ -273,9 +276,14 @@ public class EventStore {
 
         if(config.getStorageType().equals("grpc")) {
             if (tenant != null) {
+
+                if(instance != null) {
+                    queryMap.put("instance-id", instance);
+                }
+
                 queryMap.put("tenant-id", tenant);
 
-                queryMap.put("name", "jfr");//get only jfr events
+                //queryMap.put("name", "jfr");//get only jfr events
                 final List<Events.Event> results = this.cantor.events().get(
                         "maiev-tenant-" + tenant,
                         start,
@@ -289,9 +297,11 @@ public class EventStore {
                         results1.add(result);
                     }
                 }
-                final Map<String, String> queryMap2 = new HashMap<>();
+                /*final Map<String, String> queryMap2 = new HashMap<>();
                 queryMap2.put("tenant-id", tenant);
-
+                if(instance != null) {
+                    queryMap2.put("instance-id", instance);
+                }
                 queryMap2.put("name", "json-jstack");//get only jfr events
                 final List<Events.Event> results2 = this.cantor.events().get(
                         "maiev-tenant-" + tenant,
@@ -305,9 +315,8 @@ public class EventStore {
                     for (final Events.Event result : results2) {
                         results1.add(result);
                     }
-                }
+                }*/
             }
-
         }
 
         return Utils.toJson(results1);
@@ -350,6 +359,98 @@ public class EventStore {
             }
         }
         return null;
+    }
+
+    public Map getOtherPayLoads(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String namespace, final boolean payload) throws IOException {
+        if(namespace == null){
+            final List<Events.Event> results = this.cantor.events().get(
+                    NAMESPACE_EVENT_META,
+                    start,
+                    end,
+                    queryMap,
+                    dimMap,
+                    payload
+            );
+            if (results.size() > 0) {
+                Map<Long,String> payloads = new HashMap<>();
+                results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
+                for (final Events.Event result : results) {
+                    payloads.put(result.getTimestampMillis(),new String(Utils.decompress(result.getPayload())));
+                }
+                return payloads;
+            }
+        }else {
+            final List<Events.Event> results = this.cantor.events().get(
+                    namespace,
+                    start,
+                    end,
+                    queryMap,
+                    dimMap,
+                    payload
+            );
+            if (results.size() > 0) {
+                Map<Long,String> payloads = new HashMap<>();
+                results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
+                for (final Events.Event result : results) {
+                    payloads.put(result.getTimestampMillis(),new String(Utils.decompress(result.getPayload())));
+                }
+                return payloads;
+            }
+        }
+        return null;
+    }
+
+    public String getInstances(final String tenant, long start, long end) throws IOException{
+
+            HashMap<String, Integer> instances = new HashMap();
+            final List<Events.Event> results = this.cantor.events().get(
+                    NAMESPACE_EVENT_META,
+                    start,
+                    end,
+                    Collections.emptyMap(),
+                    Collections.emptyMap()
+            );
+
+            if (results.size() > 0) {
+                for (final Events.Event result : results) {
+                    if(result.getMetadata().containsKey("host")){
+                        instances.put(result.getMetadata().get("host"),1);
+                    }
+                }
+            }
+
+        if(config.getStorageType().equals("grpc")) {
+            try {
+                final Collection<String> instances1 = this.cantor.events().metadata(
+                        String.format("maiev-heartbeat-%s", tenant),
+                        "instance-id",
+                        start,
+                        end,
+                        Collections.emptyMap(),
+                        Collections.emptyMap());
+                for (String s : instances1) {
+                    instances.put(s,1);
+                }
+            } catch (final IOException exception) {
+                logger.warn("exception while getting instances ", exception);
+            }
+        }
+        return  Utils.toJson(instances);
+    }
+
+    public Collection<com.salesforce.cantor.Events.Event> getHeartbeatEvents(final String tenant, final String instanceId, final long startTimestamp, final long endTimestamp) {
+        try {
+            return this.cantor.events().get(
+                    String.format("maiev-heartbeat-%s", tenant),
+                    startTimestamp,
+                    endTimestamp,
+                    ImmutableMap.of("instance-id", instanceId),
+                    Collections.emptyMap());
+        } catch (final IOException exception) {
+            logger.warn("exception while getting heartbeat events: tenant={} instance={} start={} end={}",
+                    tenant, instanceId, startTimestamp, endTimestamp, exception);
+            throw new RuntimeException(String.format("Error retrieving events from database for: tenant=%s instance=%s", tenant, instanceId), exception);
+        }
     }
 
     public Map loadProfiles(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String namespace, final boolean payload) throws IOException {
