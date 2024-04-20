@@ -233,7 +233,7 @@
     function surfacePlot() {
         console.log("surfacePlot");
         let baseJsonTree = getContextTree(1, getEventType());
-        if (baseJsonTree.meta.data == undefined || baseJsonTree.meta.data.length < 3) {
+        if (baseJsonTree.meta == undefined || baseJsonTree.meta.data == undefined || baseJsonTree.meta.data.length < 3) {
             addTabNote(true,"Data not available to show this view, check if isExperimental is enabled in config.properties")
             return;
         }
