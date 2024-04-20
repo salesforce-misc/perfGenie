@@ -284,28 +284,44 @@ public class PerfGenieService implements IPerfGenieService {
     @Override
     public String getJstack(final String tenant, final long start, final long end, final Map<String, String> queryMap) throws IOException {
         final Map<String, String> dimMap = new HashMap<>();
-        List<String> profiles;
-        if(queryMap.containsKey("tenant-id")) {
-            profiles = eventStore.getPayLoads(tenant, start, end, queryMap, dimMap, "maiev-tenant-"+tenant, true);
-        }else{
-            profiles = eventStore.getPayLoads(tenant, start, end, queryMap, dimMap, null,false);
-        }
-        if (profiles == null || profiles.size() < 1) {
-            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Jstack events not found", queryMap, null));
-        }
         try {
-            final EventHandler aggregator = new EventHandler();
-
-            for (int i=0; i< profiles.size() ; i++) {
-                aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(profiles.get(i), EventHandler.JfrParserResponse.class));
+            if(queryMap.containsKey("tenant-id")) {//sfdc
+                List<String> profiles = eventStore.getPayLoads(tenant, start, end, queryMap, dimMap, "maiev-tenant-"+tenant, true);
+                if (profiles == null || profiles.size() < 1) {
+                    return Utils.toJson(new EventHandler.JfrParserResponse(null, "Jstack events not found", queryMap, null));
+                }
+                final EventHandler aggregator = new EventHandler();
+                for (int i=0; i< profiles.size() ; i++) {
+                    aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(profiles.get(i), EventHandler.JfrParserResponse.class));
+                }
+                final EventHandler.JfrParserResponse res = aggregator.getAggregatedProfileTree();
+                int jstackInterval = (int) (end - start) / (profiles.size() * 1000);
+                jstackInterval = ((jstackInterval + 5) / 10) * 10; // round to nearest 10sec
+                res.addMeta(ImmutableMap.of("jstack-interval", Integer.toString(jstackInterval), "jstack-count", Integer.toString(profiles.size())));
+                final String response = Utils.toJson(res);
+                logger.info("getJstack response length: " + response.length());
+                return response;
+            }else{
+                Map<String, Map<String, String>> profiles = eventStore.loadProfiles(tenant, start, end, queryMap, dimMap, null, false);
+                if (profiles == null || profiles.size() < 1) {
+                    return Utils.toJson(new EventHandler.JfrParserResponse(null, "Jstack events not found", queryMap, null));
+                }
+                final EventHandler aggregator = new EventHandler();
+                for (String guid : profiles.keySet()) {
+                    //long timestamp = Integer.parseInt(profiles.get(guid).get("timestamp"));
+                    queryMap.put("guid", guid);
+                    final String json = eventStore.getEvent(start, end, queryMap, dimMap, Integer.parseInt(profiles.get(guid).get("size")));
+                    aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(json, EventHandler.JfrParserResponse.class));
+                }
+                final EventHandler.JfrParserResponse res = aggregator.getAggregatedProfileTree();
+                int jstackInterval = (int) (end - start) / (profiles.size() * 1000);
+                jstackInterval = ((jstackInterval + 5) / 10) * 10; // round to nearest 10sec
+                res.addMeta(ImmutableMap.of("jstack-interval", Integer.toString(jstackInterval), "jstack-count", Integer.toString(profiles.size())));
+                final String response = Utils.toJson(res);
+                logger.info("getJstack response length: " + response.length());
+                return response;
             }
-            final EventHandler.JfrParserResponse res = aggregator.getAggregatedProfileTree();
-            int jstackInterval = (int) (end - start) / (profiles.size() * 1000);
-            jstackInterval = ((jstackInterval + 5) / 10) * 10; // round to nearest 10sec
-            res.addMeta(ImmutableMap.of("jstack-interval", Integer.toString(jstackInterval), "jstack-count", Integer.toString(profiles.size())));
-            final String response = Utils.toJson(res);
-            logger.info("getJstack response length: " + response.length());
-            return response;
+
         } catch (Exception e) {
             return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate Jstack events " + e.getMessage(), queryMap, null));
         }
