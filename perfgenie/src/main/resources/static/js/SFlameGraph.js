@@ -29,6 +29,7 @@ class SFlameGraph {
     #filterOption = 1; // 1 show all, 2 do not show right, 3 do not show left
     #isCompare = false;
     #searchMatchCount = 0;
+    #svgElement = undefined;
     #SFlameGraphcontextMenu = this.flameGraphcontextMenu;
 
     getSearchMatchCount(){
@@ -122,6 +123,8 @@ class SFlameGraph {
         $(SFlameGraph.instance.#SFlameGraphDiv).html("<div id='flamegraphdiv' class='row col-lg-12' style='padding-left: ;: 10px !important;'></div>");
 
         d3.select("#flamegraphdiv").append("svg").attr("width", $(SFlameGraph.instance.#SFlameGraphDiv).width()).attr("height", SFlameGraph.instance.#flameMaxSvgHeight);
+        SFlameGraph.instance.#svgElement = d3.select("#flamegraphdiv").select("svg");
+
         SFlameGraph.instance.#flameSvgWidth = $(SFlameGraph.instance.#SFlameGraphDiv).width();
 
         SFlameGraph.instance.addSVGRect(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#sizeKey], SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#nameKey], 0, "", 1);
@@ -201,7 +204,7 @@ class SFlameGraph {
                 .attr("class", "testclass")
                 .style("cursor", "default");
         }else */{
-            d3.select("#flamegraphdiv").select("svg").append("rect")
+            SFlameGraph.instance.#svgElement.append("rect")
                 .attr("width", SFlameGraph.instance.#flameSvgWidth * width)
                 .attr("height", SFlameGraph.instance.#flameSvgRowHeight)
                 .attr("p", path)
@@ -228,7 +231,7 @@ class SFlameGraph {
                 });
         }
         if (SFlameGraph.instance.#flameSvgWidth * width >= 50) {
-            d3.select("#flamegraphdiv").select("svg").append('text').text(SFlameGraph.instance.getFlameRectText(width * SFlameGraph.instance.#flameSvgWidth, fN))
+            SFlameGraph.instance.#svgElement.append('text').text(SFlameGraph.instance.getFlameRectText(width * SFlameGraph.instance.#flameSvgWidth, fN))
                 .attr('x', x + 3)
                 .attr('y', SFlameGraph.instance.#flameMaxSvgHeight - SFlameGraph.instance.#flameSvgRowHeight * depth + 12)
                 .attr('fill', 'black')
@@ -270,7 +273,7 @@ class SFlameGraph {
     }
 
     showClickedFlame(paths, clickDepth) {
-        d3.select("#flamegraphdiv").select("svg").selectAll("*").remove();
+        SFlameGraph.instance.#svgElement.selectAll("*").remove();
         if (paths.length == 1 && clickDepth == 1) {
             SFlameGraph.instance.#flameGraphPath = "";
             SFlameGraph.instance.#flameGraphClickDepth = 0;
@@ -349,6 +352,7 @@ class SFlameGraph {
         $(SFlameGraph.instance.#SFlameGraphDiv).html("<div id='flamegraphdiv' class='row col-lg-12' style='padding-left: ;: 10px !important;'></div>");
 
         d3.select("#flamegraphdiv").append("svg").attr("width", $(SFlameGraph.instance.#SFlameGraphDiv).width()).attr("height", SFlameGraph.instance.#flameMaxSvgHeight);
+        SFlameGraph.instance.#svgElement = d3.select("#flamegraphdiv").select("svg");
         SFlameGraph.instance.#flameSvgWidth = $(SFlameGraph.instance.#SFlameGraphDiv).width();
 
         SFlameGraph.instance.addSVGRectCompare(SFlameGraph.instance.#flameGraphActiveTree, SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#leftKey] + SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#rightKey], SFlameGraph.instance.#flameGraphActiveTree[SFlameGraph.instance.#nameKey], 0, "", 1);
@@ -428,7 +432,7 @@ class SFlameGraph {
                 .attr("class", "testclass")
                 .style("cursor", "default");
         }else */{
-            d3.select("#flamegraphdiv").select("svg").append("rect")
+            SFlameGraph.instance.#svgElement.append("rect")
                 .attr("width", SFlameGraph.instance.#flameSvgWidth * width)
                 .attr("height", SFlameGraph.instance.#flameSvgRowHeight)
                 .attr("p", path)
@@ -455,7 +459,7 @@ class SFlameGraph {
                 });
         }
         if (SFlameGraph.instance.#flameSvgWidth * width >= 50) {
-            d3.select("#flamegraphdiv").select("svg").append('text').text(SFlameGraph.instance.getFlameRectText(width * SFlameGraph.instance.#flameSvgWidth, fN))
+            SFlameGraph.instance.#svgElement.append('text').text(SFlameGraph.instance.getFlameRectText(width * SFlameGraph.instance.#flameSvgWidth, fN))
                 .attr('x', x + 3)
                 .attr('y', SFlameGraph.instance.#flameMaxSvgHeight - SFlameGraph.instance.#flameSvgRowHeight * depth + 12)
                 .attr('fill', 'black')
@@ -482,7 +486,7 @@ class SFlameGraph {
     }
 
     showClickedFlameCompare(paths, clickDepth) {
-        d3.select("#flamegraphdiv").select("svg").selectAll("*").remove();
+        SFlameGraph.instance.#svgElement.selectAll("*").remove();
         if (paths.length == 1 && clickDepth == 1) {
             SFlameGraph.instance.#flameGraphPath = "";
             SFlameGraph.instance.#flameGraphClickDepth = 0;
