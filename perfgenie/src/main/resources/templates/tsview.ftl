@@ -174,10 +174,10 @@
         console.log("prepData time :" + (end - start));
     }
 
-    function addContextDataJstack(){
-        let treeToProcess = getContextTree(1,"Jstack");
+    function addContextDataJstack(event){
+        let treeToProcess = getContextTree(1,event);
         let contextTidMap = treeToProcess.context.tidMap;
-        prepData("Jstack");
+        prepData(event);
 
         for(var tid in contextTidMap){
             for (let i = 0; i < contextTidMap[tid].length; i++) {
@@ -248,31 +248,23 @@
                 return;
             }
 
-            if(getEventType() != "Jstack"){
+            let eventType = getEventType();
+            if(!(eventType == "Jstack" || eventType == "json-jstack")){
                 document.getElementById("datatable-guid").innerHTML = "";
-                addTabNote(true,"Thread state view supported only for Jstack")
+                addTabNote(true,"Thread state view supported only for "+getProfileName(getEventType()))
                 return;
             }else{
                 addTabNote(false,"")
             }
 
-/*
-            if(getEventType() != "Jstack"){
-                $("#tsview-note").html("Note: Thread state view supported only for Jstack");
-
-                return;
-            }else{
-                $("#tsview-note").html("");
-            }*/
-
 
             var tableInnerHTML = "";
 
-            jstack = getContextTree(1,"Jstack");
+            jstack = getContextTree(1,eventType);
             context = getContextData();
-            let startMilli = getContextTree(1,"Jstack").context.start;
+            let startMilli = getContextTree(1,eventType).context.start;
 
-            addContextData(selectedLevel, "Jstack");
+            addContextData(selectedLevel, eventType);
 
 
 
@@ -282,14 +274,14 @@
 
             // build header row containing number of colums equal to number of unique timestamps/samples
             tableInnerHTML += timestampHeader;
-            let treeToProcesstmp = getActiveTree(getEventType(), false);
+            let treeToProcesstmp = getActiveTree(eventType, false);
             if(selectedLevel !== FilterLevel.UNDEFINED) {
-                console.log("tsview show level:"+selectedLevel +":"+getEventType());
+                console.log("tsview show level:"+selectedLevel +":"+eventType);
                 $.each(filteredStackMap[selectedLevel], function (tid, samples) {
                     tableInnerHTML += buildRow(treeToProcesstmp, selectedLevel, tid, samples, timestampArray.length);
                 });
             }else{
-                console.log("tsview show level:"+selectedLevel +":"+getEventType());
+                console.log("tsview show level:"+selectedLevel +":"+eventType);
                 $.each(jstack.context.tidMap, function (tid, samples) {
                     tableInnerHTML += buildRow(treeToProcesstmp, selectedLevel, tid, samples, timestampArray.length);
                 });
@@ -312,9 +304,10 @@
                 addTabNote(false,"")
             }
 
-            if(getEventType() != "Jstack"){
+            let eventType = getEventType();
+            if(!(eventType == "Jstack" || eventType == "json-jstack")){
                 document.getElementById("datatable-guid").innerHTML = "";
-                addTabNote(true,"Thread state view supported only for Jstack")
+                addTabNote(true,"Thread state view supported only for "+getProfileName(eventType))
                 return;
             }else{
                 addTabNote(false,"")
@@ -322,13 +315,13 @@
 
             let start = performance.now();
 
-            let selectedLevel = getSelectedLevel(getActiveTree("Jstack", false));
+            let selectedLevel = getSelectedLevel(getActiveTree(eventType, false));
 
             var tableInnerHTML = "";
-            jstack = getContextTree(1,"Jstack");
+            jstack = getContextTree(1,eventType);
             context = getContextData();
-            let startMilli = getContextTree(1,"Jstack").context.start;
-            addContextData(selectedLevel, "Jstack");
+            let startMilli = getContextTree(1,eventType).context.start;
+            addContextData(selectedLevel, eventType);
 
 
             let start1 = performance.now();
@@ -337,14 +330,14 @@
 
             // build header row containing number of colums equal to number of unique timestamps/samples
             tableInnerHTML += timestampHeader;
-            let treeToProcesstmp = getActiveTree(getEventType(), false);
+            let treeToProcesstmp = getActiveTree(eventType, false);
             if(selectedLevel !== FilterLevel.UNDEFINED) {
-                console.log("tsview show level:"+selectedLevel +":"+getEventType());
+                console.log("tsview show level:"+selectedLevel +":"+eventType);
                 $.each(filteredStackMap[selectedLevel], function (tid, samples) {
                     tableInnerHTML += buildRow(treeToProcesstmp, selectedLevel, tid, samples, timestampArray.length);
                 });
             }else{
-                console.log("tsview show level:"+selectedLevel +":"+getEventType());
+                console.log("tsview show level:"+selectedLevel +":"+eventType);
                 $.each(jstack.context.tidMap, function (tid, samples) {
                     tableInnerHTML += buildRow(treeToProcesstmp, selectedLevel, tid, samples, timestampArray.length);
                 });
@@ -440,7 +433,7 @@
         let javaStack = "";
 
         let tmpcontextTree1Level1 = getStackFrameV1("root");
-        let tmpActiveTree = getActiveTree("Jstack", false);
+        let tmpActiveTree = getActiveTree(getEventType(), false);
         //updateStackIndex(tmpActiveTree);
         let arr = getTreeStack(tmpActiveTree, stackid, tmpcontextTree1Level1, 1);
 

@@ -546,7 +546,7 @@ function updateTypes1(tenant, host){
             if (profiles[metaData1[key].metadata.guid] == undefined && (tenant === metaData1[key].metadata.tenant || tenant === metaData1[key].metadata["tenant-id"]) && host === metaData1[key].metadata.host) {
                 let val = metaData1[key].timestampMillis + " - " + metaData1[key].metadata.guid;
                 if (profile1 == val || profile1 == "All") {//update only for matching profile
-                    if (name.includes("jfr_dump") && jfrprofiles1[name] == undefined) {//sfdc
+                    if (name != undefined && name.includes("jfr_dump") && jfrprofiles1[name] == undefined) {//sfdc
                             if (name.includes("dump_log")) {
                                 jfrevents1[name] = true;
                             } else if(!name.includes("sql")){
@@ -561,13 +561,21 @@ function updateTypes1(tenant, host){
                     } else if (metaData1[key].metadata.type == "jstack" && jfrprofiles1[metaData1[key].metadata.name] == undefined) {
                         jfrprofiles1[metaData1[key].metadata.name] = true;
                     }
+                }else if(profile1 == "Jstacks"){
+                    if (name != undefined && name.includes("jfr_dump") && jfrprofiles1[name] == undefined) {//sfdc
+                        if (name.includes("dump_log")) {
+                            jfrevents1[name] = true;
+                        } else if (metaData1[key].metadata.type == "jfrevent" && jfrprofiles1[metaData1[key].metadata.name] == undefined) {
+                            jfrevents1[metaData1[key].metadata.name] = true;
+                        }
+                    }
                 }
             }
         }
     }catch(e){
         console.log(e);
     }
-    console.log(jfrprofiles1);
+    console.log("jfrprofiles1:"+jfrprofiles1);
 }
 
 function updateTypes2(tenant, host){
@@ -588,7 +596,7 @@ function updateTypes2(tenant, host){
             if (profiles[metaData2[key].metadata.guid] == undefined && (tenant === metaData2[key].metadata.tenant || tenant === metaData2[key].metadata["tenant-id"]) && host === metaData2[key].metadata.host) {
                 let val = metaData2[key].timestampMillis + " - " + metaData2[key].metadata.guid;
                 if (profile2 == val || profile2 == "All") {//update only for matching profile
-                    if (name.includes("jfr_dump") && jfrprofiles2[name] == undefined && profile2 != "All") {//sfdc
+                    if (name != undefined && name.includes("jfr_dump") && jfrprofiles2[name] == undefined && profile2 != "All") {//sfdc
                         if (name.includes("data")) {
                             jfrevents2[name] = true;
                         } else {
@@ -602,6 +610,14 @@ function updateTypes2(tenant, host){
                         jfrevents2[metaData2[key].metadata.name] = true;
                     } else if (metaData2[key].metadata.type == "jstack" && jfrprofiles2[metaData2[key].metadata.name] == undefined) {
                         jfrprofiles2[metaData2[key].metadata.name] = true;
+                    }
+                }else if(profile2 == "Jstacks"){
+                    if (name != undefined && name.includes("jfr_dump") && jfrprofiles1[name] == undefined) {//sfdc
+                        if (name.includes("dump_log")) {
+                            jfrevents1[name] = true;
+                        } else if (metaData1[key].metadata.type == "jfrevent" && jfrprofiles1[metaData1[key].metadata.name] == undefined) {
+                            jfrevents1[metaData1[key].metadata.name] = true;
+                        }
                     }
                 }
             }
@@ -671,7 +687,7 @@ function populateIDs1(tenant, host, clearInput) {
     }
     if (jstackFound) {
         if (profile1 == "Jstacks") {
-            profileOptionHtml += "<option value=\"Jstacks\" selected>Jstacks</option>";
+            profileOptionHtml += "<option value=\"Jstacks\" selected>Jstacks profile alone</option>";
         } else {
             profileOptionHtml += "<option value=\"Jstacks\">Jstacks profile alone</option>";
         }
@@ -792,7 +808,7 @@ function populateIDs2(tenant, host, clearInput) {
     }
     if (jstackFound) {
         if (profile2 == "Jstacks") {
-            profileOptionHtml += "<option value=\"Jstacks\" selected>Jstacks</option>";
+            profileOptionHtml += "<option value=\"Jstacks\" selected>Jstacks profile alone</option>";
         } else {
             profileOptionHtml += "<option value=\"Jstacks\">Jstacks profile alone</option>";
         }

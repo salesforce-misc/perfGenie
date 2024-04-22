@@ -312,57 +312,13 @@
             });
         }
 
-        if(event == "Jstack"){
-            addContextDataJstack();
+        if(event == "Jstack" || event == "json-jstack"){
+            addContextDataJstack(event);
         }
 
         treeToProcess[samplesCustomEvent + event+"-context"] = "done";
         let end = performance.now();
         console.log("addContextData time:" + (end - start) + ":" + samplesCustomEvent + ":" + event + ":" +scount+":"+reqCount);
-        return true;
-    }
-
-    function addContextDataJstackOld(){
-        return;
-
-        let treeToProcess = getContextTree(1,"Jstack");
-        let contextData = getContextData();
-        if(contextData == undefined || treeToProcess[samplesCustomEvent +"Jstack-context"] != undefined) {
-            console.log("addContextData skip:" + samplesCustomEvent + event);
-            return false;
-        }
-
-        //let contextStart = treeToProcess.context.start;
-        let tidMap = treeToProcess.context.tidMap;
-
-        /* we already did this in addContextData
-        //sort records based on time, do we really need? move to jmc code?
-        if(contextData != undefined && contextData.records != undefined){
-            for (var customevent in contextData.records) {
-                for(var tid in contextData.records[customevent]) {
-                    //sort by timestamp
-                    contextData.records[customevent][tid].sort(function (a, b) {
-                        return a.record[0] - b.record[0];
-                    });
-                }
-            }
-        }*/
-
-        let start = performance.now();
-        for(var tid in tidMap){
-            for (let i = 0; i < tidMap[tid].length; i++) {
-                if (tidMap[tid][i].tn == undefined) {
-                    let pair = tidMap[tid][i].ctx.split(";");
-                    tidMap[tid][i].tn = pair[1];
-                    tidMap[tid][i].ts = getThreadState(pair[0]);
-                }
-            }
-        }
-        let end = performance.now();
-        console.log("addContextDataJstack time:" + (end - start) + ":" + event);
-
-        treeToProcess[samplesCustomEvent +"Jstack-context"] = "done";
-
         return true;
     }
 
@@ -437,7 +393,7 @@
             if(!(groupBySamples === "threadname" || groupBySamples === "tid")){
                 //set default tid
                 groupBySamples = "tid";
-                if(getEventType() == "Jstack"){
+                if(getEventType() == "Jstack" || getEventType() == "json-jstack"){
                     updateFilterViewStatus("Note: Failed to get Request context, only tid and threadName group by options supported.");
                 }else{
                     updateFilterViewStatus("Note: Failed to get Request context, only tid group by option supported.");
@@ -467,7 +423,7 @@
         let table = "<table   style=\"width: 100%;\" id=\"sample-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\"><thead><tr><th width=\"50%\">"+getHearderFor(groupBySamples)+"</th><th width=\"10%\">Sample Count</th><th width=\"40%\">Samples</th></thead>";
 
 
-        if (getEventType() == "Jstack") {
+        if (getEventType() == "Jstack" || getEventType() == "json-jstack") {
             filteredStackMap[FilterLevel.LEVEL3] = {};
         }
 
@@ -478,7 +434,7 @@
         getSamplesTableHeader(groupBySamples, sampleTableHeader, event);
 
         //every sample of jstack has a tn
-        if (getEventType() == "Jstack" && groupBySamples == "threadname" && isFilterEmpty(dimIndexMap)) {
+        if ((getEventType() == "Jstack" || getEventType() == "json-jstack") && groupBySamples == "threadname" && isFilterEmpty(dimIndexMap)) {
             for (var tid in contextDataRecords) {
                 if(contextTidMap[tid] != undefined && (tidDatalistVal == undefined || tidDatalistVal == tid)) {
                     for (let i = 0; i < contextTidMap[tid].length; i++) {
@@ -756,7 +712,7 @@
                         }
                     }
                 } else {
-                    if (getEventType() == "Jstack") {
+                    if (getEventType() == "Jstack" || getEventType() == "json-jstack") {
                         updateFilterViewStatus("Note: Failed to get Request context, only tid and threadName group by options supported.");
                     } else {
                         updateFilterViewStatus("Note: Failed to get Request context, only tid group by option supported.");

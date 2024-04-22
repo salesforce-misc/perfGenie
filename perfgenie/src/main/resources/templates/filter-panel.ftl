@@ -1441,7 +1441,7 @@
         let contextTidMap = getContextTree(1).context.tidMap;
 
         let isJstack = false;
-        if(getEventType() == "Jstack"){
+        if(getEventType() == "Jstack" || getEventType() == "json-jstack"){
             isJstack = true;
             filteredStackMap[FilterLevel.LEVEL1] = {};
         }
@@ -1580,7 +1580,7 @@
         let profilestart = 0;
 
         for (var eventType in jfrprofiles1) {
-            if (profilestart == 0 && eventType != "Jstack" && getContextTree(1, eventType) != undefined) {
+            if (profilestart == 0 && !(eventType == "Jstack" || eventType == "json-jstack") && getContextTree(1, eventType) != undefined) {
                 profilestart = getContextTree(1, eventType).context.start;
             }
         }
@@ -1589,9 +1589,11 @@
 
         let jstackstart = 0;
         let jstackdiff = 0;
-        if (getContextTree(1, "Jstack") !== undefined) {
-            jstackstart = time - getContextTree(1, "Jstack").context.start;
-            jstackdiff = getContextTree(1, "Jstack").context.start - profilestart;
+        let jstackEvent = getContextTree(1, "json-jstack") == undefined ?  "Jstack" : "json-jstack";
+
+        if (getContextTree(1, jstackEvent) !== undefined) {
+            jstackstart = time - getContextTree(1, jstackEvent).context.start;
+            jstackdiff = getContextTree(1, jstackEvent).context.start - profilestart;
         }
 
         let colorStackStr = "";
@@ -1649,22 +1651,20 @@
         let eventTypeCount = 0;
         let eventTypeArray = [];
         for (var eventType in jfrprofiles1) {//for all profile event types
-            if (eventType == "Jstack") {
+            if (eventType == jstackEvent) {
                 let isJstack = false;
-                if (getEventType() == "Jstack") {
+                if (getEventType() == jstackEvent) {
                     isJstack=true;
                 }
                 if (isJstack && applyFilter) {
                     filteredStackMap[FilterLevel.LEVEL2] = {};
                 }
-                if (getContextTree(1, "Jstack") !== undefined && getContextTree(1, "Jstack").context != undefined && getContextTree(1, "Jstack").context.tidMap[tid] !== undefined) {
-                    getContextTree(1, "Jstack").context.tidMap[tid].forEach(function (obj) {
+                if (getContextTree(1, jstackEvent) !== undefined && getContextTree(1, jstackEvent).context != undefined && getContextTree(1, jstackEvent).context.tidMap[tid] !== undefined) {
+                    getContextTree(1, jstackEvent).context.tidMap[tid].forEach(function (obj) {
                         if((pStart === '' || pEnd === '') || ((obj.time + jstackstart) >= pStart && (obj.time + jstackstart) <= pEnd)) { //check time rang
                             if (obj.time >= jstackstart && obj.time <= jstackstart + runTime) {
-                                if (getEventType() == "Jstack") {
-                                    if (applyFilter) {
-                                        getTreeStackLevel(getActiveTree("Jstack", false), obj.hash, 1, FilterLevel.LEVEL2);
-                                    }
+                                if (isJstack && applyFilter) {
+                                        getTreeStackLevel(getActiveTree(jstackEvent, false), obj.hash, 1, FilterLevel.LEVEL2);
                                 }
                                 if (isJstack && applyFilter) {
                                     if (filteredStackMap[FilterLevel.LEVEL2][tid] == undefined) {
@@ -1678,7 +1678,7 @@
                         }
                     });
                 }
-                eventTypeArray.push("Jstack");
+                eventTypeArray.push(jstackEvent);
             } else {
                 if (getContextTree(1, eventType) != undefined && getContextTree(1, eventType).context != undefined && getContextTree(1, eventType).context.tidMap[tid] !== undefined) {
                     getContextTree(1, eventType).context.tidMap[tid].forEach(function (obj) {
@@ -1741,8 +1741,8 @@
             stackID = "popupstack";
         }
         let jstackinterval = '60';
-        if (getContextTree(1, "Jstack") != undefined && getContextTree(1, "Jstack").meta != undefined && getContextTree(1, "Jstack").meta['jstack-interval'] != undefined) {
-            jstackinterval = getContextTree(1, "Jstack").meta['jstack-interval'];
+        if (getContextTree(1, jstackEvent) != undefined && getContextTree(1, jstackEvent).meta != undefined && getContextTree(1, jstackEvent).meta['jstack-interval'] != undefined) {
+            jstackinterval = getContextTree(1, jstackEvent).meta['jstack-interval'];
         }
         let timelinetitleIDHTML = "<select multiple=\"multiple\" style=\"border-color:#F2F2F3; height: 24px; width: 223px;\" name=\"timeline-event-type\" id=\"timeline-event-type\"> ";
         eventTypeCount = 0;
@@ -2519,7 +2519,7 @@
 
         //consider all matching requests downward
         let isJstack = false;
-        if(event == "Jstack"){
+        if(event == "Jstack" || event == "json-jstack"){
             isJstack = true;
         }
         while ((flag == false || addTofilteredStackMap) && curIndex >= 0 && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
@@ -2614,7 +2614,7 @@
 
         let event = getEventType();
         let isJstack = false;
-        if(event == "Jstack"){
+        if(event == "Jstack" || event == "json-jstack"){
             isJstack = true;
         }
 
@@ -4255,7 +4255,7 @@
 
         let event = getEventType();
         let isJstack = false;
-        if(event == "Jstack"){
+        if(event == "Jstack" || event == "json-jstack"){
             isJstack = true;
         }
 
