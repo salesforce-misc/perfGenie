@@ -530,9 +530,9 @@
                                             //key = threadNameTidMap[tid];
                                         }else{
                                             if (contextTidMap[tid][i].obj != undefined) {
-                                                key = eval("contextTidMap[tid][i].obj." + groupBySamples);
+                                                key = contextTidMap[tid][i].obj[dimIndexMap[groupBySamples]];
                                             } else {
-                                                key = eval("contextTidMap[tid][i]." + groupBySamples);
+                                                key = "NA";
                                             }
                                         }
 
@@ -569,9 +569,9 @@
                                 if (frameFilterStackMap[event][stack] !== undefined) {
                                     let key = "";
                                     if (contextTidMap[tid][i].obj != undefined) {
-                                        key = eval("contextTidMap[tid][i].obj." + groupBySamples);
+                                        key = contextTidMap[tid][i].obj[dimIndexMap[groupBySamples]];
                                     } else {
-                                        key = eval("contextTidMap[tid][i]." + groupBySamples);
+                                        key = "NA";
                                     }
                                     if( key != undefined && key.slice != undefined){
                                         key = key.slice(0, samplesgroupByLength);
@@ -632,9 +632,9 @@
                                             key = threadNameTidMap[tid];
                                         }else{
                                             if (contextTidMap[tid][i].obj != undefined) {
-                                                key = eval("contextTidMap[tid][i].obj." + groupBySamples);
+                                                key = contextTidMap[tid][i].obj[dimIndexMap[groupBySamples]];
                                             } else {
-                                                key = eval("contextTidMap[tid][i]." + groupBySamples);
+                                                key = "NA";
                                             }
                                         }
                                         if( key != undefined && key.slice != undefined){

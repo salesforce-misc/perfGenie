@@ -3732,6 +3732,8 @@
                             }
                             if(obj.record[0] == 9){
                                 obj.record[1] = obj.record[1] - obj.record[6];//need to reset start time curtime - runTime
+                            }else if(obj.record[0] == 10 || obj.record[0] == 12){//change duration to millis
+                                obj.record[4] = obj.record[4] / 1000000;
                             }
                             records[logContext][tid].push(obj);
                         }
