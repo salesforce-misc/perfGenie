@@ -323,6 +323,7 @@
                 toastr_warning("Please wait for previous filter to finish.");
                 return;
             }
+
             filterMap = {};
             filterFrame = "";
             frameFilterString = "";
@@ -366,6 +367,12 @@
                 setResetDisabled(false);
             }
 
+            customEvent = $("#event-input").val();
+            otherEvent = customEvent; //reset to default
+            console.log("customEvent 4: " +customEvent);
+
+            updateUrl("customevent", customEvent, true);
+
             updateUrl("filterBy", filterBy, true);
             if (hasReqIDFilter) {
                 //updaate url with request timeline TO CHECK
@@ -388,6 +395,8 @@
         filterStack = urlParams.get('filterStack') || '';
         contextTablePage = urlParams.get('cpage') || 0;
         customEvent = urlParams.get('customevent') || '';
+        otherEvent = customEvent; //reset to default
+        console.log("customEvent 6: " + customEvent);
         let tmpMultiSelect = urlParams.get('mSelect') || '';
 
         pStart = urlParams.get("pStart") || '';
@@ -451,6 +460,7 @@
         groupByLength = urlParams.get('groupByLength') || '20';
         spanThreshold = urlParams.get('spanThreshold') || 200;
         tableThreshold = urlParams.get('tableThreshold') || 'duration';
+
         setToolBarOptions("statetabledrp");
         $("#filter-input").on("change", (event) => {
             genRequestTable();
@@ -486,6 +496,7 @@
     let isRefresh = true;
     let isLevelRefresh = true;
     let prevOption = 0;
+    let prevCustomEvent = undefined;
     let isCalltree = false;
     let uploadIDMap = {};
 
@@ -529,6 +540,7 @@
     let contextTable = undefined;
     let contextTablePage = 0;
     let customEvent = 0;
+    let otherEvent = undefined;
     let pStart = '';
     let pEnd = '';
 
@@ -648,7 +660,7 @@
                 }
             }
         }
-        return str;
+        return str + customEvent; //custom event added to filters
     }
 
     function filterToLevel(level) {
@@ -688,7 +700,7 @@
             }
 
             if (level == FilterLevel.LEVEL2 || level == FilterLevel.LEVEL1) {
-                let level2InputTmp = filterBy + filterReq + filterStack;
+                let level2InputTmp = filterBy + filterReq + filterStack + customEvent;
                 if (level2InputTmp !== contextInput[FilterLevel.LEVEL2][eventType]) {
                     contextInput[FilterLevel.LEVEL2][eventType] = level2InputTmp;
                     document.getElementById("stack").innerHTML = "";
@@ -707,7 +719,7 @@
             }
 
             if (level == FilterLevel.LEVEL3 || level == FilterLevel.LEVEL2 || level == FilterLevel.LEVEL1) {
-                let level3InputTmp = filterBy + filterReq + filterStack + filterFrame;
+                let level3InputTmp = filterBy + filterReq + filterStack + filterFrame + customEvent;
 
                 if (level3InputTmp !== contextInput[FilterLevel.LEVEL3][eventType]) {
                     contextInput[FilterLevel.LEVEL3][eventType] = level3InputTmp;
@@ -2501,12 +2513,57 @@
         }
     }
 
+    function populateEventInputOptions(id){
+        $('#'+id).empty();
+
+        if (contextData != undefined && contextData.records != undefined) {
+            let customEventFound = false;
+            if(!(customEvent == '' || customEvent == undefined)) {
+                for (let value in contextData.records) {
+                    if(customEvent == value){
+                        customEventFound = true;
+                        otherEvent = value;
+                        break;
+                    }
+                }
+            }
+
+            for (let value in contextData.records) {
+                if(customEvent == '' || customEvent == undefined || !customEventFound){
+                    customEvent = value;
+                    otherEvent = value;
+                    console.log("customEvent 2: " +customEvent);
+                    customEventFound=true;
+                }
+                $('#'+id).append($('<option>', {
+                    value: value,
+                    text: value,
+                    selected: (customEvent == value)
+                }));
+            }
+        }
+
+        $("#event-input").on("change", (event) => {
+            //updateUrl("customevent", $("#event-input").val(), true);
+            //customEvent = $("#event-input").val();
+            //tmpColorMap.clear();
+            addContextHints($("#event-input").val());
+            if( $("#event-input").val() == customEvent) {
+                setApplyDisabled(true);
+            }else{
+                setApplyDisabled(false);
+            }
+        });
+    }
+
     function setCustomEvent() {
         if (customEvent == "") {
             //try to get first available
             if (contextData != undefined && contextData.records != undefined) {
                 for (let value in contextData.records) {
                     customEvent = value;
+                    otherEvent = customEvent; // reset to default
+                    console.log("customEvent 3: " +customEvent);
                     break;
                 }
             }
@@ -2951,14 +3008,15 @@
         }
         setToolBarOptions("statetabledrp");
 
+        /*
         $("#event-input").on("change", (event) => {
             updateUrl("customevent", $("#event-input").val(), true);
             customEvent = $("#event-input").val();
-            tmpColorMap.clear();
-            setToolBarOptions("statetabledrp");
-            genRequestTable();
-            updateRequestView();
-        });
+            //tmpColorMap.clear();
+            //setToolBarOptions("statetabledrp");
+            //genRequestTable();
+            //updateRequestView();
+        });*/
 
         $("#filter-input").on("change", (event) => {
             updateUrl("groupBy", $("#filter-input").val(), true);
@@ -3056,10 +3114,9 @@
 
     function setToolBarOptions(id) {
 
-        console.log("getToolBarOptions1 customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " tableThreshold:"+tableThreshold);
+        console.log("getToolBarOptions1 otherEvent: " + otherEvent + " customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " tableThreshold:"+tableThreshold);
 
-
-        let toolBarOptions = '<span title="JFR Event type">Event:</span> <select  style="height:30px;width:250px;text-align: center; " class="filterinput"  name="event-input" id="event-input">\n';
+        let toolBarOptions = '<span title="JFR Event type">Data:</span> <select  style="height:30px;width:250px;text-align: center; " class="filterinput"  name="other-event-input" id="other-event-input">\n';
         if (contextData != undefined && contextData.records != undefined) {
             let customEventFound = false;
             if(!(customEvent == '' || customEvent == undefined)) {
@@ -3074,6 +3131,8 @@
             for (let value in contextData.records) {
                 if(customEvent == '' || customEvent == undefined || !customEventFound){
                     customEvent = value;
+                    otherEvent = customEvent; //reset to default
+                    console.log("customEvent 1: " +customEvent);
                     customEventFound=true;
                 }
                 toolBarOptions += '<option ' + (customEvent == value ? "selected" : "") + " value='" + value + "'>" + value + "</option>\n";
@@ -3681,6 +3740,8 @@
     function setContextData(data){
         contextData = data;
         processCustomEvents();
+        populateEventInputOptions("event-input");
+        setToolBarOptions("statetabledrp");
     }
 
     function setContextTreeFrames(frames, count){
@@ -4604,14 +4665,14 @@
         }
         setToolBarOptions("statetabledrp");
 
-        $("#event-input").on("change", (event) => {
+        /*$("#event-input").on("change", (event) => {
             updateUrl("customevent", $("#event-input").val(), true);
             customEvent = $("#event-input").val();
             tmpColorMap.clear();
             setToolBarOptions("statetabledrp");
             genRequestTable();
             updateRequestView();
-        });
+        });*/
 
         $("#filter-input").on("change", (event) => {
             updateUrl("groupBy", $("#filter-input").val(), true);
@@ -4717,14 +4778,21 @@
             <span id="filter-view-status" style="" class="hide"></span>
             <div id="contextpanel"  class="hide" >
                 <div id="contexthints" class="row col-lg-12">
-                    <table style="border-spacing: 5px; border-collapse: separate;">
+                    <table style="border-spacing: 0px; border-collapse: separate;">
                         <tr>
                             <td id="filter-heading">Context hints:</td>
                         </tr>
                     </table>
                 </div>
                 <div id="queryfilter-inp-id" class=" form-group row">
-                    <div class="col-lg-8">
+                    <div class="col-lg-2">
+
+                        <select  style="text-align: center; " class="form-control send-ga"  name="event-input" id="event-input">
+
+                        </select>
+                    </div>
+
+                    <div class="col-lg-6">
                         <input type="text" id="queryfilter"
                                class="form-control send-ga"
                                name="queryfilter" title="Query" value=""

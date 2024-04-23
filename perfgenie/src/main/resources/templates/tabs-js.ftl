@@ -637,8 +637,9 @@
         }
         if(contextData.header != undefined && data.header != undefined){
             for (var customevent in data.header) {
+                otherEventsFetched[customevent]=true;
                 contextData.header[customevent] = data.header[customevent];
-                $('#event-input').append($('<option>', {
+                $('#other-event-input').append($('<option>', {
                     value: customevent,
                     text: customevent
                 }));
