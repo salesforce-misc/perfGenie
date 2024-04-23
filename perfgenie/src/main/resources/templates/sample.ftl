@@ -60,7 +60,7 @@
         $('#'+id).empty();
 
 
-        if (contextData != undefined && contextData.records != undefined) {
+        /*if (contextData != undefined && contextData.records != undefined) {
             let samplesCustomEventFound = false;
             if(!(samplesCustomEvent == '' || samplesCustomEvent == undefined)) {
                 for (let value in contextData.records) {
@@ -82,7 +82,16 @@
                     selected: (samplesCustomEvent == value)
                 }));
             }
-        }
+        }*/
+
+        //filters are not applied, so we should use only customEvent everywhere
+        samplesCustomEvent = customEvent;
+        $('#'+id).append($('<option>', {
+            value: samplesCustomEvent,
+            text: samplesCustomEvent,
+            selected: true
+        }));
+
         $("#samples-groupby-length").val(samplesgroupByLength);
         $("#samples-groupby-match").val(samplesgroupByMatch);
     }
@@ -276,7 +285,7 @@
                                 } else {
                                     stackMap[requestArr[curIndex].hash] = 1;
                                 }
-                                requestArr[curIndex].obj = record;
+                                //requestArr[curIndex].obj = record;
                                 if(requestArr[curIndex][samplesCustomEvent] == undefined){
                                     requestArr[curIndex][samplesCustomEvent]={};
                                 }
@@ -292,7 +301,7 @@
                                 } else {
                                     stackMap[requestArr[curIndex].hash] = 1;
                                 }
-                                requestArr[curIndex].obj = record;
+                                //requestArr[curIndex].obj = record;
                                 if(requestArr[curIndex][samplesCustomEvent] == undefined){
                                     requestArr[curIndex][samplesCustomEvent]={};
                                 }
@@ -529,8 +538,8 @@
                                             key = threadNameTidMap[tid].slice(0, samplesgroupByLength);
                                             //key = threadNameTidMap[tid];
                                         }else{
-                                            if (contextTidMap[tid][i].obj != undefined) {
-                                                key = contextTidMap[tid][i].obj[dimIndexMap[groupBySamples]];
+                                            if (contextTidMap[tid][i][samplesCustomEvent]?.obj != undefined) {
+                                                key = contextTidMap[tid][i][samplesCustomEvent].obj[dimIndexMap[groupBySamples]];
                                             } else {
                                                 key = "NA";
                                             }
@@ -568,8 +577,8 @@
                                 let stack = contextTidMap[tid][i].hash;
                                 if (frameFilterStackMap[event][stack] !== undefined) {
                                     let key = "";
-                                    if (contextTidMap[tid][i].obj != undefined) {
-                                        key = contextTidMap[tid][i].obj[dimIndexMap[groupBySamples]];
+                                    if (contextTidMap[tid][i][samplesCustomEvent]?.obj != undefined) {
+                                        key = contextTidMap[tid][i][samplesCustomEvent].obj[dimIndexMap[groupBySamples]];
                                     } else {
                                         key = "NA";
                                     }
@@ -631,8 +640,8 @@
                                         }else if(groupBySamples === "threadname"){
                                             key = threadNameTidMap[tid];
                                         }else{
-                                            if (contextTidMap[tid][i].obj != undefined) {
-                                                key = contextTidMap[tid][i].obj[dimIndexMap[groupBySamples]];
+                                            if (contextTidMap[tid][i][samplesCustomEvent]?.obj != undefined) {
+                                                key = contextTidMap[tid][i][samplesCustomEvent].obj[dimIndexMap[groupBySamples]];
                                             } else {
                                                 key = "NA";
                                             }
