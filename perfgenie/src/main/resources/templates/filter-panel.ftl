@@ -3135,7 +3135,9 @@
                     console.log("customEvent 1: " +customEvent);
                     customEventFound=true;
                 }
-                toolBarOptions += '<option ' + (customEvent == value ? "selected" : "") + " value='" + value + "'>" + value + "</option>\n";
+                if(customEvent == value || otherEventsFetched[value] != undefined) {
+                    toolBarOptions += '<option ' + (customEvent == value ? "selected" : "") + " value='" + value + "'>" + value + "</option>\n";
+                }
             }
         }
         toolBarOptions += '             </select>';

@@ -39,7 +39,7 @@ public class PerfGenieService implements IPerfGenieService {
     final Config config;
 
     //cronjob to parse jfrs placed in a directory
-    @Scheduled(cron = "*/30 * * ? * *")
+    @Scheduled(cron = "*/10 * * ? * *")
     private void cronJob() throws IOException {
         runJob();
     }
