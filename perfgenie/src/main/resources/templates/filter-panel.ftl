@@ -2041,10 +2041,14 @@
             .style("text-anchor", "start");
     }
 
-    function drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, chartHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered) {
+    function drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, chartHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered, customEvent) {
         let viewNote = '';
         if(!isContextViewFiltered){
-            viewNote = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getContextHintNote(false)+"</div>";
+            if(customEvent == otherEvent){
+                viewNote = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>" + getOtherHintNote(false, otherEvent) + "</div>";
+            }else {
+                viewNote = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>" + getContextHintNote(false) + "</div>";
+            }
         }
 
         document.getElementById("statetable").innerHTML = viewNote+"<div class='row col-lg-12' style='padding: 0 !important;'>"
@@ -2294,11 +2298,15 @@
     let charts = {};
 
     let pinYlabel = "";
-    function drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered) {
+    function drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered, customEvent) {
         if(isContextViewFiltered){
             document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
         }else{
-            document.getElementById("statetable").innerHTML = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getContextHintNote(false)+"</div><div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
+            if(customEvent == otherEvent) {
+                document.getElementById("statetable").innerHTML = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>" + getOtherHintNote(false, otherEvent) + "</div><div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
+            }else{
+                document.getElementById("statetable").innerHTML = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>" + getContextHintNote(false) + "</div><div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
+            }
         }
         pinxs = {};//clear off while drawing new, this will be the source for next pinning
         pincolumns = [];//clear off while drawing new, this will be the source for next pinning
@@ -2439,10 +2447,11 @@
     }
 
     function addContextHints() {
+        let eventToUse = $("#event-input").val();
         let table = "<table style='border-spacing: 2px; border-collapse: separate;border: hidden'><tr><td style='border: hidden'  id='filter-heading'>Context hints:</td>";
         if (contextData != undefined && contextData.header != undefined) {
-            for (let val in contextData.header[customEvent]) {
-                const tokens = contextData.header[customEvent][val].split(":");
+            for (let val in contextData.header[eventToUse]) {
+                const tokens = contextData.header[eventToUse][val].split(":");
                 if (tokens[1] == "text") {
                     table += "<td style='border: hidden' class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('" + tokens[0] + "=xxxx');\" title='Narrows down a filter to a single "+tokens[0]+". For example " + tokens[0] + "=xxxx' tabindex='-1'>" + tokens[0] + "</a></td>";
                 }
@@ -2547,7 +2556,7 @@
             //updateUrl("customevent", $("#event-input").val(), true);
             //customEvent = $("#event-input").val();
             //tmpColorMap.clear();
-            addContextHints($("#event-input").val());
+            addContextHints();
             if( $("#event-input").val() == customEvent) {
                 setApplyDisabled(true);
             }else{
@@ -2608,7 +2617,42 @@
         return flag;
     }
 
-    function getContextHintNote(treeview){
+    function getOtherHintNote(treeview, eventToHandle){
+        if(eventToHandle == undefined){
+            eventToHandle = customEvent;
+        }
+        let note = "Note: Context hint(s) ";
+        let filterSkipped = false;
+        if(contextData.header != undefined && contextData.header[customEvent] != undefined) {
+            for (let val in contextData.header[customEvent]) {
+                const tokens = contextData.header[customEvent][val].split(":");
+                if (tokens[1] == "text" || tokens[1] == "timestamp") {
+                    if(filterMap[tokens[0]] != undefined) {
+                        if(!treeview) {
+                            note = note + " '" + tokens[0] + "'";
+                            filterSkipped = true;
+                        }
+                    }
+                }
+            }
+            if(frameFilterString !== "" && !treeview){
+                note = note + " 'frame'";
+                filterSkipped=true;
+            }
+            note = note + " not applied on this event '" + eventToHandle + "' view";
+        }
+        if(filterSkipped){
+            return note;
+        }else{
+            return "";
+        }
+    }
+
+
+    function getContextHintNote(treeview, eventToHandle){
+        if(eventToHandle == undefined){
+            eventToHandle = customEvent;
+        }
         let note = "Note: Context hint(s) ";
         let filterSkipped = false;
         if(contextData.header != undefined && contextData.header[customEvent] != undefined) {
@@ -2627,7 +2671,7 @@
                 note = note + " 'frame'";
                 filterSkipped=true;
             }
-            note = note + " not applied on this view, event " + customEvent + " do not have 'duration' span";
+            note = note + " not applied on this view, event " + eventToHandle + " do not have 'duration' span";
         }
         if(filterSkipped){
             return note;
@@ -2980,12 +3024,12 @@
                 index++;
             }
             if (tableFormat == 2) {
-                drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered);
+                drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered, customEvent);
                 addLegend("#legendid", groupByTypeSortByMetricMap, groupByCount, groupByCountSum);
                 addYAxis("#yaxisid", 0, 0, 0, 17, 0, lineCount, 500, totalRows * rowHeight);
                 addXAxis("#xaxisid", 15, 0, 0, 0, 0, chartWidth, chartWidth, 50, minStart, downScale);
             } else {
-                drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered);
+                drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered, customEvent);
             }
         } else {
             if (!(groupBy == "" || groupBy == undefined || groupBy == "All records")) {
@@ -3118,25 +3162,24 @@
 
         let toolBarOptions = '<span title="JFR Event type">Data:</span> <select  style="height:30px;width:250px;text-align: center; " class="filterinput"  name="other-event-input" id="other-event-input">\n';
         if (contextData != undefined && contextData.records != undefined) {
-            let customEventFound = false;
-            if(!(customEvent == '' || customEvent == undefined)) {
+            let otherEventFound = false;
+            if(!(otherEventFound == '' || otherEventFound == undefined)) {
                 for (let value in contextData.records) {
-                    if(customEvent == value){
-                        customEventFound = true;
+                    if(otherEvent == value){
+                        otherEventFound = true;
                         break;
                     }
                 }
             }
 
             for (let value in contextData.records) {
-                if(customEvent == '' || customEvent == undefined || !customEventFound){
-                    customEvent = value;
-                    otherEvent = customEvent; //reset to default
-                    console.log("customEvent 1: " +customEvent);
-                    customEventFound=true;
+                if(otherEvent == '' || otherEvent == undefined || !otherEventFound){
+                    //otherEvent = customEvent;
+                    console.log("otherEvent 1: " + otherEvent);
+                    otherEventFound=true;
                 }
                 if(customEvent == value || otherEventsFetched[value] != undefined) {
-                    toolBarOptions += '<option ' + (customEvent == value ? "selected" : "") + " value='" + value + "'>" + value + "</option>\n";
+                    toolBarOptions += '<option ' + ((otherEvent == value || customEvent == value) ? "selected" : "") + " value='" + value + "'>" + value + "</option>\n";
                 }
             }
         }
@@ -3147,8 +3190,8 @@
 
         if (contextData != undefined && contextData.header != undefined) {
             let groups = [];
-            for (let val in contextData.header[customEvent]) {
-                const tokens = contextData.header[customEvent][val].split(":");
+            for (let val in contextData.header[otherEvent]) {
+                const tokens = contextData.header[otherEvent][val].split(":");
                 if (tokens[1] == "text" || tokens[1] == "timestamp") {
                     groups.push(tokens[0]);
                 }
@@ -3157,8 +3200,8 @@
 
             let groupByFound = false;
             if(!(groupBy == '' || groupBy == undefined || groupBy == "All records")) {
-                for (let val in contextData.header[customEvent]) {
-                    const tokens = contextData.header[customEvent][val].split(":");
+                for (let val in contextData.header[otherEvent]) {
+                    const tokens = contextData.header[otherEvent][val].split(":");
                     if(groupBy == tokens[0]){
                         groupByFound = true;
                         break;
@@ -3201,8 +3244,8 @@
 
                 let sortByFound = false;
                 if(!(sortBy == '' || sortBy == undefined)) {
-                    for (let val in contextData.header[customEvent]) {
-                        const tokens = contextData.header[customEvent][val].split(":");
+                    for (let val in contextData.header[otherEvent]) {
+                        const tokens = contextData.header[otherEvent][val].split(":");
                         if(sortBy == tokens[0] && sortBy != "timestamp"){
                             sortByFound = true;
                             break;
@@ -3210,8 +3253,8 @@
                     }
                 }
 
-                for (let val in contextData.header[customEvent]) {
-                    const tokens = contextData.header[customEvent][val].split(":");
+                for (let val in contextData.header[otherEvent]) {
+                    const tokens = contextData.header[otherEvent][val].split(":");
                     if((sortBy == '' || sortBy == undefined || !sortByFound) && !(tokens[1] == "text" || tokens[1] == "timestamp")){
                         sortBy = tokens[0];
                         sortByFound = true;
@@ -3249,8 +3292,8 @@
             if (contextData != undefined && contextData.header != undefined) {
                 let tableThresholdFound = false;
                 if(!(tableThreshold == '' || tableThreshold == undefined)) {
-                    for (let val in contextData.header[customEvent]) {
-                        const tokens = contextData.header[customEvent][val].split(":");
+                    for (let val in contextData.header[otherEvent]) {
+                        const tokens = contextData.header[otherEvent][val].split(":");
                         if(tableThreshold == tokens[0]){
                             tableThresholdFound = true;
                             break;
@@ -3258,8 +3301,8 @@
                     }
                 }
 
-                for (let val in contextData.header[customEvent]) {
-                    const tokens = contextData.header[customEvent][val].split(":");
+                for (let val in contextData.header[otherEvent]) {
+                    const tokens = contextData.header[otherEvent][val].split(":");
 
                     if((tableThreshold == '' || tableThreshold == undefined || !tableThresholdFound) && !(tokens[1] == "text" || tokens[1] == "timestamp")){
                         tableThreshold = tokens[0];
@@ -3279,7 +3322,7 @@
                 '                            </select> ';
         }
 
-        console.log("getToolBarOptions2 customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " tableThreshold:"+tableThreshold);
+        console.log("getToolBarOptions2 otherEvent: " + otherEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " tableThreshold:"+tableThreshold);
 
         $('#'+id).html(toolBarOptions);
 
@@ -3288,6 +3331,15 @@
         });
         $("#add-chart").on("click", (event) => {
             addChart();
+        });
+
+        $("#other-event-input").on("change", (event) => {
+            updateUrl("customevent", $("#event-input").val(), true);
+            otherEvent = $("#other-event-input").val();
+            tmpColorMap.clear();
+            setToolBarOptions("statetabledrp");
+            genRequestTable();
+            updateRequestView();
         });
     }
 
@@ -4293,7 +4345,11 @@
         setToolBarOptions("statetabledrp");
 
         let start1 = performance.now();
-        //setCustomEvent();
+
+        if(otherEvent !== customEvent){
+            genOtherTable();
+            return;
+        }
 
         if (customEvent == "" || customEvent == undefined) {
             return;
@@ -4390,7 +4446,7 @@
         let rowIndex = -1;
         tableHeader = [];
         tableRows = [];
-        getContextTableHeadernew(groupBy, tableHeader);
+        getContextTableHeadernew(groupBy, tableHeader, customEvent);
 
         let table = "<table   style=\"border:none;padding=0px;width: 100%;\" id=\"state-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\">" + getEventTableHeader(groupBy);
 
@@ -4638,12 +4694,12 @@
                 index++;
             }
             if (tableFormat == 2) {
-                drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered);
+                drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered, customEvent);
                 addLegend("#legendid", groupByTypeSortByMetricMap, groupByCount, groupByCountSum);
                 addYAxis("#yaxisid", 0, 0, 0, 17, 0, lineCount, 500, totalRows * rowHeight);
                 addXAxis("#xaxisid", 15, 0, 0, 0, 0, chartWidth, chartWidth, 50, minStart, downScale);
             } else {
-                drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered);
+                drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered, customEvent);
             }
         } else {
             if (!(groupBy == "" || groupBy == undefined || groupBy == "All records")) {
@@ -4739,7 +4795,434 @@
         console.log("genRequestTable 1 time:")
     }
 
-    function getContextTableHeadernew(groupBy, row) {
+    function genOtherTable() {
+        console.log("genOtherTable start");
+
+        let start1 = performance.now();
+
+        if (otherEvent == "" || otherEvent == undefined) {
+            return;
+        }
+
+        //status graph start
+        let downScale = 200;
+        let maxEndTimeOfReq = 0;
+        let totalRows = 0;
+        let rowHeight = 8;
+        let filteredTidRequests = {};
+        let lineCount = 0;
+        if (tableFormat == 2 || tableFormat == 3) {
+            tidIndex = {};
+        }
+        let tmpTidSortByMetricMap = new Map();
+        let tmpGgroupByTypeSortByMetricMap = new Map();
+        let groupByCount = 0;
+        let groupByCountSum = 0;
+        //status graph end
+
+        let metricSumMap = {};
+        let tidDatalistVal = filterMap["tid"];
+
+        let event = getEventType();
+        let isJstack = false;
+        if(event == "Jstack" || event == "json-jstack"){
+            isJstack = true;
+        }
+
+        let dimIndexMap = {};
+        let metricsIndexMap = {};
+        let metricsIndexArray = [];
+        let isDimIndexMap = {};
+        let groupByIndex = -1;
+        let sortByIndex = -1;
+        let spanIndex = -1;
+        let timestampIndex = -1;
+        let tidRowIndex = -1;
+        let isContextViewFiltered = false;
+
+
+        let sortByFound = false;
+        let groupByFound = false;
+
+        for (let val in contextData.header[otherEvent]) {
+            const tokens = contextData.header[otherEvent][val].split(":");
+            if (tokens[1] == "number") {
+                metricsIndexArray.push(val);
+                metricsIndexMap[tokens[0]] = val;
+            }
+            if (groupBy == tokens[0]) {
+                groupByIndex = val;
+                groupByFound = true;
+            }
+            if (sortBy == tokens[0]) {
+                sortByFound = true;
+                sortByIndex = val;
+            }
+            if ("tid" == tokens[0]) {
+                tidRowIndex = val;
+            }
+
+            if ("duration" == tokens[0] || "runTime" == tokens[0]) { // TODO: take from user
+                spanIndex = val;
+            }
+            if ("timestamp" == tokens[0]) { // TODO: take from user
+                timestampIndex = val;
+            }
+            if (tokens[1] == "text" || tokens[1] == "timestamp") {
+                dimIndexMap[tokens[0]] = val;
+                isDimIndexMap[val]=tokens[0];
+            }
+        }
+
+        if (!groupByFound) {
+            //groupBy = "tid";
+            //groupByIndex=tidRowIndex;
+        }
+        if (!sortByFound) {
+            //sortBy = "duration";
+            //sortByIndex = spanIndex;
+        }
+
+        //addContextHints();
+
+        let contextStart = getContextTree(1).context.start;
+        let contextTidMap = getContextTree(1).context.tidMap;
+        let contextDataRecords = undefined;
+        if (contextData != undefined && contextData.records != undefined) {
+            contextDataRecords = contextData.records[otherEvent];
+        }
+
+        let rowIndex = -1;
+        tableHeader = [];
+        tableRows = [];
+        getContextTableHeadernew(groupBy, tableHeader, otherEvent);
+
+        let table = "<table   style=\"border:none;padding=0px;width: 100%;\" id=\"state-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\">" + getEventTableHeader(groupBy);
+
+        if((!isFilterEmpty(dimIndexMap) || frameFilterString !== "") && spanIndex == -1 ){
+            isContextViewFiltered = false;//record do not have duration span to apply context filters
+        }
+        //if only frame filter is selected then we need to include stacks that are not part of any request spans.
+        if (frameFilterString !== "" && tidDatalistVal == undefined && isFilterEmpty(dimIndexMap)) {
+            for (var tid in contextTidMap) {
+                //generate context table data, need to include requests that has frame filter found stacks
+                if (contextDataRecords[tid] != undefined) {
+                    let includeTid = false;
+                    let reqArray = [];
+                    let recordIndex = -1;
+                    contextDataRecords[tid].forEach(function (obj) {
+                        let record = obj.record;
+                        let flag = false;
+                        recordIndex++;
+                        let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
+                        if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
+                            if(record[spanIndex] == undefined){
+                                flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
+                            }else {
+                                let end = record[timestampIndex] - contextStart + recordSpan;
+                                let start = record[timestampIndex] - contextStart;
+                                try {
+                                    //do a binary search
+                                    let entryIndex = isinRequest(contextTidMap[tid], start, end);
+                                    if (entryIndex != -1) {
+                                        let requestArr = contextTidMap[tid];
+                                        flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false);
+                                    }
+                                } catch (err) {
+                                    //console.log("tid not found in JFR" + tid.key + " " + err.message);
+                                }
+                            }
+                        }
+
+                        if (flag) {
+                            if ((tableFormat == 2 || tableFormat == 3)) {
+                                includeTid = true;
+                                reqArray.push(recordIndex);
+                                if ((recordSpan + record[timestampIndex]) > maxEndTimeOfReq) {
+                                    maxEndTimeOfReq = recordSpan + record[timestampIndex];
+                                }
+                                let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                if (!tmpColorMap.has(key)) {
+                                    tmpColorMap.set(key, randomColor());
+                                    groupByCount++;
+                                }
+                                let metricValue = record[metricsIndexMap[sortBy]];
+                                if (metricValue != undefined) {
+                                    groupByCountSum += metricValue;
+                                } else {
+                                    metricValue = 0;
+                                }
+                                if (tmpGgroupByTypeSortByMetricMap.has(key)) {
+                                    tmpGgroupByTypeSortByMetricMap.set(key, tmpGgroupByTypeSortByMetricMap.get(key) + metricValue);
+                                } else {
+                                    tmpGgroupByTypeSortByMetricMap.set(key, metricValue);
+                                }
+
+                                if (tmpTidSortByMetricMap.has(tid)) {
+                                    tmpTidSortByMetricMap.set(tid, tmpTidSortByMetricMap.get(tid) + metricValue);
+                                } else {
+                                    tmpTidSortByMetricMap.set(tid, metricValue);
+                                }
+                            }
+                            if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
+                                if (record[metricsIndexMap[tableThreshold]] >= spanThreshold) {//todo change names tableThreshold to recordInput, spanThreshold to recordThreshold
+                                    rowIndex++;
+                                    tableRows[rowIndex] = [];
+                                    for (let field in record) {
+                                        if (field == timestampIndex) {
+                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'),"id='"+record[tidRowIndex] + "_" + record[field]+"'");
+                                        } else if(field == tidRowIndex) {
+                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],Number(record[field]),"' hint='tid'");
+                                        }else {
+                                            if(isDimIndexMap[field] == undefined) {
+                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field]);
+                                            }else{
+                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field],"' hint='"+isDimIndexMap[field]+"'");
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+
+                                if (metricSumMap[key] == undefined) {
+                                    metricSumMap[key] = Array(metricsIndexArray.length + 1).fill(0);
+                                }
+
+                                for (let i = 0; i < metricsIndexArray.length; i++) {
+                                    metricSumMap[key][i] += record[metricsIndexArray[i]];
+                                }
+                                metricSumMap[key][metricsIndexArray.length] += 1;
+                            }
+                        }
+                    });
+                    if (includeTid) {
+                        filteredTidRequests[tid] = reqArray;
+                        lineCount++;
+                        totalRows++;
+                    }
+                }
+            }
+        } else {
+            for (var tid in contextDataRecords) {
+                let includeTid = false;
+                let reqArray = [];
+                let recordIndex = -1;
+                if (tidDatalistVal == undefined || tidDatalistVal == tid) {
+                    contextDataRecords[tid].forEach(function (obj) {
+                        let record = obj.record;
+                        let flag = false;
+                        recordIndex++;
+                        let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
+                        if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
+                            if (record[spanIndex] == undefined) {
+                                flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
+                            } else {
+                                //context filter matched, but check if samples of request is matching frame filter
+                                if (frameFilterString !== "") {
+                                    flag = false;
+
+                                    //check if the request has a stack and if stack is in frameFilterStackMap
+                                    let end = record[timestampIndex] - contextStart + recordSpan;
+                                    let start = record[timestampIndex] - contextStart;
+
+                                    try {
+                                        //do a binary search
+                                        let entryIndex = isinRequest(contextTidMap[tid], start, end);
+                                        if (entryIndex != -1) {
+                                            let requestArr = contextTidMap[tid];
+                                            flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false);
+                                        }
+                                    } catch (err) {
+                                        //console.log("tid not found in JFR" + tid + " " + err.message);
+                                    }
+                                }else{
+                                    flag = true;
+                                }
+                            }
+                        }
+
+                        if (flag) {
+                            if ((tableFormat == 2 || tableFormat == 3)) {
+                                includeTid = true;
+                                reqArray.push(recordIndex);
+                                if ((recordSpan + record[timestampIndex]) > maxEndTimeOfReq) {
+                                    maxEndTimeOfReq = recordSpan + record[timestampIndex];
+                                }
+                                let key = (groupByIndex != -1 &&   record[groupByIndex] != undefined &&record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                if (!tmpColorMap.has(key)) {
+                                    tmpColorMap.set(key, randomColor());
+                                    groupByCount++;
+                                }
+                                let metricValue = record[metricsIndexMap[sortBy]];
+                                if (metricValue != undefined) {
+                                    groupByCountSum += metricValue;
+                                } else {
+                                    metricValue = 0;
+                                }
+                                if (tmpGgroupByTypeSortByMetricMap.has(key)) {
+                                    tmpGgroupByTypeSortByMetricMap.set(key, tmpGgroupByTypeSortByMetricMap.get(key) + metricValue);
+                                } else {
+                                    tmpGgroupByTypeSortByMetricMap.set(key, metricValue);
+                                }
+
+                                if (tmpTidSortByMetricMap.has(tid)) {
+                                    tmpTidSortByMetricMap.set(tid, tmpTidSortByMetricMap.get(tid) + metricValue);
+                                } else {
+                                    tmpTidSortByMetricMap.set(tid, metricValue);
+                                }
+                            }
+                            if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
+                                if (record[metricsIndexMap[tableThreshold]] >= spanThreshold) {
+                                    rowIndex++;
+                                    tableRows[rowIndex] = [];
+                                    for (let field in record) {
+                                        if (field == timestampIndex) {
+                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'),"id='"+record[tidRowIndex] + "_" + record[field]+"'");
+                                        } else if(field == tidRowIndex) {
+                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],Number(record[field]),"' hint='tid'");
+                                        }else {
+                                            if(isDimIndexMap[field] == undefined) {
+                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field]);
+                                            }else{
+                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field],"' hint='"+isDimIndexMap[field]+"'");
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                let key = (groupByIndex != -1 &&  record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                if (metricSumMap[key] == undefined) {
+                                    metricSumMap[key] = Array(metricsIndexArray.length + 1).fill(0);
+                                }
+
+                                for (let i = 0; i < metricsIndexArray.length; i++) {
+                                    metricSumMap[key][i] += record[metricsIndexArray[i]];
+                                }
+                                metricSumMap[key][metricsIndexArray.length] += 1;
+                            }
+                        }
+                    });
+                    if (includeTid) {
+                        filteredTidRequests[tid] = reqArray;
+                        lineCount++;
+                        totalRows++;
+                    }
+                }
+            }
+        }
+        let end1 = performance.now();
+        console.log("genRequestTable 0 time:" + (end1 - start1))
+        let start = performance.now();
+        let order = getOrderandType();
+        if (tableFormat == 2 || tableFormat == 3) {
+            let minStart = getContextTree(1, getEventType()).context.start; //records are aligned to method profile context start
+            let chartWidth = maxEndTimeOfReq - minStart;
+            if (chartWidth < 600000) {//min 10 min
+                chartWidth = 600000;
+            }
+            chartWidth = chartWidth / downScale;
+            const tidSortByMetricMap = new Map([...tmpTidSortByMetricMap.entries()].sort((a, b) => b[1] - a[1]));
+            const groupByTypeSortByMetricMap = new Map([...tmpGgroupByTypeSortByMetricMap.entries()].sort((a, b) => b[1] - a[1]));
+            //generate tidIndex for Yaxis
+            let index = 0;
+            for (let [tid, value] of tidSortByMetricMap) {
+                tidIndex[index] = tid;
+                index++;
+            }
+            if (tableFormat == 2) {
+                drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered, otherEvent);
+                addLegend("#legendid", groupByTypeSortByMetricMap, groupByCount, groupByCountSum);
+                addYAxis("#yaxisid", 0, 0, 0, 17, 0, lineCount, 500, totalRows * rowHeight);
+                addXAxis("#xaxisid", 15, 0, 0, 0, 0, chartWidth, chartWidth, 50, minStart, downScale);
+            } else {
+                drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered, otherEvent);
+            }
+        } else {
+            if (!(groupBy == "" || groupBy == undefined || groupBy == "All records")) {
+                for (let dim in metricSumMap) {
+                    rowIndex++;
+                    tableRows[rowIndex] = [];
+                    if(groupBy == "tid"){
+                        sfContextDataTable.addContextTableRow(tableRows[rowIndex],(dim == undefined ? "NA" : Number(dim)),"hint='"+groupBy+"'");
+                    }else {
+                        sfContextDataTable.addContextTableRow(tableRows[rowIndex],(dim == undefined ? "NA" : dim),"hint='"+groupBy+"'");
+                    }
+                    for (let i = 0; i < metricSumMap[dim].length; i++) {
+                        sfContextDataTable.addContextTableRow(tableRows[rowIndex],Math.round(metricSumMap[dim][i] * 100) / 100);
+                    }
+                }
+            }
+            sfContextDataTable.SFDataTable(tableRows, tableHeader, "statetable", order);
+            if(!isContextViewFiltered) {
+                $('#statetable').append("<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getOtherHintNote(false, otherEvent)+"</div>");
+            }
+        }
+        setToolBarOptions("statetabledrp");
+
+        $("#filter-input").on("change", (event) => {
+            updateUrl("groupBy", $("#filter-input").val(), true);
+            groupBy = $("#filter-input").val();
+            tmpColorMap.clear();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#format-input").on("change", (event) => {
+            updateUrl("tableFormat", $("#format-input").val(), true);
+            tableFormat = $("#format-input").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#sort-input").on("change", (event) => {
+            updateUrl("sortBy", $("#sort-input").val(), true);
+            sortBy = $("#sort-input").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#line-type").on("change", (event) => {
+            updateUrl("cumulative", $("#line-type").val(), true);
+            cumulativeLine = $("#line-type").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#line-count").on("change", (event) => {
+            updateUrl("seriesCount", $("#line-count").val(), true);
+            seriesCount = $("#line-count").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#groupby-match").on("change", (event) => {
+            updateUrl("groupByMatch", $("#groupby-match").val(), true);
+            groupByMatch = $("#groupby-match").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#groupby-length").on("change", (event) => {
+            updateUrl("groupByLength", $("#groupby-length").val(), true);
+            groupByLength = $("#groupby-length").val();
+            genRequestTable();
+            updateRequestView();
+        });
+
+        $("#table-threshold").on("change", (event) => {
+            updateUrl("tableThreshold", $("#table-threshold").val(), true);
+            tableThreshold = $("#table-threshold").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#span-threshold").on("change", (event) => {
+            updateUrl("spanThreshold", $("#span-threshold").val(), true);
+            spanThreshold = $("#span-threshold").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#cct-panel").css("height", "100%");
+
+        let end = performance.now();
+        console.log("genRequestTable 1 time:")
+    }
+
+    function getContextTableHeadernew(groupBy, row, customEvent) {
         if (!(groupBy == undefined || groupBy == "" || groupBy == "All records")) {
             if(groupBy == "tid") {
                 sfContextDataTable.addContextTableHeader(row,groupBy,1,"class='context-menu-two' " , contextData.tooltips[groupBy]);
@@ -4787,12 +5270,7 @@
                     </table>
                 </div>
                 <div id="queryfilter-inp-id" class=" form-group row">
-                    <div class="col-lg-2">
 
-                        <select  style="text-align: center; " class="form-control send-ga"  name="event-input" id="event-input">
-
-                        </select>
-                    </div>
 
                     <div class="col-lg-6">
                         <input type="text" id="queryfilter"
@@ -4803,12 +5281,20 @@
                     </div>
 
                     <div class="col-lg-2">
+
+                        <select  style="text-align: center; " class="form-control send-ga"  name="event-input" id="event-input">
+
+                        </select>
+                    </div>
+
+                    <div class="col-lg-2">
                         <button style="cursor: pointer;" id="filter-apply" class="btn btn-block btn-info" type="submit">Apply Filter(s)</button>
                     </div>
                     <div class="col-lg-2">
                         <button style="cursor: pointer;" id="filter-reset" class="btn btn-block btn-info" type="submit">Reset Filter(s)</button>
                     </div>
                 </div>
+                <hr>
 
                     <div class="row form-group" id="statetablewrapper" class="statetablewrapper col-lg-12">
                         <div id="statetabledrp" class="statetabledrop col-lg-12">
