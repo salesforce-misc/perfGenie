@@ -2524,6 +2524,7 @@
 
     function populateEventInputOptions(id){
         $('#'+id).empty();
+        let events = [];
 
         if (contextData != undefined && contextData.records != undefined) {
             let customEventFound = false;
@@ -2536,18 +2537,22 @@
                     }
                 }
             }
-
             for (let value in contextData.records) {
+                events.push(value);
+            }
+            events.sort();
+
+            for (let i = 0; i < events.length; i++) {
                 if(customEvent == '' || customEvent == undefined || !customEventFound){
-                    customEvent = value;
-                    otherEvent = value;
+                    customEvent = events[i];
+                    otherEvent =  events[i];
                     console.log("customEvent 2: " +customEvent);
                     customEventFound=true;
                 }
                 $('#'+id).append($('<option>', {
-                    value: value,
-                    text: value,
-                    selected: (customEvent == value)
+                    value:  events[i],
+                    text:  events[i],
+                    selected: (customEvent ==  events[i])
                 }));
             }
         }
@@ -3822,6 +3827,7 @@
                 }
                 contextData.tooltips = {};
             }else{//convert to perfgene format sfdc
+                let joinRecords = {};
                 let records = {};
                 let header = {};
                 let tooltips = {};
@@ -3849,6 +3855,36 @@
                                 obj.record[1] = obj.record[1] - obj.record[6];//need to reset start time curtime - runTime
                             }else if(obj.record[0] == 10 || obj.record[0] == 12){//change duration to millis
                                 obj.record[4] = obj.record[4] / 1000000;
+                            }else if(obj.record[0] == 2){
+                                if(header[".Async + Sync"] == undefined){
+                                    header[".Async + Sync"] = getContextHeader(20);
+                                    if(header[".Async + Sync"] != undefined) {
+                                        for (let val in header[".Async + Sync"]) {
+                                            const tokens = header[".Async + Sync"][val].split(":");
+                                            tooltips[tokens[0]] = tokens[2];
+                                        }
+                                    }
+                                }
+                                if(joinRecords[tid] == undefined){
+                                    joinRecords[tid] = [];
+                                }
+                                //join:2 time 1,tid 2,orgId 5,userId 6,log 4,uri 3,threadName 27,reqId 10,runTime 8,cpuTime 7,dbTime 9,NA,apexTime 17,dbCpuTime 21,gcTime 12,spTime 13,bytesAllocated 28,dequeueLatency NA
+                                joinRecords[tid].push({"record": [obj.record[0],obj.record[1],obj.record[2],obj.record[5],obj.record[6],obj.record[4],obj.record[3],obj.record[27],obj.record[10],obj.record[8],obj.record[7],obj.record[9], "NA", obj.record[17], obj.record[21], obj.record[12], obj.record[13], obj.record[28],"NA"]});
+                            }else if(obj.record[0] == 6){
+                                if(header[".Async + Sync"] == undefined){
+                                    header[".Async + Sync"] = getContextHeader(20);
+                                    if(header[".Async + Sync"] != undefined) {
+                                        for (let val in header[".Async + Sync"]) {
+                                            const tokens = header[".Async + Sync"][val].split(":");
+                                            tooltips[tokens[0]] = tokens[2];
+                                        }
+                                    }
+                                }
+                                if(joinRecords[tid] == undefined){
+                                    joinRecords[tid] = [];
+                                }
+                                //join:6 time 1,tid 2,orgId 5,userId NA,log 4,uri 13,threadName 3,reqId 9,runTime 7,cpuTime 6,dbTime 8,dbHoldingTime NA,apexTime NA,dbCpuTime 12,gcTime NA,spTime NA,bytesAllocated 14,dequeueLatency 16
+                                joinRecords[tid].push({"record": [obj.record[0],obj.record[1],obj.record[2],obj.record[5],"NA",obj.record[4],obj.record[13],obj.record[3],obj.record[9],obj.record[7],obj.record[6],obj.record[8], "NA", "NA", obj.record[12], "NA", "NA", obj.record[14],Number(obj.record[16])]});
                             }
                             records[logContext][tid].push(obj);
                         }
@@ -3861,6 +3897,7 @@
                 contextData.records = records;
                 contextData.header = header;
                 contextData.tooltips = tooltips;
+                contextData.records[".Async + Sync"] = joinRecords;
             }
             if(contextData.records["ActiveAsyncContext"] != undefined) {
                 for (var tid in contextData.records["ActiveAsyncContext"]) {
@@ -3898,6 +3935,7 @@
                         }
                         missingmq.forEach(function (obj) {
                             contextData.records["AsyncContext"][tid].push(obj);
+                            contextData.records[".Async + Sync"][tid].push(obj);
                         });
                     }
                 }
@@ -3948,10 +3986,13 @@
             return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","threadname:text","orgId:text:organization Id","cpuTime:number:the amount of cpu time in ms this request took","runTime:number:the wall time in ms this request took (APT)","reqId:text:request Id","racNode:text:rac node","dbCpu:number:cpu time ms in db","uri:text:log name of the request","bytes:number"];
         }else if( type == 10){//todo test
             return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","threadname:text","duration:number","orgId:text:organization Id","userId:text:user Id","reqId:text:request Id","backendPid:text","backendStartUpperBound:number","sid:text","serialNumber:text","connPoolType:text:the connection pool type id","racNode:text:rac node"];
-        }else if(type = 12){//todo test
+        }else if(type == 12){//todo test
             return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","threadname:text","duration:number","gackId:text","spOid:text","spUrn:text","spRTime:number","spAppcpuTime:number","spAppMemoryAllocation:number","spDbcpuTime:number","spdblockedTime:number","spDbBufferGets:number","spDbDiskReads:number","spDbUndoBlocks:number","spTid:text","spKind:text","spStatusCode:text","spDbNodes","reqId:text:request Id"];
         }else if(type == 13){//todo test
             return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","threadname:text","duration:number","orgId:text:organization Id","ThreadName:text","reqId:text:request Id","RequestType:text","CoreName:text","PartitionId:text","RevisionId:text","ConsumerName:text","KeyPrefix:text"];
+        }else if(type == 20){
+            //join:6 time 1,tid 2,orgId 5,userId NA,log 4,uri 13,threadName 3,reqId 9,runTime 7,cpuTime 6,dbTime 8,dbHoldingTime NA,apexTime NA,dbCpuTime 12,gcTime NA,spTime NA,bytesAllocated 14,dequeueLatency 16
+            return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","orgId:text","userId:text","logType:text","uri:text","threadname:text","reqId:text","runTime:number","cpuTime:number","dbTime:number","dbHoldingTime:number","apexTime:number","dbCpuTime:number","gcTime:number","spTime:number","bytesAllocated:number","dequeueLatency:number"];
         }
         return undefined;
     }
