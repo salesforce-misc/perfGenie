@@ -5257,78 +5257,77 @@
 
 </script>
 
-<div style="padding: 0px" id="contextfilter" class="row" >
+<div style="padding: 0px" id="contextfilter" class="row">
     <h3 style="width:100%">Context filter</h3>
-    <div  style="padding-top: 0px;" id="cct-panel" class="col-lg-12" >
-            <span id="filter-view-status" style="" class="hide"></span>
-            <div id="contextpanel"  class="hide" >
-                <div id="contexthints" class="row col-lg-12">
-                    <table style="border-spacing: 0px; border-collapse: separate;">
-                        <tr>
-                            <td id="filter-heading">Context hints:</td>
-                        </tr>
-                    </table>
+    <div style="padding-top: 0px;" id="cct-panel" class="col-lg-12">
+        <span id="filter-view-status" style="" class="hide"></span>
+        <div id="contextpanel" class="hide">
+            <div id="contexthints" class="row col-lg-12">
+                <table style="border-spacing: 0px; border-collapse: separate;">
+                    <tr>
+                        <td id="filter-heading">Context hints:</td>
+                    </tr>
+                </table>
+            </div>
+            <div id="queryfilter-inp-id" class=" form-group row">
+                <div class="col-lg-6">
+                    <input type="text" id="queryfilter"
+                           class="form-control send-ga"
+                           name="queryfilter" title="Query" value=""
+                           onkeypress="if(event.keyCode == 13) javascript:applyFilter()"
+                    >
                 </div>
-                <div id="queryfilter-inp-id" class=" form-group row">
-
-
-                    <div class="col-lg-6">
-                        <input type="text" id="queryfilter"
-                               class="form-control send-ga"
-                               name="queryfilter" title="Query" value=""
-                               onkeypress="if(event.keyCode == 13) javascript:applyFilter()"
-                        >
-                    </div>
-
-                    <div class="col-lg-2">
-
-                        <select  style="text-align: center; " class="form-control send-ga"  name="event-input" id="event-input">
-
-                        </select>
-                    </div>
-
-                    <div class="col-lg-2">
-                        <button style="cursor: pointer;" id="filter-apply" class="btn btn-block btn-info" type="submit">Apply Filter(s)</button>
-                    </div>
-                    <div class="col-lg-2">
-                        <button style="cursor: pointer;" id="filter-reset" class="btn btn-block btn-info" type="submit">Reset Filter(s)</button>
-                    </div>
+                <div class="col-lg-2">
+                    <select style="text-align: center; " class="form-control send-ga" name="event-input"
+                            id="event-input">
+                    </select>
                 </div>
-                <hr>
-
-                    <div class="row form-group" id="statetablewrapper" class="statetablewrapper col-lg-12">
-                        <div id="statetabledrp" class="statetabledrop col-lg-12">
-                        </div>
-
-                        <div id="statetable" class="statetable col-lg-12">
-                        </div>
-                    </div>
-
-                <div class="row">
-                    <div class='popup'><span class='popuptext' id='idPopup'>A Simple Popup!</span></div>
+                <div class="col-lg-2">
+                    <button style="cursor: pointer;" id="filter-apply" class="btn btn-block btn-info" type="submit">
+                        Apply Filter(s)
+                    </button>
                 </div>
-                <div id="stackncontextview" style="padding-top: 5px; padding-left: 0px;padding-right: 0px;"
-                     class="hide stackncontextview col-lg-12">
-                    <span id="timelinetitle" style="color: #686A6C;font-family: 'Arial', serif;">Profiling samples collected during request runTime</span>
-                    <div style="padding-top:0px; padding-left: 0px;padding-right: 0px;" class="col-lg-12">
-                        <div style="padding-top: 0px; padding-left: 0px;padding-right: 5px;padding-bottom: 5px;"
-                             class="filterpanel col-lg-9">
-                            <div style="border-color: #e5e6e7;  border-width: 1px; border-style: solid;padding-top: 3px; padding-left: 5px;padding-right: 5px;"
-                                 class="stackpanel">
-                                <div style="overflow: auto;" class="cct-customized-scrollbar threadstate"
-                                     id="threadstate">
-                                </div>
-                                <div class="hackstak" id="stack">
-                                </div>
+                <div class="col-lg-2">
+                    <button style="cursor: pointer;" id="filter-reset" class="btn btn-block btn-info" type="submit">
+                        Reset Filter(s)
+                    </button>
+                </div>
+            </div>
+
+            <hr style="border-top: 1px solid #599BCE"/>
+
+            <div class="row form-group" id="statetablewrapper" class="statetablewrapper col-lg-12">
+                <div id="statetabledrp" class="statetabledrop col-lg-12">
+                </div>
+
+                <div id="statetable" class="statetable col-lg-12">
+                </div>
+            </div>
+            <div class="row">
+                <div class='popup'><span class='popuptext' id='idPopup'>A Simple Popup!</span></div>
+            </div>
+            <div id="stackncontextview" style="padding-top: 5px; padding-left: 0px;padding-right: 0px;"
+                 class="hide stackncontextview col-lg-12">
+                <span id="timelinetitle" style="color: #686A6C;font-family: 'Arial', serif;">Profiling samples collected during request runTime</span>
+                <div style="padding-top:0px; padding-left: 0px;padding-right: 0px;" class="col-lg-12">
+                    <div style="padding-top: 0px; padding-left: 0px;padding-right: 5px;padding-bottom: 5px;"
+                         class="filterpanel col-lg-9">
+                        <div style="border-color: #e5e6e7;  border-width: 1px; border-style: solid;padding-top: 3px; padding-left: 5px;padding-right: 5px;"
+                             class="stackpanel">
+                            <div style="overflow: auto;" class="cct-customized-scrollbar threadstate"
+                                 id="threadstate">
+                            </div>
+                            <div class="hackstak" id="stack">
                             </div>
                         </div>
-                        <div class="nopadding col-lg-3">
-                            <div style="border-color: #e5e6e7;  border-width: 1px; border-style: solid; padding: 5px;"
-                                 class="stackcontext" id="stackcontext">
-                            </div>
+                    </div>
+                    <div class="nopadding col-lg-3">
+                        <div style="border-color: #e5e6e7;  border-width: 1px; border-style: solid; padding: 5px;"
+                             class="stackcontext" id="stackcontext">
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
     </div>
 </div>

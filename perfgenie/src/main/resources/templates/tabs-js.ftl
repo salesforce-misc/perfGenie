@@ -331,7 +331,7 @@
     function retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, eventType) {
         let start = performance.now();
         if(getEventType() === eventType) {
-            resetTreeHeader("Retrieving tree data ...");
+            resetTreeHeader("Retrieving profile data ...");
         }
         let isJstackEvent = false;
         if(eventType == "Jstack" || eventType == "json-jstack"){
