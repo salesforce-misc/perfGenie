@@ -3056,7 +3056,6 @@
             enableDataTable(order);
         }
         setToolBarOptions("statetabledrp");
-
         /*
         $("#event-input").on("change", (event) => {
             updateUrl("customevent", $("#event-input").val(), true);
@@ -3066,7 +3065,6 @@
             //genRequestTable();
             //updateRequestView();
         });*/
-
         $("#filter-input").on("change", (event) => {
             updateUrl("groupBy", $("#filter-input").val(), true);
             groupBy = $("#filter-input").val();
