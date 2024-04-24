@@ -3826,65 +3826,78 @@
                     }
                 }
                 contextData.tooltips = {};
-            }else{//convert to perfgene format sfdc
+            }else {//convert to perfgene format sfdc
+                let taskStart = performance.now();
                 let joinRecords = {};
                 let records = {};
                 let header = {};
                 let tooltips = {};
                 let logContext = "logContext";
+                let lastKey = "";
                 for (var tid in contextData.records) {
+
+                    contextData.records[tid].sort(function (a, b) {
+                        return a.record[1] - b.record[1];
+                    });
+
                     contextData.records[tid].forEach(function (obj) {
                         logContext = getContextName(obj.record[0]);
-                        if(logContext != undefined){
-                            if(header[logContext] == undefined){
+                        if (logContext != undefined) {
+                            if (header[logContext] == undefined) {
                                 header[logContext] = getContextHeader(obj.record[0]);
-                                if(header[logContext] != undefined) {
+                                if (header[logContext] != undefined) {
                                     for (let val in header[logContext]) {
                                         const tokens = header[logContext][val].split(":");
                                         tooltips[tokens[0]] = tokens[2];
                                     }
                                 }
                             }
-                            if(records[logContext] == undefined){
+                            if (records[logContext] == undefined) {
                                 records[logContext] = {};
                             }
-                            if(records[logContext][tid] == undefined){
+                            if (records[logContext][tid] == undefined) {
                                 records[logContext][tid] = [];
                             }
-                            if(obj.record[0] == 9){
+                            if (obj.record[0] == 9) {
                                 obj.record[1] = obj.record[1] - obj.record[6];//need to reset start time curtime - runTime
-                            }else if(obj.record[0] == 10 || obj.record[0] == 12){//change duration to millis
+                            } else if (obj.record[0] == 10 || obj.record[0] == 12) {//change duration to millis
                                 obj.record[4] = obj.record[4] / 1000000;
-                            }else if(obj.record[0] == 2){
-                                if(header[".Async + Sync"] == undefined){
+                            } else if (obj.record[0] == 2) {
+                                if (header[".Async + Sync"] == undefined) {
                                     header[".Async + Sync"] = getContextHeader(20);
-                                    if(header[".Async + Sync"] != undefined) {
+                                    if (header[".Async + Sync"] != undefined) {
                                         for (let val in header[".Async + Sync"]) {
                                             const tokens = header[".Async + Sync"][val].split(":");
                                             tooltips[tokens[0]] = tokens[2];
                                         }
                                     }
                                 }
-                                if(joinRecords[tid] == undefined){
+                                if (joinRecords[tid] == undefined) {
                                     joinRecords[tid] = [];
                                 }
-                                //join:2 time 1,tid 2,orgId 5,userId 6,log 4,uri 3,threadName 27,reqId 10,runTime 8,cpuTime 7,dbTime 9,NA,apexTime 17,dbCpuTime 21,gcTime 12,spTime 13,bytesAllocated 28,dequeueLatency NA
-                                joinRecords[tid].push({"record": [obj.record[0],obj.record[1],obj.record[2],obj.record[5],obj.record[6],obj.record[4],obj.record[3],obj.record[27],obj.record[10],obj.record[8],obj.record[7],obj.record[9], "NA", obj.record[17], obj.record[21], obj.record[12], obj.record[13], obj.record[28],"NA"]});
-                            }else if(obj.record[0] == 6){
-                                if(header[".Async + Sync"] == undefined){
+                                if (lastKey != obj.record[1]) {
+                                    lastKey = obj.record[1];
+                                    //join:2 time 1,tid 2,orgId 5,userId 6,log 4,uri 3,threadName 27,reqId 10,runTime 8,cpuTime 7,dbTime 9,NA,apexTime 17,dbCpuTime 21,gcTime 12,spTime 13,bytesAllocated 28,dequeueLatency NA
+                                    joinRecords[tid].push({"record": [obj.record[0], obj.record[1], obj.record[2], obj.record[5], obj.record[6], obj.record[4], obj.record[3], obj.record[27], obj.record[10], obj.record[8], obj.record[7], obj.record[9], "NA", obj.record[17], obj.record[21], obj.record[12], obj.record[13], obj.record[28], "NA"]});
+                                }
+                            } else if (obj.record[0] == 6) {
+                                if (header[".Async + Sync"] == undefined) {
                                     header[".Async + Sync"] = getContextHeader(20);
-                                    if(header[".Async + Sync"] != undefined) {
+                                    if (header[".Async + Sync"] != undefined) {
                                         for (let val in header[".Async + Sync"]) {
                                             const tokens = header[".Async + Sync"][val].split(":");
                                             tooltips[tokens[0]] = tokens[2];
                                         }
                                     }
                                 }
-                                if(joinRecords[tid] == undefined){
+                                if (joinRecords[tid] == undefined) {
                                     joinRecords[tid] = [];
                                 }
-                                //join:6 time 1,tid 2,orgId 5,userId NA,log 4,uri 13,threadName 3,reqId 9,runTime 7,cpuTime 6,dbTime 8,dbHoldingTime NA,apexTime NA,dbCpuTime 12,gcTime NA,spTime NA,bytesAllocated 14,dequeueLatency 16
-                                joinRecords[tid].push({"record": [obj.record[0],obj.record[1],obj.record[2],obj.record[5],"NA",obj.record[4],obj.record[13],obj.record[3],obj.record[9],obj.record[7],obj.record[6],obj.record[8], "NA", "NA", obj.record[12], "NA", "NA", obj.record[14],Number(obj.record[16])]});
+                                if (lastKey != obj.record[1]) {
+                                    lastKey = obj.record[1];
+                                    //join:6 time 1,tid 2,orgId 5,userId NA,log 4,uri 13,threadName 3,reqId 9,runTime 7,cpuTime 6,dbTime 8,dbHoldingTime NA,apexTime NA,dbCpuTime 12,gcTime NA,spTime NA,bytesAllocated 14,dequeueLatency 16
+                                    joinRecords[tid].push({"record": [obj.record[0], obj.record[1], obj.record[2], obj.record[5], "NA", obj.record[4], obj.record[13], obj.record[3], obj.record[9], obj.record[7], obj.record[6], obj.record[8], "NA", "NA", obj.record[12], "NA", "NA", obj.record[14], Number(obj.record[16])]});
+                                }
                             }
                             records[logContext][tid].push(obj);
                         }
@@ -3898,55 +3911,58 @@
                 contextData.header = header;
                 contextData.tooltips = tooltips;
                 contextData.records[".Async + Sync"] = joinRecords;
-            }
-            if(contextData.records["ActiveAsyncContext"] != undefined) {
-                for (var tid in contextData.records["ActiveAsyncContext"]) {
-                    let missingmq = [];
-                    let missingIDMap = {};
-                    contextData.records["ActiveAsyncContext"][tid].sort(function (a, b) {
-                        return a.record[0] - b.record[0];
-                    });
-                    contextData.records["ActiveAsyncContext"][tid].forEach(function (obj) {
-                        let found = false;
-                        if(contextData.records["AsyncContext"] != undefined && contextData.records["AsyncContext"][tid] != undefined) {
-                            contextData.records["AsyncContext"][tid].forEach(function (obj1) {
-                                if (!found) {
+
+                if (contextData.records["ActiveAsyncContext"] != undefined) {
+                    for (var tid in contextData.records["ActiveAsyncContext"]) {
+                        let missingmq = [];
+                        let missingIDMap = {};
+                        /*contextData.records["ActiveAsyncContext"][tid].sort(function (a, b) {
+                            return a.record[1] - b.record[1];
+                        });*/
+                        contextData.records["ActiveAsyncContext"][tid].forEach(function (obj) {
+                            let found = false;
+                            if (contextData.records["AsyncContext"] != undefined && contextData.records["AsyncContext"][tid] != undefined) {
+                                contextData.records["AsyncContext"][tid].forEach(function (obj1) {
+                                    if (!found) {
                                         if (obj.record[7] === obj1.record[9]) {
                                             found = true;
                                             return false;
                                         }
+                                    }
+                                });
+                            }
+                            if (!found) {
+                                if (missingIDMap[obj.record[7]] == undefined) {
+                                    missingmq.push({"record": [obj.record[0], obj.record[1], obj.record[2], obj.record[3], "mqfrm-active", obj.record[4], obj.record[5], obj.record[6], 0, obj.record[7], obj.record[8], 0, obj.record[9], obj.record[10], obj.record[11], 0, 0, "NA", "NA", "NA", "NA"]});
+                                    console.log(obj);
+                                    missingIDMap[obj.record[7]] = 1;
                                 }
+                            }
+                        });
+                        if (Object.keys(missingmq).length !== 0) {
+                            if (contextData.records["AsyncContext"] == undefined) {
+                                contextData.records["AsyncContext"] = {};
+                            }
+                            if (contextData.records["AsyncContext"][tid] == undefined) {
+                                contextData.records["AsyncContext"][tid] = [];
+                            }
+                            missingmq.forEach(function (obj) {
+                                contextData.records["AsyncContext"][tid].push(obj);
+                                contextData.records[".Async + Sync"][tid].push(obj);
                             });
                         }
-                        if (!found) {
-                            if(missingIDMap[obj.record[7]] == undefined) {
-                                missingmq.push({"record": [obj.record[0], obj.record[1], obj.record[2], obj.record[3], "mqfrm-active", obj.record[4], obj.record[5], obj.record[6], 0, obj.record[7], obj.record[8], 0, obj.record[9], obj.record[10], obj.record[11], 0, 0, "NA", "NA", "NA", "NA"]});
-                                console.log(obj);
-                                missingIDMap[obj.record[7]] = 1;
-                            }
-                        }
-                    });
-                    if(Object.keys(missingmq).length !== 0) {
-                        if (contextData.records["AsyncContext"] == undefined) {
-                            contextData.records["AsyncContext"] = {};
-                        }
-                        if (contextData.records["AsyncContext"][tid] == undefined) {
-                            contextData.records["AsyncContext"][tid] = [];
-                        }
-                        missingmq.forEach(function (obj) {
-                            contextData.records["AsyncContext"][tid].push(obj);
-                            contextData.records[".Async + Sync"][tid].push(obj);
-                        });
                     }
                 }
-            }
-            for (var customevent in contextData.records) {
-                for (var tid in contextData.records[customevent]) {
-                    //sort by timestamp
-                    contextData.records[customevent][tid].sort(function (a, b) {
-                        return a.record[0] - b.record[0];
-                    });
-                }
+                console.log("sf adapter time : " + (performance.now() - taskStart));
+                /*
+                for (var customevent in contextData.records) {
+                    for (var tid in contextData.records[customevent]) {
+                        //sort by timestamp
+                        contextData.records[customevent][tid].sort(function (a, b) {
+                            return a.record[1] - b.record[1];
+                        });
+                    }
+                }*/
             }
         }
     }
@@ -3971,7 +3987,6 @@
         }
         return undefined;
     }
-
 
     function getContextHeader(type){
         if(type == 2){
