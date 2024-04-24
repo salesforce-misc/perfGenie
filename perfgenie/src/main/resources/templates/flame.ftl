@@ -146,14 +146,17 @@ In other words, data that's in the second set but not in the first will not be d
             let treeToProcess = getActiveTree(getEventType(), isCalltree);
             let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
 
-            if (currentLoadedTree === treeToProcess && prevOption === currentOption && isRefresh === false && isLevelRefresh === false && prevSelectedLevel === selectedLevel) {
-                console.log("no change in tree, option:" + prevOption + ":" + isRefresh + ":" + ":" + isLevelRefresh + ":" + selectedLevel);
+            if (prevCustomEvent === customEvent && currentLoadedTree === treeToProcess && prevOption === currentOption && isRefresh === false && isLevelRefresh === false && prevSelectedLevel === selectedLevel) {
+                console.log("no change in tree, option:" + (prevCustomEvent == customEvent) + ":" + prevOption + ":" + isRefresh + ":" + ":" + isLevelRefresh + ":" + selectedLevel);
                 end = performance.now();
                 console.debug("updateProfilerView 1 time:" + (end - start));
                 return;
+            }else{
+                console.log("change in tree, option:" + (prevCustomEvent == customEvent) + ":" + (currentLoadedTree === treeToProcess)+":"+ (prevOption === currentOption) +" isRefresh:"+(isRefresh === false)+":"+" isLevelRefresh:"+(isLevelRefresh === false)+" selectedLevel:"+ (prevSelectedLevel === selectedLevel));
             }
             currentLoadedTree = treeToProcess;
             prevOption = currentOption;
+            prevCustomEvent = customEvent;
             prevSelectedLevel = selectedLevel;
             isLevelRefresh = false;
 

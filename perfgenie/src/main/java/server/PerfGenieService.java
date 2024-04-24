@@ -39,7 +39,7 @@ public class PerfGenieService implements IPerfGenieService {
     final Config config;
 
     //cronjob to parse jfrs placed in a directory
-    @Scheduled(cron = "*/30 * * ? * *")
+    @Scheduled(cron = "*/10 * * ? * *")
     private void cronJob() throws IOException {
         runJob();
     }
@@ -271,11 +271,18 @@ public class PerfGenieService implements IPerfGenieService {
 
                     aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(result, EventHandler.JfrParserResponse.class));
                 }
-                SurfaceDataResponse res = genSurfaceData(aggregator.getAggregatedProfileTree(), tenant, queryMap.get("host"));
-                EventHandler.JfrParserResponse apr = (EventHandler.JfrParserResponse) aggregator.getAggregatedProfileTree();
-                apr.addMeta(ImmutableMap.of("data", Utils.toJson(res)));
-                final String response = Utils.toJson(apr);
-                return response;
+                if(config.isExperimental()) {
+                    SurfaceDataResponse res = genSurfaceData(aggregator.getAggregatedProfileTree(), tenant, queryMap.get("host"));
+                    EventHandler.JfrParserResponse apr = (EventHandler.JfrParserResponse) aggregator.getAggregatedProfileTree();
+                    apr.addMeta(ImmutableMap.of("data", Utils.toJson(res)));
+                    final String response = Utils.toJson(apr);
+                    return response;
+                }else{
+                    EventHandler.JfrParserResponse apr = (EventHandler.JfrParserResponse) aggregator.getAggregatedProfileTree();
+                    return Utils.toJson(apr);
+                }
+
+
             } catch (Exception e) {
                 return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate" + e.getMessage(), queryMap, null));
             }
@@ -596,9 +603,7 @@ public class PerfGenieService implements IPerfGenieService {
             }
             chunkCount++;
         }
-
         return new SurfaceDataResponse(cpuSamplesList, chunkSamplesTotalList, surfaceData);
-
     }
 
     private void getSurfaceData(final EventHandler.StackFrame tree, int stackid, int size) {

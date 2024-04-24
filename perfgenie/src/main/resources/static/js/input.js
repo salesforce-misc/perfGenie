@@ -30,6 +30,7 @@ let jfrevents1 = {};
 let jfrevents2 = {};
 let otherEvents1 = {};
 let otherEvents2 = {};
+let otherEventsFetched = {};
 const urlParams = new URLSearchParams(window.location.search);
 let otherEventsSupported = {"top":true, "ps":true};
 function setSubmitDisabled(shouldDisable) {
@@ -413,6 +414,7 @@ function addInputToURL() {
     //reset
     updateUrl("filterEvent", '');
     updateUrl("customevent", '');
+    updateUrl("otherevent", '');
     updateUrl("groupBy", 'tid');
     updateUrl("isCalltree", false);
     updateUrl("filterStack", '');

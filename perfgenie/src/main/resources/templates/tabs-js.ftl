@@ -331,7 +331,7 @@
     function retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, eventType) {
         let start = performance.now();
         if(getEventType() === eventType) {
-            resetTreeHeader("Retrieving tree data ...");
+            resetTreeHeader("Retrieving profile data ...");
         }
         let isJstackEvent = false;
         if(eventType == "Jstack" || eventType == "json-jstack"){
@@ -637,8 +637,9 @@
         }
         if(contextData.header != undefined && data.header != undefined){
             for (var customevent in data.header) {
+                otherEventsFetched[customevent]=true;
                 contextData.header[customevent] = data.header[customevent];
-                $('#event-input').append($('<option>', {
+                $('#other-event-input').append($('<option>', {
                     value: customevent,
                     text: customevent
                 }));
