@@ -212,7 +212,7 @@ $(function () {
         host2 = $("#host-input2").val();
         profile2 = undefined;
         $("#bases2").empty();
-        startTime2 = moment.utc($("#startpicker").val()).valueOf();
+        startTime2 = moment.utc($("#startpicker2").val()).valueOf();
         endTime2 = moment.utc($("#endpicker2").val()).valueOf();
         getMetaData2(startTime2, endTime2, tenant2, host2);
     });
@@ -306,7 +306,7 @@ function getInstanceData2(start, end, tenant) {
         url: URL, success: function (result) {
             hideSpinner();
             instanceData2 = result;
-            populateHostsSelector2(tenant, end, tenant);
+            populateHostsSelector2(start, end, tenant);
         }
     });
 }
@@ -324,7 +324,7 @@ function getMetaData1(start, end, tenant, host) {
 }
 
 function getMetaData2(start, end, tenant, host) {
-    let URL = getMetaDataURL(start, end, tenant);
+    let URL = getMetaDataURL(start, end, tenant, host);
     showSpinner();
     $.ajax({
         url: URL, success: function (result) {
@@ -614,11 +614,11 @@ function updateTypes2(tenant, host){
                         jfrprofiles2[metaData2[key].metadata.name] = true;
                     }
                 }else if(profile2 == "Jstacks"){
-                    if (name != undefined && name.includes("jfr_dump") && jfrprofiles1[name] == undefined) {//sfdc
+                    if (name != undefined && name.includes("jfr_dump") && jfrprofiles2[name] == undefined) {//sfdc
                         if (name.includes("dump_log")) {
-                            jfrevents1[name] = true;
-                        } else if (metaData1[key].metadata.type == "jfrevent" && jfrprofiles1[metaData1[key].metadata.name] == undefined) {
-                            jfrevents1[metaData1[key].metadata.name] = true;
+                            jfrevents2[name] = true;
+                        } else if (metaData2[key].metadata.type == "jfrevent" && jfrprofiles2[metaData2[key].metadata.name] == undefined) {
+                            jfrevents2[metaData2[key].metadata.name] = true;
                         }
                     }
                 }
@@ -765,11 +765,12 @@ function populateIDs2(tenant, host, clearInput) {
     let jstackFound = false;
     for (var key in metaData2) {
         if ((tenant === metaData2[key].metadata.tenant || tenant === metaData2[key].metadata["tenant-id"]) && (host === metaData2[key].metadata.host || tenant === metaData2[key].metadata["instance-id"])) {
-            if ((metaData2[key].metadata["name"] != undefined && (metaData2[key].metadata["name"] == "jfr" || metaData2[key].metadata["name"] == "json-jstack" || metaData2[key].metadata["name"] == "Jstack")) || (metaData2[key].metadata["type"] == undefined && (metaData1[key].metadata["type"] == "jfrprofile" || metaData1[key].metadata["type"] == "jfrevent"))) {
+            if ((metaData2[key].metadata["name"] != undefined && (metaData2[key].metadata["name"] == "jfr" || metaData2[key].metadata["name"] == "json-jstack" || metaData2[key].metadata["name"] == "Jstack")) || (metaData2[key].metadata["type"] == undefined && (metaData2[key].metadata["type"] == "jfrprofile" || metaData2[key].metadata["type"] == "jfrevent"))) {
                 if (metaData2[key].metadata["name"] != undefined && (metaData2[key].metadata["name"] == "Jstack" || metaData2[key].metadata["name"] == "json-jstack")) {
                     jstackFound = true;
                     continue;
                 }
+
                 const index = metaData2[key].metadata["guid"].indexOf("jfr_dump");
                 if (index !== -1) { //sfdc
                     let guid = metaData2[key].metadata["guid"].substring(0, index);
@@ -783,8 +784,8 @@ function populateIDs2(tenant, host, clearInput) {
                         if (name.includes("jfr_dump")) {
                             name = "jfr-sfdc"; //sfdc
                         }
-                        if (profile1 == val || profile1 == "") {
-                            profile1 = val;
+                        if (profile2 == val || profile2 == "") {
+                            profile2 = val;
                             profileOptionHtml += "<option value=\"" + val + "\" selected>" + str + ":" + name + "</option>";
                         } else {
                             profileOptionHtml += "<option value=\"" + val + "\">" + str + ":" + name + "</option>";
