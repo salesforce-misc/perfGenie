@@ -458,15 +458,6 @@
                             }
                         }
                     }
-                } else {
-                    $("#framefilterId").addClass("hide");
-                    const defaultResult = {error_messages: [], size: 0, children: []};
-                    if (isCalltree) {
-                        setmergedContextTree(mergeTrees(invertTree(contextTrees[0]), defaultResult), eventType);
-                    } else {
-                        setContextTree(contextTrees[0], 1, eventType);//cache to generate backtrave view
-                        setmergedBacktraceTree(mergeTrees(contextTrees[0], defaultResult), eventType);
-                    }
                 }
             } else {
                 $("#framefilterId").addClass("hide");
@@ -550,16 +541,7 @@
                             }
                         }
                     }
-                } else {
-                    if (isCalltree) {
-                        setmergedContextTree(mergeTrees(invertTree(contextTrees[0]), invertTree(contextTrees[1])), eventType);
-                    } else {
-                        setContextTree(contextTrees[0], 1, eventType);//cache to generate backtrave view
-                        setContextTree(contextTrees[1], 2, eventType);//cache to generate backtrave view
-                        setmergedBacktraceTree(mergeTrees(contextTrees[0], contextTrees[1]), eventType);
-                    }
                 }
-
             }
             if (!isJfrContext) {
                 updateProfilerView();

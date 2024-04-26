@@ -3346,78 +3346,6 @@
         });
     }
 
-    function invertTree(tree) {
-        if (tree['tree'] !== undefined) {
-            tree = tree['tree'];
-        }
-        let arr = [];
-        var invertTree = getStackFrame("root");
-        invert(tree, invertTree, arr, 0);
-        invertTree['size'] = tree['size'];
-        return invertTree;
-    }
-
-    function invert(baseJsonTree, invertTree, arr, size) {
-        if (baseJsonTree == null) {
-            let frame = invertTree;
-            for (let i = arr.length - 1; i > 0; i--) {
-                if (i == arr.length - 1) {
-                    frame = addFrame(arr[i], size, size, frame);
-                } else {
-                    frame = addFrame(arr[i], size, 0, frame);
-                }
-            }
-            return 0;
-        }
-        if (baseJsonTree['children'] == null || baseJsonTree['children'].length == 0) {
-            let tmparr = [...arr];
-            tmparr.push(baseJsonTree['name']);
-            invert(null, invertTree, tmparr, baseJsonTree['size']);
-            return baseJsonTree['size'];
-        } else {
-            let count = 0;
-            for (let treeIndex = 0; treeIndex < baseJsonTree['children'].length; treeIndex++) {
-                let tmparr = [...arr];
-                tmparr.push(baseJsonTree['name']);
-                count = count + invert(baseJsonTree['children'][treeIndex], invertTree, tmparr, baseJsonTree['size'])
-            }
-            if (baseJsonTree['self'] != 0) {
-                let frame = invertTree;
-                let tmparr = [...arr];
-                let diff = baseJsonTree['self'];
-                tmparr.push(baseJsonTree['name']);
-                for (let i = tmparr.length - 1; i > 0; i--) {
-                    if (i == tmparr.length - 1) {
-                        frame = addFrame(tmparr[i], diff, diff, frame);
-                    } else {
-                        frame = addFrame(tmparr[i], diff, 0, frame);
-                    }
-                }
-            }
-            return count;
-        }
-    }
-
-    function getStackFrame(name) {
-        try {
-            let obj = JSON.parse('{"name":"","size":0,"self":0,"children":[], "map":{}}');
-            obj["name"] = name;
-            return obj;
-        } catch (e) {
-            console.log(e.message);
-        }
-    }
-
-    function addFrame(frameName, size, self, frame) {
-        if (frame['map'][frameName] === undefined) {
-            frame['map'][frameName] = getStackFrame(frameName);
-            frame['children'].push(frame['map'][frameName]);
-        }
-        frame['map'][frameName]['size'] = frame['map'][frameName]['size'] + size;
-        frame['map'][frameName]['self'] = frame['map'][frameName]['self'] + self;
-        return frame['map'][frameName];
-    }
-
     //context tree start
     function getStackFrameV1(name) {
         try {
@@ -4010,108 +3938,6 @@
         return undefined;
     }
 
-
-    // merge trees
-    function mergeTrees(contextTreeMaster, contextTreeBranch) {
-        const diffJson = breadthFirstDiff(contextTreeMaster, contextTreeBranch);
-        if (diffJson.children.length === 0) {
-            toastr_warning("Nothing to display");
-            //return;
-        }
-        return diffJson;
-    }
-
-    // traverses two context trees diffing their size values
-    function breadthFirstDiff(baseJsonTree, canaryJsonTree) {
-        const defaultNode = {name: "", bsize: 0, csize: 0, children: []};
-        if (baseJsonTree === undefined || canaryJsonTree === undefined) {
-            return defaultNode;
-        }
-        if (baseJsonTree['tree'] !== undefined) {
-            baseJsonTree = baseJsonTree['tree'];
-        }
-        if (canaryJsonTree['tree'] !== undefined) {
-            canaryJsonTree = canaryJsonTree['tree'];
-        }
-        // top level diff
-        const mergedTree = {
-            name: "root",
-            bsize: parseInt((baseJsonTree['size'] === undefined) ? baseJsonTree['total'] : baseJsonTree['size']),
-            csize: parseInt((canaryJsonTree['size'] === undefined) ? canaryJsonTree['total'] : canaryJsonTree['size']),
-            children: []
-        };
-        const queue = [];
-
-        const alignedChildren = alignNodes((baseJsonTree['children'] === undefined) ? baseJsonTree['roots'] : baseJsonTree['children'], (canaryJsonTree['children'] === undefined) ? canaryJsonTree['roots'] : canaryJsonTree['children']);
-
-        // populate queue with root level
-        addChildrenToQueue(queue, alignedChildren, mergedTree);
-
-        // diff tuples in queue and add children
-        while (queue.length !== 0) {
-            const diffNode = {name: "", bsize: 0, csize: 0, children: []};
-            const treeNodes = queue.shift();
-
-            diffNode.name = (treeNodes[0].name === "") ? treeNodes[1].name : treeNodes[0].name;
-            diffNode.bsize = treeNodes[0].size;
-            diffNode.csize = treeNodes[1].size;
-
-            treeNodes[2].children.push(diffNode);
-
-            const alignedChildren = alignNodes(treeNodes[0].children, treeNodes[1].children);
-            addChildrenToQueue(queue, alignedChildren, diffNode);
-        }
-        return mergedTree;
-    }
-
-    // gets the child elements from the master and branch trees and attaches each pair to the queue
-    // along with the level of the tree they will be added
-    function addChildrenToQueue(queue, alignedChildren, currentLevel) {
-        if (alignedChildren === undefined) {
-            return;
-        }
-        for (let treeIndex = 0; treeIndex < alignedChildren.length; treeIndex++) {
-            queue.push([alignedChildren[treeIndex][0], alignedChildren[treeIndex][1], currentLevel]);
-        }
-    }
-
-    // if both base and canary trees have matching thread names line them up
-    function alignNodes(bTreeNode, cTreeNode) {
-        const existsInBoth = [];
-        const alignedNodes = [];
-        const defaultNode = {name: "", size: 0, children: []};
-        if (bTreeNode != null) {
-            for (const mChild of bTreeNode) {
-                if (cTreeNode != null) {
-                    for (const bChild of cTreeNode) {
-                        if (mChild.name === bChild.name) {
-                            existsInBoth.push(mChild.name);
-                            alignedNodes.push([mChild, bChild]);
-                        }
-                    }
-                }
-            }
-        }
-        if (bTreeNode != null) {
-            for (const mChild of bTreeNode) {
-                if (!existsInBoth.includes(mChild.name)) {
-                    alignedNodes.push([mChild, defaultNode])
-                }
-            }
-        }
-        if (cTreeNode != null) {
-            for (const bChild of cTreeNode) {
-                if (!existsInBoth.includes(bChild.name)) {
-                    alignedNodes.push([defaultNode, bChild])
-                }
-            }
-        }
-        alignedNodes.sort(function (a, b) {
-            return b[0].size + b[1].size - a[0].size - a[1].size
-        });
-        return alignedNodes;
-    }
-
     //jfr context start
     // merge trees
     function mergeTreesV1(contextTreeMaster, contextTreeBranch, excludeDepth) {
@@ -4138,14 +3964,14 @@
             }
             contextTreeMaster['merged'] = true;
             return contextTreeMaster;
-        } else {
+        } /*else {
             const diffJson = breadthFirstDiffV1(contextTreeMaster, contextTreeBranch, excludeDepth);
             if (diffJson.children.length === 0) {
                 toastr_warning("Nothing to display");
                 //return;
             }
             return diffJson;
-        }
+        }*/
     }
     function updateStackIndex(contextTreeMaster){
         contextTreeMaster["treeIndex"] = getSelectedLevel(contextTreeMaster);
@@ -4284,7 +4110,7 @@
         }
     }
 
-    // traverses two context trees diffing their size values
+/*    // traverses two context trees diffing their size values
     function breadthFirstDiffV1(baseJsonTree, canaryJsonTree, excludeDepth) {
         const defaultNode = {name: "", bsize: 0, csize: 0, children: []};
         if (baseJsonTree === undefined || canaryJsonTree === undefined) {
@@ -4380,6 +4206,8 @@
         });
         return alignedNodes;
     }
+    */
+
     //jfr context end
 
     //Request context table crash  fix START
