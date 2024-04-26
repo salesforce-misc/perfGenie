@@ -51,7 +51,7 @@
                         treeIDMap[totalLiCount] = root;
                         root.id=totalLiCount;
                     }
-                    treeHtml = treeHtml + getLiNew(root[level], 0, treeToProcess.sz, root.nm, 0, 2, root.id);//always add expand for the first level
+                    treeHtml = treeHtml + getLiperfGenie(root[level], 0, treeToProcess.sz, root.nm, 0, 2, root.id);//always add expand for the first level
                     treeHtml = treeHtml + "<ul><li></ul>\n";
                 }
                 index++;
@@ -104,7 +104,7 @@
                         treeIDMap[totalLiCount] = root;
                         root.id=totalLiCount;
                     }
-                    treeHtml = treeHtml + getLiNew(size, 0, treeToProcess.sz, root.nm, 0, 2, root.id); //always add expand for the first level
+                    treeHtml = treeHtml + getLiperfGenie(size, 0, treeToProcess.sz, root.nm, 0, 2, root.id); //always add expand for the first level
                     treeHtml = treeHtml + "<ul><li></ul>\n";
                 }
                 index++;
@@ -133,8 +133,7 @@
                         treeIDMap[totalLiCount] = root;
                         root.id=totalLiCount;
                     }
-                    treeHtml = treeHtml + getLiNew(root.bsz, root.csz, treeToProcess.bsz + treeToProcess.csz, root.nm, 0, 2, root.id);//always add expand for the first level
-                    //treeHtml = treeHtml + getLi(root.bsz, root.csz, treeToProcess.bsz + treeToProcess.csz, root.nm, 0, index);
+                    treeHtml = treeHtml + getLiperfGenie(root.bsz, root.csz, treeToProcess.bsz + treeToProcess.csz, root.nm, 0, 2, root.id);//always add expand for the first level
                     treeHtml = treeHtml + "<ul><li></ul>\n";
                 }
                 index++;
@@ -174,7 +173,6 @@
                 }
             }
             if (getFrameName(root.nm).includes(token)) {
-                console.log(getFrameName(root.nm));
                 root.hit = true;
                 ret = true;
                 searchCount++;
@@ -211,20 +209,19 @@
                 }
 
                 if((child.hit != undefined && child.hit) || (child.chit != undefined && child.chit)) {
-                    treeHtml = treeHtml + getLiNew(child.bsz, child.csz, total, child.nm, depth,0, child.id, child.hit, true);//already expanding
+                    treeHtml = treeHtml + getLiperfGenie(child.bsz, child.csz, total, child.nm, depth,0, child.id, child.hit, true);//already expanding
                     treeHtml = treeHtml + "<ul>\n";
                     if (!processChildV1CompareSearch(child, total, depth + 1)) {
                         treeHtml = treeHtml + "<li>...\n";
                     }
                 }else{
-                    treeHtml = treeHtml + getLiNew(child.bsz, child.csz, total, child.nm,depth, tree.ch.length, child.id);
+                    treeHtml = treeHtml + getLiperfGenie(child.bsz, child.csz, total, child.nm,depth, tree.ch.length, child.id);
                     treeHtml = treeHtml + "<ul>\n";
                 }
 
                 treeHtml = treeHtml + "</ul>\n";
             }
         });
-
         return true;
     }
 
@@ -257,13 +254,13 @@
                     }
 
                     if((root.hit != undefined && root.hit) || (root.chit != undefined && root.chit)) {
-                        treeHtml = treeHtml + getLiNew(root.bsz, root.csz, treeToProcess.bsz + treeToProcess.csz, root.nm, depth,0, root.id, root.hit, true);//already expanding
+                        treeHtml = treeHtml + getLiperfGenie(root.bsz, root.csz, treeToProcess.bsz + treeToProcess.csz, root.nm, depth,0, root.id, root.hit, true);//already expanding
                         treeHtml = treeHtml + "<ul>\n";
                         if (!processChildV1CompareSearch(root, total, depth + 1)) {
                             treeHtml = treeHtml + "<li>...\n";
                         }
                     }else{
-                        treeHtml = treeHtml + getLiNew(root.bsz, root.csz, treeToProcess.bsz + treeToProcess.csz, root.nm, 0, 2, root.id); //always add expand to first level
+                        treeHtml = treeHtml + getLiperfGenie(root.bsz, root.csz, treeToProcess.bsz + treeToProcess.csz, root.nm, 0, 2, root.id); //always add expand to first level
                         treeHtml = treeHtml + "<ul>\n";
                     }
                     treeHtml = treeHtml + "</ul>\n";
@@ -272,7 +269,6 @@
             });
         }
         $("ul.tree").html(treeHtml);
-        addClickActionsToElementNew(document);//todo do not need document
     }
 
     function showTreeV1Search(treeToProcess, total, depth, token, level) {
@@ -331,13 +327,13 @@
                         }
 
                         if((root.hit != undefined && root.hit) || (root.chit != undefined && root.chit)) {
-                            treeHtml = treeHtml + getLiNew(size, 0, total, root.nm, depth,0, root.id, root.hit, true);//already expanding
+                            treeHtml = treeHtml + getLiperfGenie(size, 0, total, root.nm, depth,0, root.id, root.hit, true);//already expanding
                             treeHtml = treeHtml + "<ul>\n";
                             if (!processChildV1Search(root, total, depth + 1, level)) {
                                 treeHtml = treeHtml + "<li>...\n";
                             }
                         }else{
-                            treeHtml = treeHtml + getLiNew(size, 0, total, root.nm, depth, 2, root.id); //always add expand to first level
+                            treeHtml = treeHtml + getLiperfGenie(size, 0, total, root.nm, depth, 2, root.id); //always add expand to first level
                             treeHtml = treeHtml + "<ul>\n";
                         }
                         treeHtml = treeHtml + "</ul>\n";
@@ -346,7 +342,6 @@
             });
         }
         $("ul.tree").html(treeHtml);
-        addClickActionsToElementNew(document);//todo do not need document
     }
 
     function processChildV1Search(tree, total, depth, level) {
@@ -396,19 +391,18 @@
                     child.id = totalLiCount;
                 }
                 if((child.hit != undefined && child.hit) || (child.chit != undefined && child.chit)) {
-                    treeHtml = treeHtml + getLiNew(size, 0, total, child.nm, depth,0, child.id, child.hit, true); //already expanding
+                    treeHtml = treeHtml + getLiperfGenie(size, 0, total, child.nm, depth,0, child.id, child.hit, true); //already expanding
                     treeHtml = treeHtml + "<ul>\n";
                     if (!processChildV1Search(child, total, depth + 1, level)) {
                         treeHtml = treeHtml + "<li>...\n";
                     }
                 }else{
-                    treeHtml = treeHtml + getLiNew(size, 0, total, child.nm, depth, tree.ch.length, child.id);
+                    treeHtml = treeHtml + getLiperfGenie(size, 0, total, child.nm, depth, tree.ch.length, child.id);
                     treeHtml = treeHtml + "<ul>\n";
                 }
                 treeHtml = treeHtml + "</ul>\n";
             }
         });
-
         return true;
     }
 
@@ -475,19 +469,18 @@
         treeHtml = "";
         if (compareTree && isJfrContext) {
             if (!showTreeV1CompareSearch(treeToProcess, treeToProcess.bsz + treeToProcess.csz, 0, token)) {
-                treeHtml = treeHtml + "<li>...\n";
+                console.log("showTreeV1CompareSearch search did not find any match");
             }
         } else if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
             if (!showTreeV1Search(treeToProcess, treeToProcess.sz, 0,token,selectedLevel)) {
-                console.log("level search did not find any match");
+                console.log("showTreeV1Search level search did not find any match");
             }
         } else if (isJfrContext) {
             if (!showTreeV1Search(treeToProcess, treeToProcess.sz, 0,token)) {
-                console.log("search did not find any match");
+                console.log("showTreeV1Search search did not find any match");
             }
         }
-        //element.getElementsByTagName("ul")[0].innerHTML = treeHtml;
-        //addClickActionsToElement(element.getElementsByTagName("ul")[0]);
+        addClickActionsToElementperfGenie(document);//todo do not need document
     }
 
     function searchWord(root, word) {
@@ -506,58 +499,7 @@
         return skip;
     }
 
-
     let totalLiCount = 0;
-    function initSearchTree(word) {
-        let treeToProcess;
-        treeToProcess = getActiveTree(getEventType(), isCalltree);
-
-        // if no data returned from our call don't try to parse it
-        if (treeToProcess === undefined) {
-            return;
-        }
-
-        const tree = document.querySelectorAll('ul.tree li.expand');
-        for (let i = 0; i < tree.length; i++) {
-            let index = Number(tree[i].getAttribute('index'));
-            if (searchWord(treeToProcess.ch[index], word)) {
-                expandTree(index, tree[i]);
-            }
-        }
-
-        if (!compareTree) {
-            $(".img-swap").each(function () {
-                this.src = this.src.replace("_on", "_off");
-            });
-        }
-    }
-
-    function initSearchTreeNew(word) {
-        let treeToProcess;
-
-        treeToProcess = getActiveTree(getEventType(), isCalltree);
-
-        // if no data returned from our call don't try to parse it
-        if (treeToProcess === undefined) {
-            return;
-        }
-
-        const tree = document.querySelectorAll('ul.tree li.expand');
-        for (let i = 0; i < tree.length; i++) {
-            let index = Number(tree[i].getAttribute('index'));
-            //if (searchWord(treeToProcess.ch[index], word)) {
-            if (searchWord(treeIDMap[index], word)) {
-                expandTreeNew(index, tree[i], Number(tree[i].getAttribute('t')), Number(parent.getAttribute('d')));
-            }
-        }
-
-        if (!compareTree) {
-            $(".img-swap").each(function () {
-                this.src = this.src.replace("_on", "_off");
-            });
-        }
-    }
-
     function isSkipSubtree(bsz, csz) {
         if ((bsz === 0 && currentOption === 2) || (csz === 0 && currentOption === 3)) {
             return true;
@@ -565,37 +507,7 @@
         return false;
     }
 
-    function expandTree(index, element) {
-
-        let treeToProcess = getActiveTree(getEventType(), isCalltree); //getTreeToProcess();
-
-        // if no data returned from our call don't try to parse it
-        if (treeToProcess === undefined) {
-            return;
-        }
-
-        let selectedLevel = getSelectedLevel(treeToProcess);
-
-        treeHtml = "";
-        if (compareTree && isJfrContext) {
-            if (!processChildV1Compare(treeToProcess.ch[index], treeToProcess.bsz + treeToProcess.csz, 1)) {
-                treeHtml = treeHtml + "<li>...\n";
-            }
-        } else if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
-            if (!processChildV1Level(treeToProcess.ch[index], treeToProcess.sz, 1, selectedLevel)) {
-                treeHtml = treeHtml + "<li>...\n";
-            }
-        } else if (isJfrContext) {
-            if (!processChildV1(treeToProcess.ch[index], treeToProcess.sz, 1)) {
-                treeHtml = treeHtml + "<li>...\n";
-            }
-        }
-
-        element.getElementsByTagName("ul")[0].innerHTML = treeHtml;
-        addClickActionsToElement(element.getElementsByTagName("ul")[0]);
-    }
-
-    function expandTreeNew(index, element, total, depth) {
+    function expandTreeperfGenie(index, element, total, depth) {
 
         //let treeToProcess = getActiveTree(getEventType(), isCalltree); //getTreeToProcess();
         let treeToProcess = treeIDMap[index];
@@ -608,24 +520,23 @@
 
         treeHtml = "";
         if (compareTree && isJfrContext) {//todo: total should be parent size
-            if (!processChildV1CompareNew(treeToProcess, total, depth+1)) {
+            if (!processChildV1CompareperfGenie(treeToProcess, total, depth+1)) {
                 treeHtml = treeHtml + "<li>...\n";
             }
         } else if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
-            if (!processChildV1LevelNew(treeToProcess, total, depth+1, selectedLevel)) {
+            if (!processChildV1LevelperfGenie(treeToProcess, total, depth+1, selectedLevel)) {
                 treeHtml = treeHtml + "<li>...\n";
             }
         } else if (isJfrContext) {
-            if (!processChildV1New(treeToProcess, total, depth+1)) {
-            //if (!processChildV1New(treeToProcess.ch[index], treeToProcess.sz, 1)) {
+            if (!processChildV1perfGenie(treeToProcess, total, depth+1)) {
                 treeHtml = treeHtml + "<li>...\n";
             }
         }
         element.getElementsByTagName("ul")[0].innerHTML = treeHtml;
-        addClickActionsToElementNew(element.getElementsByTagName("ul")[0]);
+        addClickActionsToElementperfGenie(element.getElementsByTagName("ul")[0]);
     }
 
-    function processChildV1LevelNew(tree, total, depth, level) {
+    function processChildV1LevelperfGenie(tree, total, depth, level) {
         //skip sub tree for below given threshold
         if (100 * tree[level] / total < Number(threshold)) {
             return false;
@@ -645,15 +556,14 @@
                     treeHtml = treeHtml + "<li>...\n";
                     skip = true;
                 } else if (tree.ch.length > 0) {
-                    //treeHtml = treeHtml + getLi(child[level], 0, total, child.nm, depth, 0);
                     if(child.id == undefined){
                         totalLiCount++;
                         treeIDMap[totalLiCount] = child;
                         child.id=totalLiCount;
                     }
-                    treeHtml = treeHtml + getLiNew(child[level], 0, total, child.nm, depth, 0, child.id); // already expanding
+                    treeHtml = treeHtml + getLiperfGenie(child[level], 0, total, child.nm, depth, 0, child.id); // already expanding
                     treeHtml = treeHtml + "<ul>\n";
-                    if (!processChildV1LevelNew(child, total, depth + 1, level)) {
+                    if (!processChildV1LevelperfGenie(child, total, depth + 1, level)) {
                         treeHtml = treeHtml + "<li>...\n";
                     }
                     treeHtml = treeHtml + "</ul>\n";
@@ -673,7 +583,7 @@
                         treeIDMap[totalLiCount] = child;
                         child.id=totalLiCount;
                     }
-                    treeHtml = treeHtml + getLiNew(child[level], 0, total, child.nm, depth, tree.ch.length, child.id);
+                    treeHtml = treeHtml + getLiperfGenie(child[level], 0, total, child.nm, depth, tree.ch.length, child.id);
                     treeHtml = treeHtml + "<ul></ul>\n";
                 }
             });
@@ -681,38 +591,9 @@
         return true;
     }
 
-    function processChildV1Level(tree, total, depth, level) {
-        //skip sub tree for below given threshold
-        if (100 * tree[level] / total < Number(threshold)) {
-            return false;
-        }
-        let skip = false;
-
-        if (tree.ch == null) {
-            tree.ch = [];
-        }
-
-        tree.ch.forEach(function (child) {
-            if (skip || child[level] === undefined || child[level] === 0 || isSkipSubtree(child[level], 0)) {
-                return;
-            }
-            if (100 * child[level] / total < Number(threshold)) {
-                treeHtml = treeHtml + "<li>...\n";
-                skip = true;
-            } else if (tree.ch.length > 0) {
-                treeHtml = treeHtml + getLi(child[level], 0, total, child.nm, depth, 0);
-                treeHtml = treeHtml + "<ul>\n";
-                if (!processChildV1Level(child, total, depth + 1, level)) {
-                    treeHtml = treeHtml + "<li>...\n";
-                }
-                treeHtml = treeHtml + "</ul>\n";
-            }
-        });
-        return true;
-    }
 
     let treeIDMap = {};
-    function processChildV1New(tree, total, depth) {
+    function processChildV1perfGenie(tree, total, depth) {
         //skip sub tree for below given threshold
         if (100 * tree.sz / total < Number(threshold)) {
             return false;
@@ -736,9 +617,9 @@
                         treeIDMap[totalLiCount] = child;
                         child.id=totalLiCount;
                     }
-                    treeHtml = treeHtml + getLiNew(child.sz, 0, total, child.nm, depth, 0, child.id);//already expanding
+                    treeHtml = treeHtml + getLiperfGenie(child.sz, 0, total, child.nm, depth, 0, child.id);//already expanding
                     treeHtml = treeHtml + "<ul>\n";
-                    if (!processChildV1New(child, total, depth + 1)) {
+                    if (!processChildV1perfGenie(child, total, depth + 1)) {
                         treeHtml = treeHtml + "<li>...\n";
                     }
                     treeHtml = treeHtml + "</ul>\n";
@@ -758,7 +639,7 @@
                         treeIDMap[totalLiCount] = child;
                         child.id=totalLiCount;
                     }
-                    treeHtml = treeHtml + getLiNew(child.sz, 0, total, child.nm, depth, tree.ch.length, child.id);
+                    treeHtml = treeHtml + getLiperfGenie(child.sz, 0, total, child.nm, depth, tree.ch.length, child.id);
                     treeHtml = treeHtml + "<ul></ul>\n";
                 }
             });
@@ -766,67 +647,7 @@
         return true;
     }
 
-    function processChildV1(tree, total, depth) {
-        //skip sub tree for below given threshold
-        if (100 * tree.sz / total < Number(threshold)) {
-            return false;
-        }
-        let skip = false;
-
-        if (tree.ch == null) {
-            tree.ch = [];
-        }
-
-        tree.ch.forEach(function (child) {
-            if (skip || isSkipSubtree(child.sz, 0)) {
-                return;
-            }
-            if (100 * child.sz / total < Number(threshold)) {
-                treeHtml = treeHtml + "<li>...\n";
-                skip = true;
-            } else if (tree.ch.length > 0) {
-                treeHtml = treeHtml + getLi(child.sz, 0, total, child.nm, depth, 0);
-                treeHtml = treeHtml + "<ul>\n";
-                if (!processChildV1(child, total, depth + 1)) {
-                    treeHtml = treeHtml + "<li>...\n";
-                }
-                treeHtml = treeHtml + "</ul>\n";
-            }
-        });
-        return true;
-    }
-
-    function processChildV1Compare(tree, total, depth) {
-        //skip sub tree for below given threshold
-        if ((100 * (tree.bsz) / total < Number(threshold)) && (100 * ((tree.csz !== undefined) ? tree.csz : 0) / total < Number(threshold))) {
-            return false;
-        }
-        let skip = false;
-
-        if (tree.ch == null) {
-            tree.ch = [];
-        }
-
-        tree.ch.forEach(function (child) {
-            if (skip || isSkipSubtree(child.bsz, ((child.csz !== undefined) ? child.csz : 0))) {
-                return;
-            }
-            if (100 * (child.bsz + ((child.csz !== undefined) ? child.csz : 0)) / total < Number(threshold)) {
-                treeHtml = treeHtml + "<li>...\n";
-                skip = true;
-            } else if (tree.ch.length > 0) {
-                treeHtml = treeHtml + getLi(child.bsz, ((child.csz !== undefined) ? child.csz : 0), total, child.nm, depth, 0);
-                treeHtml = treeHtml + "<ul>\n";
-                if (!processChildV1Compare(child, total, depth + 1)) {
-                    treeHtml = treeHtml + "<li>...\n";
-                }
-                treeHtml = treeHtml + "</ul>\n";
-            }
-        });
-        return true;
-    }
-
-    function processChildV1CompareNew(tree, total, depth) {
+    function processChildV1CompareperfGenie(tree, total, depth) {
         //skip sub tree for below given threshold
         if ((100 * (tree.bsz) / total < Number(threshold)) && (100 * ((tree.csz !== undefined) ? tree.csz : 0) / total < Number(threshold))) {
             return false;
@@ -851,10 +672,9 @@
                         treeIDMap[totalLiCount] = child;
                         child.id=totalLiCount;
                     }
-                    treeHtml = treeHtml + getLiNew(child.bsz, ((child.csz !== undefined) ? child.csz : 0), total, child.nm, depth, 0, child.id);//already expanding
-                    //treeHtml = treeHtml + getLi(child.bsz, ((child.csz !== undefined) ? child.csz : 0), total, child.nm, depth, 0);
+                    treeHtml = treeHtml + getLiperfGenie(child.bsz, ((child.csz !== undefined) ? child.csz : 0), total, child.nm, depth, 0, child.id);//already expanding
                     treeHtml = treeHtml + "<ul>\n";
-                    if (!processChildV1CompareNew(child, total, depth + 1)) {
+                    if (!processChildV1CompareperfGenie(child, total, depth + 1)) {
                         treeHtml = treeHtml + "<li>...\n";
                     }
                     treeHtml = treeHtml + "</ul>\n";
@@ -874,7 +694,7 @@
                         treeIDMap[totalLiCount] = child;
                         child.id=totalLiCount;
                     }
-                    treeHtml = treeHtml + getLiNew(child.bsz, ((child.csz !== undefined) ? child.csz : 0), total, child.nm, depth, tree.ch.length, child.id);
+                    treeHtml = treeHtml + getLiperfGenie(child.bsz, ((child.csz !== undefined) ? child.csz : 0), total, child.nm, depth, tree.ch.length, child.id);
                     treeHtml = treeHtml + "<ul></ul>\n";
                 }
             });
@@ -882,7 +702,7 @@
         return true;
     }
 
-    function getLiNew(bsz, csz, total, name, depth, chLen, subtreeid, hit, open) {
+    function getLiperfGenie(bsz, csz, total, name, depth, chLen, subtreeid, hit, open) {
         let color = "black";
         let compareDiff = "";
         let toolTip = "";
@@ -924,61 +744,41 @@
         }
 
         if (isJfrContext == true) {
-            //return ["<li" , tmpClass , "><div class=\"subtree\">[" , depth , "] " , compareDiff , " </div>" , bar , "<span title=\"", toolTip, "\" class=\"", color, "\">&nbsp;", getFrameName(name), "</span>\n"].join('');
             if(chLen > 1) {
-                return "<li class=\"expand\" index=" + subtreeid + " t="+total+" d="+depth+"><div class=\"subtree\">[" + depth + "] " + compareDiff + " </div>" + bar + "<span onclick='experiment(" + subtreeid + ")' title=\"" + toolTip + "\" class=\"" + color +"\">&nbsp;" + getFrameName(name) + "</span>\n";
+                return "<li  class=\"expand\" index=" + subtreeid + " t="+total+" d="+depth+"><div onclick='exptree(event)' class=\"subtree\">[" + depth + "] " + compareDiff + " </div>" + bar + "<span title=\"" + toolTip + "\" class=\"" + color +"\">&nbsp;" + getFrameName(name) + "</span>\n";
             }else{
-                return "<li"+openCls+"><div class=\"subtree\">[" + depth + "] " + compareDiff + " </div>" + bar + "<span onclick='experiment(" + subtreeid + ")' title=\"" + toolTip + "\" class=\"" + color  +"\">&nbsp;" + getFrameName(name) + "</span>\n";
+                return "<li"+openCls+"><div onclick='exptree(event)' class=\"subtree\">[" + depth + "] " + compareDiff + " </div>" + bar + "<span title=\"" + toolTip + "\" class=\"" + color  +"\">&nbsp;" + getFrameName(name) + "</span>\n";
             }
         }
     }
 
-    function experiment(obj){
-        console.log("size:" + treeIDMap[obj].sz);
-    }
-
-    function getLi(bsize, csize, total, name, depth, index) {
-        let color = "black";
-        let compareDiff = "";
-        let toolTip = "";
-        let diffPercent = "NA";
-        let bar = "";
-        if (compareTree) {
-            if (bsize === 0) {
-                color = "tclr";
-            } else if (csize === 0) {
-                color = "bclr"
-            }
-
-            if (bsize > 0 && csize > 0) {
-                diffPercent = csize - bsize;
-                if(diffPercent !== 0) {
-                    diffPercent = (100 * diffPercent / bsize).toFixed(2);
-                }
-                if (diffPercent === 0) {
-                    bar = "<div title=\"% diff \" class = \"rbar\" style=\"width:" + diffPercent + "px;\">&nbsp;</div>";
-                }else if (diffPercent > 0) {
-                    bar = "<div title=\"" +diffPercent+ "% increase \" class = \"rbar\" style=\"width:" + Math.log(diffPercent) * 2 + "px;\">&nbsp;</div>";
-                } else {
-                    bar = "<div title=\"" +diffPercent+ "% decrease\" class = \"ibar\" style=\"width:" + Math.log(Math.abs(diffPercent)) * 2 + "px;\">&nbsp;</div>";
-                }
-                diffPercent = " diff percent: " + diffPercent + " %";
-            }
-            compareDiff = "<span class=\"bclr\">" + (100 * (bsize) / total).toFixed(2) + "% </span>" + "<span class=\"tclr\">" + (100 * (csize) / total).toFixed(2) + "%&nbsp;</span>";
-            toolTip = "base: " + bsize + " new: " + csize + " diff: " + (csize - bsize) + diffPercent;
-        } else {
-            compareDiff = (100 * (bsize + csize) / total).toFixed(2) + "% " + (bsize + csize);
+    function exptree(e) {
+        const parent = $(e.target).closest("li")[0];
+        if (parent === undefined) {
+            return;
+        }
+        const classList = parent.classList;
+        if (classList.contains("expand")) {
+            classList.remove('expand');
+            expandTreeperfGenie(Number(parent.getAttribute('index')), parent, Number(parent.getAttribute('t')), Number(parent.getAttribute('d')))
         }
 
-        let tmpClass = "";
-        if (depth == 0) {
-            tmpClass = " class=\"expand\" index=" + index + " ";
-        }
-        if (isJfrContext == true) {
-            //return ["<li" , tmpClass , "><div class=\"subtree\">[" , depth , "] " , compareDiff , " </div>" , bar , "<span title=\"", toolTip, "\" class=\"", color, "\">&nbsp;", getFrameName(name), "</span>\n"].join('');
-            return "<li" + tmpClass + "><div class=\"subtree\">[" + depth + "] " + compareDiff + " </div>" + bar + "<span title=\"" + toolTip + "\" class=\"" + color + "\">&nbsp;" + getFrameName(name) + "</span>\n";
+        if (classList.contains("open")) {
+            classList.remove('open');
+            const opensubs = parent.querySelectorAll(':scope .open');
+            for (let i = 0; i < opensubs.length; i++) {
+                opensubs[i].classList.remove('open');
+            }
         } else {
-            return "<li" + tmpClass + "><div class=\"subtree\">[" + depth + "] " + compareDiff + " </div>" + bar + "<span title=\"" + toolTip + "\" class=\"" + color + "\">&nbsp;" + name + "</span>\n";
+            if (e.altKey) {
+                classList.add('open');
+                const opensubs = parent.querySelectorAll('li');
+                for (let i = 0; i < opensubs.length; i++) {
+                    opensubs[i].classList.add('open');
+                }
+            } else {
+                openNode(parent);
+            }
         }
     }
 
@@ -1007,18 +807,7 @@
         $("#search-flame").val(document.getElementById("search").value);
 
         handleSearch(document.getElementById("search").value);
-        //initSearchTreeNew(document.getElementById("search").value);
-        //initSearchTree(document.getElementById("search").value);
-        /*
-        const tree = document.querySelectorAll('ul.tree span');
-        for (let i = 0; i < tree.length; i++) {
-            tree[i].classList.remove('sc');
-            if (document.getElementById("search").value !== "" && tree[i].innerHTML.includes(document.getElementById("search").value)) {
-                searchCount++;
-                tree[i].classList.add('sc');
-                openParent(tree[i].parentElement, tree);
-            }
-        }*/
+
         $("span.cct-search-guid").html("<strong> Search found " + searchCount + " matching frame(s)</strong>");
     }
 
@@ -1039,106 +828,8 @@
         }
     }
 
-    function addClickActionsToElementNew(element) {
-        const tree = element.querySelectorAll('ul.tree div.subtree:not(:last-child)');
-        for (let i = 0; i < tree.length; i++) {
-            tree[i].addEventListener('click', function (e) {
-                const parent = $(e.target).closest("li")[0];
-                if (parent === undefined) {
-                    return;
-                }
-                const classList = parent.classList;
-                if (classList.contains("expand")) {
-                    classList.remove('expand');
-                    expandTreeNew(Number(parent.getAttribute('index')), parent, Number(parent.getAttribute('t')), Number(parent.getAttribute('d')))
-                }
-
-                if (classList.contains("open")) {
-                    classList.remove('open');
-                    const opensubs = parent.querySelectorAll(':scope .open');
-                    for (let i = 0; i < opensubs.length; i++) {
-                        opensubs[i].classList.remove('open');
-                    }
-                } else {
-                    if (e.altKey) {
-                        classList.add('open');
-                        const opensubs = parent.querySelectorAll('li');
-                        for (let i = 0; i < opensubs.length; i++) {
-                            opensubs[i].classList.add('open');
-                        }
-                    } else {
-                        openNode(parent);
-                    }
-                }
-            });
-
-            tree[i].addEventListener('contextmenu', function (e) {
-                e.preventDefault();
-                const parent = $(e.target).closest("li")[0];
-                const classList = parent.classList;
-                if (classList.contains("expand")) {
-                    classList.remove('expand');
-                    expandTreeNew(Number(parent.getAttribute('index')), parent, Number(parent.getAttribute('t')), Number(parent.getAttribute('d')))
-                }
-                createCCTModal("cctpopup", parent.innerHTML);
-                loadCCTModal("cctpopup");
-                setTimeout(function () {
-                    $('#cctpopup').focus();
-                }, 500);
-                return false;
-            });
-        }
-    }
-
-    function addClickActionsToElement(element) {
-        const tree = element.querySelectorAll('ul.tree div.subtree:not(:last-child)');
-        for (let i = 0; i < tree.length; i++) {
-            tree[i].addEventListener('click', function (e) {
-                const parent = $(e.target).closest("li")[0];
-                if (parent === undefined) {
-                    return;
-                }
-                const classList = parent.classList;
-                if (classList.contains("expand")) {
-                    classList.remove('expand');
-                    expandTree(Number(parent.getAttribute('index')), parent)
-                }
-
-                if (classList.contains("open")) {
-                    classList.remove('open');
-                    const opensubs = parent.querySelectorAll(':scope .open');
-                    for (let i = 0; i < opensubs.length; i++) {
-                        opensubs[i].classList.remove('open');
-                    }
-                } else {
-                    if (e.altKey) {
-                        classList.add('open');
-                        const opensubs = parent.querySelectorAll('li');
-                        for (let i = 0; i < opensubs.length; i++) {
-                            opensubs[i].classList.add('open');
-                        }
-                    } else {
-                        openNode(parent);
-                    }
-                }
-            });
-
-            tree[i].addEventListener('contextmenu', function (e) {
-                e.preventDefault();
-                const parent = $(e.target).closest("li")[0];
-                const classList = parent.classList;
-                if (classList.contains("expand")) {
-                    classList.remove('expand');
-                    expandTree(Number(parent.getAttribute('index')), parent)
-                }
-                createCCTModal("cctpopup", parent.innerHTML);
-                loadCCTModal("cctpopup");
-                setTimeout(function () {
-                    $('#cctpopup').focus();
-                }, 500);
-                return false;
-            });
-        }
+    function addClickActionsToElementperfGenie(element) {
+        return;//todo: remove addClickActionsToElementNew, no need any more
     }
 
     function updateProfilerViewCCT(level, skipFilter) {
@@ -1223,7 +914,7 @@
             } else if (isJfrContext) {
                 showTreeV1(treeToProcess);
             }
-            addClickActionsToElementNew(document);//addClickActionsToElement(document);
+            addClickActionsToElementperfGenie(document);//addClickActionsToElement(document);
             if (!compareTree) {
                 $(".img-swap").each(function () {
                     this.src = this.src.replace("_on", "_off");
@@ -1257,7 +948,6 @@
                     + threshold + timeRange);
             }
 
-
             if (compareTree && isJfrContext) {
                 showTreeV1Compare(treeToProcess);
             } else if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
@@ -1269,7 +959,7 @@
             } else if (isJfrContext) {
                 showTreeV1(treeToProcess);
             }
-            addClickActionsToElementNew(document);//addClickActionsToElement(document);
+            addClickActionsToElementperfGenie(document);//addClickActionsToElement(document);
             if (!compareTree) {
                 $(".img-swap").each(function () {
                     this.src = this.src.replace("_on", "_off");
@@ -1280,6 +970,291 @@
         }
         if(!isFilterOnType){
             addTabNote(true,getContextHintNote(true));
+        }
+    }
+
+// code depricated below
+
+    function processChildV1(tree, total, depth) {
+        //skip sub tree for below given threshold
+        if (100 * tree.sz / total < Number(threshold)) {
+            return false;
+        }
+        let skip = false;
+
+        if (tree.ch == null) {
+            tree.ch = [];
+        }
+
+        tree.ch.forEach(function (child) {
+            if (skip || isSkipSubtree(child.sz, 0)) {
+                return;
+            }
+            if (100 * child.sz / total < Number(threshold)) {
+                treeHtml = treeHtml + "<li>...\n";
+                skip = true;
+            } else if (tree.ch.length > 0) {
+                treeHtml = treeHtml + getLi(child.sz, 0, total, child.nm, depth, 0);
+                treeHtml = treeHtml + "<ul>\n";
+                if (!processChildV1(child, total, depth + 1)) {
+                    treeHtml = treeHtml + "<li>...\n";
+                }
+                treeHtml = treeHtml + "</ul>\n";
+            }
+        });
+        return true;
+    }
+
+    function processChildV1Compare(tree, total, depth) {
+        //skip sub tree for below given threshold
+        if ((100 * (tree.bsz) / total < Number(threshold)) && (100 * ((tree.csz !== undefined) ? tree.csz : 0) / total < Number(threshold))) {
+            return false;
+        }
+        let skip = false;
+
+        if (tree.ch == null) {
+            tree.ch = [];
+        }
+
+        tree.ch.forEach(function (child) {
+            if (skip || isSkipSubtree(child.bsz, ((child.csz !== undefined) ? child.csz : 0))) {
+                return;
+            }
+            if (100 * (child.bsz + ((child.csz !== undefined) ? child.csz : 0)) / total < Number(threshold)) {
+                treeHtml = treeHtml + "<li>...\n";
+                skip = true;
+            } else if (tree.ch.length > 0) {
+                treeHtml = treeHtml + getLi(child.bsz, ((child.csz !== undefined) ? child.csz : 0), total, child.nm, depth, 0);
+                treeHtml = treeHtml + "<ul>\n";
+                if (!processChildV1Compare(child, total, depth + 1)) {
+                    treeHtml = treeHtml + "<li>...\n";
+                }
+                treeHtml = treeHtml + "</ul>\n";
+            }
+        });
+        return true;
+    }
+
+    function getLi(bsize, csize, total, name, depth, index) {
+        let color = "black";
+        let compareDiff = "";
+        let toolTip = "";
+        let diffPercent = "NA";
+        let bar = "";
+        if (compareTree) {
+            if (bsize === 0) {
+                color = "tclr";
+            } else if (csize === 0) {
+                color = "bclr"
+            }
+
+            if (bsize > 0 && csize > 0) {
+                diffPercent = csize - bsize;
+                if(diffPercent !== 0) {
+                    diffPercent = (100 * diffPercent / bsize).toFixed(2);
+                }
+                if (diffPercent === 0) {
+                    bar = "<div title=\"% diff \" class = \"rbar\" style=\"width:" + diffPercent + "px;\">&nbsp;</div>";
+                }else if (diffPercent > 0) {
+                    bar = "<div title=\"" +diffPercent+ "% increase \" class = \"rbar\" style=\"width:" + Math.log(diffPercent) * 2 + "px;\">&nbsp;</div>";
+                } else {
+                    bar = "<div title=\"" +diffPercent+ "% decrease\" class = \"ibar\" style=\"width:" + Math.log(Math.abs(diffPercent)) * 2 + "px;\">&nbsp;</div>";
+                }
+                diffPercent = " diff percent: " + diffPercent + " %";
+            }
+            compareDiff = "<span class=\"bclr\">" + (100 * (bsize) / total).toFixed(2) + "% </span>" + "<span class=\"tclr\">" + (100 * (csize) / total).toFixed(2) + "%&nbsp;</span>";
+            toolTip = "base: " + bsize + " new: " + csize + " diff: " + (csize - bsize) + diffPercent;
+        } else {
+            compareDiff = (100 * (bsize + csize) / total).toFixed(2) + "% " + (bsize + csize);
+        }
+
+        let tmpClass = "";
+        if (depth == 0) {
+            tmpClass = " class=\"expand\" index=" + index + " ";
+        }
+        if (isJfrContext == true) {
+            //return ["<li" , tmpClass , "><div class=\"subtree\">[" , depth , "] " , compareDiff , " </div>" , bar , "<span title=\"", toolTip, "\" class=\"", color, "\">&nbsp;", getFrameName(name), "</span>\n"].join('');
+            return "<li" + tmpClass + "><div class=\"subtree\">[" + depth + "] " + compareDiff + " </div>" + bar + "<span title=\"" + toolTip + "\" class=\"" + color + "\">&nbsp;" + getFrameName(name) + "</span>\n";
+        } else {
+            return "<li" + tmpClass + "><div class=\"subtree\">[" + depth + "] " + compareDiff + " </div>" + bar + "<span title=\"" + toolTip + "\" class=\"" + color + "\">&nbsp;" + name + "</span>\n";
+        }
+    }
+
+    function searchold() {
+        $("#search-flame").val(document.getElementById("search").value);
+
+        initSearchTree(document.getElementById("search").value);
+
+        const tree = document.querySelectorAll('ul.tree span');
+        for (let i = 0; i < tree.length; i++) {
+            tree[i].classList.remove('sc');
+            if (document.getElementById("search").value !== "" && tree[i].innerHTML.includes(document.getElementById("search").value)) {
+                searchCount++;
+                tree[i].classList.add('sc');
+                openParent(tree[i].parentElement, tree);
+            }
+        }
+        $("span.cct-search-guid").html("<strong> Search found " + searchCount + " matching frame(s)</strong>");
+    }
+
+    function initSearchTree(word) {
+        let treeToProcess;
+        treeToProcess = getActiveTree(getEventType(), isCalltree);
+
+        // if no data returned from our call don't try to parse it
+        if (treeToProcess === undefined) {
+            return;
+        }
+
+        const tree = document.querySelectorAll('ul.tree li.expand');
+        for (let i = 0; i < tree.length; i++) {
+            let index = Number(tree[i].getAttribute('index'));
+            if (searchWord(treeToProcess.ch[index], word)) {
+                expandTree(index, tree[i]);
+            }
+        }
+
+        if (!compareTree) {
+            $(".img-swap").each(function () {
+                this.src = this.src.replace("_on", "_off");
+            });
+        }
+    }
+
+    function initSearchTreeperfGenie(word) {
+        let treeToProcess;
+
+        treeToProcess = getActiveTree(getEventType(), isCalltree);
+
+        // if no data returned from our call don't try to parse it
+        if (treeToProcess === undefined) {
+            return;
+        }
+
+        const tree = document.querySelectorAll('ul.tree li.expand');
+        for (let i = 0; i < tree.length; i++) {
+            let index = Number(tree[i].getAttribute('index'));
+            //if (searchWord(treeToProcess.ch[index], word)) {
+            if (searchWord(treeIDMap[index], word)) {
+                expandTreeperfGenie(index, tree[i], Number(tree[i].getAttribute('t')), Number(parent.getAttribute('d')));
+            }
+        }
+
+        if (!compareTree) {
+            $(".img-swap").each(function () {
+                this.src = this.src.replace("_on", "_off");
+            });
+        }
+    }
+
+    function expandTree(index, element) {
+
+        let treeToProcess = getActiveTree(getEventType(), isCalltree); //getTreeToProcess();
+
+        // if no data returned from our call don't try to parse it
+        if (treeToProcess === undefined) {
+            return;
+        }
+
+        let selectedLevel = getSelectedLevel(treeToProcess);
+
+        treeHtml = "";
+        if (compareTree && isJfrContext) {
+            if (!processChildV1Compare(treeToProcess.ch[index], treeToProcess.bsz + treeToProcess.csz, 1)) {
+                treeHtml = treeHtml + "<li>...\n";
+            }
+        } else if (isJfrContext && selectedLevel !== FilterLevel.UNDEFINED) {
+            if (!processChildV1Level(treeToProcess.ch[index], treeToProcess.sz, 1, selectedLevel)) {
+                treeHtml = treeHtml + "<li>...\n";
+            }
+        } else if (isJfrContext) {
+            if (!processChildV1(treeToProcess.ch[index], treeToProcess.sz, 1)) {
+                treeHtml = treeHtml + "<li>...\n";
+            }
+        }
+
+        element.getElementsByTagName("ul")[0].innerHTML = treeHtml;
+        addClickActionsToElement(element.getElementsByTagName("ul")[0]);
+    }
+
+    function processChildV1Level(tree, total, depth, level) {
+        //skip sub tree for below given threshold
+        if (100 * tree[level] / total < Number(threshold)) {
+            return false;
+        }
+        let skip = false;
+
+        if (tree.ch == null) {
+            tree.ch = [];
+        }
+
+        tree.ch.forEach(function (child) {
+            if (skip || child[level] === undefined || child[level] === 0 || isSkipSubtree(child[level], 0)) {
+                return;
+            }
+            if (100 * child[level] / total < Number(threshold)) {
+                treeHtml = treeHtml + "<li>...\n";
+                skip = true;
+            } else if (tree.ch.length > 0) {
+                treeHtml = treeHtml + getLi(child[level], 0, total, child.nm, depth, 0);
+                treeHtml = treeHtml + "<ul>\n";
+                if (!processChildV1Level(child, total, depth + 1, level)) {
+                    treeHtml = treeHtml + "<li>...\n";
+                }
+                treeHtml = treeHtml + "</ul>\n";
+            }
+        });
+        return true;
+    }
+
+    function addClickActionsToElement(element) {
+        const tree = element.querySelectorAll('ul.tree div.subtree:not(:last-child)');
+        for (let i = 0; i < tree.length; i++) {
+            tree[i].addEventListener('click', function (e) {
+                const parent = $(e.target).closest("li")[0];
+                if (parent === undefined) {
+                    return;
+                }
+                const classList = parent.classList;
+                if (classList.contains("expand")) {
+                    classList.remove('expand');
+                    expandTree(Number(parent.getAttribute('index')), parent)
+                }
+
+                if (classList.contains("open")) {
+                    classList.remove('open');
+                    const opensubs = parent.querySelectorAll(':scope .open');
+                    for (let i = 0; i < opensubs.length; i++) {
+                        opensubs[i].classList.remove('open');
+                    }
+                } else {
+                    if (e.altKey) {
+                        classList.add('open');
+                        const opensubs = parent.querySelectorAll('li');
+                        for (let i = 0; i < opensubs.length; i++) {
+                            opensubs[i].classList.add('open');
+                        }
+                    } else {
+                        openNode(parent);
+                    }
+                }
+            });
+
+            tree[i].addEventListener('contextmenu', function (e) {
+                e.preventDefault();
+                const parent = $(e.target).closest("li")[0];
+                const classList = parent.classList;
+                if (classList.contains("expand")) {
+                    classList.remove('expand');
+                    expandTree(Number(parent.getAttribute('index')), parent)
+                }
+                createCCTModal("cctpopup", parent.innerHTML);
+                loadCCTModal("cctpopup");
+                setTimeout(function () {
+                    $('#cctpopup').focus();
+                }, 500);
+                return false;
+            });
         }
     }
 
