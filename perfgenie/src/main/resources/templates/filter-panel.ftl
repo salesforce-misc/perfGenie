@@ -3163,7 +3163,7 @@
 
         console.log("getToolBarOptions1 otherEvent: " + otherEvent + " customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " tableThreshold:"+tableThreshold);
 
-        let toolBarOptions = '<span title="JFR Event type">Data:</span> <select  style="height:30px;width:250px;text-align: center; " class="filterinput"  name="other-event-input" id="other-event-input">\n';
+        let toolBarOptions = '<span title="JFR Event type">Data:</span> <select  style="height:30px;width:200px;text-align: center; " class="filterinput"  name="other-event-input" id="other-event-input">\n';
         if (contextData != undefined && contextData.records != undefined) {
             let otherEventFound = false;
             if(!(otherEventFound == '' || otherEventFound == undefined)) {
@@ -3187,6 +3187,45 @@
             }
         }
         toolBarOptions += '             </select>';
+
+        toolBarOptions += '&nbsp;&nbsp;<span title="Context view format">Format:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="format-input" id="format-input">\n' +
+            '                            <option ' + (tableFormat == 0 ? "selected" : "") + ' value=0>table</option>\n' +
+            //'                            <option ' + (tableFormat == 1 ? "selected" : "") + ' value=1>percent</option>\n' +
+            '                            <option ' + (tableFormat == 2 ? "selected" : "") + ' value=2>thread request view</option>\n' +
+            '                            <option ' + (tableFormat == 3 ? "selected" : "") + ' value=3>metric timeline view</option>\n' +
+            '                    </select>';
+
+        
+        if (tableFormat == 2 || tableFormat == 3) {
+            toolBarOptions += '                        </select>' +
+                '&nbsp;&nbsp;<span title="Sort context view by event metric">Sort by:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="sort-input" id="sort-input">\n';
+            if (contextData != undefined && contextData.header != undefined) {
+
+                let sortByFound = false;
+                if(!(sortBy == '' || sortBy == undefined)) {
+                    for (let val in contextData.header[otherEvent]) {
+                        const tokens = contextData.header[otherEvent][val].split(":");
+                        if(sortBy == tokens[0] && sortBy != "timestamp"){
+                            sortByFound = true;
+                            break;
+                        }
+                    }
+                }
+
+                for (let val in contextData.header[otherEvent]) {
+                    const tokens = contextData.header[otherEvent][val].split(":");
+                    if((sortBy == '' || sortBy == undefined || !sortByFound) && !(tokens[1] == "text" || tokens[1] == "timestamp")){
+                        sortBy = tokens[0];
+                        sortByFound = true;
+                    }
+                    if (!(tokens[1] == "text" || tokens[1] == "timestamp")) {
+                        toolBarOptions += '<option ' + (sortBy == tokens[0] ? "selected" : "") + " value='" + tokens[0] + "'>" + tokens[0] + "</option>\n";
+                    }
+                }
+            }
+            toolBarOptions += '       </select> ';
+        }
+
         toolBarOptions += '&nbsp;&nbsp;<span title="Group by event measure">Group by:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="filter-input" id="filter-input">\n';
         toolBarOptions += "<option value='All records'>Show all records</option>";
 
@@ -3230,45 +3269,6 @@
         toolBarOptions +=    '&nbsp;&nbsp;<span title="Sub string match with group by option values">Match:</span><input  style="height:30px;width:120px;text-align: left;" class="filterinput" id="groupby-match" type="text" value="'+groupByMatch+'">\n';
 
 
-        toolBarOptions += '&nbsp;&nbsp;<span title="Context view format">Format:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="format-input" id="format-input">\n' +
-            '                            <option ' + (tableFormat == 0 ? "selected" : "") + ' value=0>table</option>\n' +
-            //'                            <option ' + (tableFormat == 1 ? "selected" : "") + ' value=1>percent</option>\n' +
-            '                            <option ' + (tableFormat == 2 ? "selected" : "") + ' value=2>thread request view</option>\n' +
-            '                            <option ' + (tableFormat == 3 ? "selected" : "") + ' value=3>metric timeline view</option>\n' +
-            '                    </select>';
-
-
-
-
-        if (tableFormat == 2 || tableFormat == 3) {
-            toolBarOptions += '                        </select>' +
-                '&nbsp;&nbsp;<span title="Sort context view by event metric">Sort by:</span> <select  style="height:30px;width:60px;text-align: center; " class="filterinput"  name="sort-input" id="sort-input">\n';
-            if (contextData != undefined && contextData.header != undefined) {
-
-                let sortByFound = false;
-                if(!(sortBy == '' || sortBy == undefined)) {
-                    for (let val in contextData.header[otherEvent]) {
-                        const tokens = contextData.header[otherEvent][val].split(":");
-                        if(sortBy == tokens[0] && sortBy != "timestamp"){
-                            sortByFound = true;
-                            break;
-                        }
-                    }
-                }
-
-                for (let val in contextData.header[otherEvent]) {
-                    const tokens = contextData.header[otherEvent][val].split(":");
-                    if((sortBy == '' || sortBy == undefined || !sortByFound) && !(tokens[1] == "text" || tokens[1] == "timestamp")){
-                        sortBy = tokens[0];
-                        sortByFound = true;
-                    }
-                    if (!(tokens[1] == "text" || tokens[1] == "timestamp")) {
-                        toolBarOptions += '<option ' + (sortBy == tokens[0] ? "selected" : "") + " value='" + tokens[0] + "'>" + tokens[0] + "</option>\n";
-                    }
-                }
-            }
-            toolBarOptions += '       </select> ';
-        }
         if (tableFormat == 3) {
             toolBarOptions += '                        </select>' +
                 '&nbsp;&nbsp;<span title="Show time series by cumulative/abolute diff">Line:</span> <select  style="height:30px;text-align: center; " class="filterinput"  name="line-type" id="line-type">\n' +
