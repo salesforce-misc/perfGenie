@@ -561,6 +561,9 @@
                         treeIDMap[totalLiCount] = child;
                         child.id=totalLiCount;
                     }
+                    if(depth == 1 && getFrameName(child.nm) === "java.util.HashMap.putVal"){
+                        console.log("check1");
+                    }
                     treeHtml = treeHtml + getLiperfGenie(child[level], 0, total, child.nm, depth, 0, child.id); // already expanding
                     treeHtml = treeHtml + "<ul>\n";
                     if (!processChildV1LevelperfGenie(child, total, depth + 1, level)) {
@@ -582,6 +585,9 @@
                         totalLiCount++;
                         treeIDMap[totalLiCount] = child;
                         child.id=totalLiCount;
+                    }
+                    if(depth == 1 && getFrameName(child.nm) === "java.util.HashMap.putVal"){
+                        console.log("check2");
                     }
                     treeHtml = treeHtml + getLiperfGenie(child[level], 0, total, child.nm, depth, tree.ch.length, child.id);
                     treeHtml = treeHtml + "<ul></ul>\n";
@@ -819,6 +825,9 @@
     }
 
     function openNode(n) {
+        if(n.className.includes('expand')){
+            return;
+        }
         const children = n.children;
         for (let i = 0; i < children.length; i++) {
             if (children[i].nodeName == 'UL') {
