@@ -7,7 +7,7 @@
 */
 </script>
 
-<div style="padding-left: 25px;">
+<div  class='ui-widget' style="padding-left: 25px;">
     <label>Profile: </label>
     <select style="height:30px;text-align: center;" class="filterinput" name="event-type-surface"
             id="event-type-surface">

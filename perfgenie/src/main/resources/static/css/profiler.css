@@ -2,6 +2,10 @@
     display: none;
 }
 
+.ui-widget {
+    font-size:95% !important;
+}
+
 #cct-actual-guid {
     font-family: 'Arial', serif;
 }

@@ -35,6 +35,7 @@
         <li><a href="#river">River view</a></li>
         <li><a href="#surface">Hotspot surface</a></li>
         <li><a href="#tsview">Thread state view</a></li>
+        <li><a href="#diagnostics">Diagnostics data</a></li>
     </ul>
     <div id="view-info" class="ui-state-highlight ui-widget-header ui-corner-all" style="float: right !important;display:none">
         <span class="ui-icon ui-icon-info"></span> <span id="view-info-text"></span>
@@ -56,6 +57,9 @@
     </div>
     <div id="tsview">
         <#include "tsview.ftl">
+    </div>
+    <div id="tsview">
+        <#include "diagnostics.ftl">
     </div>
 </div>
 <div id="modals-guid" class="col-lg-12">

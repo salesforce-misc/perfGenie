@@ -1269,7 +1269,7 @@
 
 </script>
 <div id="cctnote"></div>
-<div style="padding-left: 25px;">
+<div  class='ui-widget' style="padding-left: 25px;">
     <a title='Compress' href='javascript:treeView(1)'><i style="font-size:18px" class="fa fa-minus-square-o"
                                                          aria-hidden="true"></i></a>
     <img title='Base (blue), Common (black) and New (beige)' style="cursor: pointer" opt=1 class="img-swap" height="24px"

@@ -436,7 +436,7 @@
 
         contextTablePage = Number(contextTablePage);
 
-        let str = "<table style=\"width: 100%;\" id=\"state-table\" class=\" \"><thead><tr><th><select style=\"border: 0px;\" class=\"\"  name=\"filtertable-input\" id=\"filtertable-input\"> <option value=\"org\">orgId</option> <option value=\"user\">userId</option> <option value=\"log\">logRecordType</option> <option value=\"reqId\">reqId</option> </select></th><th>cpuTime</th><th>runTime</th><th>gcTime</th><th><select style=\"border: 0px;\" class=\"\"  name=\"filtertable-input\" id=\"filtertable-input\"> <option value=\"org\">dbTime</option> <option value=\"user\">safepointTime</option> <option value=\"log\">apexTime</option> <option value=\"reqId\">dbCpu</option> </select></th></tr></thead>";
+       /* let str = "<table style=\"width: 100%;\" id=\"state-table\" class=\" \"><thead><tr><th><select style=\"border: 0px;\" class=\"\"  name=\"filtertable-input\" id=\"filtertable-input\"> <option value=\"org\">orgId</option> <option value=\"user\">userId</option> <option value=\"log\">logRecordType</option> <option value=\"reqId\">reqId</option> </select></th><th>cpuTime</th><th>runTime</th><th>gcTime</th><th><select style=\"border: 0px;\" class=\"\"  name=\"filtertable-input\" id=\"filtertable-input\"> <option value=\"org\">dbTime</option> <option value=\"user\">safepointTime</option> <option value=\"log\">apexTime</option> <option value=\"reqId\">dbCpu</option> </select></th></tr></thead>";
         str = str + "</table>";
         document.getElementById("statetable").innerHTML = str;
         $('#state-table').DataTable({
@@ -447,7 +447,7 @@
                 "orderable": false
             }],
             "sDom": '<"toolbar">frtip'
-        });
+        });*/
 
         groupBy = urlParams.get('groupBy') || '';
         tableFormat = urlParams.get('tableFormat') || '0';
@@ -983,16 +983,16 @@
 
             let sampleType = eventType;
 
-            let stacktrace = "<table  style=\"border: 0px;\">";
+            let stacktrace = "<table class='ui-widget' style=\"border: none;\">";
             let tmpcontextTree1Level1 = getStackFrameV1("root");
             let tmpActiveTree = getActiveTree(eventType, false);
             updateStackIndex(tmpActiveTree); //at this point tree must be indexed on LEVEL2
 
             let arr = getTreeStack(tmpActiveTree, stackid, tmpcontextTree1Level1, 1);
             let ch = tmpcontextTree1Level1.ch;
-            stacktrace = stacktrace + "<tr><td>" + moment.utc(time).format('YYYY-MM-DD HH:mm:ss.SSS') + " - " + sampleType + "<p></p></td></tr>";
+            stacktrace = stacktrace + "<tr style='border: none' ><td style='border:none' >" + moment.utc(time).format('YYYY-MM-DD HH:mm:ss.SSS') + " - " + getProfileName(sampleType) + "<p></p></td></tr>";
             while (ch !== undefined && ch != null && ch.length == 1) {
-                stacktrace = stacktrace + "<tr><td>" + getFrameName(ch[0].nm) + "</td></tr>";
+                stacktrace = stacktrace + "<tr style='border: none'><td style='border:none'>" + getFrameName(ch[0].nm) + "</td></tr>";
                 ch = ch[0].ch;
             }
             stacktrace = stacktrace + "</table>";
@@ -1763,7 +1763,7 @@
             multiSelectEmpty = true;
         }
         for (let eventType in jfrprofiles1) {//for all profile event types
-            timelinetitleIDHTML += "<option " + ((multiSelectEmpty || multiSelect[eventTypeCount] != undefined) ? "selected" : "") + " value=" + eventTypeCount + ">" + eventType + "</option>";
+            timelinetitleIDHTML += "<option " + ((multiSelectEmpty || multiSelect[eventTypeCount] != undefined) ? "selected" : "") + " value=" + eventTypeCount + ">" + getProfileName(eventType) + "</option>";
             if (multiSelectEmpty) {
                 multiSelect[eventTypeCount] = "selected";
             }
@@ -1778,7 +1778,7 @@
         str = str + "<tr><td style=\"white-space: nowrap;\" title='total samples collected in this request'>samples</td><td style=\"white-space: nowrap;padding-left: 5px;\" >" + scount + " </td></tr>";
         if (str != "") {
             table = table + colorStackStr;
-            table = table + "<table style=\"width:100%; padding: 0px;\" class=\" table-striped\" >";
+            table = table + "<table  style=\"border-left: none; border-right: none; width:100%; padding: 0px;\" class=\"ui-widget table-striped\" >";
             table = table + str;
             table = table + "</table>";
 
@@ -2325,7 +2325,7 @@
             if (curI >= countMax) {
                 break;
             }
-            let legend = (100 * value1 / groupByCountSum).toFixed(2) + "% " + type + ":"+sortBy;
+            let legend = (groupByCountSum == 0 ? 0 :(100 * value1 / groupByCountSum).toFixed(2)) + "% " + type + ":"+sortBy;
 
             curI++
             pincolor[type] = tmpColorMap.get(type);
@@ -2448,7 +2448,7 @@
 
     function addContextHints() {
         let eventToUse = $("#event-input").val();
-        let table = "<table style='border-spacing: 2px; border-collapse: separate;border: hidden'><tr><td style='border: hidden'  id='filter-heading'>Context hints:</td>";
+        let table = "<table  class='ui-widget' style='border-spacing: 2px; border-collapse: separate;border: hidden'><tr><td style='border: hidden'  id='filter-heading'>Context hints:</td>";
         if (contextData != undefined && contextData.header != undefined) {
             for (let val in contextData.header[eventToUse]) {
                 const tokens = contextData.header[eventToUse][val].split(":");
@@ -3289,7 +3289,7 @@
             toolBarOptions += '<button title="pin a copy of this chart below" style="cursor: pointer;" id="pin-input" class="btn-info" type="submit">PIN</button>&nbsp;<button title="copy this chart series onto pinned charts" style="cursor: pointer;" id="add-chart" class="btn-info" type="submit">LOAD</button>';
         }
 
-        if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
+        if ((groupBy == "" || groupBy == undefined || groupBy == "All records") && tableFormat != 3 ) {
             toolBarOptions += '                        </select>' +
                 '&nbsp;&nbsp;<span title="Show events above selected metric value">Threshold:</span> <select  style="height:30px;text-align: center; " class="spanMetric"  name="table-threshold" id="table-threshold">\n';
             if (contextData != undefined && contextData.header != undefined) {
@@ -3727,6 +3727,7 @@
         processCustomEvents();
         populateEventInputOptions("event-input");
         setToolBarOptions("statetabledrp");
+        loadDiagData1();
     }
 
     function setContextTreeFrames(frames, count){
@@ -3906,7 +3907,7 @@
             return "MessageQueueActive";
         }else if( type == 10){
             return "DbConnectionContext";
-        }else if(type = 12){
+        }else if(type == 12){
             return "CptskContext";
         }else if(type == 13) {//todo test
             return "SearchContext";
@@ -5179,10 +5180,10 @@
             <hr style="border-top: 1px solid #599BCE"/>
 
             <div class="row form-group" id="statetablewrapper" class="statetablewrapper col-lg-12">
-                <div id="statetabledrp" class="statetabledrop col-lg-12">
+                <div id="statetabledrp" class="ui-widget statetabledrop col-lg-12">
                 </div>
 
-                <div id="statetable" class="statetable col-lg-12">
+                <div id="statetable" class="ui-widget statetable col-lg-12">
                 </div>
             </div>
             <div class="row">

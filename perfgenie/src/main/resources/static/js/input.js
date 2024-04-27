@@ -319,8 +319,67 @@ function getMetaData1(start, end, tenant, host) {
             hideSpinner();
             metaData1 = result;
             populateIDs1(tenant, host);
+            loadDiagData1();
         }
     });
+}
+
+function loadDiagData1(){
+    let records = {};
+    let header = {};
+
+    for (let key in metaData1) {
+        if(metaData1[key].metadata.name != undefined) {
+            let dimExists = false;
+            for(let dim in metaData1[key].dimensions) {
+                if(dim.charAt(0) !== '.' && dim !== 'exit_code') {
+                    dimExists=true;
+                    break;
+                }
+            }
+
+            if (dimExists) {
+                let headerExists = true;
+                if (header[metaData1[key].metadata.name] == undefined) {
+                    header[metaData1[key].metadata.name] = [];
+                    header[metaData1[key].metadata.name].push("timestamp:timestamp");
+                    header[metaData1[key].metadata.name].push("name:text");
+                    headerExists=false;
+                }
+                if (records[metaData1[key].metadata.name] == undefined) {
+                    records[metaData1[key].metadata.name] = {};
+                    records[metaData1[key].metadata.name][1] = [];
+                }
+                let record = [];
+
+
+                record.push(metaData1[key].timestampMillis);
+                record.push(metaData1[key].metadata.name);
+
+                for(let dim in metaData1[key].dimensions)
+                {
+                    if(dim.charAt(0) !=='.' && dim !== 'exit_code'){
+                        if(!headerExists){
+                            header[metaData1[key].metadata.name].push(dim+":number");
+                        }
+                        record.push(Number(metaData1[key].dimensions[dim]));
+                    }
+                }
+                records[metaData1[key].metadata.name][1].push({"record" : record});
+            }
+        }
+    }
+    for (let key in header) {
+        otherEventsFetched[key]=true;
+        contextData.header[key] = header[key];
+    }
+    for (let key in records) {
+        contextData.records[key] = records[key];
+        $('#other-event-input').append($('<option>', {
+            value: key,
+            text: key
+        }));
+    }
 }
 
 function getMetaData2(start, end, tenant, host) {

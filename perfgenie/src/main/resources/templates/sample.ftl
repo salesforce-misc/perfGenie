@@ -6,7 +6,7 @@
 * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
 */
 </script>
-<div style="padding-left: 25px;">
+<div class='ui-widget' style="padding-left: 0px;">
     <label>Profile: </label>
     <select  style="height:30px;text-align: center;" class="filterinput" name="event-type-sample" id="event-type-sample">
 
@@ -27,13 +27,13 @@
 
 
 <div class="row">
-    <div class="col-lg-8">
+    <div class="col-lg-7">
         <div style="overflow: auto; padding-left: 0px; width: 100%;" class="cct-customized-scrollbar">
-            <div id="sampletable" class="sampletable col-lg-12">
+            <div style="padding: 0px !important;"  id="sampletable" class="ui-widget sampletable col-lg-12">
             </div>
         </div>
     </div>
-    <div id="quick-stack-view" class="col-lg-4">
+    <div style="padding-left: 0px !important;" id="quick-stack-view" class="col-lg-5">
         <a id="detail-stack-view-link" target="_blank"></a>
         <label id="stack-view-java-label-guid" for="stack-view-guid" >Stack Trace</label>
         <pre class="small" style="max-height: 900px; min-height: 900px; overflow-y: scroll;" id="stack-view-guid" >
@@ -761,15 +761,15 @@
             samplerowIndex++;
 
             for(let [key1, value1] of sampleCountMap.get(key)){
-                if(count < 5) {
+                if(count < 8) {
                     if(order == 0) {
                         order = value1;
                     }
-                    str = str + "<div style=\"cursor: pointer;\" data-ga-category=\"samples-table\" data-ga-action=\"show-stack\" id=\"+ key1 + \" class=\"send-ga stack-badge badge stack" + key1 + "\" onclick=\"showSampleStack('" + key1 + "');\">" + (100 * value1 / value).toFixed(2) + "%, " + value1 + "</div>&nbsp;";
+                    str = str + "<div style=\"style='font-size: 12px; cursor: pointer;\" data-ga-category=\"samples-table\" data-ga-action=\"show-stack\" id=\"+ key1 + \" class=\"send-ga stack-badge badge stack" + key1 + "\" onclick=\"showSampleStack('" + key1 + "');\">" + (100 * value1 / value).toFixed(2) + "%, " + value1 + "</div>";
                 }else{
                     if(morec < 25) {
                         morec++;
-                        more = more + "<div style=\"display: none; cursor: pointer;\"   class=\"stack-badge badge stack" + key1 + " hidden-stacks-" + hashCode(key) + "\" onclick=\"showSampleStack('" + key1 + "');\">" + (100 * value1 / value).toFixed(2) + "%, " + value1 + "</div>&nbsp;";
+                        more = more + "<div style=\"display: none; cursor: pointer;\"   class=\"stack-badge badge stack" + key1 + " hidden-stacks-" + hashCode(key) + "\" onclick=\"showSampleStack('" + key1 + "');\">" + (100 * value1 / value).toFixed(2) + "%, " + value1 + "</div>";
                     }else{
                         skipc++;
                     }
@@ -793,8 +793,8 @@
                 addContextTableOrderRow(sampleTableRows[samplerowIndex], str, order);
             }else{*/
 
-            sfSampleTable.addContextTableRow(sampleTableRows[samplerowIndex], ("<label style=\"cursor: pointer; word-wrap: break-word; width: 300px\" >" + (key == undefined ? "NA" : key) + "</label>"), "hint='"+groupBySamples+"'");
-            sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], ("<b>" + value+ "</b>&nbsp;<div class=\"badge badge-info\"> " + (100 * value / totalSampleCount).toFixed(3) + "</div>"), value);
+            sfSampleTable.addContextTableRow(sampleTableRows[samplerowIndex], ("<div style=\"cursor: pointer; word-wrap: break-word;\" >" + (key == undefined ? "NA" : key) + "</div>"), "hint='"+groupBySamples+"'");
+            sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], ("<div class=\"badge badge-info\"><span style='font-size: 12px; color:black'>"+value+"</span> " + (100 * value / totalSampleCount).toFixed(3) + "%</div>"), value);
             sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], str, order);
 
            // }

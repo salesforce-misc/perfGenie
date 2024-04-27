@@ -7,7 +7,7 @@
  */
 </script>
 
-<div style="padding-left: 25px;">
+<div  class='ui-widget' style="padding-left: 0px;">
     <img title='Base (blue), Common (black) and New (beige)' style="cursor: pointer" opt=1 class="img-swap" height="24px"
          align="middle" src="/images/aub_on.png">
     <img title='Base (blue) and Common (black)' style="cursor: pointer" opt=2 height="24px" class="img-swap" align="middle"

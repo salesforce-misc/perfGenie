@@ -49,11 +49,11 @@ class SFDataTable {
             this.SFDataTableSort(1);
         }
 
-        let table = "<table id='"+this.#sfDataTableID+"' class='alternate_color'>\n";
+        let table = this.SFDataTableGetToolBar() + "<table style='padding: 1px !important;' id='"+this.#sfDataTableID+"' class='ui-widget alternate_color'>\n";
         table += this.SFDataTableGetHeader();
         table += this.SFDataTableGetRows();
         table += "</table>";
-        table += this.SFDataTableGetToolBar();
+        //table += this.SFDataTableGetToolBar();
         document.getElementById(this.#SFDataTableID).innerHTML = table;
     }
 
@@ -63,9 +63,13 @@ class SFDataTable {
             for (let i = this.#SFDataTablePageSize * this.#SFDataTablePage; i < this.#SFDataTableRows.length; i++) {
                 for (let j = 0; j < this.#SFDataTableRows[i].length; j++) {
                     if (isNaN(this.#SFDataTableRows[i][j].v)) {
-                        if (this.#SFDataTableRows[i][j].v.includes(this.#SFDataTableSearchStr)) {
-                            this.#SFDataTableSearchMatchedRows.push(i);
-                            break;
+                        try {
+                            if (this.#SFDataTableRows[i][j].v.includes(this.#SFDataTableSearchStr)) {
+                                this.#SFDataTableSearchMatchedRows.push(i);
+                                break;
+                            }
+                        } catch (e) {
+                            //console.log("ignore");
                         }
                     } else {
                         if (this.#SFDataTableRows[i][j].v != null && this.#SFDataTableRows[i][j].v.toString().includes(this.#SFDataTableSearchStr)) {
@@ -166,13 +170,16 @@ class SFDataTable {
     }
 
     SFDataTableGetToolBar() {
-        let toolbar = "";
-        toolbar += " Search: <input type='text' style='border: 1px solid #E8EAEC;' id='"+this.#sfSearchID+"' class='' name='SFSearch'  value='" + (this.#SFDataTableSearchStr == undefined ? "" : this.#SFDataTableSearchStr) + "'onkeypress='if(event.keyCode == 13) javascript:"+this.#instanceName+".SFSearch()'>";
+        let toolbar = "<div class='ui-widget' style='padding-top: 5px !important;'>";
+        toolbar += " Search: <input type='text' style='border: 1px solid #E8EAEC;' id='" + this.#sfSearchID + "' class='ui-widget' name='SFSearch'  value='" + (this.#SFDataTableSearchStr == undefined ? "" : this.#SFDataTableSearchStr) + "'onkeypress='if(event.keyCode == 13) javascript:" + this.#instanceName + ".SFSearch()'>";
+
+        toolbar += "<a title='Search' id='" + this.#sfSearchID + "table' href='javascript:" + this.#instanceName + ".SFSearch()'><i style=\"font-size:18px;\" class=\"fa fa-search\" aria-hidden=\"true\"></i></a>";
+
 
         if (this.#SFDataTablePage == 0) {
-            toolbar += "<button disabled=true id='"+this.#sfPaginationID+"' style='border-color: #f9f9f9;' class='' type='submit' onClick='javascript:"+this.#instanceName+".SFhandlePrevious()'>Previous</button>";
+            toolbar += "<button  disabled=true id='" + this.#sfPaginationID + "' style='border-color: #f9f9f9;' type='submit' onClick='javascript:" + this.#instanceName + ".SFhandlePrevious()'>Previous</button>";
         } else {
-            toolbar += "<button  id='"+this.#sfPaginationID+"' style='border-color: #f9f9f9;' type='submit' onClick='javascript:"+this.#instanceName+".SFhandlePrevious()'>Previous</button>";
+            toolbar += "<button  id='" + this.#sfPaginationID + "' style='border-color: #f9f9f9;' type='submit' onClick='javascript:" + this.#instanceName + ".SFhandlePrevious()'>Previous</button>";
         }
 
         let total = 0;
@@ -188,26 +195,26 @@ class SFDataTable {
 
         if (total > 7) {
             if (0 == this.#SFDataTablePage) {
-                toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='javascript:"+this.#instanceName+".SFhandlePaginationClick(" + 1 + ")'>" + 1 + "</button>";
+                toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='javascript:" + this.#instanceName + ".SFhandlePaginationClick(" + 1 + ")'>" + 1 + "</button>";
             } else {
-                toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='javascript:"+this.#instanceName+".SFhandlePaginationClick(" + 1 + ")'>" + 1 + "</button>";
+                toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='javascript:" + this.#instanceName + ".SFhandlePaginationClick(" + 1 + ")'>" + 1 + "</button>";
             }
 
             if (total - (this.#SFDataTablePage + 1) < 4) {//is it in the last 5
                 toolbar += "<button active style='border-color: #f9f9f9;' class=''>...</button>";
                 for (let i = total - 5; i < total - 1; i++) {
                     if (i == this.#SFDataTablePage) {
-                        toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='javascript:"+this.#instanceName+".SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
+                        toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='javascript:" + this.#instanceName + ".SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
                     } else {
-                        toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='javascript:"+this.#instanceName+".SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
+                        toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='javascript:" + this.#instanceName + ".SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
                     }
                 }
             } else if ((this.#SFDataTablePage + 1) - 1 < 4) {//is it in the first 5
                 for (let i = 1; i < 5; i++) {
                     if (i == this.#SFDataTablePage) {
-                        toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='javascript:"+this.#instanceName+".SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
+                        toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='javascript:" + this.#instanceName + ".SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
                     } else {
-                        toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='javascript:"+this.#instanceName+".SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
+                        toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='javascript:" + this.#instanceName + ".SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
                     }
                 }
                 toolbar += "<button active style='border-color: #f9f9f9;' class=''>...</button>";
@@ -215,25 +222,25 @@ class SFDataTable {
                 toolbar += "<button active style='border-color: #f9f9f9;' class=''>...</button>";
                 for (let i = this.#SFDataTablePage - 1; i < this.#SFDataTablePage + 2; i++) {
                     if (i == this.#SFDataTablePage) {
-                        toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='javascript:"+this.#instanceName+".SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
+                        toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='javascript:" + this.#instanceName + ".SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
                     } else {
-                        toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='javascript:"+this.#instanceName+".SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
+                        toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='javascript:" + this.#instanceName + ".SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
                     }
                 }
                 toolbar += "<button active style='border-color: #f9f9f9;' class=''>...</button>";
             }
             if (total == this.#SFDataTablePage + 1) {
-                toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='javascript:"+this.#instanceName+".SFhandlePaginationClick(" + total + ")'>" + total + "</button>";
+                toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='javascript:" + this.#instanceName + ".SFhandlePaginationClick(" + total + ")'>" + total + "</button>";
             } else {
-                toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='javascript:"+this.#instanceName+".SFhandlePaginationClick(" + total + ")'>" + total + "</button>";
+                toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='javascript:" + this.#instanceName + ".SFhandlePaginationClick(" + total + ")'>" + total + "</button>";
             }
         } else {
             //all
             for (let i = 0; i < total; i++) {
                 if (i == this.#SFDataTablePage) {
-                    toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='javascript:"+this.#instanceName+".SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
+                    toolbar += "<button active style='border-color: #9be3e5;' class='' onClick='javascript:" + this.#instanceName + ".SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
                 } else {
-                    toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='javascript:"+this.#instanceName+".SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
+                    toolbar += "<button active style='border-color: #f9f9f9;' class='' onClick='javascript:" + this.#instanceName + ".SFhandlePaginationClick(" + (i + 1) + ")'>" + (i + 1) + "</button>";
                 }
             }
         }
@@ -241,18 +248,18 @@ class SFDataTable {
 
         if (this.#SFDataTableSearchStr != undefined) {
             if (this.#SFDataTablePageSize * this.#SFDataTablePage + this.#SFDataTablePageSize < this.#SFDataTableSearchMatchedRows.length) {
-                toolbar += "<button id='"+this.#sfPaginationID+"' class='' style='border-color: #f9f9f9;' type='submit' onClick='javascript:"+this.#instanceName+".SFhandleNext()'>Next</button>";
+                toolbar += "<button id='" + this.#sfPaginationID + "' class='' style='border-color: #f9f9f9;' type='submit' onClick='javascript:" + this.#instanceName + ".SFhandleNext()'>Next</button>";
             } else {
-                toolbar += "<button disabled=true id='"+this.#sfPaginationID+"' class='' style='border-color: #f9f9f9;' type='submit' onClick='javascript:"+this.#instanceName+".SFhandleNext()'>Next</button>";
+                toolbar += "<button disabled=true id='" + this.#sfPaginationID + "' class='' style='border-color: #f9f9f9;' type='submit' onClick='javascript:" + this.#instanceName + ".SFhandleNext()'>Next</button>";
             }
         } else {
             if (this.#SFDataTablePageSize * this.#SFDataTablePage + this.#SFDataTablePageSize < this.#SFDataTableRows.length) {
-                toolbar += "<button id='"+this.#sfPaginationID+"' class='' style='border-color: #f9f9f9;' type='submit' onClick='javascript:"+this.#instanceName+".SFhandleNext()'>Next</button>";
+                toolbar += "<button id='" + this.#sfPaginationID + "' class='' style='border-color: #f9f9f9;' type='submit' onClick='javascript:" + this.#instanceName + ".SFhandleNext()'>Next</button>";
             } else {
-                toolbar += "<button disabled=true id='"+this.#sfPaginationID+"' style='border-color: #f9f9f9;' class='' type='submit' onClick='javascript:"+this.#instanceName+".SFhandleNext()'>Next</button>";
+                toolbar += "<button disabled=true id='" + this.#sfPaginationID + "' style='border-color: #f9f9f9;' class='' type='submit' onClick='javascript:" + this.#instanceName + ".SFhandleNext()'>Next</button>";
             }
         }
-        return toolbar;
+        return toolbar + "</div>";
     }
 
     SFDataTableGetHeader() {
