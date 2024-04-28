@@ -2041,8 +2041,9 @@
             .style("text-anchor", "start");
     }
 
-    function drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, chartHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered, customEvent) {
+    function drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, chartHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered, customEvent, groupByTypeSortByMetricMap) {
         let viewNote = '';
+
         if(!isContextViewFiltered){
             if(customEvent == otherEvent){
                 viewNote = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>" + getOtherHintNote(false, otherEvent) + "</div>";
@@ -2097,7 +2098,14 @@
             contextDataRecords = contextData.records[customEvent];
         }
 
+        let curI = 0;
+        let countMax = seriesCount;
         for (let [tid, value] of tidSortByMetricMap) {
+            if (curI >= countMax) {
+                break;
+            }
+            curI++;
+
             let curTime = minStart;
             let x = 0;
             for (let index of filteredTidRequests[tid]) {
@@ -2688,7 +2696,7 @@
     }
 
 
-
+/*
     function genRequestTableWithDataTables() { //deprecated
 
         console.log("genRequestTable start");
@@ -3058,7 +3066,7 @@
             enableDataTable(order);
         }
         setToolBarOptions("statetabledrp");
-        /*
+
         $("#event-input").on("change", (event) => {
             updateUrl("customevent", $("#event-input").val(), true);
             customEvent = $("#event-input").val();
@@ -3066,7 +3074,7 @@
             //setToolBarOptions("statetabledrp");
             //genRequestTable();
             //updateRequestView();
-        });*/
+        });
         $("#filter-input").on("change", (event) => {
             updateUrl("groupBy", $("#filter-input").val(), true);
             groupBy = $("#filter-input").val();
@@ -3129,6 +3137,7 @@
         let end = performance.now();
         console.log("genRequestTable 1 time:")
     }
+    */
 
     function enableDataTable(order) {
         /*
@@ -3199,8 +3208,10 @@
 
 
         if (tableFormat == 2 || tableFormat == 3) {
+
             toolBarOptions += '                        </select>' +
-                '&nbsp;&nbsp;<span title="Sort context view by event metric">Sort by:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="sort-input" id="sort-input">\n';
+                '&nbsp;&nbsp;<span title="Sort context view by event metric">'+ ((tableFormat == 2)? "Sort by": "Series") +':</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="sort-input" id="sort-input">\n';
+
             if (contextData != undefined && contextData.header != undefined) {
 
                 let sortByFound = false;
@@ -3228,15 +3239,20 @@
             toolBarOptions += '       </select> ';
         }
 
-        toolBarOptions += '&nbsp;&nbsp;<span title="Group by event measure">Group by:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="filter-input" id="filter-input">\n';
-        toolBarOptions += "<option value='All records'>Show all records</option>";
+        toolBarOptions += '&nbsp;&nbsp;<span title="Group by event dimension">Group by:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="filter-input" id="filter-input">\n';
+
+        if (tableFormat == 0) {
+            toolBarOptions += "<option value='All records'>Show all records</option>";
+        }
 
 
         if (contextData != undefined && contextData.header != undefined) {
             let groups = [];
             for (let val in contextData.header[otherEvent]) {
                 const tokens = contextData.header[otherEvent][val].split(":");
-                if (tokens[1] == "text" || tokens[1] == "timestamp") {
+                if (tokens[1] == "text") {
+                    groups.push(tokens[0]);
+                }else if(tokens[1] == "timestamp" && tableFormat == 0){
                     groups.push(tokens[0]);
                 }
             }
@@ -3273,13 +3289,13 @@
 
         if (tableFormat == 3) {
             toolBarOptions += '                        </select>' +
-                '&nbsp;&nbsp;<span title="Show time series by cumulative/abolute diff">Line:</span> <select  style="height:30px;text-align: center; " class="filterinput"  name="line-type" id="line-type">\n' +
+                '&nbsp;&nbsp;<span title="Show time series by cumulative/abolute diff">Value:</span> <select  style="height:30px;text-align: center; " class="filterinput"  name="line-type" id="line-type">\n' +
                 '                            <option ' + (cumulativeLine == 0 ? "selected" : "") + ' value=0>cumulative</option>\n' +
                 '                            <option ' + (cumulativeLine == 1 ? "selected" : "") + ' value=1>absolute diff</option>\n' +
                 '                            </select> ';
 
             toolBarOptions += '                        </select>' +
-                '&nbsp;&nbsp;<span title="Show top N">Top:</span> <select  style="height:30px;text-align: center; " class="filterinput"  name="line-count" id="line-count">\n' +
+                '&nbsp;&nbsp;<span title="Show top N series">Top:</span> <select  style="height:30px;text-align: center; " class="filterinput"  name="line-count" id="line-count">\n' +
                 '                            <option ' + (seriesCount == 5 ? "selected" : "") + ' value=5>5</option>\n' +
                 '                            <option ' + (seriesCount == 10 ? "selected" : "") + ' value=10>10</option>\n' +
                 '                            <option ' + (seriesCount == 15 ? "selected" : "") + ' value=15>15</option>\n' +
@@ -3289,6 +3305,20 @@
                 '                            <option ' + (seriesCount == 40 ? "selected" : "") + ' value=40>40</option>\n' +
                 '                            </select> ';
             toolBarOptions += '<button title="pin a copy of this chart below" style="cursor: pointer;" id="pin-input" class="btn-info" type="submit">PIN</button>&nbsp;<button title="copy this chart series onto pinned charts" style="cursor: pointer;" id="add-chart" class="btn-info" type="submit">LOAD</button>';
+        }
+
+        if (tableFormat == 2) {
+
+            toolBarOptions += '                        </select>' +
+                '&nbsp;&nbsp;<span title="Show top N threads">Top:</span> <select  style="height:30px;text-align: center; " class="filterinput"  name="line-count" id="line-count">\n' +
+                '                            <option ' + (seriesCount == 100 ? "selected" : "") + ' value=100>100</option>\n' +
+                '                            <option ' + (seriesCount == 50 ? "selected" : "") + ' value=50>50</option>\n' +
+                '                            <option ' + (seriesCount == 200 ? "selected" : "") + ' value=200>200</option>\n' +
+                '                            <option ' + (seriesCount == 500 ? "selected" : "") + ' value=500>500</option>\n' +
+                '                            <option ' + (seriesCount == 1000 ? "selected" : "") + ' value=1000>1000</option>\n' +
+                '                            <option ' + (seriesCount == 5000 ? "selected" : "") + ' value=5000>5000</option>\n' +
+                '                            <option ' + (seriesCount == 10000 ? "selected" : "") + ' value=10000>10000</option>\n' +
+                '                            </select> ';
         }
 
         if ((groupBy == "" || groupBy == undefined || groupBy == "All records") && tableFormat != 3 ) {
@@ -3763,6 +3793,7 @@
                 let tooltips = {};
                 let logContext = "logContext";
                 let lastKey = "";
+                let lastReq = "";
                 for (var tid in contextData.records) {
 
                     contextData.records[tid].sort(function (a, b) {
@@ -3804,8 +3835,10 @@
                                 if (joinRecords[tid] == undefined) {
                                     joinRecords[tid] = [];
                                 }
-                                if (lastKey != obj.record[1]) {
+
+                                if (!(lastKey == obj.record[1] && lastReq == obj.record[10])) {
                                     lastKey = obj.record[1];
+                                    lastReq = obj.record[10];
                                     //join:2 time 1,tid 2,orgId 5,userId 6,log 4,uri 3,threadName 27,reqId 10,runTime 8,cpuTime 7,dbTime 9,NA,apexTime 17,dbCpuTime 21,gcTime 12,spTime 13,bytesAllocated 28,dequeueLatency NA
                                     joinRecords[tid].push({"record": [obj.record[0], obj.record[1], obj.record[2], obj.record[5], obj.record[6], obj.record[4], obj.record[3], obj.record[27], obj.record[10], obj.record[8], obj.record[7], obj.record[9], "NA", obj.record[17], obj.record[21], obj.record[12], obj.record[13], obj.record[28], "NA"]});
                                 }
@@ -3822,8 +3855,9 @@
                                 if (joinRecords[tid] == undefined) {
                                     joinRecords[tid] = [];
                                 }
-                                if (lastKey != obj.record[1]) {
+                                if (!(lastKey == obj.record[1] && lastReq == obj.record[9])) {
                                     lastKey = obj.record[1];
+                                    lastReq = obj.record[9];
                                     //join:6 time 1,tid 2,orgId 5,userId NA,log 4,uri 13,threadName 3,reqId 9,runTime 7,cpuTime 6,dbTime 8,dbHoldingTime NA,apexTime NA,dbCpuTime 12,gcTime NA,spTime NA,bytesAllocated 14,dequeueLatency 16
                                     joinRecords[tid].push({"record": [obj.record[0], obj.record[1], obj.record[2], obj.record[5], "NA", obj.record[4], obj.record[13], obj.record[3], obj.record[9], obj.record[7], obj.record[6], obj.record[8], "NA", "NA", obj.record[12], "NA", "NA", obj.record[14], Number(obj.record[16])]});
                                 }
@@ -4589,7 +4623,7 @@
             if (tableFormat == 2) {
                 let end2 = performance.now();
                 console.log("genRequestTable 2:" + (end2 - start1));
-                drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered, customEvent);
+                drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered, customEvent, groupByTypeSortByMetricMap);
                 let end3 = performance.now();
                 console.log("genRequestTable 3:" + (end3 - start1));
                 addLegend("#legendid", groupByTypeSortByMetricMap, groupByCount, groupByCountSum);

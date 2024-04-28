@@ -330,6 +330,9 @@ function loadDiagData1(){
 
     for (let key in metaData1) {
         if(metaData1[key].metadata.name != undefined) {
+            if(metaData1[key].metadata.name === "jfr"){
+                continue;
+            }
             let dimExists = false;
             for(let dim in metaData1[key].dimensions) {
                 if(dim.charAt(0) !== '.' && dim !== 'exit_code') {
