@@ -2318,7 +2318,9 @@
             document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
         }else{
             if(customEvent == otherEvent) {
-                chartType = "scatter";
+                if(customEvent === "diagnostics") {
+                    chartType = "scatter";
+                }
                 document.getElementById("statetable").innerHTML = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>" + getOtherHintNote(false, otherEvent) + "</div><div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
             }else{
                 document.getElementById("statetable").innerHTML = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>" + getContextHintNote(false) + "</div><div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
