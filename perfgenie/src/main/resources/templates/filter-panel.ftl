@@ -4564,7 +4564,15 @@
         let start = performance.now();
         let order = getOrderandType();
         if (tableFormat == 2 || tableFormat == 3) {
-            let minStart = getContextTree(1, getEventType()).context.start; //records are aligned to method profile context start
+            let minStart = getContextTree(1, getEventType()).context.start; //todo: records are aligned to method profile context start
+            if(getEventType() == "json-jstack" || getEventType() == "Jstack"){//find other profile start time
+                for (var profile in jfrprofiles1) {
+                    if(profile !== "json-jstack" && profile !== "Jstack") {
+                        minStart = getContextTree(1, profile).context.start;
+                        break;
+                    }
+                }
+            }
             let chartWidth = maxEndTimeOfReq - minStart;
             if (chartWidth < 600000) {//min 10 min
                 chartWidth = 600000;
