@@ -1873,6 +1873,10 @@
                 isEmpty = false;
             }
         }
+
+        if(isSFDC && !customEvent.includes(".Async")){//sfdc patch
+            return false;
+        }
         return isEmpty;
     }
 
@@ -2229,7 +2233,7 @@
             let key1 = tmpColorMap.get(key);
             key1 = key1.replace("#", "_");
             let legend = key;
-            if (key == undefined && (groupBy == "msg" || groupBy == "userId" || groupBy == "qTier" || groupBy == "sfdcMsgId")) {
+            if (isSFDC && key == undefined && (groupBy == "msg" || groupBy == "userId" || groupBy == "qTier" || groupBy == "sfdcMsgId")) {
                 legend = "NA (non MQ)";
             }
 
@@ -3792,6 +3796,7 @@
                 }
                 contextData.tooltips = {};
             }else {//convert to perfgene format sfdc
+                isSFDC = true;
                 let taskStart = performance.now();
                 let joinRecords = {};
                 let records = {};
