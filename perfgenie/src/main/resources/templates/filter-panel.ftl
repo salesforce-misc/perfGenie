@@ -2223,8 +2223,8 @@
         if (getHearderFor(groupBy) == "timestamp") {
             return;
         }
-        let table = "<table style='font-size: 10px;font-weight:bold;'>"
-            + "<tr><td style='text-align: left;padding-right: 5px'>" + getHearderFor(sortBy) + "</td><td style='text-align: left;'>" + getHearderFor(groupBy) + "</td></tr>";
+        let table = "<table style='font-size: 10px;font-weight:bold;border:none;'>"
+            + "<tr><td style='border:none;text-align: left;padding-right: 5px'>" + getHearderFor(sortBy) + "</td><td style='border:none;text-align: left;'>" + getHearderFor(groupBy) + "</td></tr>";
         for (let [key, value] of groupByTypeSortByMetricMap) {
             let key1 = tmpColorMap.get(key);
             key1 = key1.replace("#", "_");
@@ -2233,7 +2233,7 @@
                 legend = "NA (non MQ)";
             }
 
-            table += "<tr style='color:" + tmpColorMap.get(key) + "'><td style='padding-right: 3px;width:40px'>" + (100 * value / groupByCountSum).toFixed(2) + "%" + "</td><td onclick=\"disableCategory(this,'" + key1 + "')\" onmouseout=\"legendMouseOut(this,'" + key1 + "','" + tmpColorMap.get(key) + "')\" onmouseover=\"legendMouseOver(this,'" + key1 + "')\" title='right click to add to filter' hint='" + groupBy + "' class=\"context-menu-two\" style='curson: pointer'>" + legend + "</td></tr>";
+            table += "<tr style='padding:0px;border:none; color:" + tmpColorMap.get(key) + "'><td style='padding:1px;border:none;padding-right: 3px;width:40px'>" + (100 * value / groupByCountSum).toFixed(2) + "%" + "</td><td style='padding:1px;border:none;' onclick=\"disableCategory(this,'" + key1 + "')\" onmouseout=\"legendMouseOut(this,'" + key1 + "','" + tmpColorMap.get(key) + "')\" onmouseover=\"legendMouseOver(this,'" + key1 + "')\" title='right click to add to filter' hint='" + groupBy + "' class=\"context-menu-two\" style='curson: pointer'>" + legend + "</td></tr>";
         }
         table += "</table>";
         $(id).html(table);
@@ -3288,6 +3288,9 @@
 
 
         if (tableFormat == 3) {
+            if(seriesCount > 40){
+                seriesCount = 5;
+            }
             toolBarOptions += '                        </select>' +
                 '&nbsp;&nbsp;<span title="Show time series by cumulative/abolute diff">Value:</span> <select  style="height:30px;text-align: center; " class="filterinput"  name="line-type" id="line-type">\n' +
                 '                            <option ' + (cumulativeLine == 0 ? "selected" : "") + ' value=0>cumulative</option>\n' +
@@ -3308,6 +3311,9 @@
         }
 
         if (tableFormat == 2) {
+            if(seriesCount < 50){
+                seriesCount = 100;
+            }
 
             toolBarOptions += '                        </select>' +
                 '&nbsp;&nbsp;<span title="Show top N threads">Top:</span> <select  style="height:30px;text-align: center; " class="filterinput"  name="line-count" id="line-count">\n' +
