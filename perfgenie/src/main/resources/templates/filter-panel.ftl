@@ -2077,6 +2077,8 @@
 
         d3.select("#requestbarchart").append("svg").attr("width", chartWidth).attr("height", chartHeight);
 
+        let d3svg = d3.select("#requestbarchart").select("svg");
+
         Tooltip = d3.select("#requestbarchart")
             .append("div")
             .style("opacity", 0)
@@ -2107,7 +2109,7 @@
                     tmpEpoch = minStart;
                 }
                 if (tmpEpoch >= curTime) {
-                    d3.select("#requestbarchart").select("svg").append("rect")
+                    d3svg.append("rect")
                         .attr("width", (tmpEpoch - curTime) / downScale)
                         .attr("height", h)
                         .attr("x", x)
@@ -2120,7 +2122,7 @@
                     let key1 = tmpColorMap.get(key);
                     key1 = key1.replace("#", "_");
                     if (tmpRunTime > spanThreshold) {
-                        d3.select("#requestbarchart").select("svg").append("rect")
+                        d3svg.append("rect")
                             .attr("width", tmpRunTime / downScale)
                             .attr("height", h)
                             .attr("d", key)
@@ -3195,7 +3197,7 @@
             '                            <option ' + (tableFormat == 3 ? "selected" : "") + ' value=3>metric timeline view</option>\n' +
             '                    </select>';
 
-        
+
         if (tableFormat == 2 || tableFormat == 3) {
             toolBarOptions += '                        </select>' +
                 '&nbsp;&nbsp;<span title="Sort context view by event metric">Sort by:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="sort-input" id="sort-input">\n';
@@ -4577,10 +4579,16 @@
                 index++;
             }
             if (tableFormat == 2) {
+                let end2 = performance.now();
+                console.log("genRequestTable 2:" + (end2 - start1));
                 drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered, customEvent);
+                let end3 = performance.now();
+                console.log("genRequestTable 3:" + (end3 - start1));
                 addLegend("#legendid", groupByTypeSortByMetricMap, groupByCount, groupByCountSum);
                 addYAxis("#yaxisid", 0, 0, 0, 17, 0, lineCount, 500, totalRows * rowHeight);
                 addXAxis("#xaxisid", 15, 0, 0, 0, 0, chartWidth, chartWidth, 50, minStart, downScale);
+                let end4 = performance.now();
+                console.log("genRequestTable 4:" + (end4 - start1));
             } else {
                 drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered, customEvent);
             }
@@ -4604,7 +4612,8 @@
                 $('#statetable').append("<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getContextHintNote(false)+"</div>");
             }
         }
-        setToolBarOptions("statetabledrp");
+
+        //setToolBarOptions("statetabledrp");
 
         /*$("#event-input").on("change", (event) => {
             updateUrl("customevent", $("#event-input").val(), true);
@@ -4675,7 +4684,7 @@
 
 
         let end = performance.now();
-        console.log("genRequestTable 1 time:")
+        console.log("genRequestTable end time:" + (end - start1));
     }
 
     function genOtherTable() {
