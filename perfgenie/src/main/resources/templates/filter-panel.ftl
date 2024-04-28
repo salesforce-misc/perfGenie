@@ -2313,10 +2313,12 @@
 
     let pinYlabel = "";
     function drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered, customEvent) {
+        let chartType = "line";
         if(isContextViewFiltered){
             document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
         }else{
             if(customEvent == otherEvent) {
+                chartType = "scatter";
                 document.getElementById("statetable").innerHTML = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>" + getOtherHintNote(false, otherEvent) + "</div><div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
             }else{
                 document.getElementById("statetable").innerHTML = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>" + getContextHintNote(false) + "</div><div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
@@ -2398,7 +2400,13 @@
             data: {
                 xs: pinxs,
                 columns: pincolumns,
-                colors: pincolor
+                colors: pincolor,
+                type: chartType
+            },
+            bar: {
+                width: {
+                    ratio: 5
+                }
             },
             axis: {
                 x: {
@@ -2430,7 +2438,10 @@
                 show: true
             },
             point: {
-                show: false
+                show: false,
+                r: function(d) {
+                    return 5;
+                }
             }
         });
         $("#timeLineChart").data('c3-chart', chart);

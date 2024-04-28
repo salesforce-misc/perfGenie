@@ -23,7 +23,7 @@ let profile1 = undefined;
 let profile2 = undefined;
 let dateFormat = 'YYYY-MM-DD HH:mm:ss.SSS';
 let maxTimeRange = 24*60 * 60 * 1000;
-
+let isSFDC = false;
 let jfrprofiles1 = {};
 let jfrprofiles2 = {};
 let jfrevents1 = {};
@@ -330,6 +330,18 @@ function loadDiagData1(){
 
     for (let key in metaData1) {
         if(metaData1[key].metadata.name != undefined) {
+            let diagnostics = []
+            diagnostics.push(metaData1[key].timestampMillis);
+            diagnostics.push(metaData1[key].metadata.name);
+            diagnostics.push(1);
+            if (header["diagnostics"] == undefined) {
+                header["diagnostics"] = ["timestamp:timestamp","event:text","count:number"];
+                records["diagnostics"] = {};
+                records["diagnostics"][1]=[];
+            }
+            records["diagnostics"][1].push({"record" : diagnostics});
+
+
             if(metaData1[key].metadata.name === "jfr"){
                 continue;
             }
