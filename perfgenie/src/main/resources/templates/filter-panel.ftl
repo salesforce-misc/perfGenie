@@ -2315,6 +2315,7 @@
     function drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered, customEvent) {
         let chartType = "line";
         let showPoint = false;
+        let showLables = false;
         if(isContextViewFiltered){
             document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
         }else{
@@ -2323,6 +2324,7 @@
                     chartType = "scatter";
                 }else{
                     showPoint = true;
+                    showLables = true;
                 }
                 document.getElementById("statetable").innerHTML = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>" + getOtherHintNote(false, otherEvent) + "</div><div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
             }else{
@@ -2406,7 +2408,8 @@
                 xs: pinxs,
                 columns: pincolumns,
                 colors: pincolor,
-                type: chartType
+                type: chartType,
+                labels: showLables
             },
             bar: {
                 width: {
