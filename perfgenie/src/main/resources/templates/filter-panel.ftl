@@ -2314,12 +2314,15 @@
     let pinYlabel = "";
     function drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered, customEvent) {
         let chartType = "line";
+        let showPoint = false;
         if(isContextViewFiltered){
             document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
         }else{
             if(customEvent == otherEvent) {
                 if(customEvent === "diagnostics") {
                     chartType = "scatter";
+                }else{
+                    showPoint = true;
                 }
                 document.getElementById("statetable").innerHTML = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>" + getOtherHintNote(false, otherEvent) + "</div><div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
             }else{
@@ -2440,7 +2443,7 @@
                 show: true
             },
             point: {
-                show: false,
+                show: showPoint,
                 r: function(d) {
                     return 5;
                 }
