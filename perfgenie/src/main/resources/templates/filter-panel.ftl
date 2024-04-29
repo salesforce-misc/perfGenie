@@ -3341,10 +3341,13 @@
         toolBarOptions += '             </select>';
 
         toolBarOptions += '&nbsp;&nbsp;<span title="Context view format">Format:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="format-input" id="format-input">\n' +
-            '                            <option ' + (tableFormat == 0 ? "selected" : "") + ' value=0>table</option>\n' +
+            '                            <option ' + (tableFormat == 0 ? "selected" : "") + ' value=0>table</option>\n';
             //'                            <option ' + (tableFormat == 1 ? "selected" : "") + ' value=1>percent</option>\n' +
-            '                            <option ' + (tableFormat == 2 ? "selected" : "") + ' value=2>thread request view</option>\n' +
-            '                            <option ' + (tableFormat == 3 ? "selected" : "") + ' value=3>metric timeline view</option>\n' +
+        if(otherEvent == customEvent) {
+            toolBarOptions += '              <option ' + (tableFormat == 2 ? "selected" : "") + ' value=2>thread request view</option>\n';
+        }
+
+        toolBarOptions +=    '           <option ' + (tableFormat == 3 ? "selected" : "") + ' value=3>metric timeline view</option>\n' +
             '                    </select>';
 
 
