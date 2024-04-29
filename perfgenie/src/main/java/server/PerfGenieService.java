@@ -246,6 +246,19 @@ public class PerfGenieService implements IPerfGenieService {
     }
 
     @Override
+    public String getEvent(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) {
+        try {
+            if(queryMap.containsKey("tenant-id")) {
+                return eventStore.getDiagEvent(start, end, queryMap, dimMap, "maiev-tenant-"+tenant);
+            }else{
+                return eventStore.getDiagEvent(start, end, queryMap, dimMap, null);
+            }
+        } catch (Exception e) {
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Profiles not found", queryMap, null));
+        }
+    }
+
+    @Override
     public String getProfiles(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
         Map<String, Map<String, String>> profiles;
         if(queryMap.containsKey("tenant-id")) {
@@ -397,7 +410,6 @@ public class PerfGenieService implements IPerfGenieService {
                     result = eventStore.getEvent(start, end, queryMap, dimMap, Integer.parseInt(profiles.get(guid).get("size")));
                     aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(result, EventHandler.ContextResponse.class));
                 }
-
             }
             if(isSF) {
                 return Utils.toJson(aggregator.getSFLogContext());

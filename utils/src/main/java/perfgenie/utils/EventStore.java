@@ -97,6 +97,58 @@ public class EventStore {
         }
     }
 
+    public String getDiagEvent(final long start, final long end, final Map<String,
+            String> queryMap, final Map<String, String> dimMap, final String namespace) throws IOException {
+        if (namespace != null) {
+            final Stopwatch timer = Stopwatch.createStarted();
+            final List<Events.Event> results = this.cantor.events().get(
+                    namespace,
+                    start-1,
+                    end+1,
+                    queryMap,
+                    dimMap,
+                    true
+            );
+            if (results.size() > 0) {
+                String res = new String(Utils.decompress(results.get(0).getPayload()));
+                logger.info("successfully fetched event from namespace: " + namespace + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+                return res;
+            }
+        } else {
+            final List<Events.Event> results = this.cantor.events().get(
+                    NAMESPACE_EVENT_META,
+                    start,
+                    end,
+                    queryMap,
+                    dimMap,
+                    false
+            );
+            if (results.size() > 0) {
+                final Stopwatch timer = Stopwatch.createStarted();
+                if (enableLargeFile && Integer.parseInt(results.get(0).getMetadata().get("size")) > LARGE_FILE_SIZE) {
+                    String res = download(start, end, queryMap, dimMap, null);
+                    logger.info("successfully fetched event from namespace: " + NAMESPACE_EVENT_LARGE_FILE + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+                    return res;
+                } else {
+                    final List<Events.Event> results1 = this.cantor.events().get(
+                            NAMESPACE_JFR_JSON_CACHE,
+                            start,
+                            end,
+                            queryMap,
+                            dimMap,
+                            true
+                    );
+                    if (results1.size() > 0) {
+                        String res = new String(Utils.decompress(results1.get(0).getPayload()));
+                        logger.info("successfully fetched event from namespace: " + NAMESPACE_JFR_JSON_CACHE + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+                        return res;
+                    }
+                }
+            }
+       }
+        return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Event not found", queryMap, null));
+    }
+
     public String getEvent(final long start, final long end, final Map<String,
             String> queryMap, final Map<String, String> dimMap, int payloadSize) throws IOException {
             if (enableLargeFile && payloadSize > LARGE_FILE_SIZE) {

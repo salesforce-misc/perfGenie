@@ -98,4 +98,6 @@ public interface IPerfGenieService {
     public String getInstances(long start, long end, final String tenant) throws IOException;
     public String getOtherEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
 
+    String getEvent(String tenant, long start, long end, Map<String, String> queryMap, Map<String, String> dimMap) throws IOException;
+
 }

@@ -42,6 +42,18 @@ public class PerfGenieController {
         return service.getProfile(tenant, start, end, queryMap, dimMap);
     }
 
+    @GetMapping(path = {"/v1/event", "/v1/event/{tenant}"}, produces = MediaType.ALL_VALUE)
+    public String event(@PathVariable(required = false, name = "tenant") String tenant,
+                          @RequestParam(required = false, name = "start") final long start,
+                          @RequestParam(required = false, name = "end") final long end,
+                          @RequestParam("metadata_query") final List<String> metadataQuery) throws IOException {
+
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        final Map<String, String> dimMap = new HashMap<>();
+
+        return service.getEvent(tenant, start, end, queryMap, dimMap);
+    }
+
     @GetMapping(path = {"/v1/profiles", "/v1/profiles/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String profiles(@PathVariable(required = false, name = "tenant") String tenant,
                            @RequestParam(required = false, name = "start") final long start,

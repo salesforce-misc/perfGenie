@@ -1289,6 +1289,7 @@
             "        <div class='modal-content'>\n" +
             "           <div id='data-modal-body' class='modal-body' style='overflow: auto'> \n" +
             "<div id=\"popupstackncontextview\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupstackncontextview col-lg-12\" >\n" +
+
             "<span id=\"timelinepopuptitle\" style=\"color: #686A6C;font-family: 'Arial', serif;\">Profiling samples collected during request runTime</span>\n" +
             "<div style=\"padding-top:0px; padding-left: 15px;padding-right: 0px;\" class=\"row col-lg-12\">\n" +
             "<div style=\"padding-top: 0px; padding-left: 0px;padding-right: 5px;padding-bottom: 5px;\" class=\"popupfilterpanel col-lg-9\">\n" +
@@ -1304,6 +1305,7 @@
             "</div>\n" +
             "</div>\n" +
             "</div>\n" +
+
             "</div>\n" +
             "            </div>\n" +
             "        </div>\n" +
@@ -2306,6 +2308,64 @@
 
         $("#"+pinid).data('c3-chart', charts[pinid]);
     }
+
+    function showDiagData(d){
+        for (let i=0; i< pincolumns.length; i++) {
+            if(pincolumns[i][0] === d.name){
+                for(let j=0; j<contextData.records.diagnostics[1].length; j++){
+                    if(contextData.records.diagnostics[1][j].record[0] == pincolumns[i+1][d.index+1] && d.name.includes(contextData.records.diagnostics[1][j].record[1])){
+                        console.log(pincolumns[i+1][d.index+1] +":"+contextData.records.diagnostics[1][j].record[1]+":"+contextData.records.diagnostics[1][j].record[3]);
+                        getDiagEvent(pincolumns[i+1][d.index+1],contextData.records.diagnostics[1][j].record[3],contextData.records.diagnostics[1][j].record[1]);
+                        i=pincolumns.length;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    function getDiagEvent(timestamp, guid, name) {
+        const callTreeUrl = getDiagEventUrl(timestamp, tenant1, host1, guid, name);
+        showDiagPopup("");
+        showSpinner("spinner1");
+
+        let request = stackDigVizAjax(tenant1, "GET", callTreeUrl, function (response) { // success function
+            hideSpinner("spinner1");
+            console.log("getDiagEvent done");
+            if(response == undefined || response === "") {
+                console.log("Warn: unable to fetch diag event " + name);
+            }else {
+                $("#popupdiagview").html(response);
+            }
+        }, function (error) {
+            hideSpinner("spinner1");
+            console.log("Warn: unable to fetch diag event" + name);
+        });
+    }
+
+    function showDiagPopup(data) {
+        createTimelineModal("diagpopup");
+        loadModal("diagpopup");
+        $("#popupdiagview").html(data);
+        $('#diagpopup').focus();
+    }
+
+    function createTimelineModal(modalId) {
+        $('#modals-guid')[0].innerHTML = "<div  class='modal inmodal fade' data-backdrop=\"static\"  id='" + modalId + "' tabindex='-1' role='dialog'  aria-hidden='true'>\n" +
+            "    <div style=\"max-width: 90%;\" class='modal-dialog' role=\"document\">\n" +
+            "        <div class='modal-content'>\n" +
+            "           <div id='data-modal-body' class='modal-body' style='overflow: auto'> \n" +
+            "<span style='float:right;' class='spinner' id='spinner1'></span>" +
+            "<pre id=\"popupdiagview\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupdiagview col-lg-12\" >\n" +
+
+            "</pre>\n" +
+            "            </div>\n" +
+            "        </div>\n" +
+            "    </div>\n" +
+            "</div>";
+    }
+
+
     let pincolumns = [];//use this for pinning
     let pinxs = {};
     let pincolor = {};
@@ -2316,12 +2376,14 @@
         let chartType = "line";
         let showPoint = false;
         let showLables = false;
+        let enableOnClick = false;
         if(isContextViewFiltered){
             document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
         }else{
             if(customEvent == otherEvent) {
                 if(customEvent === "diagnostics") {
                     chartType = "scatter";
+                    enableOnClick = true;
                 }else{
                     showPoint = true;
                     showLables = true;
@@ -2403,56 +2465,112 @@
         }
 
         pinYlabel = sortBy;
-        var chart = c3.generate({
-            data: {
-                xs: pinxs,
-                columns: pincolumns,
-                colors: pincolor,
-                type: chartType,
-                labels: showLables
-            },
-            bar: {
-                width: {
-                    ratio: 5
-                }
-            },
-            axis: {
-                x: {
-                    type: "timeseries",
-                    localtime: false,
-                    tick: {
-                        format: function (d) {
-                            const time = moment.utc(d);
-                            if (time.year() > 1970) {
-                                return time.format("D/M HH:mm:ss");
-                            }
-                            return (time.format("X") / 60).toFixed(2) + "m";
-                        },
-                        count: 100,
+        if(enableOnClick){
+            var chart = c3.generate({
+                data: {
+                    xs: pinxs,
+                    columns: pincolumns,
+                    colors: pincolor,
+                    type: chartType,
+                    onclick: function (d) {
+                        showDiagData(d);
                     }
                 },
-                y: {
-                    label: sortBy
+                bar: {
+                    width: {
+                        ratio: 5
+                    }
                 },
-            },
-            bindto: document.getElementById("timeLineChart"),
-            size: {
-                height: 400
-            },
-            legend: {
-                position: 'right'
-            },
-            subchart: {
-                show: true
-            },
-            point: {
-                show: showPoint,
-                r: function(d) {
-                    return 5;
+                axis: {
+                    x: {
+                        type: "timeseries",
+                        localtime: false,
+                        tick: {
+                            format: function (d) {
+                                const time = moment.utc(d);
+                                if (time.year() > 1970) {
+                                    return time.format("D/M HH:mm:ss");
+                                }
+                                return (time.format("X") / 60).toFixed(2) + "m";
+                            },
+                            count: 100,
+                        }
+                    },
+                    y: {
+                        label: sortBy
+                    },
+                },
+                bindto: document.getElementById("timeLineChart"),
+                size: {
+                    height: 400
+                },
+                legend: {
+                    position: 'right'
+                },
+                subchart: {
+                    show: true
+                },
+                point: {
+                    show: showPoint,
+                    r: function (d) {
+                        return 5;
+                    }
                 }
-            }
-        });
-        $("#timeLineChart").data('c3-chart', chart);
+            });
+            $("#timeLineChart").data('c3-chart', chart);
+        }else {
+            var chart = c3.generate({
+                data: {
+                    xs: pinxs,
+                    columns: pincolumns,
+                    colors: pincolor,
+                    labels: showLables,
+                    type: chartType
+                },
+                bar: {
+                    width: {
+                        ratio: 5
+                    }
+                },
+                axis: {
+                    x: {
+                        type: "timeseries",
+                        localtime: false,
+                        tick: {
+                            format: function (d) {
+                                const time = moment.utc(d);
+                                if (time.year() > 1970) {
+                                    return time.format("D/M HH:mm:ss");
+                                }
+                                return (time.format("X") / 60).toFixed(2) + "m";
+                            },
+                            count: 100,
+                        }
+                    },
+                    y: {
+                        label: sortBy
+                    },
+                },
+                bindto: document.getElementById("timeLineChart"),
+                size: {
+                    height: 400
+                },
+                legend: {
+                    position: 'right'
+                },
+                subchart: {
+                    show: true
+                },
+                point: {
+                    show: showPoint,
+                    r: function (d) {
+                        return 5;
+                    }
+                }
+            });
+            $("#timeLineChart").data('c3-chart', chart);
+        }
+
     }
 
     function getOrderandType() {

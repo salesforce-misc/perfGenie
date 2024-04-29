@@ -721,6 +721,14 @@
         return Promise.all(requests);
     }
 
+    function getDiagEventUrl(timestamp, tenant, host, guid, name){
+        return "/v1/event/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
+            "&metadata_query=" + encodeURIComponent("host=" + host) +
+            "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+            "&metadata_query=" + encodeURIComponent("guid=" + guid) +
+            "&metadata_query=" + encodeURIComponent("name=" + name);
+    }
+
     function getEventUrl(timeRange, tenant, host, customEvent){
         let endpoint = "";
         const start = parseInt(timeRange.split(" - ")[0]);

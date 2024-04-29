@@ -330,21 +330,22 @@ function loadDiagData1(){
 
     for (let key in metaData1) {
         if(metaData1[key].metadata.name != undefined) {
+            if(metaData1[key].metadata.name === "jfr"){
+                continue;
+            }
+
             let diagnostics = []
             diagnostics.push(metaData1[key].timestampMillis);
             diagnostics.push(metaData1[key].metadata.name);
             diagnostics.push(1);
+            diagnostics.push(metaData1[key].metadata.guid);
             if (header["diagnostics"] == undefined) {
-                header["diagnostics"] = ["timestamp:timestamp","event:text","count:number"];
+                header["diagnostics"] = ["timestamp:timestamp","event:text","count:number","guid:text"];
                 records["diagnostics"] = {};
                 records["diagnostics"][1]=[];
             }
             records["diagnostics"][1].push({"record" : diagnostics});
 
-
-            if(metaData1[key].metadata.name === "jfr"){
-                continue;
-            }
             let dimExists = false;
             for(let dim in metaData1[key].dimensions) {
                 if(dim.charAt(0) !== '.' && dim !== 'exit_code') {

@@ -118,13 +118,19 @@
 <script>
 
 
-    function showSpinner() {
-        document.getElementById('spinner').style.display = 'block';
+    function showSpinner(id) {
+        if(id === undefined){
+            id = "spinner";
+        }
+        document.getElementById(id).style.display = 'block';
     }
 
     // Function to hide the spinner
-    function hideSpinner() {
-        document.getElementById('spinner').style.display = 'none';
+    function hideSpinner(id) {
+        if(id === undefined){
+            id = "spinner";
+        }
+        document.getElementById(id).style.display = 'none';
     }
 
 </script>
