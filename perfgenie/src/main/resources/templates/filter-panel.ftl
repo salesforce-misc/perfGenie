@@ -455,7 +455,7 @@
 
         sortBy = urlParams.get('sortBy') || '';
         cumulativeLine = urlParams.get('cumulative') || '0';
-        seriesCount = urlParams.get('seriesCount') || 5;
+        seriesCount = urlParams.get('seriesCount') || 10;
         groupByMatch = urlParams.get('groupByMatch') || '';
         groupByLength = urlParams.get('groupByLength') || '200';
         spanThreshold = urlParams.get('spanThreshold') || 200;
@@ -518,7 +518,7 @@
     let groupBy = "";
     let tableFormat = "";
     let cumulativeLine = "";
-    let seriesCount = 5;
+    let seriesCount = 10;
     let groupByLength = "200";
     let groupByMatch = "";
     let filterBy = "";
@@ -2251,12 +2251,38 @@
 
     let pinCount = 0;
     function addChart(){
+        let chartType = "line";
+        let showPoint = false;
+        let showLables = false;
+        let enableOnClick = false;
+        let subChart = true;
+
+        if (customEvent != otherEvent) {
+            if (otherEvent === "diagnostics(raw)") {
+                chartType = "scatter";
+                enableOnClick = true;
+                subChart = false;
+            } else {
+                showPoint = true;
+                showLables = true;
+            }
+        }
+
         for(let i=0; i<pinCount; i++) {
             if ($('#pinid' + i).length) {
+                if(enableOnClick) {
                     charts['pinid' + i].load({
                         xs: pinxs,
-                        columns: pincolumns
+                        columns: pincolumns,
+                        type: chartType
                     });
+                }else{
+                    charts['pinid' + i].load({
+                        xs: pinxs,
+                        columns: pincolumns,
+                        type: chartType
+                    });
+                }
             }
         }
     }
@@ -2265,46 +2291,114 @@
         let pinid = "pinid"+pinCount;
         let closepin = "pinclose"+pinCount;
 
-        pinCount++;
-        $('#statetablewrapper').append("<div id='"+closepin+"'style='border-style: dotted hidden hidden hidden;' class='statetable col-lg-12'><div style='float:right;cursor: pointer;' onclick='closePin(\""+closepin+"\")'>Close</div><div>Pinned chart Event:"+customEvent+", groupBy:"+groupBy+", Len:"+groupByLength+", Match:"+groupByMatch+", sortBy:"+sortBy+", Top:"+seriesCount+"</div><div id='"+pinid+"' class='col-lg-12' style='padding: 0 !important;'></div></div>");
-        charts[pinid] = c3.generate({
-            data: {
-                xs: pinxs,
-                columns: pincolumns
-            },
-            axis: {
-                x: {
-                    type: "timeseries",
-                    localtime: false,
-                    tick: {
-                        format: function (d) {
-                            const time = moment.utc(d);
-                            if (time.year() > 1970) {
-                                return time.format("D/M HH:mm:ss");
-                            }
-                            return (time.format("X") / 60).toFixed(2) + "m";
-                        },
-                        count: 100,
-                    }
-                },
-                y: {
-                    label: pinYlabel
-                },
-            },
-            bindto: document.getElementById(pinid),
-            size: {
-                height: 300
-            },
-            legend: {
-                position: 'right'
-            },
-            subchart: {
-                show: false
-            },
-            point: {
-                show: false
+        let chartType = "line";
+        let showPoint = false;
+        let showLables = false;
+        let enableOnClick = false;
+        let subChart = true;
+        let height = 300;
+
+        if (customEvent != otherEvent) {
+            if (otherEvent === "diagnostics(raw)") {
+                chartType = "scatter";
+                enableOnClick = true;
+                subChart = false;
+            } else {
+                showPoint = true;
+                showLables = true;
             }
-        });
+        }
+
+        pinCount++;
+        $('#statetablewrapper').append("<div id='"+closepin+"'style='border-style: dotted hidden hidden hidden;' class='statetable col-lg-12'><div style='float:right;cursor: pointer;' onclick='closePin(\""+closepin+"\")'>Close</div><div>Pinned chart Event:"+otherEvent+", groupBy:"+groupBy+", Len:"+groupByLength+", Match:"+groupByMatch+", sortBy:"+sortBy+", Top:"+seriesCount+"</div><div id='"+pinid+"' class='col-lg-12' style='padding: 0 !important;'></div></div>");
+
+        if(enableOnClick){
+            charts[pinid] = c3.generate({
+                data: {
+                    xs: pinxs,
+                    columns: pincolumns,
+                    type: chartType,
+                    labels: showLables
+                },
+                axis: {
+                    x: {
+                        type: "timeseries",
+                        localtime: false,
+                        tick: {
+                            format: function (d) {
+                                const time = moment.utc(d);
+                                if (time.year() > 1970) {
+                                    return time.format("D/M HH:mm:ss");
+                                }
+                                return (time.format("X") / 60).toFixed(2) + "m";
+                            },
+                            count: 100,
+                        }
+                    },
+                    y: {
+                        label: pinYlabel
+                    },
+                },
+                bindto: document.getElementById(pinid),
+                size: {
+                    height: height
+                },
+                legend: {
+                    position: 'right'
+                },
+                subchart: {
+                    show: false
+                },
+                point: {
+                    show: showPoint,
+                    r: function (d) {
+                        return 5;
+                    }
+                }
+            });
+        }else{
+            charts[pinid] = c3.generate({
+                data: {
+                    xs: pinxs,
+                    columns: pincolumns,
+                    type: chartType,
+                    labels: showLables
+                },
+                axis: {
+                    x: {
+                        type: "timeseries",
+                        localtime: false,
+                        tick: {
+                            format: function (d) {
+                                const time = moment.utc(d);
+                                if (time.year() > 1970) {
+                                    return time.format("D/M HH:mm:ss");
+                                }
+                                return (time.format("X") / 60).toFixed(2) + "m";
+                            },
+                            count: 100,
+                        }
+                    },
+                    y: {
+                        label: pinYlabel
+                    },
+                },
+                bindto: document.getElementById(pinid),
+                size: {
+                    height: height
+                },
+                legend: {
+                    position: 'right'
+                },
+                subchart: {
+                    show: false
+                },
+                point: {
+                    show: showPoint
+                }
+            });
+        }
+
 
         $("#"+pinid).data('c3-chart', charts[pinid]);
     }
@@ -2312,10 +2406,10 @@
     function showDiagData(d){
         for (let i=0; i< pincolumns.length; i++) {
             if(pincolumns[i][0] === d.name){
-                for(let j=0; j<contextData.records.diagnostics[1].length; j++){
-                    if(contextData.records.diagnostics[1][j].record[0] == pincolumns[i+1][d.index+1] && d.name.includes(contextData.records.diagnostics[1][j].record[1])){
-                        console.log(pincolumns[i+1][d.index+1] +":"+contextData.records.diagnostics[1][j].record[1]+":"+contextData.records.diagnostics[1][j].record[3]);
-                        getDiagEvent(pincolumns[i+1][d.index+1],contextData.records.diagnostics[1][j].record[3],contextData.records.diagnostics[1][j].record[1]);
+                for(let j=0; j<contextData.records["diagnostics(raw)"][1].length; j++){
+                    if(contextData.records["diagnostics(raw)"][1][j].record[0] == pincolumns[i+1][d.index+1] && d.name.includes(contextData.records["diagnostics(raw)"][1][j].record[1])){
+                        console.log(pincolumns[i+1][d.index+1] +":"+contextData.records["diagnostics(raw)"][1][j].record[1]+":"+contextData.records["diagnostics(raw)"][1][j].record[3]);
+                        getDiagEvent(pincolumns[i+1][d.index+1],contextData.records["diagnostics(raw)"][1][j].record[3],contextData.records["diagnostics(raw)"][1][j].record[1]);
                         i=pincolumns.length;
                         break;
                     }
@@ -2326,28 +2420,27 @@
 
     function getDiagEvent(timestamp, guid, name) {
         const callTreeUrl = getDiagEventUrl(timestamp, tenant1, host1, guid, name);
-        showDiagPopup("");
-        showSpinner("spinner1");
+
+        if($("#diagevent").length == 0) {
+            $('#statetablewrapper').append("<div id='diagevent'style='max-height: 400px; overflow: auto; border-style: dotted hidden;' class='statetable col-lg-12'><div style='float:right;cursor: pointer;' onclick='closePin(\"diagevent\")'>Close</div><div id='diageventheader'>" + moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event:" + otherEvent +  ", Name:" + name + "</div><span style='float:right;' class='spinner' id='spinner2'></span>" + "<pre id=\"diageventval\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupdiagview col-lg-12\" >" + "</div>");
+        }else{
+            $("#diageventval").html("");
+            $("#diageventheader").html( moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event:" + otherEvent +  ", Name:" + name);
+        }
+        showSpinner("spinner2");
 
         let request = stackDigVizAjax(tenant1, "GET", callTreeUrl, function (response) { // success function
-            hideSpinner("spinner1");
+            hideSpinner("spinner2");
             console.log("getDiagEvent done");
             if(response == undefined || response === "") {
                 console.log("Warn: unable to fetch diag event " + name);
             }else {
-                $("#popupdiagview").html(response);
+                $("#diageventval").html(response);
             }
         }, function (error) {
-            hideSpinner("spinner1");
+            hideSpinner("spinner2");
             console.log("Warn: unable to fetch diag event" + name);
         });
-    }
-
-    function showDiagPopup(data) {
-        createTimelineModal("diagpopup");
-        loadModal("diagpopup");
-        $("#popupdiagview").html(data);
-        $('#diagpopup').focus();
     }
 
     function createTimelineModal(modalId) {
@@ -2377,6 +2470,8 @@
         let showPoint = false;
         let showLables = false;
         let enableOnClick = false;
+        let subChart = true;
+        let height = 375;
         if(isContextViewFiltered){
             document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
         }else{
@@ -2384,6 +2479,8 @@
                 if(customEvent === "diagnostics(raw)") {
                     chartType = "scatter";
                     enableOnClick = true;
+                    subChart = false;
+                    height = 300;
                 }else{
                     showPoint = true;
                     showLables = true;
@@ -2489,7 +2586,7 @@
                             format: function (d) {
                                 const time = moment.utc(d);
                                 if (time.year() > 1970) {
-                                    return time.format("D/M HH:mm:ss");
+                                    return time.format("D/M HH:mm:ss") + " click to view data";
                                 }
                                 return (time.format("X") / 60).toFixed(2) + "m";
                             },
@@ -2502,13 +2599,13 @@
                 },
                 bindto: document.getElementById("timeLineChart"),
                 size: {
-                    height: 400
+                    height: height
                 },
                 legend: {
                     position: 'right'
                 },
                 subchart: {
-                    show: true
+                    show: subChart
                 },
                 point: {
                     show: showPoint,
@@ -2553,13 +2650,13 @@
                 },
                 bindto: document.getElementById("timeLineChart"),
                 size: {
-                    height: 400
+                    height: height
                 },
                 legend: {
                     position: 'right'
                 },
                 subchart: {
-                    show: true
+                    show: subChart
                 },
                 point: {
                     show: showPoint,
@@ -3340,11 +3437,15 @@
         }
         toolBarOptions += '             </select>';
 
+
         toolBarOptions += '&nbsp;&nbsp;<span title="Context view format">Format:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="format-input" id="format-input">\n' +
             '                            <option ' + (tableFormat == 0 ? "selected" : "") + ' value=0>table</option>\n';
             //'                            <option ' + (tableFormat == 1 ? "selected" : "") + ' value=1>percent</option>\n' +
         if(otherEvent == customEvent) {
             toolBarOptions += '              <option ' + (tableFormat == 2 ? "selected" : "") + ' value=2>thread request view</option>\n';
+
+        }else if(tableFormat == 2) {
+            tableFormat = 0;
         }
 
         toolBarOptions +=    '           <option ' + (tableFormat == 3 ? "selected" : "") + ' value=3>metric timeline view</option>\n' +
@@ -3390,41 +3491,49 @@
         }
 
 
-        if (contextData != undefined && contextData.header != undefined) {
-            let groups = [];
-            for (let val in contextData.header[otherEvent]) {
-                const tokens = contextData.header[otherEvent][val].split(":");
-                if (tokens[1] == "text") {
-                    groups.push(tokens[0]);
-                }else if(tokens[1] == "timestamp" && tableFormat == 0){
-                    groups.push(tokens[0]);
-                }
-            }
-            groups.sort();
-
-            let groupByFound = false;
-            if(!(groupBy == '' || groupBy == undefined || groupBy == "All records")) {
+            if (contextData != undefined && contextData.header != undefined) {
+                let groups = [];
                 for (let val in contextData.header[otherEvent]) {
                     const tokens = contextData.header[otherEvent][val].split(":");
-                    if(groupBy == tokens[0]){
-                        groupByFound = true;
-                        break;
+                    if (tokens[1] == "text") {
+                        groups.push(tokens[0]);
+                    } else if (tokens[1] == "timestamp" && tableFormat == 0) {
+                        groups.push(tokens[0]);
                     }
                 }
-            }
+                groups.sort();
 
-            if(groupBy == "All records"){
-                groupByFound=true;
-            }
-
-            for (let i = 0; i < groups.length; i++) {
-                if((groupBy == '' || groupBy == undefined || !groupByFound) ){
-                    groupBy = groups[i];
-                    groupByFound=true;
+                let groupByFound = false;
+                if (!(groupBy == '' || groupBy == undefined || groupBy == "All records")) {
+                    for (let val in contextData.header[otherEvent]) {
+                        const tokens = contextData.header[otherEvent][val].split(":");
+                        if (groupBy == tokens[0]) {
+                            groupByFound = true;
+                            break;
+                        }
+                    }
                 }
-                toolBarOptions += '<option ' + (groupBy == groups[i] ? "selected" : "") + " value='" + groups[i] + "'>" + groups[i] + "</option>\n";
+
+                if (groupBy == "All records" && !(otherEvent == "diagnostics(raw)" && tableFormat != 0)) {
+                    groupByFound = true;
+                }
+
+                for (let i = 0; i < groups.length; i++) {
+                    if ((groupBy == '' || groupBy == undefined || !groupByFound)) {
+                        groupBy = groups[i];
+                        groupByFound = true;
+                    }
+                    if(otherEvent != "diagnostics(raw)" || tableFormat !=0) {
+                        toolBarOptions += '<option ' + (groupBy == groups[i] ? "selected" : "") + " value='" + groups[i] + "'>" + groups[i] + "</option>\n";
+                    }
+
+                }
             }
+
+        if(otherEvent == "diagnostics(raw)" && tableFormat ==0) {
+            groupBy="All records";
         }
+
         toolBarOptions += '             </select>';
 
         toolBarOptions +=    '&nbsp;&nbsp;<span title="Consider first N characters of group by option values">Len:</span> <input  style="height:30px;width:35px;text-align: left;" class="filterinput" id="groupby-length" type="text" value="'+groupByLength+'">\n';
@@ -3451,7 +3560,7 @@
                 '                            <option ' + (seriesCount == 30 ? "selected" : "") + ' value=30>30</option>\n' +
                 '                            <option ' + (seriesCount == 40 ? "selected" : "") + ' value=40>40</option>\n' +
                 '                            </select> ';
-            toolBarOptions += '<button title="pin a copy of this chart below" style="cursor: pointer;" id="pin-input" class="btn-info" type="submit">PIN</button>&nbsp;<button title="copy this chart series onto pinned charts" style="cursor: pointer;" id="add-chart" class="btn-info" type="submit">LOAD</button>';
+            toolBarOptions += '<button title="pin a copy of this chart below" style="cursor: pointer;" id="pin-input" class="btn-info" type="submit">PIN</button>&nbsp;<button title="copy this chart series onto pinned charts" style="cursor: pointer;" id="add-chart" class="btn-info" type="submit">MOVE</button>';
         }
 
         if (tableFormat == 2) {
@@ -5072,7 +5181,11 @@
                                             if(isDimIndexMap[field] == undefined) {
                                                 sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field]);
                                             }else{
-                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field],"' hint='"+isDimIndexMap[field]+"'");
+                                                if(otherEvent === "diagnostics(raw)" && field == 3){
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a onclick='getDiagEvent("+record[0]+", \""+record[3]+"\",\"" +record[1]+"\")'>view</a>", "' hint='download'");
+                                                }else {
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field], "' hint='" + isDimIndexMap[field] + "'");
+                                                }
                                             }
                                         }
                                     }
@@ -5180,7 +5293,11 @@
                                             if(isDimIndexMap[field] == undefined) {
                                                 sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field]);
                                             }else{
-                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field],"' hint='"+isDimIndexMap[field]+"'");
+                                                if(otherEvent === "diagnostics(raw)" && field == 3){
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a onclick='getDiagEvent("+record[0]+", \""+record[3]+"\",\""+record[1]+"\")'>view</a>", "' hint='download'");
+                                                }else {
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field], "' hint='" + isDimIndexMap[field] + "'");
+                                                }
                                             }
                                         }
                                     }
