@@ -3608,6 +3608,10 @@
                 }
             }
             toolBarOptions += '       </select> ';
+
+            if(otherEvent != customEvent){
+                spanThreshold = 0;
+            }
             toolBarOptions += '                        </select>' +
                 '&nbsp;&nbsp;<select  style="height:30px;text-align: center; " class="filterinput"  name="span-threshold" id="span-threshold">\n' +
                 '                            <option ' + (spanThreshold == 200 ? "selected" : "") + " value='200'>200</option>\n" +
@@ -5294,7 +5298,7 @@
                                                 sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field]);
                                             }else{
                                                 if(otherEvent === "diagnostics(raw)" && field == 3){
-                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a onclick='getDiagEvent("+record[0]+", \""+record[3]+"\",\""+record[1]+"\")'>view</a>", "' hint='download'");
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a style='cursor: pointer;' class='fa fa-eye' onclick='getDiagEvent("+record[0]+", \""+record[3]+"\",\""+record[1]+"\")'></a>", "' hint='download'");
                                                 }else {
                                                     sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field], "' hint='" + isDimIndexMap[field] + "'");
                                                 }

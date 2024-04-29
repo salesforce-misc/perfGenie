@@ -541,7 +541,7 @@
                                             if (contextTidMap[tid][i][samplesCustomEvent]?.obj != undefined) {
                                                 key = contextTidMap[tid][i][samplesCustomEvent].obj[dimIndexMap[groupBySamples]];
                                             } else {
-                                                key = "NA";
+                                                key = "stacks matched frame but no context match";
                                             }
                                         }
 
@@ -580,7 +580,7 @@
                                     if (contextTidMap[tid][i][samplesCustomEvent]?.obj != undefined) {
                                         key = contextTidMap[tid][i][samplesCustomEvent].obj[dimIndexMap[groupBySamples]];
                                     } else {
-                                        key = "NA";
+                                        key = "stacks matched frame but no context match";
                                     }
                                     if( key != undefined && key.slice != undefined){
                                         key = key.slice(0, samplesgroupByLength);
