@@ -333,7 +333,7 @@ function loadDiagData1(){
             if(metaData1[key].metadata.name === "jfr"){
                 continue;
             }
-            if(!metaData1[key].metadata.name.includes("json")) {
+            if(!metaData1[key].metadata.name.includes("json") && (metaData1[key].metadata["file-name"] == undefined || !metaData1[key].metadata["file-name"].includes("json")) ) {
                 let diagnostics = []
                 diagnostics.push(metaData1[key].timestampMillis);
                 diagnostics.push(metaData1[key].metadata.name);

@@ -2407,7 +2407,7 @@
         for (let i=0; i< pincolumns.length; i++) {
             if(pincolumns[i][0] === d.name){
                 for(let j=0; j<contextData.records["diagnostics(raw)"][1].length; j++){
-                    if(contextData.records["diagnostics(raw)"][1][j].record[0] == pincolumns[i+1][d.index+1] && d.name.includes(contextData.records["diagnostics(raw)"][1][j].record[1])){
+                    if(contextData.records["diagnostics(raw)"][1][j].record[0] == pincolumns[i+1][d.index+1] && d.name.includes(contextData.records["diagnostics(raw)"][1][j].record[1]) ){
                         console.log(pincolumns[i+1][d.index+1] +":"+contextData.records["diagnostics(raw)"][1][j].record[1]+":"+contextData.records["diagnostics(raw)"][1][j].record[3]);
                         getDiagEvent(pincolumns[i+1][d.index+1],contextData.records["diagnostics(raw)"][1][j].record[3],contextData.records["diagnostics(raw)"][1][j].record[1]);
                         i=pincolumns.length;
