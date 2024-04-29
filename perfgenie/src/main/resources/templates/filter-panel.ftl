@@ -2832,7 +2832,7 @@
         }
     }
 
-    function isRequestHasFrame(requestArr, entryIndex, event, start, end, addTofilteredStackMap) {
+    function isRequestHasFrame(requestArr, entryIndex, event, start, end, addTofilteredStackMap, tid) {
         let flag = false;
         let curIndex = entryIndex;
 
@@ -4678,7 +4678,7 @@
                                     let entryIndex = isinRequest(contextTidMap[tid], start, end);
                                     if (entryIndex != -1) {
                                         let requestArr = contextTidMap[tid];
-                                        flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false);
+                                        flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false, tid);
                                     }
                                 } catch (err) {
                                     //console.log("tid not found in JFR" + tid.key + " " + err.message);
@@ -4783,7 +4783,7 @@
                                         let entryIndex = isinRequest(contextTidMap[tid], start, end);
                                         if (entryIndex != -1) {
                                             let requestArr = contextTidMap[tid];
-                                            flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false);
+                                            flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false, tid);
                                         }
                                     } catch (err) {
                                         //console.log("tid not found in JFR" + tid + " " + err.message);
@@ -5130,7 +5130,7 @@
                                     let entryIndex = isinRequest(contextTidMap[tid], start, end);
                                     if (entryIndex != -1) {
                                         let requestArr = contextTidMap[tid];
-                                        flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false);
+                                        flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false, tid);
                                     }
                                 } catch (err) {
                                     //console.log("tid not found in JFR" + tid.key + " " + err.message);
@@ -5239,7 +5239,7 @@
                                         let entryIndex = isinRequest(contextTidMap[tid], start, end);
                                         if (entryIndex != -1) {
                                             let requestArr = contextTidMap[tid];
-                                            flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false);
+                                            flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false, tid);
                                         }
                                     } catch (err) {
                                         //console.log("tid not found in JFR" + tid + " " + err.message);
