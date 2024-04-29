@@ -760,7 +760,7 @@
                 endpoint = "/v1/jstack/" + tenant + "/?start=" + start + "&end=" + end +
                     "&metadata_query=" + encodeURIComponent("host=" + host) +
                     "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
-                    "&metadata_query=" + encodeURIComponent("name=" + eventType);
+                    "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
                 return endpoint;
             }
 
