@@ -174,7 +174,7 @@
         stack_id=urlParams.get('stack_id') || '';
         samplesCustomEvent=urlParams.get('scustomevent') || '';
         samplesgroupByMatch = urlParams.get('sgroupByMatch') || '';
-        samplesgroupByLength = urlParams.get('sgroupByLength') || '20';
+        samplesgroupByLength = urlParams.get('sgroupByLength') || '200';
 
         let filterType = smplBy;
 

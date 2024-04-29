@@ -457,7 +457,7 @@
         cumulativeLine = urlParams.get('cumulative') || '0';
         seriesCount = urlParams.get('seriesCount') || 5;
         groupByMatch = urlParams.get('groupByMatch') || '';
-        groupByLength = urlParams.get('groupByLength') || '20';
+        groupByLength = urlParams.get('groupByLength') || '200';
         spanThreshold = urlParams.get('spanThreshold') || 200;
         tableThreshold = urlParams.get('tableThreshold') || 'duration';
 
@@ -519,7 +519,7 @@
     let tableFormat = "";
     let cumulativeLine = "";
     let seriesCount = 5;
-    let groupByLength = "20";
+    let groupByLength = "200";
     let groupByMatch = "";
     let filterBy = "";
     let filterReq = "";
@@ -2381,7 +2381,7 @@
             document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
         }else{
             if(customEvent == otherEvent) {
-                if(customEvent === "diagnostics") {
+                if(customEvent === "diagnostics(raw)") {
                     chartType = "scatter";
                     enableOnClick = true;
                 }else{
@@ -4023,17 +4023,18 @@
                 contextData.tooltips = tooltips;
                 contextData.records[".Async + Sync"] = joinRecords;
 
-                if (contextData.records["ActiveAsyncContext"] != undefined) {
-                    for (var tid in contextData.records["ActiveAsyncContext"]) {
+                if (contextData.records["Async active"] != undefined) {
+                    for (var tid in contextData.records["Async active"]) {
                         let missingmq = [];
+                        let missingall = [];
                         let missingIDMap = {};
                         /*contextData.records["ActiveAsyncContext"][tid].sort(function (a, b) {
                             return a.record[1] - b.record[1];
                         });*/
-                        contextData.records["ActiveAsyncContext"][tid].forEach(function (obj) {
+                        contextData.records["Async active"][tid].forEach(function (obj) {
                             let found = false;
-                            if (contextData.records["AsyncContext"] != undefined && contextData.records["AsyncContext"][tid] != undefined) {
-                                contextData.records["AsyncContext"][tid].forEach(function (obj1) {
+                            if (contextData.records["Async"] != undefined && contextData.records["Async"][tid] != undefined) {
+                                contextData.records["Async"][tid].forEach(function (obj1) {
                                     if (!found) {
                                         if (obj.record[7] === obj1.record[9]) {
                                             found = true;
@@ -4044,21 +4045,30 @@
                             }
                             if (!found) {
                                 if (missingIDMap[obj.record[7]] == undefined) {
-                                    missingmq.push({"record": [obj.record[0], obj.record[1], obj.record[2], obj.record[3], "mqfrm-active", obj.record[4], obj.record[5], obj.record[6], 0, obj.record[7], obj.record[8], 0, obj.record[9], obj.record[10], obj.record[11], 0, 0, "NA", "NA", "NA", "NA"]});
-                                    console.log(obj);
+                                    let record = [obj.record[0], obj.record[1], obj.record[2], obj.record[3], "mqfrm-active", obj.record[4], obj.record[5], obj.record[6], 0, obj.record[7], obj.record[8], 0, obj.record[9], obj.record[10], obj.record[11], 0, 0, "NA", "NA", "NA", "NA"];
+                                    missingmq.push({"record": record});
+                                    missingall.push({"record": [record[0], record[1], record[2], record[5], "NA", record[4], record[13], record[3], record[9], record[7], record[6], record[8], "NA", "NA", record[12], "NA", "NA", record[14], Number(obj.record[16])]});
                                     missingIDMap[obj.record[7]] = 1;
                                 }
                             }
                         });
                         if (Object.keys(missingmq).length !== 0) {
-                            if (contextData.records["AsyncContext"] == undefined) {
-                                contextData.records["AsyncContext"] = {};
+                            if (contextData.records["Async"] == undefined) {
+                                contextData.records["Async"] = {};
                             }
-                            if (contextData.records["AsyncContext"][tid] == undefined) {
-                                contextData.records["AsyncContext"][tid] = [];
+                            if (contextData.records["Async"][tid] == undefined) {
+                                contextData.records["Async"][tid] = [];
+                            }
+                            if (contextData.records[".Async + Sync"] == undefined) {
+                                contextData.records[".Async + Sync"] = {};
+                            }
+                            if (contextData.records[".Async + Sync"][tid] == undefined) {
+                                contextData.records[".Async + Sync"][tid] = [];
                             }
                             missingmq.forEach(function (obj) {
-                                contextData.records["AsyncContext"][tid].push(obj);
+                                contextData.records["Async"][tid].push(obj);
+                            });
+                            missingall.forEach(function (obj) {
                                 contextData.records[".Async + Sync"][tid].push(obj);
                             });
                         }
@@ -4080,15 +4090,15 @@
 
     function getContextName(type){
         if(type == 2){
-            return "LogContext";
+            return "Sync";
         }else if(type == 6){
-            return "MessageQueue";
+            return "Async";
         }else if(type == 5){
             return "GlobalDescribe";
         }else if(type == 4) {
             return "ApexExecutionLogInfo";
         }else if(type == 9){//todo merge with AsyncContext
-            return "MessageQueueActive";
+            return "Async active";
         }else if( type == 10){
             return "DbConnectionContext";
         }else if(type == 12){

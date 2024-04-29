@@ -339,12 +339,12 @@ function loadDiagData1(){
                 diagnostics.push(metaData1[key].metadata.name);
                 diagnostics.push(1);
                 diagnostics.push(metaData1[key].metadata.guid);
-                if (header["diagnostics"] == undefined) {
-                    header["diagnostics"] = ["timestamp:timestamp", "event:text", "count:number", "guid:text"];
-                    records["diagnostics"] = {};
-                    records["diagnostics"][1] = [];
+                if (header["diagnostics(raw)"] == undefined) {
+                    header["diagnostics(raw)"] = ["timestamp:timestamp", "event:text", "count:number", "guid:text"];
+                    records["diagnostics(raw)"] = {};
+                    records["diagnostics(raw)"][1] = [];
                 }
-                records["diagnostics"][1].push({"record": diagnostics});
+                records["diagnostics(raw)"][1].push({"record": diagnostics});
             }
 
             let dimExists = false;
