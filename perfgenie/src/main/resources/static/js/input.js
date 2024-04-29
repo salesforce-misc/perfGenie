@@ -611,6 +611,18 @@ function updateTypes1(tenant, host){
     let profiles = {};
     try {
         for (var key in metaData1) {
+            if(metaData1[key].metadata["name"] != undefined) {
+                if ((metaData1[key].metadata["name"] == "jstack" || metaData1[key].metadata.type == "jstack")) {
+                    console.log("check1");
+                }
+                if ((tenant === metaData1[key].metadata.tenant || tenant === metaData1[key].metadata["tenant-id"])) {
+                    console.log("check2");
+                }
+                if(host === metaData1[key].metadata.host){
+                    console.log("check3");
+                }
+
+            }
 
             if (metaData1[key].metadata["name"] != undefined && (metaData1[key].metadata["name"] == "json-jstack" || metaData1[key].metadata.type == "jstack") && (tenant === metaData1[key].metadata.tenant || tenant === metaData1[key].metadata["tenant-id"]) && host === metaData1[key].metadata.host) {
                 if(jfrprofiles1[metaData1[key].metadata.name] == undefined){
@@ -662,7 +674,7 @@ function updateTypes2(tenant, host){
     let profiles = {};
     try {
         for (var key in metaData2) {
-            if (metaData2[key].metadata["name"] != undefined && (metaData2[key].metadata["name"] == "json-jstack" || metaData1[key].metadata.type == "jstack") && (tenant === metaData2[key].metadata.tenant || tenant === metaData2[key].metadata["tenant-id"]) && host === metaData2[key].metadata.host) {
+            if (metaData2[key].metadata["name"] != undefined && (metaData2[key].metadata["name"] == "jstack" || metaData1[key].metadata.type == "jstack") && (tenant === metaData2[key].metadata.tenant || tenant === metaData2[key].metadata["tenant-id"]) && host === metaData2[key].metadata.host) {
                 if(jfrprofiles2[metaData2[key].metadata.name] == undefined){
                     jfrprofiles2[metaData2[key].metadata.name] = true;
                 }
