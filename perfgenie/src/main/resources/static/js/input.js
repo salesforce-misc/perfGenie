@@ -735,8 +735,8 @@ function populateIDs1(tenant, host, clearInput) {
     let jstackFound = false;
     for (var key in metaData1) {
         if ((tenant === metaData1[key].metadata.tenant || tenant === metaData1[key].metadata["tenant-id"]) && (host === metaData1[key].metadata.host || tenant === metaData1[key].metadata["instance-id"])) {
-            if ((metaData1[key].metadata["name"] != undefined && (metaData1[key].metadata["name"] == "jfr" || metaData1[key].metadata["name"] == "json-jstack" || metaData1[key].metadata["name"] == "Jstack")) || (metaData1[key].metadata["type"] != undefined && (metaData1[key].metadata["type"] == "jfrprofile" || metaData1[key].metadata["type"] == "jfrevent"))) {
-                if (metaData1[key].metadata["name"] != undefined && (metaData1[key].metadata["name"] == "Jstack" || metaData1[key].metadata["name"] == "json-jstack")) {
+            if ((metaData1[key].metadata["name"] != undefined && (metaData1[key].metadata["name"] == "jfr" || metaData1[key].metadata["name"] == "jstack" || metaData1[key].metadata["name"] == "Jstack")) || (metaData1[key].metadata["type"] != undefined && (metaData1[key].metadata["type"] == "jfrprofile" || metaData1[key].metadata["type"] == "jfrevent"))) {
+                if (metaData1[key].metadata["name"] != undefined && (metaData1[key].metadata["name"] == "Jstack" || metaData1[key].metadata["name"] == "jstack")) {
                     jstackFound = true;
                     continue;
                 }
@@ -856,8 +856,8 @@ function populateIDs2(tenant, host, clearInput) {
     let jstackFound = false;
     for (var key in metaData2) {
         if ((tenant === metaData2[key].metadata.tenant || tenant === metaData2[key].metadata["tenant-id"]) && (host === metaData2[key].metadata.host || tenant === metaData2[key].metadata["instance-id"])) {
-            if ((metaData2[key].metadata["name"] != undefined && (metaData2[key].metadata["name"] == "jfr" || metaData2[key].metadata["name"] == "json-jstack" || metaData2[key].metadata["name"] == "Jstack")) || (metaData2[key].metadata["type"] == undefined && (metaData2[key].metadata["type"] == "jfrprofile" || metaData2[key].metadata["type"] == "jfrevent"))) {
-                if (metaData2[key].metadata["name"] != undefined && (metaData2[key].metadata["name"] == "Jstack" || metaData2[key].metadata["name"] == "json-jstack")) {
+            if ((metaData2[key].metadata["name"] != undefined && (metaData2[key].metadata["name"] == "jfr" || metaData2[key].metadata["name"] == "jstack" || metaData2[key].metadata["name"] == "Jstack")) || (metaData2[key].metadata["type"] == undefined && (metaData2[key].metadata["type"] == "jfrprofile" || metaData2[key].metadata["type"] == "jfrevent"))) {
+                if (metaData2[key].metadata["name"] != undefined && (metaData2[key].metadata["name"] == "Jstack" || metaData2[key].metadata["name"] == "jstack")) {
                     jstackFound = true;
                     continue;
                 }
