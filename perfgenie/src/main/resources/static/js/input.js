@@ -333,18 +333,19 @@ function loadDiagData1(){
             if(metaData1[key].metadata.name === "jfr"){
                 continue;
             }
-
-            let diagnostics = []
-            diagnostics.push(metaData1[key].timestampMillis);
-            diagnostics.push(metaData1[key].metadata.name);
-            diagnostics.push(1);
-            diagnostics.push(metaData1[key].metadata.guid);
-            if (header["diagnostics"] == undefined) {
-                header["diagnostics"] = ["timestamp:timestamp","event:text","count:number","guid:text"];
-                records["diagnostics"] = {};
-                records["diagnostics"][1]=[];
+            if(!metaData1[key].metadata.name.includes("json")) {
+                let diagnostics = []
+                diagnostics.push(metaData1[key].timestampMillis);
+                diagnostics.push(metaData1[key].metadata.name);
+                diagnostics.push(1);
+                diagnostics.push(metaData1[key].metadata.guid);
+                if (header["diagnostics"] == undefined) {
+                    header["diagnostics"] = ["timestamp:timestamp", "event:text", "count:number", "guid:text"];
+                    records["diagnostics"] = {};
+                    records["diagnostics"][1] = [];
+                }
+                records["diagnostics"][1].push({"record": diagnostics});
             }
-            records["diagnostics"][1].push({"record" : diagnostics});
 
             let dimExists = false;
             for(let dim in metaData1[key].dimensions) {
