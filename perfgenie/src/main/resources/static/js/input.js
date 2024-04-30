@@ -389,9 +389,11 @@ function loadDiagData1(){
             }
         }
     }
+    let isloaded = false;
     for (let key in header) {
         otherEventsFetched[key]=true;
         contextData.header[key] = header[key];
+        isloaded=true;
     }
     for (let key in records) {
         contextData.records[key] = records[key];
@@ -399,6 +401,12 @@ function loadDiagData1(){
             value: key,
             text: key
         }));
+    }
+    if(isloaded){
+        Toastify({
+            text: "diagnostics(raw) events loaded",
+            duration: 8000
+        }).showToast();
     }
 }
 
