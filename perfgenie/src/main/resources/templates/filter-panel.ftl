@@ -5309,7 +5309,7 @@
                                                 sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field]);
                                             }else{
                                                 if(otherEvent === "diagnostics(raw)" && field == 3){
-                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a style='cursor: pointer;' class='fa fa-eye' onclick='getDiagEvent("+record[0]+", \""+record[3]+"\",\""+record[1]+"\")'></a>", "' hint='download'");
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-eye' onclick='getDiagEvent("+record[0]+", \""+record[3]+"\",\""+record[1]+"\")'></a>", "' hint='download'");
                                                 }else {
                                                     sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field], "' hint='" + isDimIndexMap[field] + "'");
                                                 }
