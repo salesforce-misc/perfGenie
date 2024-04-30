@@ -4224,9 +4224,6 @@
                         //contextData.records["Async active"][tid].sort(function (a, b) {return b.record[1] - a.record[1];});//descending
 
                         contextData.records["Async active"][tid].forEach(function (obj) {
-                            if(obj.record[7] == "4wc7l4d37Eec5kF8Rx6uw-"){
-                                console.log(obj.record[7]);
-                            }
 
                             let found = false;
                             if (contextData.records["Async"] != undefined && contextData.records["Async"][tid] != undefined) {
@@ -4246,11 +4243,6 @@
                                     missingall.push({"record": [record[0], (obj.record[1] - obj.record[6]), record[2], record[5], "NA", record[4], record[13], record[3], record[9], record[7], record[6], record[8], "NA", "NA", record[12], "NA", "NA", record[14], Number(record[16])]});
                                     missingIDMap[obj.record[7]] = 1;
                                 }
-                            }else{
-                                let record = [obj.record[0], (obj.record[1] - obj.record[6]), obj.record[2], obj.record[3], "dup-active", obj.record[4], obj.record[5], obj.record[6], 0, obj.record[7], obj.record[8], 0, obj.record[9], obj.record[10], obj.record[11], 0, 0, "NA", "NA", "NA", "NA"];
-                                missingmq.push({"record": record});
-                                missingall.push({"record": [record[0], (obj.record[1] - obj.record[6]), record[2], record[5], "NA", record[4], record[13], record[3], record[9], record[7], record[6], record[8], "NA", "NA", record[12], "NA", "NA", record[14], Number(record[16])]});
-                                missingIDMap[obj.record[7]] = 1;
                             }
                         });
                         if (Object.keys(missingmq).length !== 0) {
