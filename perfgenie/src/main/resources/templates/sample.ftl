@@ -344,7 +344,7 @@
             sfContextDataTable.addContextTableHeader(row,"Samples",1);
         }else{*/
             if(groupBySamples == "tid") {
-                sfSampleTable.addContextTableHeader(row,groupBySamples,1,"class='context-menu-two'",contextData.tooltips[groupBySamples]);
+                sfSampleTable.addContextTableHeader(row,groupBySamples,1,"class='context-menu-three'",contextData.tooltips[groupBySamples]);
             }else{
                 sfSampleTable.addContextTableHeader(row,groupBySamples,-1,"class='context-menu-two'",contextData.tooltips[groupBySamples]);
             }
@@ -793,7 +793,12 @@
                 addContextTableOrderRow(sampleTableRows[samplerowIndex], str, order);
             }else{*/
 
-            sfSampleTable.addContextTableRow(sampleTableRows[samplerowIndex], ("<div style=\"cursor: pointer; word-wrap: break-word;\" >" + (key == undefined ? "NA" : key) + "</div>"), "hint='"+groupBySamples+"'");
+            //"id='"+Number(dim) + "_dummy'"
+            if(groupBySamples == "tid"){
+                sfSampleTable.addContextTableRow(sampleTableRows[samplerowIndex], ("<div style=\"cursor: pointer; word-wrap: break-word;\" >" + (key == undefined ? "NA" : key) + "</div>"), "id='"+ key + "_dummy'" + " hint='" + groupBySamples + "'");
+            }else {
+                sfSampleTable.addContextTableRow(sampleTableRows[samplerowIndex], ("<div style=\"cursor: pointer; word-wrap: break-word;\" >" + (key == undefined ? "NA" : key) + "</div>"), "hint='" + groupBySamples + "'");
+            }
             sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], ("<div class=\"badge badge-info\"><span style='font-size: 12px; color:black'>"+value+"</span> " + (100 * value / totalSampleCount).toFixed(3) + "%</div>"), value);
             sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], str, order);
 

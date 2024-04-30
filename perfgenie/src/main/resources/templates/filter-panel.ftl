@@ -234,12 +234,27 @@
                     let pair = $(this).attr("id").split("_")
                     addToFilter("timestamp=" + pair[1]);
                 } else if (key == "show") {
-                    showRequestContextPopup($(this).attr("id"));
+                    showRequestContextPopup($(this).attr("id"),false);
                 }
             },
             items: {
                 "add": {name: "Add to filter"},
                 "show": {name: "Show request timeline"}
+            }
+        });
+        $.contextMenu({
+            selector: '.context-menu-three',
+            callback: function (key, options) {
+                if (key == "add") {
+                    let pair = $(this).attr("id").split("_")
+                    addToFilter("timestamp=" + pair[1]);
+                } else if (key == "show") {
+                    showRequestContextPopup($(this).attr("id"),true);
+                }
+            },
+            items: {
+                "add": {name: "Add to filter"},
+                "show": {name: "Show thread timeline"}
             }
         });
         $.contextMenu({
@@ -1266,15 +1281,18 @@
         }
     }
 
-    function showRequestContextPopup(filterReq) {
-        if (filterReq != undefined) {
+    function showRequestContextPopup(filterReq, allSamples) {
+        if(allSamples == undefined){
+            allSamples = false;
+        }
+        if (filterReq != undefined || allSamples) {
             popfilterStack = "";
-            createTimelineModal("timelinepopup");
+            createTimelineModal("timelinepopup", allSamples);
             loadModal("timelinepopup");
             setTimeout(function () {
                 $('#timelinepopup').focus();
                 let pair = filterReq.split("_");
-                showRequestTimelineView(pair[0], pair[1], false);
+                showRequestTimelineView(pair[0], pair[1], false, allSamples);
                 let stackPair = popfilterStack.split("_");
                 if ($("#" + stackPair[0] + "-" + stackPair[1] + "_pop").length != 0 && !$("#" + stackPair[0] + "-" + stackPair[1] + "_pop").hasClass("stackCells")) {
                     $("#" + stackPair[0] + "-" + stackPair[1] + "_pop").click();
@@ -1283,32 +1301,47 @@
         }
     }
 
-    function createTimelineModal(modalId) {
-        $('#modals-guid')[0].innerHTML = "<div  class='modal inmodal fade' data-backdrop=\"static\"  id='" + modalId + "' tabindex='-1' role='dialog'  aria-hidden='true'>\n" +
+    function createTimelineModal(modalId, allSamples) {
+        if(allSamples == undefined){
+            allSamples = false;
+        }
+        let modalHtml = "<div  class='modal inmodal fade' data-backdrop=\"static\"  id='" + modalId + "' tabindex='-1' role='dialog'  aria-hidden='true'>\n" +
             "    <div style=\"max-width: 90%;\" class='modal-dialog' role=\"document\">\n" +
             "        <div class='modal-content'>\n" +
             "           <div id='data-modal-body' class='modal-body' style='overflow: auto'> \n" +
             "<div id=\"popupstackncontextview\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupstackncontextview col-lg-12\" >\n" +
             "<span id=\"timelinepopuptitle\" style=\"color: #686A6C;font-family: 'Arial', serif;\">Profiling samples collected during request runTime</span>\n" +
-            "<div style=\"padding-top:0px; padding-left: 15px;padding-right: 0px;\" class=\"row col-lg-12\">\n" +
-            "<div style=\"padding-top: 0px; padding-left: 0px;padding-right: 5px;padding-bottom: 5px;\" class=\"popupfilterpanel col-lg-9\">\n" +
-            "<div style=\"border-color: #e5e6e7;  border-width: 1px; border-style: solid;padding-top: 3px; padding-left: 5px;padding-right: 5px;\" class=\"popupstackpanel\">\n" +
+            "<div style=\"padding-top:0px; padding-left: 15px;padding-right: 0px;\" class=\"row col-lg-12\">\n";
+
+        if (allSamples) {
+            modalHtml += "<div style=\"padding-top: 0px; padding-left: 0px;padding-right: 5px;padding-bottom: 5px;\" class=\"popupfilterpanel col-lg-12\">\n";
+        } else {
+            modalHtml += "<div style=\"padding-top: 0px; padding-left: 0px;padding-right: 5px;padding-bottom: 5px;\" class=\"popupfilterpanel col-lg-9\">\n";
+        }
+
+        modalHtml += "<div style=\"border-color: #e5e6e7;  border-width: 1px; border-style: solid;padding-top: 3px; padding-left: 5px;padding-right: 5px;\" class=\"popupstackpanel\">\n" +
             "<div style=\"overflow: auto;\" class=\"cct-customized-scrollbar popupthreadstate\" id=\"popupthreadstate\">\n" +
             "</div>\n" +
             "<div class=\"popuphackstak\" id=\"popupstack\">\n" +
             "</div>\n" +
             "</div>\n" +
-            "</div>\n" +
-            "<div class=\"nopadding col-lg-3\">\n" +
+            "</div>\n";
+
+        if(!allSamples) {
+            modalHtml += "<div class=\"nopadding col-lg-3\">\n" +
             "<div  style=\"border-color: #e5e6e7;  border-width: 1px; border-style: solid; padding: 5px;\"  class=\"popupstackcontext\" id=\"popupstackcontext\">\n" +
             "</div>\n" +
-            "</div>\n" +
-            "</div>\n" +
+            "</div>\n";
+        }
+
+        modalHtml +="</div>\n" +
             "</div>\n" +
             "            </div>\n" +
             "        </div>\n" +
             "    </div>\n" +
             "</div>";
+
+        $('#modals-guid')[0].innerHTML = modalHtml;
     }
 
     function loadModal(modalId) {
@@ -1585,11 +1618,14 @@
         console.log("filterOnType 1");
     }
 
-    function showRequestTimelineView(tid, time, applyFilter) {
+    function showRequestTimelineView(tid, time, applyFilter, allSamples) {
         let str = "";
         let table = "";
         let runTime = 0;
         let profilestart = 0;
+        if(allSamples == undefined){
+            allSamples == false;
+        }
 
         for (var eventType in jfrprofiles1) {
             if (profilestart == 0 && !(eventType == "Jstack" || eventType == "json-jstack") && getContextTree(1, eventType) != undefined) {
@@ -1644,15 +1680,17 @@
             contextDataRecords = contextData.records[customEvent];
         }
 
-        contextDataRecords[tid].forEach(function (obj) {
-            let record = obj.record;
-            if (record[timestampIndex] == time) {
-                reqId = record[timestampIndex] + ":" + record[dimIndexMap["tid"]]; //make a unique key
-                runTime = record[spanIndex];
-                str = getContextView(record, dimIndexMap, metricsIndexMap);
-                return false;
-            }
-        });
+        if(!allSamples) {
+            contextDataRecords[tid].forEach(function (obj) {
+                let record = obj.record;
+                if (record[timestampIndex] == time) {
+                    reqId = record[timestampIndex] + ":" + record[dimIndexMap["tid"]]; //make a unique key
+                    runTime = record[spanIndex];
+                    str = getContextView(record, dimIndexMap, metricsIndexMap);
+                    return false;
+                }
+            });
+        }
 
         let str1 = "<table><tr>";
         let scount = 0;
@@ -1674,7 +1712,7 @@
                 if (getContextTree(1, jstackEvent) !== undefined && getContextTree(1, jstackEvent).context != undefined && getContextTree(1, jstackEvent).context.tidMap[tid] !== undefined) {
                     getContextTree(1, jstackEvent).context.tidMap[tid].forEach(function (obj) {
                         if((pStart === '' || pEnd === '') || ((obj.time + jstackstart) >= pStart && (obj.time + jstackstart) <= pEnd)) { //check time rang
-                            if (obj.time >= jstackstart && obj.time <= jstackstart + runTime) {
+                            if (allSamples || (obj.time >= jstackstart && obj.time <= jstackstart + runTime)) {
                                 if (isJstack && applyFilter) {
                                         getTreeStackLevel(getActiveTree(jstackEvent, false), obj.hash, 1, FilterLevel.LEVEL2);
                                 }
@@ -1695,7 +1733,7 @@
                 if (getContextTree(1, eventType) != undefined && getContextTree(1, eventType).context != undefined && getContextTree(1, eventType).context.tidMap[tid] !== undefined) {
                     getContextTree(1, eventType).context.tidMap[tid].forEach(function (obj) {
                         if((pStart === '' || pEnd === '') || ((obj.time + profilestart) >= pStart && (obj.time + profilestart) <= pEnd)) { //check time rang
-                            if (obj.time >= start && obj.time <= start + runTime) {
+                            if (allSamples || (obj.time >= start && obj.time <= start + runTime)) {
                                 tmpIdMap.set(obj.hash + "_" + eventTypeCount + "_" + obj.time, obj.time);
                                 scount++;
                                 if (getEventType() == eventType) {
@@ -1770,20 +1808,30 @@
             eventTypeCount++;
         }
 
-        timelinetitleIDHTML += "</select>" +
-            "&nbsp;profiling samples between " + moment.utc(Number(time)).format('YYYY-MM-DD HH:mm:ss.SSS') + " to " + moment.utc(Number(time) + runTime).format('YYYY-MM-DD HH:mm:ss.SSS');
+        if(!allSamples) {
+            timelinetitleIDHTML += "</select>" +
+                "&nbsp;profiling samples between " + moment.utc(Number(time)).format('YYYY-MM-DD HH:mm:ss.SSS') + " to " + moment.utc(Number(time) + runTime).format('YYYY-MM-DD HH:mm:ss.SSS');
+        }else{
+            timelinetitleIDHTML += "</select>" +
+                "&nbsp;profiling samples of tid " + tid;
+        }
 
         document.getElementById(timelinetitleID).innerHTML = timelinetitleIDHTML;
         document.getElementById(threadstateID).innerHTML = str1;
-        str = str + "<tr><td style=\"white-space: nowrap;\" title='total samples collected in this request'>samples</td><td style=\"white-space: nowrap;padding-left: 5px;\" >" + scount + " </td></tr>";
-        if (str != "") {
-            table = table + colorStackStr;
-            table = table + "<table  style=\"border-left: none; border-right: none; width:100%; padding: 0px;\" class=\"ui-widget table-striped\" >";
-            table = table + str;
-            table = table + "</table>";
+        if(!allSamples) {
+            str = str + "<tr><td style=\"white-space: nowrap;\" title='total samples collected in this request'>samples</td><td style=\"white-space: nowrap;padding-left: 5px;\" >" + scount + " </td></tr>";
+            if (str != "") {
+                table = table + colorStackStr;
+                table = table + "<table  style=\"border-left: none; border-right: none; width:100%; padding: 0px;\" class=\"ui-widget table-striped\" >";
+                table = table + str;
+                table = table + "</table>";
 
+            }
         }
-        document.getElementById(stackcontextID).innerHTML = table;
+        if(!allSamples) {
+            document.getElementById(stackcontextID).innerHTML = table;
+        }
+
         document.getElementById(stackID).innerHTML = "";
         $('#timeline-event-type').multiselect({
             buttonWidth: '200px',
@@ -4721,7 +4769,7 @@
                                         if (field == timestampIndex) {
                                             sfContextDataTable.addContextTableRow(tableRows[rowIndex],moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'),"id='"+record[tidRowIndex] + "_" + record[field]+"'");
                                         } else if(field == tidRowIndex) {
-                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],Number(record[field]),"' hint='tid'");
+                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],Number(record[field]),"id='"+record[tidRowIndex] + "_dummy'" + " hint='tid'");
                                         }else {
                                             if(isDimIndexMap[field] == undefined) {
                                                 sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field]);
@@ -4829,7 +4877,7 @@
                                         if (field == timestampIndex) {
                                             sfContextDataTable.addContextTableRow(tableRows[rowIndex],moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'),"id='"+record[tidRowIndex] + "_" + record[field]+"'");
                                         } else if(field == tidRowIndex) {
-                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],Number(record[field]),"' hint='tid'");
+                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],Number(record[field]),"id='"+record[tidRowIndex] + "_dummy'" + " hint='tid'");
                                         }else {
                                             if(isDimIndexMap[field] == undefined) {
                                                 sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field]);
@@ -4907,7 +4955,7 @@
                     rowIndex++;
                     tableRows[rowIndex] = [];
                     if(groupBy == "tid"){
-                        sfContextDataTable.addContextTableRow(tableRows[rowIndex],(dim == undefined ? "NA" : Number(dim)),"hint='"+groupBy+"'");
+                        sfContextDataTable.addContextTableRow(tableRows[rowIndex],(dim == undefined ? "NA" : Number(dim)),"id='"+Number(dim) + "_dummy'" + " hint='"+groupBy+"'");
                     }else {
                         sfContextDataTable.addContextTableRow(tableRows[rowIndex],(dim == undefined ? "NA" : dim),"hint='"+groupBy+"'");
                     }
@@ -5173,7 +5221,7 @@
                                         if (field == timestampIndex) {
                                             sfContextDataTable.addContextTableRow(tableRows[rowIndex],moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'),"id='"+record[tidRowIndex] + "_" + record[field]+"'");
                                         } else if(field == tidRowIndex) {
-                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],Number(record[field]),"' hint='tid'");
+                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],Number(record[field]),"id='"+record[tidRowIndex] + "_dummy'" + " hint='tid'");
                                         }else {
                                             if(isDimIndexMap[field] == undefined) {
                                                 sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field]);
@@ -5285,7 +5333,7 @@
                                         if (field == timestampIndex) {
                                             sfContextDataTable.addContextTableRow(tableRows[rowIndex],moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'),"id='"+record[tidRowIndex] + "_" + record[field]+"'");
                                         } else if(field == tidRowIndex) {
-                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],Number(record[field]),"' hint='tid'");
+                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],Number(record[field]),"id='"+record[tidRowIndex] + "_dummy'" + " hint='tid'");
                                         }else {
                                             if(isDimIndexMap[field] == undefined) {
                                                 sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field]);
@@ -5434,7 +5482,7 @@
     function getContextTableHeadernew(groupBy, row, customEvent) {
         if (!(groupBy == undefined || groupBy == "" || groupBy == "All records")) {
             if(groupBy == "tid") {
-                sfContextDataTable.addContextTableHeader(row,groupBy,1,"class='context-menu-two' " , contextData.tooltips[groupBy]);
+                sfContextDataTable.addContextTableHeader(row,groupBy,1,"class='context-menu-three' " , contextData.tooltips[groupBy]);
             }else{
                 sfContextDataTable.addContextTableHeader(row,groupBy,-1,"class='context-menu-two'" , contextData.tooltips[groupBy]);
             }
@@ -5448,7 +5496,7 @@
                     }else if(tokens[1] == "timestamp"){
                         sfContextDataTable.addContextTableHeader(row,tokens[0],-1,"class='context-menu-one'");
                     }else if(tokens[0] == "tid"){
-                        sfContextDataTable.addContextTableHeader(row,tokens[0],1,"class='context-menu-two'", contextData.tooltips[tokens[0]]);
+                        sfContextDataTable.addContextTableHeader(row,tokens[0],1,"class='context-menu-three'", contextData.tooltips[tokens[0]]);
                     }else{
                         sfContextDataTable.addContextTableHeader(row,tokens[0],-1,"class='context-menu-two'", contextData.tooltips[tokens[0]]);
                     }
