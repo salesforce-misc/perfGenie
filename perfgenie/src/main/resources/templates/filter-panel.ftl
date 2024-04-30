@@ -247,7 +247,7 @@
             callback: function (key, options) {
                 if (key == "add") {
                     let pair = $(this).attr("id").split("_")
-                    addToFilter("timestamp=" + pair[1]);
+                    addToFilter($(this).attr("hint") + "=" + $(this).text());
                 } else if (key == "show") {
                     showRequestContextPopup($(this).attr("id"),true);
                 }
@@ -4101,8 +4101,8 @@
                 let lastReq = "";
                 for (var tid in contextData.records) {
 
-                    contextData.records[tid].sort(function (a, b) {
-                        return a.record[1] - b.record[1];
+                    contextData.records[tid].sort(function (a, b) {//descending
+                        return b.record[1] - a.record[1];
                     });
 
                     contextData.records[tid].forEach(function (obj) {
@@ -4123,9 +4123,7 @@
                             if (records[logContext][tid] == undefined) {
                                 records[logContext][tid] = [];
                             }
-                            if (obj.record[0] == 9) {
-                                obj.record[1] = obj.record[1] - obj.record[6];//need to reset start time curtime - runTime
-                            } else if (obj.record[0] == 10 || obj.record[0] == 12) {//change duration to millis
+                            if (obj.record[0] == 10 || obj.record[0] == 12) {//change duration to millis
                                 obj.record[4] = obj.record[4] / 1000000;
                             } else if (obj.record[0] == 2) {
                                 if (header[".Async + Sync"] == undefined) {
@@ -4170,9 +4168,9 @@
                             records[logContext][tid].push(obj);
                         }
                     });
-                    records[logContext][tid].sort(function (a, b) {
+                    /*records[logContext][tid].sort(function (a, b) {
                         return a.record[1] - b.record[1];
-                    });
+                    });*/
                 }
 
                 contextData.records = records;
@@ -4185,10 +4183,14 @@
                         let missingmq = [];
                         let missingall = [];
                         let missingIDMap = {};
-                        /*contextData.records["ActiveAsyncContext"][tid].sort(function (a, b) {
-                            return a.record[1] - b.record[1];
-                        });*/
+
+                        //contextData.records["Async active"][tid].sort(function (a, b) {return b.record[1] - a.record[1];});//descending
+
                         contextData.records["Async active"][tid].forEach(function (obj) {
+                            if(obj.record[7] == "4wc7l4d37Eec5kF8Rx6uw-"){
+                                console.log(obj.record[7]);
+                            }
+
                             let found = false;
                             if (contextData.records["Async"] != undefined && contextData.records["Async"][tid] != undefined) {
                                 contextData.records["Async"][tid].forEach(function (obj1) {
@@ -4202,11 +4204,16 @@
                             }
                             if (!found) {
                                 if (missingIDMap[obj.record[7]] == undefined) {
-                                    let record = [obj.record[0], obj.record[1], obj.record[2], obj.record[3], "mqfrm-active", obj.record[4], obj.record[5], obj.record[6], 0, obj.record[7], obj.record[8], 0, obj.record[9], obj.record[10], obj.record[11], 0, 0, "NA", "NA", "NA", "NA"];
+                                    let record = [obj.record[0], (obj.record[1] - obj.record[6]), obj.record[2], obj.record[3], "mqfrm-active", obj.record[4], obj.record[5], obj.record[6], 0, obj.record[7], obj.record[8], 0, obj.record[9], obj.record[10], obj.record[11], 0, 0, "NA", "NA", "NA", "NA"];
                                     missingmq.push({"record": record});
-                                    missingall.push({"record": [record[0], record[1], record[2], record[5], "NA", record[4], record[13], record[3], record[9], record[7], record[6], record[8], "NA", "NA", record[12], "NA", "NA", record[14], Number(obj.record[16])]});
+                                    missingall.push({"record": [record[0], (obj.record[1] - obj.record[6]), record[2], record[5], "NA", record[4], record[13], record[3], record[9], record[7], record[6], record[8], "NA", "NA", record[12], "NA", "NA", record[14], Number(record[16])]});
                                     missingIDMap[obj.record[7]] = 1;
                                 }
+                            }else{
+                                let record = [obj.record[0], (obj.record[1] - obj.record[6]), obj.record[2], obj.record[3], "dup-active", obj.record[4], obj.record[5], obj.record[6], 0, obj.record[7], obj.record[8], 0, obj.record[9], obj.record[10], obj.record[11], 0, 0, "NA", "NA", "NA", "NA"];
+                                missingmq.push({"record": record});
+                                missingall.push({"record": [record[0], (obj.record[1] - obj.record[6]), record[2], record[5], "NA", record[4], record[13], record[3], record[9], record[7], record[6], record[8], "NA", "NA", record[12], "NA", "NA", record[14], Number(record[16])]});
+                                missingIDMap[obj.record[7]] = 1;
                             }
                         });
                         if (Object.keys(missingmq).length !== 0) {
@@ -4229,6 +4236,8 @@
                                 contextData.records[".Async + Sync"][tid].push(obj);
                             });
                         }
+                        contextData.records[".Async + Sync"][tid].sort(function (a, b) {return b.record[1] - a.record[1];});//descending
+                        contextData.records["Async"][tid].sort(function (a, b) {return b.record[1] - a.record[1];});//descending
                     }
                 }
                 console.log("sf adapter time : " + (performance.now() - taskStart));
