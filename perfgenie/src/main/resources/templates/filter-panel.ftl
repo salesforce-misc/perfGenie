@@ -3411,8 +3411,7 @@
     let toggleToolbarFiltersdisplay = "none";
     function toggleToolbarFilters(){
         $("#toolbarfilters").toggle();
-        $("#yourUlId");
-        toggleToolbarFiltershidden = toggleToolbarFiltershidden == "none" ?  "" : "none";
+        toggleToolbarFiltersdisplay = (toggleToolbarFiltersdisplay == "none") ?  "" : "none";
     }
 
     function setToolBarOptions(id) {
