@@ -458,7 +458,7 @@
         seriesCount = urlParams.get('seriesCount') || 10;
         groupByMatch = urlParams.get('groupByMatch') || '';
         groupByLength = urlParams.get('groupByLength') || '200';
-        spanThreshold = urlParams.get('spanThreshold') || 200;
+        spanThreshold = urlParams.get('spanThreshold') || 0;
         tableThreshold = urlParams.get('tableThreshold') || 'duration';
 
         setToolBarOptions("statetabledrp");
@@ -3408,6 +3408,13 @@
         });*/
     }
 
+    let toggleToolbarFiltersdisplay = "none";
+    function toggleToolbarFilters(){
+        $("#toolbarfilters").toggle();
+        $("#yourUlId");
+        toggleToolbarFiltershidden = toggleToolbarFiltershidden == "none" ?  "" : "none";
+    }
+
     function setToolBarOptions(id) {
 
         console.log("getToolBarOptions1 otherEvent: " + otherEvent + " customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " tableThreshold:"+tableThreshold);
@@ -3536,6 +3543,9 @@
 
         toolBarOptions += '             </select>';
 
+
+        toolBarOptions += "&nbsp;<i  style='font-size:20px; cursor: pointer;' onclick='toggleToolbarFilters();' class='fa fa-filter'></i><span id ='toolbarfilters' style='display:"+toggleToolbarFiltersdisplay+"'>";
+
         toolBarOptions +=    '&nbsp;&nbsp;<span title="Consider first N characters of group by option values">Len:</span> <input  style="height:30px;width:35px;text-align: left;" class="filterinput" id="groupby-length" type="text" value="'+groupByLength+'">\n';
         toolBarOptions +=    '&nbsp;&nbsp;<span title="Sub string match with group by option values">Match:</span><input  style="height:30px;width:120px;text-align: left;" class="filterinput" id="groupby-match" type="text" value="'+groupByMatch+'">\n';
 
@@ -3618,6 +3628,8 @@
                 '                            <option ' + (spanThreshold == 100 ? "selected" : "") + " value='100'>100</option>\n" +
                 '                            <option ' + (spanThreshold == 0 ? "selected" : "") + " value='0'>0</option>\n" +
                 '                            </select> ';
+            toolBarOptions += "</span>";
+
         }
 
         console.log("getToolBarOptions2 otherEvent: " + otherEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " tableThreshold:"+tableThreshold);
