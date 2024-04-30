@@ -776,7 +776,7 @@
                 opensubs[i].classList.remove('open');
             }
         } else {
-            if (e.altKey) {
+            if (false && e.altKey) {
                 classList.add('open');
                 const opensubs = parent.querySelectorAll('li');
                 for (let i = 0; i < opensubs.length; i++) {
