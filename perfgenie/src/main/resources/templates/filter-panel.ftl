@@ -1289,7 +1289,6 @@
             "        <div class='modal-content'>\n" +
             "           <div id='data-modal-body' class='modal-body' style='overflow: auto'> \n" +
             "<div id=\"popupstackncontextview\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupstackncontextview col-lg-12\" >\n" +
-
             "<span id=\"timelinepopuptitle\" style=\"color: #686A6C;font-family: 'Arial', serif;\">Profiling samples collected during request runTime</span>\n" +
             "<div style=\"padding-top:0px; padding-left: 15px;padding-right: 0px;\" class=\"row col-lg-12\">\n" +
             "<div style=\"padding-top: 0px; padding-left: 0px;padding-right: 5px;padding-bottom: 5px;\" class=\"popupfilterpanel col-lg-9\">\n" +
@@ -1305,7 +1304,6 @@
             "</div>\n" +
             "</div>\n" +
             "</div>\n" +
-
             "</div>\n" +
             "            </div>\n" +
             "        </div>\n" +
@@ -2442,22 +2440,6 @@
             console.log("Warn: unable to fetch diag event" + name);
         });
     }
-
-    function createTimelineModal(modalId) {
-        $('#modals-guid')[0].innerHTML = "<div  class='modal inmodal fade' data-backdrop=\"static\"  id='" + modalId + "' tabindex='-1' role='dialog'  aria-hidden='true'>\n" +
-            "    <div style=\"max-width: 90%;\" class='modal-dialog' role=\"document\">\n" +
-            "        <div class='modal-content'>\n" +
-            "           <div id='data-modal-body' class='modal-body' style='overflow: auto'> \n" +
-            "<span style='float:right;' class='spinner' id='spinner1'></span>" +
-            "<pre id=\"popupdiagview\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupdiagview col-lg-12\" >\n" +
-
-            "</pre>\n" +
-            "            </div>\n" +
-            "        </div>\n" +
-            "    </div>\n" +
-            "</div>";
-    }
-
 
     let pincolumns = [];//use this for pinning
     let pinxs = {};
