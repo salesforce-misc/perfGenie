@@ -287,7 +287,7 @@
         }
     }
 
-    function getProfileName(profile){
+    function getProfileName(profile, interval){
         if(profile === "jfr_dump.json.gz"){
             return "Java (Thread State(s): Runnable, Sampling Frequency: 10 ms)";
         }else if(profile === "jfr_dump_socket.json.gz"){
@@ -297,7 +297,11 @@
         }else if(profile === "jfr_dump_memory.json.gz"){
             return "Java Memory (Sampling after every: xxm)";
         }else if(profile === "Jstack" || profile === "json-jstack"){
-            return "Java (Thread State(s): All, Sampling Frequency: xx s)";
+            if(interval != undefined) {
+                return "Java (Thread State(s): All, Sampling Frequency: " + interval + " s)";
+            }else{
+                return "Java (Thread State(s): All, Sampling Frequency: x s)";
+            }
         }
         return profile;
     }

@@ -115,6 +115,32 @@
         min-width:5px;
         border: 1px solid;
     }
+    .stackCell5 {
+        background-color:slateblue;
+        height:10px;
+        min-width:5px;
+        border: 1px solid;
+    }
+
+    .stackOption0 {
+        accent-color:lightseagreen;
+    }
+    .stackOption1 {
+        accent-color:yellow;
+    }
+    .stackOption2 {
+        accent-color:deeppink;
+    }
+    .stackOption3 {
+        accent-color:brown;
+    }
+    .stackOption4 {
+        accent-color:dodgerblue;
+    }
+    .stackOption5 {
+        color: slateblue;
+    }
+
     .stackCells {
         background-color:black;
         height:12px;
@@ -1698,9 +1724,15 @@
         //identify stacks
         const tmpIdMap = new Map();
 
-        let eventTypeCount = 0;
         let eventTypeArray = [];
+
         for (var eventType in jfrprofiles1) {//for all profile event types
+            eventTypeArray.push(eventType);
+        }
+        eventTypeArray.sort();
+
+        for (let eventTypeCount = 0; eventTypeCount< eventTypeArray.length; eventTypeCount++){ //var eventType in jfrprofiles1) {//for all profile event types
+            eventType = eventTypeArray[eventTypeCount];
             if (eventType == jstackEvent) {
                 let isJstack = false;
                 if (getEventType() == jstackEvent) {
@@ -1728,7 +1760,6 @@
                         }
                     });
                 }
-                eventTypeArray.push(jstackEvent);
             } else {
                 if (getContextTree(1, eventType) != undefined && getContextTree(1, eventType).context != undefined && getContextTree(1, eventType).context.tidMap[tid] !== undefined) {
                     getContextTree(1, eventType).context.tidMap[tid].forEach(function (obj) {
@@ -1745,9 +1776,7 @@
                         }
                     });
                 }
-                eventTypeArray.push(eventType);
             }
-            eventTypeCount++;
         }
 
         const tmpIdMapSorted = new Map([...tmpIdMap.entries()].sort((a, b) => a[1] - b[1]));
@@ -1790,22 +1819,23 @@
             stackcontextID = "popupstackcontext";
             stackID = "popupstack";
         }
-        let jstackinterval = '60';
+        let jstackinterval = 'x';
+
         if (getContextTree(1, jstackEvent) != undefined && getContextTree(1, jstackEvent).meta != undefined && getContextTree(1, jstackEvent).meta['jstack-interval'] != undefined) {
             jstackinterval = getContextTree(1, jstackEvent).meta['jstack-interval'];
         }
+
         let timelinetitleIDHTML = "<select multiple=\"multiple\" style=\"border-color:#F2F2F3; height: 24px; width: 223px;\" name=\"timeline-event-type\" id=\"timeline-event-type\"> ";
-        eventTypeCount = 0;
+
         let multiSelectEmpty = false;
         if (Object.keys(multiSelect).length == 0) {
             multiSelectEmpty = true;
         }
-        for (let eventType in jfrprofiles1) {//for all profile event types
-            timelinetitleIDHTML += "<option " + ((multiSelectEmpty || multiSelect[eventTypeCount] != undefined) ? "selected" : "") + " value=" + eventTypeCount + ">" + getProfileName(eventType) + "</option>";
+        for (let eventTypeCount = 0; eventTypeCount< eventTypeArray.length; eventTypeCount++) {//for all profile event types
+            timelinetitleIDHTML += "<option  class='stackOption"+ eventTypeCount +"'" + ((multiSelectEmpty || multiSelect[eventTypeCount] != undefined) ? "selected" : "") + " value=" + eventTypeCount + "><span style='background-color:red'>" + getProfileName(eventTypeArray[eventTypeCount], jstackinterval) + "</span></option>";
             if (multiSelectEmpty) {
                 multiSelect[eventTypeCount] = "selected";
             }
-            eventTypeCount++;
         }
 
         if(!allSamples) {
@@ -1818,6 +1848,13 @@
 
         document.getElementById(timelinetitleID).innerHTML = timelinetitleIDHTML;
         document.getElementById(threadstateID).innerHTML = str1;
+
+        let checkboxes = document.getElementById('timelinepopuptitle').querySelectorAll('label.checkbox');
+
+        for (let i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].addClass('stackOption'+i);
+        }
+
         if(!allSamples) {
             str = str + "<tr><td style=\"white-space: nowrap;\" title='total samples collected in this request'>samples</td><td style=\"white-space: nowrap;padding-left: 5px;\" >" + scount + " </td></tr>";
             if (str != "") {

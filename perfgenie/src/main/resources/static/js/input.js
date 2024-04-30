@@ -325,6 +325,9 @@ function getMetaData1(start, end, tenant, host) {
 }
 
 function loadDiagData1(){
+    if(contextData.header == undefined){
+        return;
+    }
     let records = {};
     let header = {};
 
