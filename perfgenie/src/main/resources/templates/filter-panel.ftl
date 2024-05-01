@@ -3592,7 +3592,7 @@
                     }
                 }
 
-                if (groupBy == "All records" && !(otherEvent == "diagnostics(raw)" && tableFormat != 0)) {
+                if (groupBy == "All records" && tableFormat == 0) {
                     groupByFound = true;
                 }
 
