@@ -309,6 +309,7 @@
         $("#queryfilter").on("change", (event) => {
             //validate manually edited filters
             $("#queryfilter").val($("#queryfilter").val().replace(/\s/g, ''));
+
             if($("#queryfilter").val() == ''){
                 setApplyDisabled(true);
             }else {
@@ -5090,6 +5091,71 @@
         console.log("genRequestTable end time:" + (end - start1));
     }
 
+    function showDSpinner(element){
+        if(element.nextSibling != "downloadspinner"){
+            $("#downloadspinner").append("<span style='float:right;' class='spinner' id='downloadspinner'></span>");
+        }
+        document.getElementById("downloadspinner").style.display = 'block';
+    }
+    function hideDSpinner(){
+        document.getElementById("downloadspinner").style.display = 'none';
+    }
+
+    function downloadDiagEvent(timestamp, guid, name, download, unzip, mimeType, element) {
+        if(download == undefined){
+            download = false;
+        }
+        const callTreeUrl = getDiagEventUrl(timestamp, tenant1, host1, guid, name);
+        if(download){
+            //showDSpinner(element);
+            stackDigVizAjax(tenant1, "GET", callTreeUrl, function (object) {
+                if (object.length === 0) {
+                    Toastify({
+                        text: "Failed to download payload",
+                        duration: 5000
+                    }).showToast();
+                    //hideDSpinner();
+                    return;
+                }
+                const fileUrl = "data:" + mimeType + ";base64," + object;
+                // using this trick to convert a base64 encoded gzip file into a gzip byte array
+                fetch(fileUrl)
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const link = document.createElement("a");
+                        link.href = URL.createObjectURL(blob);
+                        link.download = moment.utc(+timestamp).format('YYYY-MM-DD HH:mm:ss') + "_" + name + ".txt" + (!unzip ? ".gz" : "");
+                        link.click();
+                    });
+                //hideDSpinner();
+            }, function (error) {
+                //hideDSpinner();
+                console.log("Warn: unable to fetch diag event" + name);
+            });
+        }else {
+            if ($("#diagevent").length == 0) {
+                $('#statetablewrapper').append("<div id='diagevent'style='max-height: 400px; overflow: auto; border-style: dotted hidden; padding: 10px;' class='col-lg-12'><div style='float:right;cursor: pointer;' onclick='closePin(\"diagevent\")'>Close</div><div id='diageventheader'>" + moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event:" + otherEvent + ", Name:" + name + "</div><span style='float:right;' class='spinner' id='spinner2'></span>" + "<pre id=\"diageventval\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupdiagview col-lg-12\" >" + "</div>");
+            } else {
+                $("#diageventval").html("");
+                $("#diageventheader").html(moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event:" + otherEvent + ", Name:" + name);
+            }
+            showSpinner("spinner2");
+
+            let request = stackDigVizAjax(tenant1, "GET", callTreeUrl, function (response) { // success function
+                hideSpinner("spinner2");
+                console.log("getDiagEvent done");
+                if (response == undefined || response === "") {
+                    console.log("Warn: unable to fetch diag event " + name);
+                } else {
+                    $("#diageventval").html(response);
+                }
+            }, function (error) {
+                hideSpinner("spinner2");
+                console.log("Warn: unable to fetch diag event" + name);
+            });
+        }
+    }
+
     function genOtherTable() {
         console.log("genOtherTable start");
         $('#timeLineChartNote').hide();
@@ -5260,7 +5326,13 @@
                                             sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field]);
                                         } else {
                                             if (otherEvent === "diagnostics(raw)" && field == 3) {
-                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-eye' onclick='getDiagEvent(" + record[0] + ", \"" + record[3] + "\",\"" + record[1] + "\")'></a>", "' hint='download'");
+                                                //1_048_576
+                                                if(record[4] > 1048576*10){
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='event larger than 10Mb, click to download' style='cursor: pointer;' class='fa fa-download' onclick='alert(\"todo over 10 Mb file\")'></a>", " hint='download'");
+                                                }else{
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-eye' onclick='getDiagEvent(" + record[0] + ", \"" + record[3] + "\",\"" + record[1] + "\")'></a>", " hint='view'");
+                                                }
+                                                //sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-download' onclick='downloadDiagEvent(" + record[0] + ", \"" + record[3] + "\",\"" + record[1]+ "\"," + true + "," + false + ",\"text\",this)'></a>", " hint='download'");
                                             } else {
                                                 sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field], "' hint='" + isDimIndexMap[field] + "'");
                                             }

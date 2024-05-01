@@ -148,7 +148,8 @@ class SFDataTable {
                 if (rowsAdded < this.#SFDataTablePageSize) {
                     rows += "<tr>"
                     for (let j = 0; j < this.#SFDataTableRows[this.#SFDataTableSearchMatchedRows[i]].length; j++) {
-                        rows += "<td>" + this.#SFDataTableRows[this.#SFDataTableSearchMatchedRows[i]][j].v + "</td>";
+                        //rows += "<td>" + this.#SFDataTableRows[this.#SFDataTableSearchMatchedRows[i]][j].v + "</td>";
+                        rows += "<td " + (this.#SFDataTableHeader[j].p == undefined ? "" : this.#SFDataTableHeader[j].p) + " " + (this.#SFDataTableRows[this.#SFDataTableSearchMatchedRows[i]][j].p == undefined ? "" : this.#SFDataTableRows[this.#SFDataTableSearchMatchedRows[i]][j].p) + " >" + this.#SFDataTableRows[this.#SFDataTableSearchMatchedRows[i]][j].v + "</td>";
                     }
                     rows += "</tr>\n"
                     rowsAdded++;

@@ -328,7 +328,7 @@ function loadDiagData1(){
     if(contextData == undefined || contextData.header == undefined){
         return;
     }
-    
+
     let records = {};
     let header = {};
 
@@ -342,9 +342,11 @@ function loadDiagData1(){
                 diagnostics.push(metaData1[key].timestampMillis);
                 diagnostics.push(metaData1[key].metadata.name);
                 diagnostics.push(1);
+                //1_048_576
                 diagnostics.push(metaData1[key].metadata.guid);
+                diagnostics.push(metaData1[key].dimensions[".maiev-event-payload-size"] == undefined ? 0 : Number(metaData1[key].dimensions[".maiev-event-payload-size"]));
                 if (header["diagnostics(raw)"] == undefined) {
-                    header["diagnostics(raw)"] = ["timestamp:timestamp", "event:text", "count:number", "guid:text"];
+                    header["diagnostics(raw)"] = ["timestamp:timestamp", "event:text", "count:number","guid:text","size:number"];
                     records["diagnostics(raw)"] = {};
                     records["diagnostics(raw)"][1] = [];
                 }
