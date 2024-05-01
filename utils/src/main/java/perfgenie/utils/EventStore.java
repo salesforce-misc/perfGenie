@@ -505,7 +505,7 @@ public class EventStore {
         }
     }
 
-    public Map loadProfiles(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String namespace, final boolean payload) throws IOException {
+    public Map<Long,Map<String, String>> loadProfiles(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String namespace, final boolean payload) throws IOException {
         if(namespace == null){
             final List<Events.Event> results = this.cantor.events().get(
                     NAMESPACE_EVENT_META,
@@ -516,10 +516,10 @@ public class EventStore {
                     payload
             );
             if (results.size() > 0) {
-                Map<String, Map<String, String>> profiles = new HashMap<>();
+                Map<Long, Map<String, String>> profiles = new HashMap<>();
                 results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
                 for (final Events.Event result : results) {
-                    profiles.put(result.getMetadata().get("guid"), result.getMetadata());
+                    profiles.put(result.getTimestampMillis(), result.getMetadata());
                 }
                 return profiles;
             }
@@ -533,10 +533,10 @@ public class EventStore {
                     payload
             );
             if (results.size() > 0) {
-                Map<String, Map<String, String>> profiles = new HashMap<>();
+                Map<Long, Map<String, String>> profiles = new HashMap<>();
                 results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
                 for (final Events.Event result : results) {
-                    profiles.put(result.getMetadata().get("guid"), result.getMetadata());
+                    profiles.put(result.getTimestampMillis(), result.getMetadata());
                 }
                 return profiles;
             }

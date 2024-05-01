@@ -260,7 +260,7 @@ public class PerfGenieService implements IPerfGenieService {
 
     @Override
     public String getProfiles(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
-        Map<String, Map<String, String>> profiles;
+        Map<Long, Map<String, String>> profiles;
         if(queryMap.containsKey("tenant-id")) {
             profiles = eventStore.loadProfiles(tenant, start, end, queryMap, dimMap, "maiev-tenant-"+tenant, false);
         }else {
@@ -272,14 +272,19 @@ public class PerfGenieService implements IPerfGenieService {
             }
             try {
                 final EventHandler aggregator = new EventHandler();
-                for (String guid : profiles.keySet()) {
+                List<Long> tosort = new ArrayList<>();
+                for (Long timestamp : profiles.keySet()) {
+                    tosort.add(timestamp);
+                }
+                Collections.sort(tosort);
+                for (int i = 0; i< tosort.size(); i++ ) {
                     //long timestamp = Integer.parseInt(profiles.get(guid).get("timestamp"));
-                    queryMap.put("guid", guid);
+                    queryMap.put("guid", profiles.get(tosort.get(i)).get("guid"));
                     String result;
                     if(queryMap.containsKey("tenant-id")) {
-                        result = eventStore.getEvent(start, end, queryMap, dimMap, "maiev-large-files-"+tenant);
+                        result = eventStore.getEvent(tosort.get(i), tosort.get(i), queryMap, dimMap, "maiev-large-files-"+tenant);
                     }else {
-                        result = eventStore.getEvent(start, end, queryMap, dimMap, Integer.parseInt(profiles.get(guid).get("size")));
+                        result = eventStore.getEvent(tosort.get(i), tosort.get(i), queryMap, dimMap, Integer.parseInt(profiles.get(tosort.get(i)).get("size")));
                     }
 
                     aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(result, EventHandler.JfrParserResponse.class));
@@ -306,6 +311,7 @@ public class PerfGenieService implements IPerfGenieService {
         final Map<String, String> dimMap = new HashMap<>();
         try {
             if(queryMap.containsKey("tenant-id")) {//sfdc
+                //returning sorted list
                 List<String> profiles = eventStore.getPayLoads(tenant, start, end, queryMap, dimMap, "maiev-tenant-"+tenant, true);
                 if (profiles == null || profiles.size() < 1) {
                     return Utils.toJson(new EventHandler.JfrParserResponse(null, "Jstack events not found", queryMap, null));
@@ -314,6 +320,7 @@ public class PerfGenieService implements IPerfGenieService {
                 for (int i=0; i< profiles.size() ; i++) {
                     aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(profiles.get(i), EventHandler.JfrParserResponse.class));
                 }
+
                 final EventHandler.JfrParserResponse res = aggregator.getAggregatedProfileTree();
                 int jstackInterval = (int) (end - start) / (profiles.size() * 1000);
                 jstackInterval = ((jstackInterval + 5) / 10) * 10; // round to nearest 10sec
@@ -322,15 +329,20 @@ public class PerfGenieService implements IPerfGenieService {
                 logger.info("getJstack response length: " + response.length());
                 return response;
             }else{
-                Map<String, Map<String, String>> profiles = eventStore.loadProfiles(tenant, start, end, queryMap, dimMap, null, false);
+                Map<Long, Map<String, String>> profiles = eventStore.loadProfiles(tenant, start, end, queryMap, dimMap, null, false);
                 if (profiles == null || profiles.size() < 1) {
                     return Utils.toJson(new EventHandler.JfrParserResponse(null, "Jstack events not found", queryMap, null));
                 }
                 final EventHandler aggregator = new EventHandler();
-                for (String guid : profiles.keySet()) {
+                List<Long> tosort = new ArrayList<>();
+                for (Long timestamp : profiles.keySet()) {
+                    tosort.add(timestamp);
+                }
+                Collections.sort(tosort);
+                for (int i = 0; i< tosort.size(); i++ ) {
                     //long timestamp = Integer.parseInt(profiles.get(guid).get("timestamp"));
-                    queryMap.put("guid", guid);
-                    final String json = eventStore.getEvent(start, end, queryMap, dimMap, Integer.parseInt(profiles.get(guid).get("size")));
+                    queryMap.put("guid", profiles.get(tosort.get(i)).get("guid"));
+                    final String json = eventStore.getEvent(tosort.get(i), tosort.get(i), queryMap, dimMap, Integer.parseInt(profiles.get(tosort.get(i)).get("size")));
                     aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(json, EventHandler.JfrParserResponse.class));
                 }
                 final EventHandler.JfrParserResponse res = aggregator.getAggregatedProfileTree();
@@ -384,7 +396,7 @@ public class PerfGenieService implements IPerfGenieService {
 
     @Override
     public String getCustomEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
-        Map<String, Map<String, String>> profiles;
+        Map<Long, Map<String, String>> profiles;
         if(queryMap.containsKey("tenant-id")) {
             profiles = eventStore.loadProfiles(tenant, start, end, queryMap, dimMap, "maiev-tenant-"+tenant, false);
         }else {
@@ -398,16 +410,22 @@ public class PerfGenieService implements IPerfGenieService {
         try {
             final EventHandler aggregator = new EventHandler();
             boolean isSF = false;
-            for (String guid : profiles.keySet()) {
+
+            List<Long> tosort = new ArrayList<>();
+            for (Long timestamp : profiles.keySet()) {
+                tosort.add(timestamp);
+            }
+            Collections.sort(tosort);
+            for (int i = 0; i< tosort.size(); i++ ) {
                 //long timestamp = Integer.parseInt(profiles.get(guid).get("timestamp"));
-                queryMap.put("guid", guid);
+                queryMap.put("guid", profiles.get(tosort.get(i)).get("guid"));
                 String result;
                 if(queryMap.containsKey("tenant-id")) {
-                    result = eventStore.getEvent(start, end, queryMap, dimMap, "maiev-large-files-"+tenant);
+                    result = eventStore.getEvent(tosort.get(i), tosort.get(i), queryMap, dimMap, "maiev-large-files-"+tenant);
                     aggregator.aggregateSFLogContext((EventHandler.SFContextResponse) Utils.readValue(result, EventHandler.SFContextResponse.class));
                     isSF=true;
                 }else {
-                    result = eventStore.getEvent(start, end, queryMap, dimMap, Integer.parseInt(profiles.get(guid).get("size")));
+                    result = eventStore.getEvent(tosort.get(i), tosort.get(i), queryMap, dimMap, Integer.parseInt(profiles.get(tosort.get(i)).get("size")));
                     aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(result, EventHandler.ContextResponse.class));
                 }
             }
