@@ -5204,13 +5204,13 @@
             let includeTid = false;
             let reqArray = [];
             let recordIndex = -1;
-            if (tidDatalistVal == undefined || tidDatalistVal == tid) {
+            if (true || tidDatalistVal == undefined || tidDatalistVal == tid) {//no tid filter on other events
                 contextDataRecords[tid].forEach(function (obj) {
                     let record = obj.record;
                     let flag = false;
                     recordIndex++;
                     let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
-                    if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
+                    if (true || filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {//allways display other events
                         if (record[spanIndex] == undefined) {
                             flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
                         }
