@@ -143,8 +143,7 @@
 
     .stackCells {
         background-color:black;
-        height:12px;
-        min-width:5px;
+        fill:black;
         border: 1px solid;
     }
     .filterinput {
@@ -355,7 +354,6 @@
 
             resetTreeAllLevel(getActiveTree(getEventType(), false));
             enableRequestTimelineView(false);
-            ;
 
             $("#filter-apply").click();
         });
@@ -944,6 +942,12 @@
         }
         return stacktrace;
     }
+    function showStackNew(obj) {
+        let stackid = obj.target.getAttribute("s");
+        let time = obj.target.getAttribute("t");
+        let eventType = obj.target.getAttribute("e");
+        showStack(stackid, time, eventType, obj.target);
+    }
 
     function showStack(stackid, time, eventType, obj) {
         if (prevReqCellSid == stackid && prevReqCellTime == time) {
@@ -1040,6 +1044,13 @@
             stacktrace = stacktrace + "</table>";
             document.getElementById("popupstack").innerHTML = stacktrace;
         }
+    }
+
+    function showpopStackNew(obj) {
+        let stackid = obj.target.getAttribute("s");
+        let time = obj.target.getAttribute("t");
+        let eventType = obj.target.getAttribute("e");
+        showpopStack(stackid, time, eventType, obj.target);
     }
 
     function frameFilter() {
@@ -1338,7 +1349,9 @@
             "           <div id='data-modal-body' class='modal-body' style='overflow: auto'> \n" +
             "<div id=\"popupstackncontextview\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupstackncontextview col-lg-12\" >\n" +
             "<span id=\"timelinepopuptitle\" style=\"color: #686A6C;font-family: 'Arial', serif;\">Profiling samples collected during request runTime</span>\n" +
+
             "<div style=\"padding-top:0px; padding-left: 15px;padding-right: 0px;\" class=\"row col-lg-12\">\n";
+
 
         if (allSamples) {
             modalHtml += "<div style=\"padding-top: 0px; padding-left: 0px;padding-right: 5px;padding-bottom: 5px;\" class=\"popupfilterpanel col-lg-12\">\n";
@@ -1347,6 +1360,8 @@
         }
 
         modalHtml += "<div style=\"border-color: #e5e6e7;  border-width: 1px; border-style: solid;padding-top: 3px; padding-left: 5px;padding-right: 5px;\" class=\"popupstackpanel\">\n" +
+            "<div style=\"overflow: auto;\" class=\"cct-customized-scrollbar popupthreadstate\" id=\"requestbarchartsvg\"></div>\n" +
+
             "<div style=\"overflow: auto;\" class=\"cct-customized-scrollbar popupthreadstate\" id=\"popupthreadstate\">\n" +
             "</div>\n" +
             "<div class=\"popuphackstak\" id=\"popupstack\">\n" +
@@ -1417,7 +1432,8 @@
         while (cur != null && cur.nextSibling != null) {
             cur = cur.nextSibling;
             if (!cur.classList.contains('hide')) {
-                cur.click();
+                cur.dispatchEvent(new Event('click'))
+                //cur.click();
                 break;
             }
         }
@@ -1428,7 +1444,8 @@
         while (cur != null && cur.previousSibling != null) {
             cur = cur.previousSibling;
             if (!cur.classList.contains('hide')) {
-                cur.click();
+                cur.dispatchEvent(new Event('click'))
+                //cur.click();
                 break;
             }
         }
@@ -1720,7 +1737,7 @@
             });
         }
 
-        let str1 = "<table><tr>";
+        //let str1 = "<table><tr>";
         let scount = 0;
         let srwcount = 0;
         //identify stacks
@@ -1780,10 +1797,29 @@
                 }
             }
         }
+        let timelinetitleID = "timelinetitle";
+        let threadstateID = "threadstate";
+        let stackcontextID = "stackcontext";
+        let stackID = "stack";
+
+        if (!applyFilter) {
+            timelinetitleID = "timelinepopuptitle";
+            threadstateID = "popupthreadstate";
+            stackcontextID = "popupstackcontext";
+            stackID = "popupstack";
+        }
+
+        let cellWidth = 14;
+        let colors = ["lightseagreen","yellow","deeppink","brown","dodgerblue","slateblue"];
+
+
+        d3.select("#requestbarchartsvg").append("svg").attr("width", scount*cellWidth).attr("height", cellWidth);
+        let d3svg = d3.select("#requestbarchartsvg").select("svg");
 
         const tmpIdMapSorted = new Map([...tmpIdMap.entries()].sort((a, b) => a[1] - b[1]));
         let startTime = profilestart;
         let firstfilterStack = "";
+        let cellC = 0;
         for (let [key, value] of tmpIdMapSorted) {
             let epoch = startTime + value;
             let pair = key.split("_");
@@ -1791,10 +1827,67 @@
                 firstfilterStack = pair[0] + "_" + epoch;
             }
             if (applyFilter) {
-                str1 = str1 + "<td class=\"zoom stackCell" + pair[1] + "\" id=\"" + pair[0] + "-" + epoch + "\" onclick=\"showStack(" + pair[0] + "," + epoch + ",'" + eventTypeArray[Number(pair[1])] + "', this)\"> </td>";
+                //str1 = str1 + "<td class=\"zoom stackCell" + pair[1] + "\" id=\"" + pair[0] + "-" + epoch + "\" onclick=\"showStack(" + pair[0] + "," + epoch + ",'" + eventTypeArray[Number(pair[1])] + "', this)\"> </td>";
+                /*d3svg.append("rect")
+                    .attr("width", cellWidth)
+                    .attr("height", cellWidth)
+                    .attr("e", eventTypeArray[Number(pair[1])])
+                    .attr("s", pair[0])
+                    .attr("t", epoch)
+                    .attr("x", cellC*cellWidth)
+                    .attr("y", 0)
+                    .attr("rx", 3)
+                    .attr("ry", 3)
+                    .attr("fill", colors[pair[1]])
+                    .style("border", "solid")
+                    .attr("class",  " tgl")
+                    .attr("onclick", 'showStackNew(evt)')
+                    .attr("id", pair[0] + "-" + epoch);*/
+
+                d3svg.append("circle")
+                    .attr("e", eventTypeArray[Number(pair[1])])
+                    .attr("s", pair[0])
+                    .attr("t", epoch)
+                    .attr("r", cellWidth/2)
+                    .attr("cx", cellC*cellWidth+cellWidth/2)
+                    .attr("cy", cellWidth/2)
+                    .attr("fill", colors[pair[1]])
+                    .attr("class",  " tgl")
+                    .attr("onclick", 'showStackNew(evt)')
+                    .attr("id", pair[0] + "-" + epoch);
             } else {
-                str1 = str1 + "<td class=\"zoom stackCell" + pair[1] + "\" id=\"" + pair[0] + "-" + epoch + "_pop\" onclick=\"showpopStack(" + pair[0] + "," + epoch + ",'" + eventTypeArray[Number(pair[1])] + "', this)\"> </td>";
+                //str1 = str1 + "<td class=\"zoom stackCell" + pair[1] + "\" id=\"" + pair[0] + "-" + epoch + "_pop1\" onclick=\"showpopStack(" + pair[0] + "," + epoch + ",'" + eventTypeArray[Number(pair[1])] + "', this)\"> </td>";
+
+                /*d3svg.append("rect")
+                    .attr("width", cellWidth)
+                    .attr("height", cellWidth)
+                    .attr("e", eventTypeArray[Number(pair[1])])
+                    .attr("s", pair[0])
+                    .attr("t", epoch)
+                    .attr("x", cellC*cellWidth)
+                    .attr("y", 0)
+                    .attr("rx", 3)
+                    .attr("ry", 3)
+                    .attr("fill", colors[pair[1]])
+                    .style("border", "solid")
+                    .attr("class",  " tgl")
+                    .attr("onclick", 'showpopStackNew(evt)')
+                    .attr("id", pair[0] + "-" + epoch+"_pop");
+                    */
+                d3svg.append("circle")
+                    .attr("e", eventTypeArray[Number(pair[1])])
+                    .attr("s", pair[0])
+                    .attr("t", epoch)
+                    .attr("r", cellWidth/2)
+                    .attr("cx", cellC*cellWidth+cellWidth/2)
+                    .attr("cy", cellWidth/2)
+                    .attr("fill", colors[pair[1]])
+                    .attr("class",  " tgl")
+                    .attr("onclick", 'showpopStackNew(evt)')
+                    .attr("id", pair[0] + "-" + epoch+"_pop");
+
             }
+            cellC++;
         }
 
         //set default to 1st stack
@@ -1808,19 +1901,9 @@
             }
         }
 
-        str1 = str1 + "</tr></table>";
+        //str1 = str1 + "</tr></table>";
 
-        let timelinetitleID = "timelinetitle";
-        let threadstateID = "threadstate";
-        let stackcontextID = "stackcontext";
-        let stackID = "stack";
 
-        if (!applyFilter) {
-            timelinetitleID = "timelinepopuptitle";
-            threadstateID = "popupthreadstate";
-            stackcontextID = "popupstackcontext";
-            stackID = "popupstack";
-        }
         let jstackinterval = 'x';
 
         if (getContextTree(1, jstackEvent) != undefined && getContextTree(1, jstackEvent).meta != undefined && getContextTree(1, jstackEvent).meta['jstack-interval'] != undefined) {
@@ -1849,7 +1932,7 @@
         }
 
         document.getElementById(timelinetitleID).innerHTML = timelinetitleIDHTML;
-        document.getElementById(threadstateID).innerHTML = str1;
+        //document.getElementById(threadstateID).innerHTML = str1;
 
         let checkboxes = document.getElementById('timelinepopuptitle').querySelectorAll('label.checkbox');
 
