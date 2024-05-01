@@ -5257,7 +5257,7 @@
         let rowIndex = -1;
         tableHeader = [];
         tableRows = [];
-        getContextTableHeadernew(groupBy, tableHeader, otherEvent);
+        getContextTableHeadernew(groupBy, tableHeader, otherEvent, false);
 
         let table = "<table   style=\"border:none;padding=0px;width: 100%;\" id=\"state-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\">" + getEventTableHeader(groupBy);
 
@@ -5474,12 +5474,15 @@
         console.log("genRequestTable 1 time:")
     }
 
-    function getContextTableHeadernew(groupBy, row, customEvent) {
+    function getContextTableHeadernew(groupBy, row, customEvent, addrightclick) {
+        if(addrightclick == undefined){
+            addrightclick = true;//default true
+        }
         if (!(groupBy == undefined || groupBy == "" || groupBy == "All records")) {
             if(groupBy == "tid") {
-                sfContextDataTable.addContextTableHeader(row,groupBy,1,"class='context-menu-three' " , contextData.tooltips[groupBy]);
+                sfContextDataTable.addContextTableHeader(row,groupBy,1,addrightclick ? "class='context-menu-three' " : "", contextData.tooltips[groupBy]);
             }else{
-                sfContextDataTable.addContextTableHeader(row,groupBy,-1,"class='context-menu-two'" , contextData.tooltips[groupBy]);
+                sfContextDataTable.addContextTableHeader(row,groupBy,-1,addrightclick ? "class='context-menu-two'" : "", contextData.tooltips[groupBy]);
             }
         }
         if (contextData != undefined && contextData.header != undefined) {
@@ -5489,11 +5492,11 @@
                     if(tokens[1] == "number") {
                         sfContextDataTable.addContextTableHeader(row,tokens[0],1, undefined, contextData.tooltips[tokens[0]]);
                     }else if(tokens[1] == "timestamp"){
-                        sfContextDataTable.addContextTableHeader(row,tokens[0],-1,"class='context-menu-one'");
+                        sfContextDataTable.addContextTableHeader(row,tokens[0],-1,addrightclick ? "class='context-menu-one'" : "");
                     }else if(tokens[0] == "tid"){
-                        sfContextDataTable.addContextTableHeader(row,tokens[0],1,"class='context-menu-three'", contextData.tooltips[tokens[0]]);
+                        sfContextDataTable.addContextTableHeader(row,tokens[0],1,addrightclick ?  "class='context-menu-three'" : "", contextData.tooltips[tokens[0]]);
                     }else{
-                        sfContextDataTable.addContextTableHeader(row,tokens[0],-1,"class='context-menu-two'", contextData.tooltips[tokens[0]]);
+                        sfContextDataTable.addContextTableHeader(row,tokens[0],-1,addrightclick ?  "class='context-menu-two'" : "", contextData.tooltips[tokens[0]]);
                     }
                 }
             }
