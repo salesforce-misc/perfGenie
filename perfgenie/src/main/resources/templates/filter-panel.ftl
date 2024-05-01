@@ -1375,6 +1375,7 @@
     }
 
     function unLoadModal(modalId) {
+        $('#' + modalId).html("");
         $('#' + modalId).modal('hide');
         prevpopReqCellObj = null;
         prevReqCellObj = null;
@@ -2200,6 +2201,7 @@
             for (let index of filteredTidRequests[tid]) {
                 let record = contextDataRecords[tid][index].record;
                 let tmpEpoch = record[timestampIndex];
+
                 let tmpRunTime = record[spanIndex] == undefined ? 0 : record[spanIndex];
                 if (tmpEpoch < minStart) {
                     tmpRunTime = tmpRunTime - (minStart - tmpEpoch);
@@ -4138,8 +4140,8 @@
                 let lastReq = "";
                 for (var tid in contextData.records) {
 
-                    contextData.records[tid].sort(function (a, b) {//descending
-                        return b.record[1] - a.record[1];
+                    contextData.records[tid].sort(function (a, b) {
+                        return a.record[1] - b.record[1];
                     });
 
                     contextData.records[tid].forEach(function (obj) {
@@ -4215,13 +4217,14 @@
                 contextData.tooltips = tooltips;
                 contextData.records[".Async + Sync"] = joinRecords;
 
+
                 if (contextData.records["Async active"] != undefined) {
                     for (var tid in contextData.records["Async active"]) {
                         let missingmq = [];
                         let missingall = [];
                         let missingIDMap = {};
 
-                        //contextData.records["Async active"][tid].sort(function (a, b) {return b.record[1] - a.record[1];});//descending
+                        contextData.records["Async active"][tid].sort(function (a, b) {return b.record[1] - a.record[1];});//descending
 
                         contextData.records["Async active"][tid].forEach(function (obj) {
 
@@ -4265,11 +4268,13 @@
                                 contextData.records[".Async + Sync"][tid].push(obj);
                             });
                         }
-                        contextData.records[".Async + Sync"][tid].sort(function (a, b) {return b.record[1] - a.record[1];});//descending
-                        contextData.records["Async"][tid].sort(function (a, b) {return b.record[1] - a.record[1];});//descending
+                        contextData.records[".Async + Sync"][tid].sort(function (a, b) {return a.record[1] - b.record[1];});//descending
+                        contextData.records["Async"][tid].sort(function (a, b) {return a.record[1] - b.record[1];});//descending
+                        contextData.records["Async active"][tid].sort(function (a, b) {return a.record[1] - b.record[1];});//descending
                     }
                 }
                 console.log("sf adapter time : " + (performance.now() - taskStart));
+
                 /*
                 for (var customevent in contextData.records) {
                     for (var tid in contextData.records[customevent]) {
