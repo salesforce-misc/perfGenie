@@ -946,7 +946,7 @@
         let stackid = obj.target.getAttribute("s");
         let time = obj.target.getAttribute("t");
         let eventType = obj.target.getAttribute("e");
-        showStack(stackid, time, eventType, obj.target);
+        showStack(stackid,  Number(time), eventType, obj.target);
     }
 
     function showStack(stackid, time, eventType, obj) {
@@ -1050,7 +1050,7 @@
         let stackid = obj.target.getAttribute("s");
         let time = obj.target.getAttribute("t");
         let eventType = obj.target.getAttribute("e");
-        showpopStack(stackid, time, eventType, obj.target);
+        showpopStack(stackid, Number(time), eventType, obj.target);
     }
 
     function frameFilter() {
@@ -1877,7 +1877,7 @@
                 d3svg.append("circle")
                     .attr("e", eventTypeArray[Number(pair[1])])
                     .attr("s", pair[0])
-                    .attr("t", epoch)
+                    .attr("t", Number(epoch))
                     .attr("r", cellWidth/2)
                     .attr("cx", cellC*cellWidth+cellWidth/2)
                     .attr("cy", cellWidth/2)
