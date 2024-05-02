@@ -260,6 +260,8 @@
             contextDataRecords = contextData.records[samplesCustomEvent];
         }
 
+        let combinedEventKey = event+samplesCustomEvent;
+        let combinedEventKeyn = event+"-"+samplesCustomEvent;
         for(var tid in contextDataRecords) {
             contextDataRecords[tid].forEach(function (obj) {
                 let record = obj.record;
@@ -271,48 +273,55 @@
                     let end = record[timestampIndex] - contextStart + record[spanIndex];
                     let start =  record[timestampIndex] - contextStart;
 
-                    let stackMap = {};
+                    //let stackMap = {};
                     try {
                         //do a binary search
                         let entryIndex = isinRequest(contextTidMap[tid], start, end);
                         if (entryIndex != -1) {
+                            let minIndex = entryIndex;
+                            let maxIndex = entryIndex;
                             let requestArr = contextTidMap[tid];
                             let curIndex = entryIndex;
                             //consider all matching samples downward
                             while (curIndex >= 0 && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
-                                if (stackMap[requestArr[curIndex].hash] !== undefined) {
-                                    stackMap[requestArr[curIndex].hash] = stackMap[requestArr[curIndex].hash] + 1;
-                                } else {
-                                    stackMap[requestArr[curIndex].hash] = 1;
-                                }
+                                //if (stackMap[requestArr[curIndex].hash] !== undefined) {
+                                //    stackMap[requestArr[curIndex].hash] = stackMap[requestArr[curIndex].hash] + 1;
+                                //} else {
+                                //    stackMap[requestArr[curIndex].hash] = 1;
+                                //}
                                 //requestArr[curIndex].obj = record;
                                 if(requestArr[curIndex][samplesCustomEvent] == undefined){
                                     requestArr[curIndex][samplesCustomEvent]={};
                                 }
                                 requestArr[curIndex][samplesCustomEvent].obj = record;
+                                if(curIndex < minIndex){
+                                    curIndex = curIndex;
+                                }
                                 scount++;
                                 curIndex--;
                             }
                             curIndex = entryIndex + 1;
                             //consider all matching samples upward
                             while (curIndex < requestArr.length && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
-                                if (stackMap[requestArr[curIndex].hash] !== undefined) {
-                                    stackMap[requestArr[curIndex].hash] = stackMap[requestArr[curIndex].hash] + 1;
-                                } else {
-                                    stackMap[requestArr[curIndex].hash] = 1;
-                                }
+                                //if (stackMap[requestArr[curIndex].hash] !== undefined) {
+                                //    stackMap[requestArr[curIndex].hash] = stackMap[requestArr[curIndex].hash] + 1;
+                                //} else {
+                                //    stackMap[requestArr[curIndex].hash] = 1;
+                                //}
                                 //requestArr[curIndex].obj = record;
                                 if(requestArr[curIndex][samplesCustomEvent] == undefined){
                                     requestArr[curIndex][samplesCustomEvent]={};
                                 }
                                 requestArr[curIndex][samplesCustomEvent].obj = record;
+                                if(curIndex > maxIndex){
+                                    maxIndex = curIndex;
+                                }
                                 scount++;
                                 curIndex++;
                             }
                             reqCount++;
-                            obj[event] = stackMap;
-
-                            obj[event+samplesCustomEvent] = stackMap;
+                            //obj[combinedEventKeyn] = stackMap;
+                            obj[combinedEventKey] = [minIndex, maxIndex];
                         }
                     } catch (err) {
                         console.log("tid not found in JFR" + tid + " " + err.message);
@@ -362,6 +371,8 @@
 
     let sampleSortMap = undefined;
     function genSampleTable() {
+        let eventType = getEventType();
+
         updateEventInputOptions('event-input-smpl');
         updateGroupByOptions('smpl-grp-by');
 
@@ -402,7 +413,7 @@
             if(!(groupBySamples === "threadname" || groupBySamples === "tid")){
                 //set default tid
                 groupBySamples = "tid";
-                if(getEventType() == "Jstack" || getEventType() == "json-jstack"){
+                if(eventType == "Jstack" || eventType == "json-jstack"){
                     updateFilterViewStatus("Note: Failed to get Request context, only tid and threadName group by options supported.");
                 }else{
                     updateFilterViewStatus("Note: Failed to get Request context, only tid group by option supported.");
@@ -419,20 +430,18 @@
 
         let tableFormat = $("#format-input").val();
 
-        let contextTidMap = getContextTree(1).context.tidMap;
-        let contextStart = getContextTree(1).context.start;
+        let contextTidMap = getContextTree(1,eventType).context.tidMap;
+        let contextStart = getContextTree(1,eventType).context.start;
 
         let sampleCountMap = new Map();
         sampleSortMap = new Map();
 
-        let totalSampleCount = getContextTree(1).tree.sz;
-
-        let event = getEventType();
+        let totalSampleCount = getContextTree(1,eventType).tree.sz;
 
         let table = "<table   style=\"width: 100%;\" id=\"sample-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\"><thead><tr><th width=\"50%\">"+getHearderFor(groupBySamples)+"</th><th width=\"10%\">Sample Count</th><th width=\"40%\">Samples</th></thead>";
 
 
-        if (getEventType() == "Jstack" || getEventType() == "json-jstack") {
+        if (eventType == "Jstack" || eventType == "json-jstack") {
             filteredStackMap[FilterLevel.LEVEL3] = {};
         }
 
@@ -440,16 +449,19 @@
         sampleTableHeader = [];
         sampleTableRows = [];
         moreSamples = [];
-        getSamplesTableHeader(groupBySamples, sampleTableHeader, event);
+        getSamplesTableHeader(groupBySamples, sampleTableHeader, eventType);
+
+        let tidSamplesTimestamps = {};
 
         //every sample of jstack has a tn
-        if ((getEventType() == "Jstack" || getEventType() == "json-jstack") && groupBySamples == "threadname" && isFilterEmpty(dimIndexMap)) {
+        let combinedEventKey = eventType+samplesCustomEvent;
+        if ((eventType == "Jstack" || eventType == "json-jstack") && groupBySamples == "threadname" && isFilterEmpty(dimIndexMap)) {
             for (var tid in contextDataRecords) {
                 if(contextTidMap[tid] != undefined && (tidDatalistVal == undefined || tidDatalistVal == tid)) {
                     for (let i = 0; i < contextTidMap[tid].length; i++) {
                         if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
                             let stack = contextTidMap[tid][i].hash;
-                            if (frameFilterString == "" || frameFilterStackMap[event][stack] !== undefined) {
+                            if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
                                 let key = contextTidMap[tid][i].tn;
                                 //consider
                                 if (sampleSortMap.has(key)) {
@@ -482,7 +494,7 @@
                     for (let i = 0; i < contextTidMap[tid].length; i++) {
                         if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
                             let stack = contextTidMap[tid][i].hash;
-                            if (frameFilterString == "" || frameFilterStackMap[event][stack] !== undefined) {
+                            if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
                                 let key = tid;
                                 if (sampleSortMap.has(key)) {
                                     sampleSortMap.set(key, sampleSortMap.get(key) + 1);
@@ -530,7 +542,7 @@
                             for (let i = 0; i < contextTidMap[tid].length; i++) {
                                 if ((pStart === '' || pEnd === '') || ((contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd)) {
                                     let stack = contextTidMap[tid][i].hash;
-                                    if (frameFilterString == "" || frameFilterStackMap[event][stack] !== undefined) {
+                                    if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
                                         let key = "";
                                         if(groupBySamples === "tid"){
                                             key = tid;
@@ -575,7 +587,7 @@
                         for (let i = 0; i < contextTidMap[tid].length; i++) {
                             if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
                                 let stack = contextTidMap[tid][i].hash;
-                                if (frameFilterStackMap[event][stack] !== undefined) {
+                                if (frameFilterStackMap[combinedEventKey][stack] !== undefined) {
                                     let key = "";
                                     if (contextTidMap[tid][i][samplesCustomEvent]?.obj != undefined) {
                                         key = contextTidMap[tid][i][samplesCustomEvent].obj[dimIndexMap[groupBySamples]];
@@ -633,7 +645,7 @@
                             for (let i = 0; i < contextTidMap[tid].length; i++) {
                                 if ((pStart === '' || pEnd === '') || ((contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd)) {
                                     let stack = contextTidMap[tid][i].hash;
-                                    if (frameFilterString == "" || frameFilterStackMap[event][stack] !== undefined) {
+                                    if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
                                         let key = "";
                                         if(groupBySamples === "tid"){
                                             key = tid;
@@ -680,48 +692,89 @@
                         if (tidDatalistVal == undefined || tidDatalistVal == tid) {
                             //context filter provided, check for matching requests and then find samples of those requests
                             contextDataRecords[tid].forEach(function (obj) {
+
                                 let record = obj.record;
                                 let flag = false;
                                 let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
 
                                 if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
-                                    if (obj[event] != undefined) {
+                                    if (obj[combinedEventKey] != undefined) {
                                         flag = true;
                                         //TODO: we are including all the samples in a matching request, some of them may not be part of timerange filter
                                         let key = record[dimIndexMap[groupBySamples]];
                                         if( key != undefined && key.slice != undefined){
                                             key = key.slice(0, samplesgroupByLength);
                                         }
+
                                         //check if request samples match frame filter string
-                                        for (var stack in obj[event]) {
-                                            if (frameFilterString == "" || frameFilterStackMap[event][stack] !== undefined) {
-                                                //consider
-                                                if (sampleSortMap.has(key)) {
-                                                    sampleSortMap.set(key, sampleSortMap.get(key) + Number(obj[event][stack]));
-                                                } else {
-                                                    sampleSortMap.set(key, Number(obj[event][stack]));
-                                                }
-                                                if (sampleCountMap.has(key)) {
-                                                    let tmpMap = sampleCountMap.get(key);
-                                                    if (tmpMap.has(stack)) {
-                                                        tmpMap.set(stack, tmpMap.get(stack) + Number(obj[event][stack]));
+                                        let cursampleCount = 0;
+                                        for(let i=obj[combinedEventKey][0]; i<= obj[combinedEventKey][1]; i++){
+                                            if ((pStart === '' || pEnd === '') || ((contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd)) {
+                                                let stack = contextTidMap[tid][i].hash;
+                                                //for (var stack in obj[combinedEventKey]) {
+                                                if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
+                                                    cursampleCount++;
+                                                    //if(tidSamplesTimestamps[tid] == undefined){
+                                                    //    tidSamplesTimestamps[tid] = [];
+                                                    //}
+                                                    if (sampleCountMap.has(key)) {
+                                                        let tmpMap = sampleCountMap.get(key);
+                                                        if (tmpMap.has(stack)) {
+                                                            tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                                        } else {
+                                                            tmpMap.set(stack, 1);
+                                                        }
                                                     } else {
-                                                        tmpMap.set(stack, Number(obj[event][stack]));
+                                                        let tmpMap = new Map();
+                                                        tmpMap.set(stack, 1);
+                                                        sampleCountMap.set(key, tmpMap);
                                                     }
-                                                } else {
-                                                    let tmpMap = new Map();
-                                                    tmpMap.set(stack, Number(obj[event][stack]));
-                                                    sampleCountMap.set(key, tmpMap);
                                                 }
                                             }
                                         }
+                                        if(cursampleCount != 0) {
+                                            if (sampleSortMap.has(key)) {
+                                                sampleSortMap.set(key, sampleSortMap.get(key) + cursampleCount);
+                                            } else {
+                                                sampleSortMap.set(key, cursampleCount);
+                                            }
+                                        }
+
+                                        /*
+                                        for (var stack in obj[combinedEventKey]) {
+                                            if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
+                                                //consider
+                                                if (sampleSortMap.has(key)) {
+                                                    sampleSortMap.set(key, sampleSortMap.get(key) + Number(obj[combinedEventKey][stack]));
+                                                } else {
+                                                    sampleSortMap.set(key, Number(obj[combinedEventKey][stack]));
+                                                }
+
+                                                //if(tidSamplesTimestamps[tid] == undefined){
+                                                //    tidSamplesTimestamps[tid] = [];
+                                                //}
+
+                                                if (sampleCountMap.has(key)) {
+                                                    let tmpMap = sampleCountMap.get(key);
+                                                    if (tmpMap.has(stack)) {
+                                                        tmpMap.set(stack, tmpMap.get(stack) + Number(obj[combinedEventKey][stack]));
+                                                    } else {
+                                                        tmpMap.set(stack, Number(obj[combinedEventKey][stack]));
+                                                    }
+                                                } else {
+                                                    let tmpMap = new Map();
+                                                    tmpMap.set(stack, Number(obj[combinedEventKey][stack]));
+                                                    sampleCountMap.set(key, tmpMap);
+                                                }
+                                            }
+                                        }*/
                                     }
                                 }
                             });
                         }
                     }
                 } else {
-                    if (getEventType() == "Jstack" || getEventType() == "json-jstack") {
+                    if (eventType == "Jstack" || eventType == "json-jstack") {
                         updateFilterViewStatus("Note: Failed to get Request context, only tid and threadName group by options supported.");
                     } else {
                         updateFilterViewStatus("Note: Failed to get Request context, only tid group by option supported.");
@@ -730,7 +783,7 @@
             }
         }
 
-        //sort based on number of stacks
+//sort based on number of stacks
         for (let [key, value] of sampleCountMap) {
             sampleCountMap.set(key, new Map([...value.entries()].sort((a, b) => b[1] - a[1])));
         }
@@ -787,7 +840,7 @@
                 }
             }
             sampleTableRows[samplerowIndex] = [];
-            /*if(event == EventType.MEMORY) {
+            /*if(eventType == EventType.MEMORY) {
                 addContextTableRow(sampleTableRows[samplerowIndex], ("<label style=\"word-wrap: break-word; width: 300px\" >" + (key == undefined ? "NA" : key) + "</label>"), "hint='"+groupBySamples+"'");
                 addContextTableOrderRow(sampleTableRows[samplerowIndex], ("<b>" + (value / (1024 * 1024)).toFixed(3) + "</b>&nbsp;<div class=\"badge badge-info\"> " + (100 * value / totalSampleCount).toFixed(3) + "</div>"), value);
                 addContextTableOrderRow(sampleTableRows[samplerowIndex], str, order);
@@ -802,50 +855,13 @@
             sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], ("<div class=\"badge badge-info\"><span style='font-size: 12px; color:black'>"+value+"</span> " + (100 * value / totalSampleCount).toFixed(3) + "%</div>"), value);
             sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], str, order);
 
-           // }
+            // }
             //table = table + "<tr><td  hint=" + groupBySamples + " class=\"context-menu-two\"><label style=\"word-wrap: break-word; width: 300px\" >" + (key == undefined ? "NA" : key) + "</label></td><td data-order="+value+"><b>" +value+"</b>&nbsp;<div class=\"badge badge-info\"> "+ (100*value/totalSampleCount).toFixed(3) + "</div></td><td data-order="+order+">" + str + "</td></tr>";
         }
 
         sfSampleTable.SFDataTable(sampleTableRows, sampleTableHeader, "sampletable", order);
 
-       /* //table = table + "</table>";
 
-        //document.getElementById("sampletable").innerHTML = table;
-
-        //if(sampleTable != undefined) {
-        //    sampleTablePage = 0; //reset to 0 except 1st time
-        //}
-
-        sampleTable=$('#sample-table').DataTable({
-            "order": [[ order, "desc" ]],
-            searching: true,
-            "pageLength": 20,
-            "columnDefs": [ {
-                "targets": 0,
-                "orderable": false
-            } ],
-            "drawCallback": function( settings ) {
-                if(sampleTable != undefined) {
-                    //when we change table page focus, remove request selection
-                    if (filterReq != undefined && filterReq != "" && $("#" + filterReq).length != 0) {
-                        updateRequestView();
-                    }
-                    sampleTablePage = sampleTable.page.info().page * sampleTable.page.len();
-                    updateUrl("spage", sampleTablePage, true);
-                }
-                //addClickActionsToFilterTable("sample-table"); // todo check what is this
-            },
-            "displayStart": sampleTablePage,
-            aoColumnDefs: [
-                {
-                    orderSequence: ["desc", "asc"],
-                    aTargets: ['_all']
-                }
-            ],
-            "sDom": '<"sampletoolbar">tfp<"clear">'
-
-        });
-*/
         updateEventInputOptions('event-input-smpl');
 
         updateGroupByOptions('smpl-grp-by');
@@ -856,6 +872,7 @@
         let end = performance.now();
         console.log("genSampleTable 1 time:" + (end - start) )
     }
+
     function showHiddenStacks(guid) {
         $(".more-stacks-" + guid).css("display", "none");
         $(".less-stacks-" + guid).css("display", "");
@@ -879,6 +896,7 @@
     //create html tree recursively
     function updateProfilerViewSample(level, skipFilter) {
         addTabNote(false,"");
+        let eventType = getEventType();
 
         let contextData = getContextData();
         if(contextData == undefined) {
@@ -916,8 +934,8 @@
             console.log("filterToLevel time:" + (end - start));
 
 
-            let treeToProcess = getActiveTree(getEventType(), isCalltree);
-            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
+            let treeToProcess = getActiveTree(eventType, isCalltree);
+            let selectedLevel = getSelectedLevel(getActiveTree(eventType, false));
 
             if (prevCustomEvent === customEvent && currentLoadedTree === treeToProcess && prevOption === currentOption && isRefresh === false && isLevelRefresh === false && prevSelectedLevel === selectedLevel) {
                 console.log("no change in sample table, option:" + (prevCustomEvent == customEvent) + ":" + (currentLoadedTree === treeToProcess)+":"+ (prevOption === currentOption) +" isRefresh:"+(isRefresh === false)+":"+" isLevelRefresh:"+(isLevelRefresh === false)+" selectedLevel:"+ (prevSelectedLevel === selectedLevel));
@@ -941,7 +959,7 @@
                 return;
             }
 
-            addContextData(selectedLevel, getEventType());
+            addContextData(selectedLevel, eventType);
 
             resetTreeHeader("");
 
@@ -952,8 +970,8 @@
         }else{
             let start = performance.now();
 
-            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
-            addContextData(selectedLevel, getEventType());
+            let selectedLevel = getSelectedLevel(getActiveTree(eventType, false));
+            addContextData(selectedLevel, eventType);
 
             resetTreeHeader("");
 

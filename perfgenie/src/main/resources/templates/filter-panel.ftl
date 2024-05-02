@@ -347,10 +347,11 @@
             pStart='';
             pEnd='';
             isFilterOnType=true;
-
-            resetTreeInvertedLevel(FilterLevel.LEVEL1);
-            resetTreeInvertedLevel(FilterLevel.LEVEL2);
-            resetTreeInvertedLevel(FilterLevel.LEVEL3);
+            for (var key in jfrprofiles1) {
+                resetTreeInvertedLevel(FilterLevel.LEVEL1, key);
+                resetTreeInvertedLevel(FilterLevel.LEVEL2, key);
+                resetTreeInvertedLevel(FilterLevel.LEVEL3, key);
+            }
 
             resetTreeAllLevel(getActiveTree(getEventType(), false));
             enableRequestTimelineView(false);
@@ -627,27 +628,27 @@
         return "." + id;
     }
 
-    function onLevel3Filter() {
-        console.log("onLevel3Filter start");
+    function onLevel3Filter(eventType) {
+        console.log("onLevel3Filter start " + eventType);
         if (filterFrame !== undefined && filterFrame != "") {
-            updateStackIndex(getActiveTree(getEventType(), false));
+            updateStackIndex(getActiveTree(eventType, false));
             isLevelRefresh = true;
-            filterTree(getActiveTree(getEventType(), false));
-            if (getSelectedLevel(getActiveTree(getEventType(), false)) !== FilterLevel.LEVEL3) {
-                getActiveTree(getEventType(), false)[FilterLevel.LEVEL3] = 0;
+            filterTree(getActiveTree(eventType, false), eventType);
+            if (getSelectedLevel(getActiveTree(eventType, false)) !== FilterLevel.LEVEL3) {
+                getActiveTree(eventType, false)[FilterLevel.LEVEL3] = 0;
             }
         }
     }
 
-    function onLevel2Filter() {
-        console.log("onLevel2Filter start");
+    function onLevel2Filter(eventType) {
+        console.log("onLevel2Filter start " + eventType);
         if (filterReq !== undefined && filterReq != "") {
-            updateStackIndex(getActiveTree(getEventType(), false));//need this as stacks identified based on index
+            updateStackIndex(getActiveTree(eventType, false));//need this as stacks identified based on index
             let pair = filterReq.split("_");
             isLevelRefresh = true;
-            showRequestTimelineView(pair[0], pair[1], true);
-            if (getSelectedLevel(getActiveTree(getEventType(), false)) !== FilterLevel.LEVEL2) {
-                getActiveTree(getEventType(), false)[FilterLevel.LEVEL2] = 0;
+            showRequestTimelineView(pair[0], pair[1], true, false, eventType);
+            if (getSelectedLevel(getActiveTree(eventType, false)) !== FilterLevel.LEVEL2) {
+                getActiveTree(eventType, false)[FilterLevel.LEVEL2] = 0;
             }
         }
     }
@@ -673,16 +674,16 @@
         }
     }
 
-    function onLevel1Filter() {
-        console.log("onLevel1Filter start");
+    function onLevel1Filter(eventType) {
+        console.log("onLevel1Filter start " +eventType);
         if (filterMap["tid"] == undefined && isFilterEmpty() && (pStart === '' || pEnd === '')) {
             //none
         } else {
-            updateStackIndex(getActiveTree(getEventType(), false));//need this as stacks identified based on index
+            updateStackIndex(getActiveTree(eventType, false));//need this as stacks identified based on index
             isLevelRefresh = true;
-            filterOnType();
-            if (getSelectedLevel(getActiveTree(getEventType(), false)) !== FilterLevel.LEVEL1) {
-                getActiveTree(getEventType(), false)[FilterLevel.LEVEL1] = 0;
+            filterOnType(eventType);
+            if (getSelectedLevel(getActiveTree(eventType, false)) !== FilterLevel.LEVEL1) {
+                getActiveTree(eventType, false)[FilterLevel.LEVEL1] = 0;
             }
         }
     }
@@ -728,13 +729,13 @@
                     prevReqTime = "";
                     document.getElementById("stack").innerHTML = "";
                     resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL1);
-                    resetTreeInvertedLevel(FilterLevel.LEVEL1);
+                    resetTreeInvertedLevel(FilterLevel.LEVEL1,eventType);
                     resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL2);
-                    resetTreeInvertedLevel(FilterLevel.LEVEL2);
+                    resetTreeInvertedLevel(FilterLevel.LEVEL2,eventType);
                     resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL3);
-                    resetTreeInvertedLevel(FilterLevel.LEVEL3);
+                    resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType);
 
-                    onLevel1Filter();
+                    onLevel1Filter(eventType);
                     updateContextTable = true;
                 }
             }
@@ -751,10 +752,10 @@
                     prevReqCellTime = "";
                     prevReqCellObj = null;
                     resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL2);
-                    resetTreeInvertedLevel(FilterLevel.LEVEL2);
+                    resetTreeInvertedLevel(FilterLevel.LEVEL2,eventType);
                     resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL3);
-                    resetTreeInvertedLevel(FilterLevel.LEVEL3);
-                    onLevel2Filter();
+                    resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType);
+                    onLevel2Filter(eventType);
                 }
             }
 
@@ -764,8 +765,8 @@
                 if (level3InputTmp !== contextInput[FilterLevel.LEVEL3][eventType]) {
                     contextInput[FilterLevel.LEVEL3][eventType] = level3InputTmp;
                     resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL3);
-                    resetTreeInvertedLevel(FilterLevel.LEVEL3);
-                    onLevel3Filter();
+                    resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType);
+                    onLevel3Filter(eventType);
                     updateContextTable = true;
                 }
             }
@@ -787,8 +788,8 @@
             }
 
             if (!compareTree && isJfrContext){
-                let treeToProcess = getActiveTree(getEventType(), isCalltree);
-                let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
+                let treeToProcess = getActiveTree(eventType, isCalltree);
+                let selectedLevel = getSelectedLevel(getActiveTree(eventType, false));
                 if(getSelectedLevel(getActiveTree(eventType, false)) !== FilterLevel.UNDEFINED && !isCalltree){
                     sortTreeLevelBySizeWrapper(treeToProcess, selectedLevel);
                     updateStackIndex(treeToProcess);//should we always do this?
@@ -807,10 +808,11 @@
         return true;
     }
 
-    function resetTreeInvertedLevel(level) {
-        for (var key in jfrevents1) {
-            setcontextTree1InvertedLevel(undefined, key, level);
-        }
+    function resetTreeInvertedLevel(level, eventType) {
+        //for (var key in jfrprofiles1) {
+            console.log("resetTreeInvertedLevel: " + level +":"+eventType);
+            setcontextTree1InvertedLevel(undefined, eventType, level);
+        //}
     }
 
     function resetTreeLevel(tree, level) {
@@ -883,14 +885,14 @@
 
     let frameFilterString = "";
 
-    function filterTree(tree) {
+    function filterTree(tree, eventType) {
         if (frameFilterString !== undefined && frameFilterString.length != 0) {
             if (tree['tree'] !== undefined) {
                 tree = tree['tree'];
             }
-            let level = getSelectedLevel(getActiveTree(getEventType(), false));
-            frameFilterStackMap[getEventType()] = {};
-            filterFramesV1Level(tree, false, level);
+            let level = getSelectedLevel(getActiveTree(eventType, false));
+            frameFilterStackMap[eventType+customEvent] = {};
+            filterFramesV1Level(tree, false, level, eventType);
         }
     }
 
@@ -1246,7 +1248,7 @@
 
     let frameFilterStackMap = {1:undefined,2:undefined,3:undefined,4:undefined};
 
-    function filterFramesV1Level(baseJsonTree, include, level) {
+    function filterFramesV1Level(baseJsonTree, include, level, eventType) {
         if (baseJsonTree == null) {//safety check
             return 0;
         }
@@ -1256,7 +1258,7 @@
 
         let count = 0;
         let curInclude = false;
-        let event = getEventType();
+        let event = eventType;
         if (!include) {
             //check if current frame contains filter string
             if (baseJsonTree !== null && getFrameName(baseJsonTree['nm']) !== undefined && getFrameName(baseJsonTree['nm']).includes(frameFilterString)) {
@@ -1290,14 +1292,14 @@
                 if (level != FilterLevel.UNDEFINED && baseJsonTree['ch'][treeIndex][level] === undefined) {
                     continue;
                 }
-                chCount = chCount + filterFramesV1Level(baseJsonTree['ch'][treeIndex], include, level);
+                chCount = chCount + filterFramesV1Level(baseJsonTree['ch'][treeIndex], include, level, eventType);
             }
         } else {
             if (curInclude || include) {
                 //collect stacks included in frame filter
                 if (baseJsonTree.sm !== undefined) {
                     for (var key in baseJsonTree.sm) {
-                        frameFilterStackMap[event][key] = 1;
+                        frameFilterStackMap[event+customEvent][key] = 1;
                     }
                 }
             }
@@ -1330,7 +1332,7 @@
             setTimeout(function () {
                 $('#timelinepopup').focus();
                 let pair = filterReq.split("_");
-                showRequestTimelineView(pair[0], pair[1], false, allSamples);
+                showRequestTimelineView(pair[0], pair[1], false, allSamples, getEventType());
                 let stackPair = popfilterStack.split("_");
                 if ($("#" + stackPair[0] + "-" + stackPair[1] + "_pop").length != 0 && !$("#" + stackPair[0] + "-" + stackPair[1] + "_pop").hasClass("stackCells")) {
                     $("#" + stackPair[0] + "-" + stackPair[1] + "_pop").click();
@@ -1488,8 +1490,8 @@
         return str;
     }
 
-    function filterOnType() {
-        console.log("filterOnType start");
+    function filterOnType(eventType) {
+        console.log("filterOnType start " + eventType);
         let scount = 0;
         let stackMap = {};
 
@@ -1527,11 +1529,11 @@
             contextDataRecords = contextData.records[customEvent];
         }
 
-        let contextStart = getContextTree(1).context.start;
-        let contextTidMap = getContextTree(1).context.tidMap;
+        let contextStart = getContextTree(1, eventType).context.start;
+        let contextTidMap = getContextTree(1, eventType).context.tidMap;
 
         let isJstack = false;
-        if(getEventType() == "Jstack" || getEventType() == "json-jstack"){
+        if(eventType == "Jstack" || eventType == "json-jstack"){
             isJstack = true;
             filteredStackMap[FilterLevel.LEVEL1] = {};
         }
@@ -1658,23 +1660,21 @@
             }
         }
         for (stack in stackMap) {
-            getTreeStackLevel(getActiveTree(getEventType(), false), stack, stackMap[stack], FilterLevel.LEVEL1);
+            getTreeStackLevel(getActiveTree(eventType, false), stack, stackMap[stack], FilterLevel.LEVEL1);
         }
         console.log("filterOnType 1");
     }
 
-    function showRequestTimelineView(tid, time, applyFilter, allSamples) {
+    function showRequestTimelineView(tid, time, applyFilter, allSamples, eventType) {
         let str = "";
         let table = "";
         let runTime = 0;
         let profilestart = 0;
-        if(allSamples == undefined){
-            allSamples == false;
-        }
 
-        for (var eventType in jfrprofiles1) {
-            if (profilestart == 0 && !(eventType == "Jstack" || eventType == "json-jstack") && getContextTree(1, eventType) != undefined) {
-                profilestart = getContextTree(1, eventType).context.start;
+        for (var tempeventType in jfrprofiles1) {
+            if (profilestart == 0 && !(tempeventType == "Jstack" || tempeventType == "json-jstack") && getContextTree(1, tempeventType) != undefined) {
+                profilestart = getContextTree(1, tempeventType).context.start;
+                break;
             }
         }
 
@@ -1743,18 +1743,18 @@
         //identify stacks
         const tmpIdMap = new Map();
 
-        let eventTypeArray = [];
+        let tempeventTypeArray = [];
 
-        for (var eventType in jfrprofiles1) {//for all profile event types
-            eventTypeArray.push(eventType);
+        for (var tempeventType in jfrprofiles1) {//for all profile event types
+            tempeventTypeArray.push(tempeventType);
         }
-        eventTypeArray.sort();
+        tempeventTypeArray.sort();
 
-        for (let eventTypeCount = 0; eventTypeCount< eventTypeArray.length; eventTypeCount++){ //var eventType in jfrprofiles1) {//for all profile event types
-            eventType = eventTypeArray[eventTypeCount];
-            if (eventType == jstackEvent) {
+        for (let tempeventTypeCount = 0; tempeventTypeCount< tempeventTypeArray.length; tempeventTypeCount++){ //var tempeventType in jfrprofiles1) {//for all profile event types
+            tempeventType = tempeventTypeArray[tempeventTypeCount];
+            if (tempeventType == jstackEvent) {
                 let isJstack = false;
-                if (getEventType() == jstackEvent) {
+                if (eventType == jstackEvent) {
                     isJstack=true;
                 }
                 if (isJstack && applyFilter) {
@@ -1765,7 +1765,7 @@
                         if((pStart === '' || pEnd === '') || ((obj.time + jstackstart) >= pStart && (obj.time + jstackstart) <= pEnd)) { //check time rang
                             if (allSamples || (obj.time >= jstackstart && obj.time <= jstackstart + runTime)) {
                                 if (isJstack && applyFilter) {
-                                        getTreeStackLevel(getActiveTree(jstackEvent, false), obj.hash, 1, FilterLevel.LEVEL2);
+                                    getTreeStackLevel(getActiveTree(jstackEvent, false), obj.hash, 1, FilterLevel.LEVEL2);
                                 }
                                 if (isJstack && applyFilter) {
                                     if (filteredStackMap[FilterLevel.LEVEL2][tid] == undefined) {
@@ -1773,22 +1773,22 @@
                                     }
                                     filteredStackMap[FilterLevel.LEVEL2][tid].push(obj);
                                 }
-                                tmpIdMap.set(obj.hash + "_" + eventTypeCount + "_" + obj.time, obj.time + jstackdiff);
+                                tmpIdMap.set(obj.hash + "_" + tempeventTypeCount + "_" + obj.time, obj.time + jstackdiff);
                                 scount++;
                             }
                         }
                     });
                 }
             } else {
-                if (getContextTree(1, eventType) != undefined && getContextTree(1, eventType).context != undefined && getContextTree(1, eventType).context.tidMap[tid] !== undefined) {
-                    getContextTree(1, eventType).context.tidMap[tid].forEach(function (obj) {
+                if (getContextTree(1, tempeventType) != undefined && getContextTree(1, tempeventType).context != undefined && getContextTree(1, tempeventType).context.tidMap[tid] !== undefined) {
+                    getContextTree(1, tempeventType).context.tidMap[tid].forEach(function (obj) {
                         if((pStart === '' || pEnd === '') || ((obj.time + profilestart) >= pStart && (obj.time + profilestart) <= pEnd)) { //check time rang
                             if (allSamples || (obj.time >= start && obj.time <= start + runTime)) {
-                                tmpIdMap.set(obj.hash + "_" + eventTypeCount + "_" + obj.time, obj.time);
+                                tmpIdMap.set(obj.hash + "_" + tempeventTypeCount + "_" + obj.time, obj.time);
                                 scount++;
-                                if (getEventType() == eventType) {
+                                if (eventType == tempeventType) {
                                     if (applyFilter) {
-                                        getTreeStackLevel(getActiveTree(eventType, false), obj.hash, 1, FilterLevel.LEVEL2);
+                                        getTreeStackLevel(getActiveTree(tempeventType, false), obj.hash, 1, FilterLevel.LEVEL2);
                                     }
                                 }
                             }
@@ -1827,11 +1827,11 @@
                 firstfilterStack = pair[0] + "_" + epoch;
             }
             if (applyFilter) {
-                //str1 = str1 + "<td class=\"zoom stackCell" + pair[1] + "\" id=\"" + pair[0] + "-" + epoch + "\" onclick=\"showStack(" + pair[0] + "," + epoch + ",'" + eventTypeArray[Number(pair[1])] + "', this)\"> </td>";
+                //str1 = str1 + "<td class=\"zoom stackCell" + pair[1] + "\" id=\"" + pair[0] + "-" + epoch + "\" onclick=\"showStack(" + pair[0] + "," + epoch + ",'" + tempeventTypeArray[Number(pair[1])] + "', this)\"> </td>";
                 /*d3svg.append("rect")
                     .attr("width", cellWidth)
                     .attr("height", cellWidth)
-                    .attr("e", eventTypeArray[Number(pair[1])])
+                    .attr("e", tempeventTypeArray[Number(pair[1])])
                     .attr("s", pair[0])
                     .attr("t", epoch)
                     .attr("x", cellC*cellWidth)
@@ -1845,7 +1845,7 @@
                     .attr("id", pair[0] + "-" + epoch);*/
 
                 d3svg.append("circle")
-                    .attr("e", eventTypeArray[Number(pair[1])])
+                    .attr("e", tempeventTypeArray[Number(pair[1])])
                     .attr("s", pair[0])
                     .attr("t", epoch)
                     .attr("r", cellWidth/2)
@@ -1856,12 +1856,12 @@
                     .attr("onclick", 'showStackNew(evt)')
                     .attr("id", pair[0] + "-" + epoch);
             } else {
-                //str1 = str1 + "<td class=\"zoom stackCell" + pair[1] + "\" id=\"" + pair[0] + "-" + epoch + "_pop1\" onclick=\"showpopStack(" + pair[0] + "," + epoch + ",'" + eventTypeArray[Number(pair[1])] + "', this)\"> </td>";
+                //str1 = str1 + "<td class=\"zoom stackCell" + pair[1] + "\" id=\"" + pair[0] + "-" + epoch + "_pop1\" onclick=\"showpopStack(" + pair[0] + "," + epoch + ",'" + tempeventTypeArray[Number(pair[1])] + "', this)\"> </td>";
 
                 /*d3svg.append("rect")
                     .attr("width", cellWidth)
                     .attr("height", cellWidth)
-                    .attr("e", eventTypeArray[Number(pair[1])])
+                    .attr("e", tempeventTypeArray[Number(pair[1])])
                     .attr("s", pair[0])
                     .attr("t", epoch)
                     .attr("x", cellC*cellWidth)
@@ -1875,7 +1875,7 @@
                     .attr("id", pair[0] + "-" + epoch+"_pop");
                     */
                 d3svg.append("circle")
-                    .attr("e", eventTypeArray[Number(pair[1])])
+                    .attr("e", tempeventTypeArray[Number(pair[1])])
                     .attr("s", pair[0])
                     .attr("t", Number(epoch))
                     .attr("r", cellWidth/2)
@@ -1916,10 +1916,10 @@
         if (Object.keys(multiSelect).length == 0) {
             multiSelectEmpty = true;
         }
-        for (let eventTypeCount = 0; eventTypeCount< eventTypeArray.length; eventTypeCount++) {//for all profile event types
-            timelinetitleIDHTML += "<option  class='stackOption"+ eventTypeCount +"'" + ((multiSelectEmpty || multiSelect[eventTypeCount] != undefined) ? "selected" : "") + " value=" + eventTypeCount + "><span style='background-color:red'>" + getProfileName(eventTypeArray[eventTypeCount], jstackinterval) + "</span></option>";
+        for (let tempeventTypeCount = 0; tempeventTypeCount< tempeventTypeArray.length; tempeventTypeCount++) {//for all profile event types
+            timelinetitleIDHTML += "<option  class='stackOption"+ tempeventTypeCount +"'" + ((multiSelectEmpty || multiSelect[tempeventTypeCount] != undefined) ? "selected" : "") + " value=" + tempeventTypeCount + "><span style='background-color:red'>" + getProfileName(tempeventTypeArray[tempeventTypeCount], jstackinterval) + "</span></option>";
             if (multiSelectEmpty) {
-                multiSelect[eventTypeCount] = "selected";
+                multiSelect[tempeventTypeCount] = "selected";
             }
         }
 
@@ -2851,7 +2851,7 @@
         return header;
     }
 
-    function addContextHints() {
+    function addContextHints(eventType) {
         let eventToUse = $("#event-input").val();
         let table = "<table  class='ui-widget' style='border-spacing: 2px; border-collapse: separate;border: hidden'><tr><td style='border: hidden'  id='filter-heading'>Context hints:</td>";
         if (contextData != undefined && contextData.header != undefined) {
@@ -2883,15 +2883,15 @@
                 step: 1
             });
             $("#filtertimepickerstart").change(function (event) {
-                if (moment.utc($("#filtertimepickerstart").val()).valueOf() < getContextTree(1).context.start) {
-                    $("#filtertimepickerstart").val(moment.utc(getContextTree(1).context.start).format('YYYY-MM-DD HH:mm:ss'));
-                    pStart = getContextTree(1).context.start;
+                if (moment.utc($("#filtertimepickerstart").val()).valueOf() < getContextTree(1,eventType).context.start) {
+                    $("#filtertimepickerstart").val(moment.utc(getContextTree(1,eventType).context.start).format('YYYY-MM-DD HH:mm:ss'));
+                    pStart = getContextTree(1,eventType).context.start;
                 }else{
                     pStart = moment.utc($("#filtertimepickerstart").val()).valueOf();
                 }
-                if ($("#filtertimepickerend").val() != '' && moment.utc($("#filtertimepickerend").val()).valueOf() > getContextTree(1).context.end) {
-                    $("#filtertimepickerend").val(moment.utc(getContextTree(1).context.end).format('YYYY-MM-DD HH:mm:ss'));
-                    pEnd = getContextTree(1).context.end;
+                if ($("#filtertimepickerend").val() != '' && moment.utc($("#filtertimepickerend").val()).valueOf() > getContextTree(1,eventType).context.end) {
+                    $("#filtertimepickerend").val(moment.utc(getContextTree(1,eventType).context.end).format('YYYY-MM-DD HH:mm:ss'));
+                    pEnd = getContextTree(1,eventType).context.end;
                 }else{
                     pEnd = moment.utc($("#filtertimepickerend").val()).valueOf();
                 }
@@ -2899,15 +2899,15 @@
                 addToFilter("pEnd="+pEnd);
             });
             $("#filtertimepickerend").change(function (event) {
-                if (moment.utc($("#filtertimepickerend").val()).valueOf() > getContextTree(1).context.end) {
-                    $("#filtertimepickerend").val(moment.utc(getContextTree(1).context.end).format('YYYY-MM-DD HH:mm:ss'));
-                    pEnd = getContextTree(1).context.end;
+                if (moment.utc($("#filtertimepickerend").val()).valueOf() > getContextTree(1,eventType).context.end) {
+                    $("#filtertimepickerend").val(moment.utc(getContextTree(1,eventType).context.end).format('YYYY-MM-DD HH:mm:ss'));
+                    pEnd = getContextTree(1,eventType).context.end;
                 }else{
                     pEnd = moment.utc($("#filtertimepickerend").val()).valueOf();
                 }
-                if ($("#filtertimepickerstart").val() != '' && moment.utc($("#filtertimepickerstart").val()).valueOf() < getContextTree(1).context.start) {
-                    $("#filtertimepickerstart").val(moment.utc(getContextTree(1).context.start).format('YYYY-MM-DD HH:mm:ss'));
-                    pStart = getContextTree(1).context.start;
+                if ($("#filtertimepickerstart").val() != '' && moment.utc($("#filtertimepickerstart").val()).valueOf() < getContextTree(1,eventType).context.start) {
+                    $("#filtertimepickerstart").val(moment.utc(getContextTree(1,eventType).context.start).format('YYYY-MM-DD HH:mm:ss'));
+                    pStart = getContextTree(1,eventType).context.start;
                 }else{
                     pStart = moment.utc($("#filtertimepickerstart").val()).valueOf();
                 }
@@ -2917,12 +2917,12 @@
             if(pStart != '') {
                 $("#filtertimepickerstart").val(moment.utc(Number(pStart)).format('YYYY-MM-DD HH:mm:ss'));
             }else{
-                $("#filtertimepickerstart").val(moment.utc( getContextTree(1).context.start).format('YYYY-MM-DD HH:mm:ss'));
+                $("#filtertimepickerstart").val(moment.utc( getContextTree(1,eventType).context.start).format('YYYY-MM-DD HH:mm:ss'));
             }
             if(pEnd != '') {
                 $("#filtertimepickerend").val(moment.utc(Number(pEnd)).format('YYYY-MM-DD HH:mm:ss'));
             }else{
-                $("#filtertimepickerend").val(moment.utc( getContextTree(1).context.end).format('YYYY-MM-DD HH:mm:ss'));
+                $("#filtertimepickerend").val(moment.utc( getContextTree(1,eventType).context.end).format('YYYY-MM-DD HH:mm:ss'));
             }
         }
     }
@@ -2998,8 +2998,9 @@
         if(event == "Jstack" || event == "json-jstack"){
             isJstack = true;
         }
+        let combinedEventKey = event+customEvent;
         while ((flag == false || addTofilteredStackMap) && curIndex >= 0 && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
-            if (frameFilterStackMap[event][requestArr[curIndex].hash] !== undefined) {
+            if (frameFilterStackMap[combinedEventKey][requestArr[curIndex].hash] !== undefined) {
                 flag = true;
                 if (isJstack) {
                     if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
@@ -3013,7 +3014,7 @@
         curIndex = entryIndex + 1;
         //consider all matching samples upward
         while ((flag == false || addTofilteredStackMap) && curIndex < requestArr.length && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
-            if (frameFilterStackMap[event][requestArr[curIndex].hash] !== undefined) {
+            if (frameFilterStackMap[combinedEventKey][requestArr[curIndex].hash] !== undefined) {
                 flag = true;
                 if (isJstack) {
                     if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
@@ -3088,480 +3089,6 @@
         }
     }
 
-
-/*
-    function genRequestTableWithDataTables() { //deprecated
-
-        console.log("genRequestTable start");
-        setToolBarOptions("statetabledrp");
-
-        let start1 = performance.now();
-        //setCustomEvent();
-
-        if (customEvent == "" || customEvent == undefined) {
-            return;
-        }
-
-        //status graph start
-        let downScale = 200;
-        let maxEndTimeOfReq = 0;
-        let totalRows = 0;
-        let rowHeight = 8;
-        let filteredTidRequests = {};
-        let lineCount = 0;
-        if (tableFormat == 2 || tableFormat == 3) {
-            tidIndex = {};
-        }
-        let tmpTidSortByMetricMap = new Map();
-        let tmpGgroupByTypeSortByMetricMap = new Map();
-        let groupByCount = 0;
-        let groupByCountSum = 0;
-        //status graph end
-
-        let metricSumMap = {};
-        let tidDatalistVal = filterMap["tid"];
-
-        let event = getEventType();
-        let isJstack = false;
-        if(event == "Jstack" || event == "json-jstack"){
-            isJstack = true;
-        }
-
-        let dimIndexMap = {};
-        let metricsIndexMap = {};
-        let metricsIndexArray = [];
-        let isDimIndexMap = {};
-        let groupByIndex = -1;
-        let sortByIndex = -1;
-        let spanIndex = -1;
-        let timestampIndex = -1;
-        let tidRowIndex = -1;
-        let isContextViewFiltered = true;
-
-
-        let sortByFound = false;
-        let groupByFound = false;
-
-        for (let val in contextData.header[customEvent]) {
-            const tokens = contextData.header[customEvent][val].split(":");
-            if (tokens[1] == "number") {
-                metricsIndexArray.push(val);
-                metricsIndexMap[tokens[0]] = val;
-            }
-            if (groupBy == tokens[0]) {
-                groupByIndex = val;
-                groupByFound = true;
-            }
-            if (sortBy == tokens[0]) {
-                sortByFound = true;
-                sortByIndex = val;
-            }
-            if ("tid" == tokens[0]) {
-                tidRowIndex = val;
-            }
-
-            if ("duration" == tokens[0] || "runTime" == tokens[0]) { // TODO: take from user
-                spanIndex = val;
-            }
-            if ("timestamp" == tokens[0]) { // TODO: take from user
-                timestampIndex = val;
-            }
-            if (tokens[1] == "text" || tokens[1] == "timestamp") {
-                dimIndexMap[tokens[0]] = val;
-                isDimIndexMap[val]=tokens[0];
-            }
-        }
-
-        if (!groupByFound) {
-            //groupBy = "tid";
-            //groupByIndex=tidRowIndex;
-        }
-        if (!sortByFound) {
-            //sortBy = "duration";
-            //sortByIndex = spanIndex;
-        }
-
-        addContextHints();
-
-        let contextStart = getContextTree(1).context.start;
-        let contextTidMap = getContextTree(1).context.tidMap;
-        let contextDataRecords = undefined;
-        if (contextData != undefined && contextData.records != undefined) {
-            contextDataRecords = contextData.records[customEvent];
-        }
-
-        let table = "<table   style=\"border:none;padding=0px;width: 100%;\" id=\"state-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\">" + getEventTableHeader(groupBy);
-
-        if((!isFilterEmpty(dimIndexMap) || frameFilterString !== "") && spanIndex == -1 ){
-            isContextViewFiltered = false;//record do not have duration span to apply context filters
-        }
-        //if only frame filter is selected then we need to include stacks that are not part of any request spans.
-        if (frameFilterString !== "" && tidDatalistVal == undefined && isFilterEmpty(dimIndexMap)) {
-            for (var tid in contextTidMap) {
-                if (isJstack  ) {
-                    for (let index = 0; index < contextTidMap[tid].length; index++) {
-                        if ((pStart === '' || pEnd === '') || (contextTidMap[tid][index].time + contextStart) >= pStart && (contextTidMap[tid][index].time + contextStart) <= pEnd) { // apply time range filter
-                            if (frameFilterStackMap[event][contextTidMap[tid][index].hash] !== undefined) {
-                                if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
-                                    filteredStackMap[FilterLevel.LEVEL3][tid] = [];
-                                }
-                                filteredStackMap[FilterLevel.LEVEL3][tid].push(contextTidMap[tid][index]);
-                            }
-                        }
-                    }
-                }
-                //generate context table data, need to include requests that has frame filter found stacks
-                if (contextDataRecords[tid] != undefined) {
-                    let includeTid = false;
-                    let reqArray = [];
-                    let recordIndex = -1;
-                    contextDataRecords[tid].forEach(function (obj) {
-                        let record = obj.record;
-                        let flag = false;
-                        recordIndex++;
-                        let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
-                        if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
-                            if(record[spanIndex] == undefined){
-                                flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
-                            }else {
-                                let end = record[timestampIndex] - contextStart + recordSpan;
-                                let start = record[timestampIndex] - contextStart;
-                                try {
-                                    //do a binary search
-                                    let entryIndex = isinRequest(contextTidMap[tid], start, end);
-                                    if (entryIndex != -1) {
-                                        let requestArr = contextTidMap[tid];
-                                        flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false);
-                                    }
-                                } catch (err) {
-                                    //console.log("tid not found in JFR" + tid.key + " " + err.message);
-                                }
-                            }
-                        }
-
-                        if (flag) {
-                            if ((tableFormat == 2 || tableFormat == 3)) {
-                                includeTid = true;
-                                reqArray.push(recordIndex);
-                                if ((recordSpan + record[timestampIndex]) > maxEndTimeOfReq) {
-                                    maxEndTimeOfReq = recordSpan + record[timestampIndex];
-                                }
-                                let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
-                                if (!tmpColorMap.has(key)) {
-                                    tmpColorMap.set(key, randomColor());
-                                    groupByCount++;
-                                }
-                                let metricValue = record[metricsIndexMap[sortBy]];
-                                if (metricValue != undefined) {
-                                    groupByCountSum += metricValue;
-                                } else {
-                                    metricValue = 0;
-                                }
-                                if (tmpGgroupByTypeSortByMetricMap.has(key)) {
-                                    tmpGgroupByTypeSortByMetricMap.set(key, tmpGgroupByTypeSortByMetricMap.get(key) + metricValue);
-                                } else {
-                                    tmpGgroupByTypeSortByMetricMap.set(key, metricValue);
-                                }
-
-                                if (tmpTidSortByMetricMap.has(tid)) {
-                                    tmpTidSortByMetricMap.set(tid, tmpTidSortByMetricMap.get(tid) + metricValue);
-                                } else {
-                                    tmpTidSortByMetricMap.set(tid, metricValue);
-                                }
-                            }
-                            if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
-                                if (record[metricsIndexMap[tableThreshold]] >= spanThreshold) {//todo change names tableThreshold to recordInput, spanThreshold to recordThreshold
-                                    table = table + "<tr>";
-                                    for (let field in record) {
-                                        if (field == timestampIndex) {
-                                            table = table + "<td  hint='timestamp' class='context-menu-one' id='" + record[tidRowIndex] + "_" + record[field] + "'>" + moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS') + ":"+ record[field] + "</td>";
-                                        } else {
-                                            if(isDimIndexMap[field] !== undefined){
-                                                table = table + "<td hint='"+isDimIndexMap[field]+"' class='context-menu-two'>" + record[field] + "</td>";
-                                            }else {
-                                                table = table + "<td>" + record[field] + "</td>";
-                                            }
-                                        }
-                                    }
-                                    table = table + "</tr>";
-                                }
-                            } else {
-                                let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
-
-                                if (metricSumMap[key] == undefined) {
-                                    metricSumMap[key] = Array(metricsIndexArray.length + 1).fill(0);
-                                }
-
-                                for (let i = 0; i < metricsIndexArray.length; i++) {
-                                    metricSumMap[key][i] += record[metricsIndexArray[i]];
-                                }
-                                metricSumMap[key][metricsIndexArray.length] += 1;
-                            }
-                        }
-                    });
-                    if (includeTid) {
-                        filteredTidRequests[tid] = reqArray;
-                        lineCount++;
-                        totalRows++;
-                    }
-                }
-            }
-        } else {
-            for (var tid in contextDataRecords) {
-                let includeTid = false;
-                let reqArray = [];
-                let recordIndex = -1;
-                if (tidDatalistVal == undefined || tidDatalistVal == tid) {
-                    contextDataRecords[tid].forEach(function (obj) {
-                        let record = obj.record;
-                        let flag = false;
-                        recordIndex++;
-                        let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
-                        if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
-                            if (record[spanIndex] == undefined) {
-                                flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
-                            } else {
-                                //context filter matched, but check if samples of request is matching frame filter
-                                if (frameFilterString !== "") {
-                                    flag = false;
-
-                                    //check if the request has a stack and if stack is in frameFilterStackMap
-                                    let end = record[timestampIndex] - contextStart + recordSpan;
-                                    let start = record[timestampIndex] - contextStart;
-
-                                    try {
-                                        //do a binary search
-                                        let entryIndex = isinRequest(contextTidMap[tid], start, end);
-                                        if (entryIndex != -1) {
-                                            let requestArr = contextTidMap[tid];
-                                            flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false);
-                                        }
-                                    } catch (err) {
-                                        //console.log("tid not found in JFR" + tid + " " + err.message);
-                                    }
-                                }else{
-                                    flag = true;
-                                }
-                            }
-                        }
-
-                        if (flag) {
-                            if ((tableFormat == 2 || tableFormat == 3)) {
-                                includeTid = true;
-                                reqArray.push(recordIndex);
-                                if ((recordSpan + record[timestampIndex]) > maxEndTimeOfReq) {
-                                    maxEndTimeOfReq = recordSpan + record[timestampIndex];
-                                }
-                                let key = (groupByIndex != -1 &&   record[groupByIndex] != undefined &&record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
-                                if (!tmpColorMap.has(key)) {
-                                    tmpColorMap.set(key, randomColor());
-                                    groupByCount++;
-                                }
-                                let metricValue = record[metricsIndexMap[sortBy]];
-                                if (metricValue != undefined) {
-                                    groupByCountSum += metricValue;
-                                } else {
-                                    metricValue = 0;
-                                }
-                                if (tmpGgroupByTypeSortByMetricMap.has(key)) {
-                                    tmpGgroupByTypeSortByMetricMap.set(key, tmpGgroupByTypeSortByMetricMap.get(key) + metricValue);
-                                } else {
-                                    tmpGgroupByTypeSortByMetricMap.set(key, metricValue);
-                                }
-
-                                if (tmpTidSortByMetricMap.has(tid)) {
-                                    tmpTidSortByMetricMap.set(tid, tmpTidSortByMetricMap.get(tid) + metricValue);
-                                } else {
-                                    tmpTidSortByMetricMap.set(tid, metricValue);
-                                }
-                            }
-                            if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
-                                if (record[metricsIndexMap[tableThreshold]] >= spanThreshold) {
-                                    table = table + "<tr>";
-                                    for (let field in record) {
-                                        if (field == timestampIndex) {
-                                            table = table + "<td hint='timestamp' class=\"context-menu-one\" id='" + record[tidRowIndex] + "_" + record[field] + "'>" + moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS') + ":"+ record[field] + "</td>";
-                                        } else {
-                                            if(isDimIndexMap[field] !== undefined){
-                                                table = table + "<td hint='"+isDimIndexMap[field]+"' class='context-menu-two'>" + record[field] + "</td>";
-                                            }else {
-                                                table = table + "<td>" + record[field] + "</td>";
-                                            }
-                                        }
-                                    }
-                                    table = table + "</tr>";
-                                }
-                            } else {
-                                let key = (groupByIndex != -1 &&  record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
-                                if (metricSumMap[key] == undefined) {
-                                    metricSumMap[key] = Array(metricsIndexArray.length + 1).fill(0);
-                                }
-
-                                for (let i = 0; i < metricsIndexArray.length; i++) {
-                                    metricSumMap[key][i] += record[metricsIndexArray[i]];
-                                }
-                                metricSumMap[key][metricsIndexArray.length] += 1;
-                            }
-                        }
-                    });
-                    if (includeTid) {
-                        filteredTidRequests[tid] = reqArray;
-                        lineCount++;
-                        totalRows++;
-                    }
-                }
-            }
-        }
-        let end1 = performance.now();
-        console.log("genRequestTable 0 time:" + (end1 - start1))
-        let start = performance.now();
-        let order = getOrderandType();
-        if (tableFormat == 2 || tableFormat == 3) {
-            let minStart = getContextTree(1, getEventType()).context.start; //records are aligned to method profile context start
-            let chartWidth = maxEndTimeOfReq - minStart;
-            if (chartWidth < 600000) {//min 10 min
-                chartWidth = 600000;
-            }
-            chartWidth = chartWidth / downScale;
-            const tidSortByMetricMap = new Map([...tmpTidSortByMetricMap.entries()].sort((a, b) => b[1] - a[1]));
-            const groupByTypeSortByMetricMap = new Map([...tmpGgroupByTypeSortByMetricMap.entries()].sort((a, b) => b[1] - a[1]));
-            //generate tidIndex for Yaxis
-            let index = 0;
-            for (let [tid, value] of tidSortByMetricMap) {
-                tidIndex[index] = tid;
-                index++;
-            }
-            if (tableFormat == 2) {
-                drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered, customEvent);
-                addLegend("#legendid", groupByTypeSortByMetricMap, groupByCount, groupByCountSum);
-                addYAxis("#yaxisid", 0, 0, 0, 17, 0, lineCount, 500, totalRows * rowHeight);
-                addXAxis("#xaxisid", 15, 0, 0, 0, 0, chartWidth, chartWidth, 50, minStart, downScale);
-            } else {
-                drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered, customEvent);
-            }
-        } else {
-            if (!(groupBy == "" || groupBy == undefined || groupBy == "All records")) {
-                for (let dim in metricSumMap) {
-                    table = table + "<tr>";
-                    table = table + "<td hint='"+groupBy+"' class='context-menu-two'>" + dim + "</td>";
-                    for (let i = 0; i < metricSumMap[dim].length; i++) {
-                        table = table + "<td>" + metricSumMap[dim][i] + "</td>";
-                    }
-                    table = table + "</tr>";
-                }
-            }
-            if(!isContextViewFiltered) {
-                table = table + "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getContextHintNote(false)+"</div>";
-            }
-            table = table + "</table>";
-            document.getElementById("statetable").innerHTML = table;
-
-            enableDataTable(order);
-        }
-        setToolBarOptions("statetabledrp");
-
-        $("#event-input").on("change", (event) => {
-            updateUrl("customevent", $("#event-input").val(), true);
-            customEvent = $("#event-input").val();
-            //tmpColorMap.clear();
-            //setToolBarOptions("statetabledrp");
-            //genRequestTable();
-            //updateRequestView();
-        });
-        $("#filter-input").on("change", (event) => {
-            updateUrl("groupBy", $("#filter-input").val(), true);
-            groupBy = $("#filter-input").val();
-            tmpColorMap.clear();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#format-input").on("change", (event) => {
-            updateUrl("tableFormat", $("#format-input").val(), true);
-            tableFormat = $("#format-input").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#sort-input").on("change", (event) => {
-            updateUrl("sortBy", $("#sort-input").val(), true);
-            sortBy = $("#sort-input").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#line-type").on("change", (event) => {
-            updateUrl("cumulative", $("#line-type").val(), true);
-            cumulativeLine = $("#line-type").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#line-count").on("change", (event) => {
-            updateUrl("seriesCount", $("#line-count").val(), true);
-            seriesCount = $("#line-count").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#groupby-match").on("change", (event) => {
-            updateUrl("groupByMatch", $("#groupby-match").val(), true);
-            groupByMatch = $("#groupby-match").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#groupby-length").on("change", (event) => {
-            updateUrl("groupByLength", $("#groupby-length").val(), true);
-            groupByLength = $("#groupby-length").val();
-            genRequestTable();
-            updateRequestView();
-        });
-
-        $("#table-threshold").on("change", (event) => {
-            updateUrl("tableThreshold", $("#table-threshold").val(), true);
-            tableThreshold = $("#table-threshold").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#span-threshold").on("change", (event) => {
-            updateUrl("spanThreshold", $("#span-threshold").val(), true);
-            spanThreshold = $("#span-threshold").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#cct-panel").css("height", "100%");
-
-
-        let end = performance.now();
-        console.log("genRequestTable 1 time:")
-    }
-    */
-
-    function enableDataTable(order) {
-        /*
-        if (contextTable != undefined) {
-            contextTablePage = 0; //reset to 0 except 1st time
-        }
-
-        contextTable = $('#state-table').DataTable({
-            "order": [[ order, "desc" ]],
-            searching: true,
-            "columnDefs": [{}],
-            "drawCallback": function (settings) {
-                if (contextTable != undefined) {
-                    //when we change table page focus, remove request selection
-                    if ((filterReq != "" && filterReq != undefined) && $("#" + filterReq).length != 0) {
-                        updateRequestView();
-                    }
-                    contextTablePage = contextTable.page.info().page * contextTable.page.len();
-                    updateUrl("cpage", contextTablePage, true);
-                }
-            },
-            "displayStart": contextTablePage,
-            aoColumnDefs: [
-                {
-                    orderSequence: ["desc", "asc"],
-                    aTargets: ['_all']
-                }
-            ],
-            "sDom": '<"toolbar">tfp<"clear">'
-        });*/
-    }
 
     let toggleToolbarFiltersdisplay = "none";
     function toggleToolbarFilters(){
@@ -4703,7 +4230,8 @@
     let tmpColorMap = new Map();
 
     function genRequestTable() {
-        console.log("genRequestTable start");
+        let eventType = getEventType();
+        console.log("genRequestTable start " + eventType);
         $('#timeLineChartNote').hide();
 
         setToolBarOptions("statetabledrp");
@@ -4738,7 +4266,7 @@
         let metricSumMap = {};
         let tidDatalistVal = filterMap["tid"];
 
-        let event = getEventType();
+        let event = eventType;
         let isJstack = false;
         if(event == "Jstack" || event == "json-jstack"){
             isJstack = true;
@@ -4798,10 +4326,10 @@
             //sortByIndex = spanIndex;
         }
 
-        addContextHints();
+        addContextHints(eventType);
 
-        let contextStart = getContextTree(1).context.start;
-        let contextTidMap = getContextTree(1).context.tidMap;
+        let contextStart = getContextTree(1,eventType).context.start;
+        let contextTidMap = getContextTree(1,eventType).context.tidMap;
         let contextDataRecords = undefined;
         if (contextData != undefined && contextData.records != undefined) {
             contextDataRecords = contextData.records[customEvent];
@@ -4817,13 +4345,14 @@
         if((!isFilterEmpty(dimIndexMap) || frameFilterString !== "") && spanIndex == -1 ){
             isContextViewFiltered = false;//record do not have duration span to apply context filters
         }
+        let combinedEventKey = event + customEvent;
         //if only frame filter is selected then we need to include stacks that are not part of any request spans.
         if (frameFilterString !== "" && tidDatalistVal == undefined && isFilterEmpty(dimIndexMap)) {
             for (var tid in contextTidMap) {
                 if (isJstack  ) {
                     for (let index = 0; index < contextTidMap[tid].length; index++) {
                         if ((pStart === '' || pEnd === '') || (contextTidMap[tid][index].time + contextStart) >= pStart && (contextTidMap[tid][index].time + contextStart) <= pEnd) { // apply time range filter
-                            if (frameFilterStackMap[event][contextTidMap[tid][index].hash] !== undefined) {
+                            if (frameFilterStackMap[combinedEventKey][contextTidMap[tid][index].hash] !== undefined) {
                                 if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
                                     filteredStackMap[FilterLevel.LEVEL3][tid] = [];
                                 }
@@ -5043,8 +4572,8 @@
         let start = performance.now();
         let order = getOrderandType();
         if (tableFormat == 2 || tableFormat == 3) {
-            let minStart = getContextTree(1, getEventType()).context.start; //todo: records are aligned to method profile context start
-            if(getEventType() == "json-jstack" || getEventType() == "Jstack"){//find other profile start time
+            let minStart = getContextTree(1, eventType).context.start; //todo: records are aligned to method profile context start
+            if(eventType == "json-jstack" || eventType == "Jstack"){//find other profile start time
                 for (var profile in jfrprofiles1) {
                     if(profile !== "json-jstack" && profile !== "Jstack") {
                         minStart = getContextTree(1, profile).context.start;
@@ -5240,7 +4769,8 @@
     }
 
     function genOtherTable() {
-        console.log("genOtherTable start");
+        let eventType = getEventType();
+        console.log("genOtherTable start " + eventType);
         $('#timeLineChartNote').hide();
 
         let start1 = performance.now();
@@ -5268,7 +4798,7 @@
         let metricSumMap = {};
         let tidDatalistVal = filterMap["tid"];
 
-        let event = getEventType();
+        let event = eventType;
         let isJstack = false;
         if(event == "Jstack" || event == "json-jstack"){
             isJstack = true;
@@ -5330,8 +4860,8 @@
 
         //addContextHints();
 
-        let contextStart = getContextTree(1).context.start;
-        let contextTidMap = getContextTree(1).context.tidMap;
+        let contextStart = getContextTree(1, eventType).context.start;
+        let contextTidMap = getContextTree(1, eventType).context.tidMap;
         let contextDataRecords = undefined;
         if (contextData != undefined && contextData.records != undefined) {
             contextDataRecords = contextData.records[otherEvent];
@@ -5449,7 +4979,15 @@
         let start = performance.now();
         let order = getOrderandType();
         if (tableFormat == 2 || tableFormat == 3) {
-            let minStart = getContextTree(1, getEventType()).context.start; //records are aligned to method profile context start
+            let minStart = getContextTree(1, eventType).context.start; //records are aligned to method profile context start
+            if(eventType == "json-jstack" || eventType == "Jstack"){//find other profile start time
+                for (var profile in jfrprofiles1) {
+                    if(profile !== "json-jstack" && profile !== "Jstack") {
+                        minStart = getContextTree(1, profile).context.start;
+                        break;
+                    }
+                }
+            }
             let chartWidth = maxEndTimeOfReq - minStart;
             if (chartWidth < 600000) {//min 10 min
                 chartWidth = 600000;
