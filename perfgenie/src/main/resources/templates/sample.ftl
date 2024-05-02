@@ -197,8 +197,46 @@
         //validateInputAndcreateContextTree(true);
     });
 
+
+    function prepSamplesData(eventType){
+        let profile = getContextTree(1, eventType);
+        if(profile.times != undefined){
+            end = performance.now();
+            console.log("prepData skip for:" + eventType);
+            return;//done only once
+        }
+        let tmpTimestampap = {};
+        let timestampArray = [];
+        
+        let start = performance.now();
+
+        let tidMap = profile.context.tidMap;
+
+        //generate unique timestamp array
+        for (var k in tidMap) {
+            for (let i = 0; i < tidMap[k].length; i++) {
+                if(tmpTimestampap[tidMap[k][i].time] == undefined) {
+                    tmpTimestampap[tidMap[k][i].time] = true;
+                    timestampArray.push(tidMap[k][i].time);
+                }
+            }
+        }
+        timestampArray.sort(function (a, b) {
+            return a - b
+        });
+
+        for(let i = 0; i<timestampArray.length; i++){
+            tmpTimestampap[timestampArray[i]] = i;
+        }
+
+        profile.times = tmpTimestampap;
+        end = performance.now();
+        console.log("prepSamplesData time :" + (end - start));
+    }
+
     //add context data for all request matching samples
     function addContextData(selectedLevel, event){
+        prepSamplesData(event);
         let contextTidMap = undefined;
         let treeToProcess = getContextTree(1,event);
         let contextData = getContextData();
@@ -462,6 +500,12 @@
                         if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
                             let stack = contextTidMap[tid][i].hash;
                             if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
+
+                                if(tidSamplesTimestamps[tid] == undefined){
+                                    tidSamplesTimestamps[tid] = [];
+                                }
+                                tidSamplesTimestamps[tid].push(contextTidMap[tid][i].time);
+
                                 let key = contextTidMap[tid][i].tn;
                                 //consider
                                 if (sampleSortMap.has(key)) {
@@ -495,6 +539,12 @@
                         if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
                             let stack = contextTidMap[tid][i].hash;
                             if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
+
+                                if(tidSamplesTimestamps[tid] == undefined){
+                                    tidSamplesTimestamps[tid] = [];
+                                }
+                                tidSamplesTimestamps[tid].push(contextTidMap[tid][i].time);
+
                                 let key = tid;
                                 if (sampleSortMap.has(key)) {
                                     sampleSortMap.set(key, sampleSortMap.get(key) + 1);
@@ -588,6 +638,12 @@
                             if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
                                 let stack = contextTidMap[tid][i].hash;
                                 if (frameFilterStackMap[combinedEventKey][stack] !== undefined) {
+
+                                    if(tidSamplesTimestamps[tid] == undefined){
+                                        tidSamplesTimestamps[tid] = [];
+                                    }
+                                    tidSamplesTimestamps[tid].push(contextTidMap[tid][i].time);
+
                                     let key = "";
                                     if (contextTidMap[tid][i][samplesCustomEvent]?.obj != undefined) {
                                         key = contextTidMap[tid][i][samplesCustomEvent].obj[dimIndexMap[groupBySamples]];
@@ -713,10 +769,14 @@
                                                 let stack = contextTidMap[tid][i].hash;
                                                 //for (var stack in obj[combinedEventKey]) {
                                                 if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
+
+                                                    if(tidSamplesTimestamps[tid] == undefined){
+                                                        tidSamplesTimestamps[tid] = [];
+                                                    }
+                                                    tidSamplesTimestamps[tid].push(contextTidMap[tid][i].time);
+
                                                     cursampleCount++;
-                                                    //if(tidSamplesTimestamps[tid] == undefined){
-                                                    //    tidSamplesTimestamps[tid] = [];
-                                                    //}
+
                                                     if (sampleCountMap.has(key)) {
                                                         let tmpMap = sampleCountMap.get(key);
                                                         if (tmpMap.has(stack)) {
