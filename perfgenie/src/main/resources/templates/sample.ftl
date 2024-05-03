@@ -435,7 +435,6 @@
         let eventType = getEventType();
 
 
-
         let tempeventTypeArray = [];
         for (var tempeventType in jfrprofiles1) {//for all profile event types
             tempeventTypeArray.push(tempeventType);
@@ -463,10 +462,16 @@
         let totalSampleCount = getContextTree(1, eventType).tree.sz;
         let samplerowIndex = -1;
 
+        if(addContext) {
+            updateEventInputOptions('event-input-smpl');
+            updateGroupByOptions('smpl-grp-by');
+        }
+
         let table = "<table   style=\"width: 100%;\" id=\"sample-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\"><thead><tr><th width=\"50%\">" + getHearderFor(groupBySamples) + "</th><th width=\"10%\">Sample Count</th><th width=\"40%\">Samples</th></thead>";
 
-        let isAll = false;
+        let isAll = true;
         for (let tempeventTypeCount = 0; tempeventTypeCount< tempeventTypeArray.length; tempeventTypeCount++){
+            let eventSampleCount = 0;
             if(isAll && sampletableFormat == 1){//process all events
                 eventType = tempeventTypeArray[tempeventTypeCount];
                 addContext=true;
@@ -476,8 +481,6 @@
 
             if (addContext) {
                 addContextData(eventType);
-                updateEventInputOptions('event-input-smpl');
-                updateGroupByOptions('smpl-grp-by');
             }
 
             for (let val in contextData.header[samplesCustomEvent]) {
@@ -544,6 +547,7 @@
                                         tidSamplesTimestamps[tid] = [];
                                     }
                                     tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount]);
+                                    eventSampleCount++;
 
                                     let key = contextTidMap[tid][i].tn;
                                     //consider
@@ -583,6 +587,7 @@
                                         tidSamplesTimestamps[tid] = [];
                                     }
                                     tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount]);
+                                    eventSampleCount++;
 
                                     let key = tid;
                                     if (sampleSortMap.has(key)) {
@@ -682,6 +687,7 @@
                                             tidSamplesTimestamps[tid] = [];
                                         }
                                         tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount]);
+                                        eventSampleCount++;
 
                                         let key = "";
                                         if (contextTidMap[tid][i][samplesCustomEvent]?.obj != undefined) {
@@ -813,6 +819,7 @@
                                                             tidSamplesTimestamps[tid] = [];
                                                         }
                                                         tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount]);
+                                                        eventSampleCount++;
 
                                                         cursampleCount++;
 
@@ -881,6 +888,8 @@
                     }
                 }
             }
+
+            console.log("count " + eventType +":"+eventSampleCount);
         }
 
         let start = performance.now();
@@ -889,18 +898,20 @@
             let tidSamplesCountMap = new Map(); //sort tid based on number of samples
             for (var tid in tidSamplesTimestamps) {
                 tidSamplesCountMap.set(tid, tidSamplesTimestamps[tid].length);
+                tidSamplesTimestamps[tid].sort((a, b) => a[0] - b[0]);
             }
             tidSamplesCountMap = new Map([...tidSamplesCountMap.entries()].sort((a, b) => b[1] - a[1]));
 
-            let top = 5000;
+            let top = 50;
             let uniquetimestamps = generateTimestamseries(tidSamplesTimestamps,tidSamplesCountMap, top);
             $("#sampletable").html("");
 
             //sampletable
             let cellh = 7;
+            let cellw = 3;
             let x = 0;
             let y = 10;
-            d3.select("#sampletable").append("svg").attr("width", maxThreadSamples*cellh).attr("height", (top+2)*cellh);
+            d3.select("#sampletable").append("svg").attr("width", maxThreadSamples *cellw).attr("height", (top+2)*cellh);
 
             let d3svg = d3.select("#sampletable").select("svg");
 
@@ -917,6 +928,7 @@
                         .attr('y2', y+cellh/2);
 
                     let i = 0;
+                    //console.log("total len:" + tidSamplesTimestamps[tid].length);
                     for (let timestamp in uniquetimestamps) {
                         if (i < tidSamplesTimestamps[tid].length) {
                             if (uniquetimestamps[timestamp] == -1) {
@@ -924,7 +936,7 @@
                             } else if (timestamp == tidSamplesTimestamps[tid][i][0]) {
                                 //put color rect
                                 d3svg.append("rect")
-                                    .attr("width", cellh)
+                                    .attr("width", cellw)
                                     .attr("height", cellh)
                                     .attr("x", x)
                                     .attr("y", y)
@@ -935,8 +947,9 @@
                         } else {
                             //put a whitc rect
                         }
-                        x += cellh;
+                        x += cellw;
                     }
+                    //console.log("matched len:" + i);
                     x = 0;
                     y += cellh;
                 }
@@ -1037,6 +1050,14 @@
     let colors = ["lightseagreen","yellow","deeppink","brown","dodgerblue","slateblue"];
     function getSampleColor(id){
         if(id == 2){
+            return colors[id];
+        }else if(id == 1){
+            return colors[id];
+        }else if(id == 5){
+            return colors[id];
+        }else if(id == 3){
+            return colors[id];
+        }else if(id == 4){
             return colors[id];
         }
         return colors[id];
