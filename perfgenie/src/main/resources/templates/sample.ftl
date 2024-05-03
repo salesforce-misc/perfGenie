@@ -198,6 +198,7 @@
     });
 
 
+    let eventTypeMaxThreadSamples={};
     function prepSamplesData(eventType){
         let profile = getContextTree(1, eventType);
         if(profile.times != undefined){
@@ -207,7 +208,7 @@
         }
         let tmpTimestampap = {};
         let timestampArray = [];
-        
+
         let start = performance.now();
 
         let tidMap = profile.context.tidMap;
@@ -224,10 +225,18 @@
         timestampArray.sort(function (a, b) {
             return a - b
         });
-
+        let prev = timestampArray[0];
+        let count = 0;
         for(let i = 0; i<timestampArray.length; i++){
+            if((timestampArray[i]-prev) > 60000){
+                tmpTimestampap[Math.round((timestampArray[i]+prev)/2)] = -1;
+                count++;
+            }
             tmpTimestampap[timestampArray[i]] = i;
+            prev = timestampArray[i];
+            count++;
         }
+        eventTypeMaxThreadSamples[eventType]=count;
 
         profile.times = tmpTimestampap;
         end = performance.now();
@@ -236,7 +245,7 @@
 
     //add context data for all request matching samples
     function addContextData(selectedLevel, event){
-        prepSamplesData(event);
+        //prepSamplesData(event);
         let contextTidMap = undefined;
         let treeToProcess = getContextTree(1,event);
         let contextData = getContextData();
@@ -418,14 +427,14 @@
         let metricsIndexMap = {};
         let metricsIndexArray = [];
         let spanIndex = -1;
-        let timestampIndex=-1;
+        let timestampIndex = -1;
         let tidRowIndex = -1;
 
         for (let val in contextData.header[samplesCustomEvent]) {
             const tokens = contextData.header[samplesCustomEvent][val].split(":");
             if (tokens[1] == "number") {
                 metricsIndexArray.push(val);
-                metricsIndexMap[tokens[0]]=val;
+                metricsIndexMap[tokens[0]] = val;
             }
 
             if ("tid" == tokens[0]) {
@@ -446,14 +455,14 @@
         $('#stack-view-guid').text("");
         let start1 = performance.now();
         let groupBySamples = smplBy;
-        if(contextData == undefined) {
+        if (contextData == undefined) {
             //support only tid or tn
-            if(!(groupBySamples === "threadname" || groupBySamples === "tid")){
+            if (!(groupBySamples === "threadname" || groupBySamples === "tid")) {
                 //set default tid
                 groupBySamples = "tid";
-                if(eventType == "Jstack" || eventType == "json-jstack"){
+                if (eventType == "Jstack" || eventType == "json-jstack") {
                     updateFilterViewStatus("Note: Failed to get Request context, only tid and threadName group by options supported.");
-                }else{
+                } else {
                     updateFilterViewStatus("Note: Failed to get Request context, only tid group by option supported.");
                 }
             }
@@ -468,15 +477,15 @@
 
         let tableFormat = $("#format-input").val();
 
-        let contextTidMap = getContextTree(1,eventType).context.tidMap;
-        let contextStart = getContextTree(1,eventType).context.start;
+        let contextTidMap = getContextTree(1, eventType).context.tidMap;
+        let contextStart = getContextTree(1, eventType).context.start;
 
         let sampleCountMap = new Map();
         sampleSortMap = new Map();
 
-        let totalSampleCount = getContextTree(1,eventType).tree.sz;
+        let totalSampleCount = getContextTree(1, eventType).tree.sz;
 
-        let table = "<table   style=\"width: 100%;\" id=\"sample-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\"><thead><tr><th width=\"50%\">"+getHearderFor(groupBySamples)+"</th><th width=\"10%\">Sample Count</th><th width=\"40%\">Samples</th></thead>";
+        let table = "<table   style=\"width: 100%;\" id=\"sample-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\"><thead><tr><th width=\"50%\">" + getHearderFor(groupBySamples) + "</th><th width=\"10%\">Sample Count</th><th width=\"40%\">Samples</th></thead>";
 
 
         if (eventType == "Jstack" || eventType == "json-jstack") {
@@ -492,16 +501,16 @@
         let tidSamplesTimestamps = {};
 
         //every sample of jstack has a tn
-        let combinedEventKey = eventType+samplesCustomEvent;
+        let combinedEventKey = eventType + samplesCustomEvent;
         if ((eventType == "Jstack" || eventType == "json-jstack") && groupBySamples == "threadname" && isFilterEmpty(dimIndexMap)) {
             for (var tid in contextDataRecords) {
-                if(contextTidMap[tid] != undefined && (tidDatalistVal == undefined || tidDatalistVal == tid)) {
+                if (contextTidMap[tid] != undefined && (tidDatalistVal == undefined || tidDatalistVal == tid)) {
                     for (let i = 0; i < contextTidMap[tid].length; i++) {
                         if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
                             let stack = contextTidMap[tid][i].hash;
                             if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
 
-                                if(tidSamplesTimestamps[tid] == undefined){
+                                if (tidSamplesTimestamps[tid] == undefined) {
                                     tidSamplesTimestamps[tid] = [];
                                 }
                                 tidSamplesTimestamps[tid].push(contextTidMap[tid][i].time);
@@ -532,15 +541,15 @@
                 }
             }
             //every sample will have a tid, so include all
-        }else if(groupBySamples == "tid" && isFilterEmpty()){
+        } else if (groupBySamples == "tid" && isFilterEmpty()) {
             for (var tid in contextDataRecords) {
-                if(contextTidMap[tid] != undefined && (tidDatalistVal == undefined || tidDatalistVal == tid)) {
+                if (contextTidMap[tid] != undefined && (tidDatalistVal == undefined || tidDatalistVal == tid)) {
                     for (let i = 0; i < contextTidMap[tid].length; i++) {
                         if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
                             let stack = contextTidMap[tid][i].hash;
                             if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
 
-                                if(tidSamplesTimestamps[tid] == undefined){
+                                if (tidSamplesTimestamps[tid] == undefined) {
                                     tidSamplesTimestamps[tid] = [];
                                 }
                                 tidSamplesTimestamps[tid].push(contextTidMap[tid][i].time);
@@ -569,17 +578,17 @@
                 }
             }
             //if only frame filter is selected then we need to include stacks that are any stack sample and containing frame filter string
-        }else if(frameFilterString !== "" && isFilterEmpty()){
+        } else if (frameFilterString !== "" && isFilterEmpty()) {
             if (spanIndex == -1) { // record duration span not available
                 //Context hints cannot be applied, apply only time range filter and tid, threadname filter
-                isFilterOnType=false;
+                isFilterOnType = false;
                 let threadNameTidMap = {};
-                if(dimIndexMap["threadname"] != undefined && (filterMap["threadname"] != undefined || groupBySamples == "threadname")) {
+                if (dimIndexMap["threadname"] != undefined && (filterMap["threadname"] != undefined || groupBySamples == "threadname")) {
                     for (var tid in contextDataRecords) {
                         if ((tidDatalistVal == undefined || tidDatalistVal == tid) && contextTidMap[tid] != undefined) {
 
                             //contextDataRecords[tid].forEach(function (obj) {
-                            if(contextDataRecords[tid][0].record != undefined && contextDataRecords[tid][0].record[dimIndexMap["threadname"]] != undefined) {
+                            if (contextDataRecords[tid][0].record != undefined && contextDataRecords[tid][0].record[dimIndexMap["threadname"]] != undefined) {
                                 threadNameTidMap[tid] = contextDataRecords[tid][0].record[dimIndexMap["threadname"]];
                             }
                             //});
@@ -588,18 +597,18 @@
                 }
                 for (var tid in contextDataRecords) {
                     if ((tidDatalistVal == undefined || tidDatalistVal == tid) && contextTidMap[tid] != undefined) {
-                        if(dimIndexMap["threadname"] == undefined || filterMap["threadname"] == undefined || (threadNameTidMap[tid].includes(filterMap["threadname"]))) {
+                        if (dimIndexMap["threadname"] == undefined || filterMap["threadname"] == undefined || (threadNameTidMap[tid].includes(filterMap["threadname"]))) {
                             for (let i = 0; i < contextTidMap[tid].length; i++) {
                                 if ((pStart === '' || pEnd === '') || ((contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd)) {
                                     let stack = contextTidMap[tid][i].hash;
                                     if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
                                         let key = "";
-                                        if(groupBySamples === "tid"){
+                                        if (groupBySamples === "tid") {
                                             key = tid;
-                                        }else if(groupBySamples === "threadname"){
+                                        } else if (groupBySamples === "threadname") {
                                             key = threadNameTidMap[tid].slice(0, samplesgroupByLength);
                                             //key = threadNameTidMap[tid];
-                                        }else{
+                                        } else {
                                             if (contextTidMap[tid][i][samplesCustomEvent]?.obj != undefined) {
                                                 key = contextTidMap[tid][i][samplesCustomEvent].obj[dimIndexMap[groupBySamples]];
                                             } else {
@@ -639,7 +648,7 @@
                                 let stack = contextTidMap[tid][i].hash;
                                 if (frameFilterStackMap[combinedEventKey][stack] !== undefined) {
 
-                                    if(tidSamplesTimestamps[tid] == undefined){
+                                    if (tidSamplesTimestamps[tid] == undefined) {
                                         tidSamplesTimestamps[tid] = [];
                                     }
                                     tidSamplesTimestamps[tid].push(contextTidMap[tid][i].time);
@@ -650,7 +659,7 @@
                                     } else {
                                         key = "stacks matched frame but no context match";
                                     }
-                                    if( key != undefined && key.slice != undefined){
+                                    if (key != undefined && key.slice != undefined) {
                                         key = key.slice(0, samplesgroupByLength);
                                     }
                                     //consider
@@ -678,17 +687,17 @@
                     }
                 }
             }
-        }else {
+        } else {
             if (spanIndex == -1) { // record duration span not available
                 //Context hints cannot be applied, apply only time range filter and tid, threadname filter
-                isFilterOnType=false;
+                isFilterOnType = false;
                 let threadNameTidMap = {};
-                if(dimIndexMap["threadname"] != undefined && (filterMap["threadname"] != undefined || groupBySamples == "threadname")) {
+                if (dimIndexMap["threadname"] != undefined && (filterMap["threadname"] != undefined || groupBySamples == "threadname")) {
                     for (var tid in contextDataRecords) {
                         if ((tidDatalistVal == undefined || tidDatalistVal == tid) && contextTidMap[tid] != undefined) {
 
                             //contextDataRecords[tid].forEach(function (obj) {
-                            if(contextDataRecords[tid][0].record != undefined && contextDataRecords[tid][0].record[dimIndexMap["threadname"]] != undefined) {
+                            if (contextDataRecords[tid][0].record != undefined && contextDataRecords[tid][0].record[dimIndexMap["threadname"]] != undefined) {
                                 threadNameTidMap[tid] = contextDataRecords[tid][0].record[dimIndexMap["threadname"]];
                             }
                             //});
@@ -697,24 +706,24 @@
                 }
                 for (var tid in contextDataRecords) {
                     if ((tidDatalistVal == undefined || tidDatalistVal == tid) && contextTidMap[tid] != undefined) {
-                        if(dimIndexMap["threadname"] == undefined || filterMap["threadname"] == undefined || (threadNameTidMap[tid].includes(filterMap["threadname"]))) {
+                        if (dimIndexMap["threadname"] == undefined || filterMap["threadname"] == undefined || (threadNameTidMap[tid].includes(filterMap["threadname"]))) {
                             for (let i = 0; i < contextTidMap[tid].length; i++) {
                                 if ((pStart === '' || pEnd === '') || ((contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd)) {
                                     let stack = contextTidMap[tid][i].hash;
                                     if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
                                         let key = "";
-                                        if(groupBySamples === "tid"){
+                                        if (groupBySamples === "tid") {
                                             key = tid;
-                                        }else if(groupBySamples === "threadname"){
+                                        } else if (groupBySamples === "threadname") {
                                             key = threadNameTidMap[tid];
-                                        }else{
+                                        } else {
                                             if (contextTidMap[tid][i][samplesCustomEvent]?.obj != undefined) {
                                                 key = contextTidMap[tid][i][samplesCustomEvent].obj[dimIndexMap[groupBySamples]];
                                             } else {
                                                 key = "NA";
                                             }
                                         }
-                                        if( key != undefined && key.slice != undefined){
+                                        if (key != undefined && key.slice != undefined) {
                                             key = key.slice(0, samplesgroupByLength);
                                         }
 
@@ -758,19 +767,19 @@
                                         flag = true;
                                         //TODO: we are including all the samples in a matching request, some of them may not be part of timerange filter
                                         let key = record[dimIndexMap[groupBySamples]];
-                                        if( key != undefined && key.slice != undefined){
+                                        if (key != undefined && key.slice != undefined) {
                                             key = key.slice(0, samplesgroupByLength);
                                         }
 
                                         //check if request samples match frame filter string
                                         let cursampleCount = 0;
-                                        for(let i=obj[combinedEventKey][0]; i<= obj[combinedEventKey][1]; i++){
+                                        for (let i = obj[combinedEventKey][0]; i <= obj[combinedEventKey][1]; i++) {
                                             if ((pStart === '' || pEnd === '') || ((contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd)) {
                                                 let stack = contextTidMap[tid][i].hash;
                                                 //for (var stack in obj[combinedEventKey]) {
                                                 if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
 
-                                                    if(tidSamplesTimestamps[tid] == undefined){
+                                                    if (tidSamplesTimestamps[tid] == undefined) {
                                                         tidSamplesTimestamps[tid] = [];
                                                     }
                                                     tidSamplesTimestamps[tid].push(contextTidMap[tid][i].time);
@@ -792,7 +801,7 @@
                                                 }
                                             }
                                         }
-                                        if(cursampleCount != 0) {
+                                        if (cursampleCount != 0) {
                                             if (sampleSortMap.has(key)) {
                                                 sampleSortMap.set(key, sampleSortMap.get(key) + cursampleCount);
                                             } else {
@@ -843,84 +852,146 @@
             }
         }
 
-//sort based on number of stacks
-        for (let [key, value] of sampleCountMap) {
-            sampleCountMap.set(key, new Map([...value.entries()].sort((a, b) => b[1] - a[1])));
-        }
-
-        sampleSortMap=new Map([...sampleSortMap.entries()].sort((a, b) => b[1] - a[1]));
-
-
-        let end1 = performance.now();
-        console.log("genSampleTable 0 time:" + (end1 - start1) )
-
+        let svg = false;
         let start = performance.now();
-
-        let order = 1;
-
-        moreSamples = {};
-        for (let [key, value] of sampleSortMap) {
-
-            if ((samplesgroupByMatch != '' && key.includes != undefined && !key.includes(samplesgroupByMatch))) {
-                continue;
+        if (svg) {
+            //sort tid based on number of samples
+            let tidSamplesCountMap = new Map();
+            for (var tid in tidSamplesTimestamps) {
+                tidSamplesCountMap.set(tid, tidSamplesTimestamps[tid].length);
             }
+            tidSamplesCountMap = new Map([...tidSamplesCountMap.entries()].sort((a, b) => b[1] - a[1]));
 
-            let str = "";
-            let more = "";
-            let morec= 0;
-            let skipc=0;
+            let top = 50;
+            let uniquetimestamps = generateTimestamseries(tidSamplesTimestamps,tidSamplesCountMap, top);
+            $("#sampletable").html("");
+
+            //sampletable
+            d3.select("#sampletable").append("svg").attr("width", maxThreadSamples*5).attr("height", (top+5)*5);
+
+            let d3svg = d3.select("#sampletable").select("svg");
+            let x = 0;
+            let y = 10;
+
             let count = 0;
-            let order = 0;
-            samplerowIndex++;
+            for (let [tid, value] of tidSamplesCountMap) {
+                if (count < top) {
+                    count++;
+                    d3svg.append('line')
+                        .style('stroke-dasharray', [2,1])
+                        .style('stroke', '#5D5C5B')
+                        .attr('x1', x)
+                        .attr('y1', y+2.5 )
+                        .attr('x2', maxThreadSamples*5)
+                        .attr('y2', y+2.5);
 
-            for(let [key1, value1] of sampleCountMap.get(key)){
-                if(count < 8) {
-                    if(order == 0) {
-                        order = value1;
+                    let i = 0;
+                    for (let timestamp in uniquetimestamps) {
+                        if (i < tidSamplesTimestamps[tid].length) {
+                            if (uniquetimestamps[timestamp] == -1) {
+                                //put a dash rect
+                            } else if (timestamp == tidSamplesTimestamps[tid][i]) {
+                                //put color rect
+                                d3svg.append("rect")
+                                    .attr("width", 5)
+                                    .attr("height", 5)
+                                    .attr("x", x)
+                                    .attr("y", y)
+                                    .attr("class", " tgl")
+                                    .attr("fill", "green");
+                                i++;
+                            }
+                        } else {
+                            //put a whitc rect
+                        }
+                        x += 5;
                     }
-                    str = str + "<div style=\" cursor: pointer;\" data-ga-category=\"samples-table\" data-ga-action=\"show-stack\" id=\"+ key1 + \" class=\"send-ga stack-badge badge badge-secondary  stack" + key1 + "\" onclick=\"showSampleStack('" + key1 + "');\">" + (100 * value1 / value).toFixed(2) + "%, " + value1 + "</div> &nbsp;";
-                }else{
-                    if(morec < 25) {
-                        morec++;
-                        more = more + "<div style=\"display: none; cursor: pointer; \"   class=\"stack-badge badge badge-secondary  stack" + key1 + " hidden-stacks-" + hashCode(key) + "\" onclick=\"showSampleStack('" + key1 + "');\">" + (100 * value1 / value).toFixed(2) + "%, " + value1 + "</div>&nbsp;";
-                    }else{
-                        skipc++;
+                    x = 0;
+                    y += 5;
+                }
+            }
+
+        } else {
+
+            //sort based on number of stacks
+            for (let [key, value] of sampleCountMap) {
+                sampleCountMap.set(key, new Map([...value.entries()].sort((a, b) => b[1] - a[1])));
+            }
+
+            sampleSortMap = new Map([...sampleSortMap.entries()].sort((a, b) => b[1] - a[1]));
+
+
+            let end1 = performance.now();
+            console.log("genSampleTable 0 time:" + (end1 - start1))
+
+
+
+            let order = 1;
+
+            moreSamples = {};
+            for (let [key, value] of sampleSortMap) {
+
+                if ((samplesgroupByMatch != '' && key.includes != undefined && !key.includes(samplesgroupByMatch))) {
+                    continue;
+                }
+
+                let str = "";
+                let more = "";
+                let morec = 0;
+                let skipc = 0;
+                let count = 0;
+                let order = 0;
+                samplerowIndex++;
+
+                for (let [key1, value1] of sampleCountMap.get(key)) {
+                    if (count < 8) {
+                        if (order == 0) {
+                            order = value1;
+                        }
+                        str = str + "<div style=\" cursor: pointer;\" data-ga-category=\"samples-table\" data-ga-action=\"show-stack\" id=\"+ key1 + \" class=\"send-ga stack-badge badge badge-secondary  stack" + key1 + "\" onclick=\"showSampleStack('" + key1 + "');\">" + (100 * value1 / value).toFixed(2) + "%, " + value1 + "</div> &nbsp;";
+                    } else {
+                        if (morec < 25) {
+                            morec++;
+                            more = more + "<div style=\"display: none; cursor: pointer; \"   class=\"stack-badge badge badge-secondary  stack" + key1 + " hidden-stacks-" + hashCode(key) + "\" onclick=\"showSampleStack('" + key1 + "');\">" + (100 * value1 / value).toFixed(2) + "%, " + value1 + "</div>&nbsp;";
+                        } else {
+                            skipc++;
+                        }
+                    }
+                    count++;
+                }
+                if (morec != 0) {
+                    moreSamples[key] = more;
+                    str += '<div style="cursor: pointer;" class="badge badge-primary more-stacks-' + hashCode(key) + '" onclick="showHiddenStacks(\'' + hashCode(key) + '\');"> +' + (morec + skipc) + ' more</div>';
+                    str += '<div style="cursor: pointer; display: none;" class="badge badge-primary less-stacks-' + hashCode(key) + '" onclick="hideHiddenStacks(\'' + hashCode(key) + '\');"> << </div> ';
+                    str += more;
+                    str += '<div style="cursor: pointer; display: none;" class="badge badge-primary less-stacks-' + hashCode(key) + '" onclick="hideHiddenStacks(\'' + hashCode(key) + '\');"> -' + morec + ' less</div> ';
+                    if (skipc != 0) {
+                        str += "<div style=\"display: none;\"   class=\"stack-badge badge " + " hidden-stacks-" + hashCode(key) + "\"\">" + skipc + " more</div>";
                     }
                 }
-                count++;
-            }
-            if(morec != 0){
-                moreSamples[key]=more;
-                str += '<div style="cursor: pointer;" class="badge badge-primary more-stacks-' + hashCode(key) + '" onclick="showHiddenStacks(\'' + hashCode(key) + '\');"> +' + (morec + skipc) + ' more</div>';
-                str += '<div style="cursor: pointer; display: none;" class="badge badge-primary less-stacks-' + hashCode(key) + '" onclick="hideHiddenStacks(\'' + hashCode(key) + '\');"> << </div> ';
-                str += more;
-                str += '<div style="cursor: pointer; display: none;" class="badge badge-primary less-stacks-' + hashCode(key) + '" onclick="hideHiddenStacks(\'' + hashCode(key) + '\');"> -' + morec + ' less</div> ';
-                if(skipc != 0){
-                    str += "<div style=\"display: none;\"   class=\"stack-badge badge " + " hidden-stacks-" + hashCode(key) + "\"\">" + skipc + " more</div>";
+                sampleTableRows[samplerowIndex] = [];
+                /*if(eventType == EventType.MEMORY) {
+                    addContextTableRow(sampleTableRows[samplerowIndex], ("<label style=\"word-wrap: break-word; width: 300px\" >" + (key == undefined ? "NA" : key) + "</label>"), "hint='"+groupBySamples+"'");
+                    addContextTableOrderRow(sampleTableRows[samplerowIndex], ("<b>" + (value / (1024 * 1024)).toFixed(3) + "</b>&nbsp;<div class=\"badge badge-info\"> " + (100 * value / totalSampleCount).toFixed(3) + "</div>"), value);
+                    addContextTableOrderRow(sampleTableRows[samplerowIndex], str, order);
+                }else{*/
+
+                //"id='"+Number(dim) + "_dummy'"
+                if (groupBySamples == "tid") {
+                    sfSampleTable.addContextTableRow(sampleTableRows[samplerowIndex], ("<div style=\"cursor: pointer; word-wrap: break-word;\" >" + (key == undefined ? "NA" : key) + "</div>"), "id='" + key + "_dummy'" + " hint='" + groupBySamples + "'");
+                } else {
+                    sfSampleTable.addContextTableRow(sampleTableRows[samplerowIndex], ("<div style=\"cursor: pointer; word-wrap: break-word;\" >" + (key == undefined ? "NA" : key) + "</div>"), "hint='" + groupBySamples + "'");
                 }
-            }
-            sampleTableRows[samplerowIndex] = [];
-            /*if(eventType == EventType.MEMORY) {
-                addContextTableRow(sampleTableRows[samplerowIndex], ("<label style=\"word-wrap: break-word; width: 300px\" >" + (key == undefined ? "NA" : key) + "</label>"), "hint='"+groupBySamples+"'");
-                addContextTableOrderRow(sampleTableRows[samplerowIndex], ("<b>" + (value / (1024 * 1024)).toFixed(3) + "</b>&nbsp;<div class=\"badge badge-info\"> " + (100 * value / totalSampleCount).toFixed(3) + "</div>"), value);
-                addContextTableOrderRow(sampleTableRows[samplerowIndex], str, order);
-            }else{*/
+                sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], ("<div class=\"badge badge-info\"><span style='font-size: 12px; color:black'>" + value + "</span> " + (100 * value / totalSampleCount).toFixed(3) + "%</div>"), value);
+                sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], str, order);
 
-            //"id='"+Number(dim) + "_dummy'"
-            if(groupBySamples == "tid"){
-                sfSampleTable.addContextTableRow(sampleTableRows[samplerowIndex], ("<div style=\"cursor: pointer; word-wrap: break-word;\" >" + (key == undefined ? "NA" : key) + "</div>"), "id='"+ key + "_dummy'" + " hint='" + groupBySamples + "'");
-            }else {
-                sfSampleTable.addContextTableRow(sampleTableRows[samplerowIndex], ("<div style=\"cursor: pointer; word-wrap: break-word;\" >" + (key == undefined ? "NA" : key) + "</div>"), "hint='" + groupBySamples + "'");
+                // }
+                //table = table + "<tr><td  hint=" + groupBySamples + " class=\"context-menu-two\"><label style=\"word-wrap: break-word; width: 300px\" >" + (key == undefined ? "NA" : key) + "</label></td><td data-order="+value+"><b>" +value+"</b>&nbsp;<div class=\"badge badge-info\"> "+ (100*value/totalSampleCount).toFixed(3) + "</div></td><td data-order="+order+">" + str + "</td></tr>";
             }
-            sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], ("<div class=\"badge badge-info\"><span style='font-size: 12px; color:black'>"+value+"</span> " + (100 * value / totalSampleCount).toFixed(3) + "%</div>"), value);
-            sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], str, order);
 
-            // }
-            //table = table + "<tr><td  hint=" + groupBySamples + " class=\"context-menu-two\"><label style=\"word-wrap: break-word; width: 300px\" >" + (key == undefined ? "NA" : key) + "</label></td><td data-order="+value+"><b>" +value+"</b>&nbsp;<div class=\"badge badge-info\"> "+ (100*value/totalSampleCount).toFixed(3) + "</div></td><td data-order="+order+">" + str + "</td></tr>";
+            sfSampleTable.SFDataTable(sampleTableRows, sampleTableHeader, "sampletable", order);
+
         }
-
-        sfSampleTable.SFDataTable(sampleTableRows, sampleTableHeader, "sampletable", order);
-
 
         updateEventInputOptions('event-input-smpl');
 
@@ -932,6 +1003,48 @@
         let end = performance.now();
         console.log("genSampleTable 1 time:" + (end - start) )
     }
+
+    let maxThreadSamples=0;
+    function generateTimestamseries(tidSamplesTimestamps,tidSamplesCountMap, top){
+
+        let tmpTimestampap = {};
+        let timestampArray = [];
+
+        let start = performance.now();
+
+        //generate unique timestamp array
+        let count = 0;
+        for (let [tid, value] of tidSamplesCountMap) {
+            if (count < top) {
+                count++;
+                for (let i = 0; i < tidSamplesTimestamps[tid].length; i++) {
+                    if (tmpTimestampap[tidSamplesTimestamps[tid][i]] == undefined) {
+                        tmpTimestampap[tidSamplesTimestamps[tid][i]] = true;
+                        timestampArray.push(tidSamplesTimestamps[tid][i]);
+                    }
+                }
+            }
+        }
+        timestampArray.sort(function (a, b) {
+            return a - b
+        });
+        let prev = timestampArray[0];
+        count = 0;
+        for(let i = 0; i<timestampArray.length; i++){
+            if((timestampArray[i]-prev) > 60000){
+                tmpTimestampap[Math.round((timestampArray[i]+prev)/2)] = -1;
+                count++;
+            }
+            tmpTimestampap[timestampArray[i]] = i;
+            prev = timestampArray[i];
+            count++;
+        }
+        let end = performance.now();
+        console.log("generateTimestamseries time :" + (end - start));
+        maxThreadSamples = count;
+        return tmpTimestampap;
+    }
+
 
     function showHiddenStacks(guid) {
         $(".more-stacks-" + guid).css("display", "none");
