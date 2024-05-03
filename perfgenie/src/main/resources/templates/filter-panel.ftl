@@ -92,7 +92,7 @@
         border: 1px solid;
     }
     .stackCell1 {
-        background-color:yellow;
+        background-color: #bbbb0d;
         height:10px;
         min-width:5px;
         border: 1px solid;
@@ -126,7 +126,7 @@
         accent-color:lightseagreen;
     }
     .stackOption1 {
-        accent-color:yellow;
+        accent-color:#bbbb0d;
     }
     .stackOption2 {
         accent-color:deeppink;
@@ -1813,7 +1813,7 @@
         }
 
         let cellWidth = 14;
-        let colors = ["lightseagreen","yellow","deeppink","brown","dodgerblue","slateblue"];
+        let colors = ["lightseagreen","#bbbb0d","deeppink","brown","dodgerblue","slateblue"];
 
 
         d3.select("#requestbarchartsvg").append("svg").attr("width", scount*cellWidth).attr("height", cellWidth);

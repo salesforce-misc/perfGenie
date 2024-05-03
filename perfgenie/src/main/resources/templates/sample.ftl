@@ -162,11 +162,30 @@
     $("#sample-format-input").on("change", (event) => {
         updateUrl("tableFormat", $("#sample-format-input").val(), true);
         sampletableFormat = $("#sample-format-input").val();
+
+        if(sampletableFormat == 1) {
+            if($("#event-type-sample option[value='All']").length ==0)
+            {
+                $('#event-type-sample').append($('<option>', {
+                    value: "All",
+                    text: "All"
+                }));
+            }
+        }else{
+            if($("#event-type-sample option[value='All']").length !=0) {
+                $("#event-type-sample option[value='All']").remove();
+            }
+        }
+
         updateProfilerViewSample(getSelectedLevel(getContextTree(1,getEventType())),true);
     });
 
     $("#event-type-sample").on("change", (event) => {
-        handleEventTypeChange($("#event-type-sample").val());
+        if($("#event-type-sample").val() == "All"){
+            updateProfilerViewSample(getSelectedLevel(getContextTree(1,getEventType())),true);
+        }else {
+            handleEventTypeChange($("#event-type-sample").val());
+        }
     });
 
     $("#samples-groupby-match").on("change", (event) => {
@@ -469,10 +488,9 @@
 
         let table = "<table   style=\"width: 100%;\" id=\"sample-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\"><thead><tr><th width=\"50%\">" + getHearderFor(groupBySamples) + "</th><th width=\"10%\">Sample Count</th><th width=\"40%\">Samples</th></thead>";
 
-        let isAll = true;
         for (let tempeventTypeCount = 0; tempeventTypeCount< tempeventTypeArray.length; tempeventTypeCount++){
             let eventSampleCount = 0;
-            if(isAll && sampletableFormat == 1){//process all events
+            if($("#event-type-sample").val() == "All" && sampletableFormat == 1){//process all events
                 eventType = tempeventTypeArray[tempeventTypeCount];
                 addContext=true;
             }else if(tempeventTypeArray[tempeventTypeCount] != eventType){
@@ -1047,7 +1065,7 @@
         console.log("genSampleTable 1 time:" + (end - start) )
     }
 
-    let colors = ["lightseagreen","yellow","deeppink","brown","dodgerblue","slateblue"];
+    let colors = ["lightseagreen","#bbbb0d","deeppink","brown","dodgerblue","slateblue"];
     function getSampleColor(id){
         if(id == 2){
             return colors[id];
