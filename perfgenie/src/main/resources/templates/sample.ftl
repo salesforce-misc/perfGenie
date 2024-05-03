@@ -920,7 +920,7 @@
             }
             tidSamplesCountMap = new Map([...tidSamplesCountMap.entries()].sort((a, b) => b[1] - a[1]));
 
-            let top = 50;
+            let top = 100;
             let uniquetimestamps = generateTimestamseries(tidSamplesTimestamps,tidSamplesCountMap, top);
             $("#sampletable").html("");
 
