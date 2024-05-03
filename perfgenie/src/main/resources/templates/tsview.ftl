@@ -266,7 +266,7 @@
             context = getContextData();
             let startMilli = getContextTree(1,eventType).context.start;
 
-            addContextData(selectedLevel, eventType);
+            addContextData(eventType);
 
 
 
@@ -322,7 +322,7 @@
             jstack = getContextTree(1,eventType);
             context = getContextData();
             let startMilli = getContextTree(1,eventType).context.start;
-            addContextData(selectedLevel, eventType);
+            addContextData(eventType);
 
 
             let start1 = performance.now();

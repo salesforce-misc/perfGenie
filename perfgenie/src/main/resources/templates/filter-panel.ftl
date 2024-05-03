@@ -492,6 +492,8 @@
 
         groupBy = urlParams.get('groupBy') || '';
         tableFormat = urlParams.get('tableFormat') || '0';
+        sampletableFormat = urlParams.get('sampletableFormat') || '0';
+
         sortBy = urlParams.get('sortBy') || '';
 
         sortBy = urlParams.get('sortBy') || '';
@@ -558,6 +560,7 @@
     let sortBy = "";
     let groupBy = "";
     let tableFormat = "";
+    let sampletableFormat = "";
     let cumulativeLine = "";
     let seriesCount = 10;
     let groupByLength = "200";
@@ -3090,6 +3093,39 @@
     }
 
 
+
+
+    function enableDataTable(order) {
+        /*
+        if (contextTable != undefined) {
+            contextTablePage = 0; //reset to 0 except 1st time
+        }
+
+        contextTable = $('#state-table').DataTable({
+            "order": [[ order, "desc" ]],
+            searching: true,
+            "columnDefs": [{}],
+            "drawCallback": function (settings) {
+                if (contextTable != undefined) {
+                    //when we change table page focus, remove request selection
+                    if ((filterReq != "" && filterReq != undefined) && $("#" + filterReq).length != 0) {
+                        updateRequestView();
+                    }
+                    contextTablePage = contextTable.page.info().page * contextTable.page.len();
+                    updateUrl("cpage", contextTablePage, true);
+                }
+            },
+            "displayStart": contextTablePage,
+            aoColumnDefs: [
+                {
+                    orderSequence: ["desc", "asc"],
+                    aTargets: ['_all']
+                }
+            ],
+            "sDom": '<"toolbar">tfp<"clear">'
+        });*/
+    }
+
     let toggleToolbarFiltersdisplay = "none";
     function toggleToolbarFilters(){
         $("#toolbarfilters").toggle();
@@ -4647,6 +4683,7 @@
             genRequestTable();
             updateRequestView();
         });
+
         $("#format-input").on("change", (event) => {
             updateUrl("tableFormat", $("#format-input").val(), true);
             tableFormat = $("#format-input").val();
