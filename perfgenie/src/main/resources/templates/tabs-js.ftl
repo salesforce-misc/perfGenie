@@ -163,7 +163,7 @@
             }
         }
 
-        if(sampletableFormat == 1) {
+        if(sampletableFormat == 1 || sampletableFormat == 0) {
             $('#event-type-sample').append($('<option>', {
                 value: "All",
                 text: "All"

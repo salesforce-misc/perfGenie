@@ -33,6 +33,12 @@ let otherEvents2 = {};
 let otherEventsFetched = {};
 const urlParams = new URLSearchParams(window.location.search);
 let otherEventsSupported = {"top":true, "ps":true};
+let jstackcolors = ["#29b193","#ee5869","#f6ab60","#377bb5"];
+let jstackcolorsmap ={"RUNNABLE":9,"BLOCKED":10,"WAITING":11,"TIMED_WAITING":12};
+let jstackidcolorsmap ={9:"RUNNABLE",10:"BLOCKED",11:"WAITING",12:"TIMED_WAITING"};
+let profilecolors =["lightseagreen","#bbbb0d","deeppink","brown","dodgerblue","slateblue","blue","green","yellow","#29b193","#ee5869","#f6ab60","#377bb5"];
+let knowprofilecolormap = {"jfr_dump.json.gz":0,"jfr_dump_jstack.json.gz":1,"jfr_dump_apex.json.gz":2, "jfr_dump_memory.json.gz":3, "json-jstack":4,"Jstack":4};
+
 function setSubmitDisabled(shouldDisable) {
     $("#submit-input").prop("disabled", shouldDisable);
 }

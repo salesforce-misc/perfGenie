@@ -163,17 +163,13 @@
         updateUrl("tableFormat", $("#sample-format-input").val(), true);
         sampletableFormat = $("#sample-format-input").val();
 
-        if(sampletableFormat == 1) {
+        if(sampletableFormat == 1 || sampletableFormat == 0) {
             if($("#event-type-sample option[value='All']").length ==0)
             {
                 $('#event-type-sample').append($('<option>', {
                     value: "All",
                     text: "All"
                 }));
-            }
-        }else{
-            if($("#event-type-sample option[value='All']").length !=0) {
-                $("#event-type-sample option[value='All']").remove();
             }
         }
 
@@ -453,7 +449,6 @@
 
         let eventType = getEventType();
 
-
         let tempeventTypeArray = [];
         for (var tempeventType in jfrprofiles1) {//for all profile event types
             tempeventTypeArray.push(tempeventType);
@@ -490,7 +485,8 @@
 
         for (let tempeventTypeCount = 0; tempeventTypeCount< tempeventTypeArray.length; tempeventTypeCount++){
             let eventSampleCount = 0;
-            if($("#event-type-sample").val() == "All" && sampletableFormat == 1){//process all events
+            let isJstack = false;
+            if($("#event-type-sample").val() == "All"){//process all events
                 eventType = tempeventTypeArray[tempeventTypeCount];
                 applyContextFilters(eventType,level);
                 addContext=true;
@@ -550,6 +546,7 @@
 
             if (eventType == "Jstack" || eventType == "json-jstack") {
                 filteredStackMap[FilterLevel.LEVEL3] = {};
+                isJstack=true;
             }
 
             //every sample of jstack has a tn
@@ -605,7 +602,11 @@
                                     if (tidSamplesTimestamps[tid] == undefined) {
                                         tidSamplesTimestamps[tid] = [];
                                     }
-                                    tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount,i]);
+                                    if(isJstack){
+                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, jstackcolorsmap[contextTidMap[tid][i].ts], i]);
+                                    }else {
+                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i]);
+                                    }
                                     eventSampleCount++;
 
                                     let key = tid;
@@ -934,7 +935,7 @@
             let cellw = 3;
             let x = 30;
             let y = 10;
-            d3.select("#sampletable").append("svg").attr("width", maxThreadSamples *cellw).attr("height", (top+2)*cellh);
+            d3.select("#sampletable").append("svg").attr("width", (maxThreadSamples *cellw)+37).attr("height", (top+2)*cellh);
 
             let d3svg = d3.select("#sampletable").select("svg");
 
@@ -1082,7 +1083,7 @@
             updateEventInputOptions('event-input-smpl');
             updateGroupByOptions('smpl-grp-by');
 
-            if(stack_id != '' && sampletableFormat != 1){
+            if(stack_id != '' && sampletableFormat == 0){
                 showSampleStack(stack_id);
             }
         }
@@ -1097,16 +1098,29 @@
 
     function showSVGSampleStack(obj) {
         let tempeventTypeArray = [];
+        let jevent = "json-jstack";
         for (var tempeventType in jfrprofiles1) {//for all profile event types
             tempeventTypeArray.push(tempeventType);
+            if(tempeventType == "Jstack"){
+                jevent = "Jstack";
+            }
         }
         tempeventTypeArray.sort();
 
         let pid = obj.target.getAttribute("t");
-        let eventType = tempeventTypeArray[obj.target.getAttribute("e")];
+        let eventType = ""
+        if(obj.target.getAttribute("e") > 8){
+            eventType = jevent;
+        }else {
+            eventType = tempeventTypeArray[obj.target.getAttribute("e")];
+        }
+
         let index = obj.target.getAttribute("in");
         let stackid = contextTree1[eventType].context.tidMap[pid][index].hash;
 
+        if(prevSampleReqCellObj != undefined) {
+            prevSampleReqCellObj.classList.remove('stackCells');
+        }
         prevSampleReqCellObj = obj.target;
         prevSampleReqCellSid = stackid;
         prevSampleReqCellTime = contextTree1[eventType].context.tidMap[pid][index].time;
@@ -1114,23 +1128,11 @@
 
         updateUrl("stack_id",stackid,true);
         stack_id=stackid;
-        $('#stack-view-guid').text(getStackTrace(stackid, eventType));
+        $('#stack-view-guid').text(getStackTrace(stackid, eventType,obj.target.getAttribute("e")));
     }
 
-    let colors = ["lightseagreen","#bbbb0d","deeppink","brown","dodgerblue","slateblue"];
     function getSampleColor(id){
-        if(id == 2){
-            return colors[id];
-        }else if(id == 1){
-            return colors[id];
-        }else if(id == 5){
-            return colors[id];
-        }else if(id == 3){
-            return colors[id];
-        }else if(id == 4){
-            return colors[id];
-        }
-        return colors[id];
+        return profilecolors[id];
     }
 
     let maxThreadSamples=0;
@@ -1191,10 +1193,20 @@
         $(".hidden-stacks-" + guid).css("display", "none");
     }
 
+    function getEventOfStackID(id){
+        for (var profile in jfrprofiles1) {
+            let tree = getContextTree(1,profile);
+            if(tree != undefined && tree.tree != undefined && tree.tree.sm[id] != undefined){
+                return profile;
+            }
+        }
+        return getEventType();//default
+    }
+
     function showSampleStack(stackid) {
         updateUrl("stack_id",stackid,true);
         stack_id=stackid;
-        $('#stack-view-guid').text(getStackTrace(stackid));
+        $('#stack-view-guid').text(getStackTrace(stackid,getEventOfStackID(stackid)));
         $('.stack-badge').removeClass("badge-warning");
         $(".stack"+stackid).addClass("badge-warning");
     }

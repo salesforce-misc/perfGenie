@@ -999,7 +999,7 @@
     let prevReqCellTime = "";
     let prevReqCellObj = null;
 
-    function getStackTrace(stackid, eventType) {
+    function getStackTrace(stackid, eventType, code) {
         if(eventType == undefined) {
             eventType = getEventType();
         }
@@ -1013,7 +1013,7 @@
 
         let arr = getTreeStack(tmpActiveTree, stackid, tmpcontextTree1Level1, 1);
         let ch = tmpcontextTree1Level1.ch;
-        stacktrace = stacktrace + getProfileName(sampleType) + "\n\n";
+        stacktrace = stacktrace + getProfileName(sampleType) + ((jstackidcolorsmap[code] != undefined) ? " " + jstackidcolorsmap[code] : "") + "\n\n";
         while (ch !== undefined && ch != null && ch.length == 1) {
             stacktrace = stacktrace + getFrameName(ch[0].nm) + "\n";
             ch = ch[0].ch;
