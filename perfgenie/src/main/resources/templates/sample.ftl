@@ -1104,6 +1104,7 @@
         prevSampleReqCellObj = obj.target;
         prevSampleReqCellSid = stackid;
         prevSampleReqCellTime = contextTree1[eventType].context.tidMap[pid][index].time;
+        prevSampleReqCellObj.classList.add('stackCells');
 
         updateUrl("stack_id",stackid,true);
         stack_id=stackid;

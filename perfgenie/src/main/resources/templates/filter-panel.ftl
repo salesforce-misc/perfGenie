@@ -1518,25 +1518,21 @@
 
     function nextAvailableSampleStack() {
         var cur = prevSampleReqCellObj;
-        while (cur != null && cur.nextSibling != null) {
+        while (cur != null && cur.nextSibling != null && cur.nextSibling.tagName == 'rect') {
             cur = cur.nextSibling;
-            if (!cur.classList.contains('hide')) {
-                cur.dispatchEvent(new Event('click'))
-                //cur.click();
-                break;
-            }
+            prevSampleReqCellObj.classList.remove('stackCells')
+            cur.dispatchEvent(new Event('click'))
+            break;
         }
     }
 
     function previousAvailableSampleStack() {
         var cur = prevSampleReqCellObj;
-        while (cur != null && cur.previousSibling != null) {
+        while (cur != null && cur.previousSibling != null && cur.previousSibling.tagName == 'rect') {
             cur = cur.previousSibling;
-            if (!cur.classList.contains('hide')) {
-                cur.dispatchEvent(new Event('click'))
-                //cur.click();
-                break;
-            }
+            prevSampleReqCellObj.classList.remove('stackCells')
+            cur.dispatchEvent(new Event('click'))
+            break;
         }
     }
 
@@ -1544,7 +1540,7 @@
         var cur = prevpopReqCellObj;
         while (cur != null && cur.nextSibling != null) {
             cur = cur.nextSibling;
-            if (!cur.classList.contains('hide')) {
+            if (cur.tagName == 'rect') {
                 cur.dispatchEvent(new Event('click'))
                 //cur.click();
                 break;
