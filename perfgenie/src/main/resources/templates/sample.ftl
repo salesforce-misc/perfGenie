@@ -565,7 +565,7 @@
                                     if (tidSamplesTimestamps[tid] == undefined) {
                                         tidSamplesTimestamps[tid] = [];
                                     }
-                                    tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount]);
+                                    tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount,i]);
                                     eventSampleCount++;
 
                                     let key = contextTidMap[tid][i].tn;
@@ -605,7 +605,7 @@
                                     if (tidSamplesTimestamps[tid] == undefined) {
                                         tidSamplesTimestamps[tid] = [];
                                     }
-                                    tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount]);
+                                    tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount,i]);
                                     eventSampleCount++;
 
                                     let key = tid;
@@ -705,7 +705,7 @@
                                         if (tidSamplesTimestamps[tid] == undefined) {
                                             tidSamplesTimestamps[tid] = [];
                                         }
-                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount]);
+                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount,i]);
                                         eventSampleCount++;
 
                                         let key = "";
@@ -837,7 +837,7 @@
                                                         if (tidSamplesTimestamps[tid] == undefined) {
                                                             tidSamplesTimestamps[tid] = [];
                                                         }
-                                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount]);
+                                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i]);
                                                         eventSampleCount++;
 
                                                         cursampleCount++;
@@ -913,6 +913,7 @@
 
         let start = performance.now();
         if (sampletableFormat == 1) {
+            $('#stack-view-guid').text("");
 
             let tidSamplesCountMap = new Map(); //sort tid based on number of samples
             for (var tid in tidSamplesTimestamps) {
@@ -969,7 +970,11 @@
                                     .attr("height", cellh)
                                     .attr("x", x)
                                     .attr("y", y)
+                                    .attr("e", tidSamplesTimestamps[tid][i][1])
+                                    .attr("t", tid)
+                                    .attr("in", tidSamplesTimestamps[tid][i][2])
                                     .attr("class", " tgl")
+                                    .attr("onclick", 'showSVGSampleStack(evt)')
                                     .attr("fill", getSampleColor(tidSamplesTimestamps[tid][i][1]));
                                 i++;
                             }
@@ -1067,13 +1072,31 @@
         if(addContext) {
             updateEventInputOptions('event-input-smpl');
             updateGroupByOptions('smpl-grp-by');
-            if(stack_id != ''){
+
+            if(stack_id != '' && sampletableFormat != 1){
                 showSampleStack(stack_id);
             }
         }
 
         let end = performance.now();
         console.log("genSampleTable 1 time:" + (end - start) )
+    }
+
+    function showSVGSampleStack(obj) {
+        let tempeventTypeArray = [];
+        for (var tempeventType in jfrprofiles1) {//for all profile event types
+            tempeventTypeArray.push(tempeventType);
+        }
+        tempeventTypeArray.sort();
+
+        let pid = obj.target.getAttribute("t");
+        let eventType = tempeventTypeArray[obj.target.getAttribute("e")];
+        let index = obj.target.getAttribute("in");
+        let stackid = contextTree1[eventType].context.tidMap[pid][index].hash;
+
+        updateUrl("stack_id",stackid,true);
+        stack_id=stackid;
+        $('#stack-view-guid').text(getStackTrace(stackid, eventType));
     }
 
     let colors = ["lightseagreen","#bbbb0d","deeppink","brown","dodgerblue","slateblue"];
