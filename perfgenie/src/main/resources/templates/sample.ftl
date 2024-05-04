@@ -452,12 +452,22 @@
     function genSampleTable(addContext, level) {
 
         let eventType = getEventType();
+        let jfrprofilestart = 0;
 
         let tempeventTypeArray = [];
         for (var tempeventType in jfrprofiles1) {//for all profile event types
             tempeventTypeArray.push(tempeventType);
+            if (jfrprofilestart == 0 && !(tempeventType == "Jstack" || tempeventType == "json-jstack") && getContextTree(1, tempeventType) != undefined) {
+                jfrprofilestart = getContextTree(1, tempeventType).context.start;
+            }
         }
         tempeventTypeArray.sort();
+
+        let jstackdiff = 0;
+        let jstackEvent = getContextTree(1, "json-jstack") == undefined ?  "Jstack" : "json-jstack";
+        if (getContextTree(1, jstackEvent) !== undefined) {
+            jstackdiff = getContextTree(1, jstackEvent).context.start - jfrprofilestart;
+        }
 
         let tidSamplesTimestamps = {};
         let dimIndexMap = {};
@@ -567,7 +577,7 @@
                                         tidSamplesTimestamps[tid] = [];
                                     }
                                     if(isJstack){
-                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, jstackcolorsmap[contextTidMap[tid][i].ts], i]);
+                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time+jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i]);
                                     }else {
                                         tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i]);
                                     }
@@ -611,7 +621,7 @@
                                         tidSamplesTimestamps[tid] = [];
                                     }
                                     if(isJstack){
-                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, jstackcolorsmap[contextTidMap[tid][i].ts], i]);
+                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time+jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i]);
                                     }else {
                                         tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i]);
                                     }
@@ -715,7 +725,7 @@
                                             tidSamplesTimestamps[tid] = [];
                                         }
                                         if(isJstack){
-                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, jstackcolorsmap[contextTidMap[tid][i].ts], i]);
+                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time+jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i]);
                                         }else {
                                             tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i]);
                                         }
@@ -851,7 +861,7 @@
                                                             tidSamplesTimestamps[tid] = [];
                                                         }
                                                         if(isJstack){
-                                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, jstackcolorsmap[contextTidMap[tid][i].ts], i]);
+                                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time+jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i]);
                                                         }else {
                                                             tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i]);
                                                         }
@@ -1159,7 +1169,9 @@
         if(contextTree1[eventType].context.tidMap[pid][index][customEvent] != undefined && contextTree1[eventType].context.tidMap[pid][index][customEvent].obj != undefined){
             showSampleContextTable(contextTree1[eventType].context.tidMap[pid][index][customEvent].obj, eventType);
         }else{
-            $("#sampletablecontext").css("height",$("#sampletablecontext").height());
+            if($("#sampletablecontext").height() != 0) {
+                $("#sampletablecontext").css("height", $("#sampletablecontext").height());
+            }
             showSampleContextTable([], eventType);
         }
 
@@ -1170,12 +1182,12 @@
         }
         prevSampleReqCellObj = obj.target;
         prevSampleReqCellSid = stackid;
-        prevSampleReqCellTime = contextTree1[eventType].context.tidMap[pid][index].time;
+        prevSampleReqCellTime = contextTree1[eventType].context.tidMap[pid][index].time + contextTree1[eventType].context.start;
         prevSampleReqCellObj.classList.add('stackCells');
 
         updateUrl("stack_id",stackid,true);
         stack_id=stackid;
-        $('#stack-view-guid').text(getStackTrace(stackid, eventType,obj.target.getAttribute("e")));
+        $('#stack-view-guid').text(getStackTrace(stackid, eventType,obj.target.getAttribute("e"), prevSampleReqCellTime));
     }
 
     function getSampleColor(id){

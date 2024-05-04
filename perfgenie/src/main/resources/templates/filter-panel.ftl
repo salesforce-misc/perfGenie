@@ -1788,11 +1788,13 @@
         let start = time - profilestart;
 
         let jstackstart = 0;
+        let jstackdiffstart = 0;
         let jstackdiff = 0;
         let jstackEvent = getContextTree(1, "json-jstack") == undefined ?  "Jstack" : "json-jstack";
 
         if (getContextTree(1, jstackEvent) !== undefined) {
-            jstackstart = time - getContextTree(1, jstackEvent).context.start;
+            jstackdiffstart = time - getContextTree(1, jstackEvent).context.start;
+            jstackstart = getContextTree(1, jstackEvent).context.start;
             jstackdiff = getContextTree(1, jstackEvent).context.start - profilestart;
         }
 
@@ -1869,8 +1871,8 @@
                 }
                 if (getContextTree(1, jstackEvent) !== undefined && getContextTree(1, jstackEvent).context != undefined && getContextTree(1, jstackEvent).context.tidMap[tid] !== undefined) {
                     getContextTree(1, jstackEvent).context.tidMap[tid].forEach(function (obj) {
-                        if((pStart === '' || pEnd === '') || ((obj.time + jstackstart) >= pStart && (obj.time + jstackstart) <= pEnd)) { //check time rang
-                            if (allSamples || (obj.time >= jstackstart && obj.time <= jstackstart + runTime)) {
+                        if((pStart === '' || pEnd === '') || ((obj.time + jstackstart) >= pStart && (obj.time + jstackstart) <= pEnd)) { //todo: check time rang, we can use jstack context start
+                            if (allSamples || (obj.time >= jstackdiffstart && obj.time <= jstackdiffstart + runTime)) {
                                 if (isJstack && applyFilter) {
                                     getTreeStackLevel(getActiveTree(jstackEvent, false), obj.hash, 1, FilterLevel.LEVEL2);
                                 }
