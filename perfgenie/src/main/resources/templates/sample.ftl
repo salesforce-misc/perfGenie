@@ -32,6 +32,10 @@
 
 </div>
 
+<div class="row">
+<div style="padding: 0px !important;overflow: scroll"  id="sampletablecontext" class="ui-widget sampletable col-lg-12">
+</div>
+</div>
 
 <div class="row">
     <div class="col-lg-7">
@@ -913,6 +917,7 @@
         }
 
         let start = performance.now();
+        $("#sampletablecontext").html("");
         if (sampletableFormat == 1) {
             $('#stack-view-guid').text("");
             prevSampleReqCellObj = undefined;
@@ -934,7 +939,7 @@
             let cellh = 7;
             let cellw = 3;
             let x = 30;
-            let y = 10;
+            let y = 7;
             d3.select("#sampletable").append("svg").attr("width", (maxThreadSamples *cellw)+37).attr("height", (top+2)*cellh);
 
             let d3svg = d3.select("#sampletable").select("svg");
@@ -1095,6 +1100,28 @@
     let prevSampleReqCellObj = undefined;
     let prevSampleReqCellSid = undefined;
     let prevSampleReqCellTime = undefined;
+    const sfSamplecontextTable = new SFDataTable("sampletablecontext");
+    Object.freeze(sfSamplecontextTable);
+
+    function showSampleContextTable(record, event) {
+        let rowIndex = 0;
+        sampleTableHeader = [];
+        sampleTableRows = [];
+        getContextTableHeadernew("", sampleTableHeader, customEvent, false);
+        sampleTableRows[rowIndex] = [];
+        if(record.length == 0){
+            sfSamplecontextTable.addContextTableRow(sampleTableRows[rowIndex], "no context available");
+        }else {
+            for (let field in record) {
+                if (field == 1) {
+                    sfSamplecontextTable.addContextTableRow(sampleTableRows[rowIndex], moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'));
+                } else {
+                    sfSamplecontextTable.addContextTableRow(sampleTableRows[rowIndex], record[field]);
+                }
+            }
+        }
+        sfSamplecontextTable.SFDataTable(sampleTableRows, sampleTableHeader, "sampletablecontext", undefined, false);
+    }
 
     function showSVGSampleStack(obj) {
         let tempeventTypeArray = [];
@@ -1116,6 +1143,14 @@
         }
 
         let index = obj.target.getAttribute("in");
+
+        if(contextTree1[eventType].context.tidMap[pid][index][customEvent] != undefined && contextTree1[eventType].context.tidMap[pid][index][customEvent].obj != undefined){
+            showSampleContextTable(contextTree1[eventType].context.tidMap[pid][index][customEvent].obj, eventType);
+        }else{
+            $("#sampletablecontext").css("height",$("#sampletablecontext").height());
+            showSampleContextTable([], eventType);
+        }
+
         let stackid = contextTree1[eventType].context.tidMap[pid][index].hash;
 
         if(prevSampleReqCellObj != undefined) {

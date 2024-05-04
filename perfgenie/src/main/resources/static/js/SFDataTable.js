@@ -21,6 +21,7 @@ class SFDataTable {
     #sfDataTableID = "SFDataTable";
     #sfPaginationID = "pagination";
     #sfSearchID = "SFSearch";
+    #sfShowToolBar = true;
     constructor(instanceVariableName) {
         if(instanceVariableName != undefined){
             this.#sfDataTableID = instanceVariableName+"SFDataTable";
@@ -33,7 +34,7 @@ class SFDataTable {
     }
 
     //First time data table loading, entry point
-    SFDataTable(rows, header, id, sortColIndex) {
+    SFDataTable(rows, header, id, sortColIndex, showToolBar) {
         if (rows !== undefined) {
             //reset
             this.#SFDataTableSearchMatchedRows = [];
@@ -43,6 +44,9 @@ class SFDataTable {
             this.#SFDataTablePage = 0;
             if (sortColIndex != undefined) {
                 this.#sfdtsci = sortColIndex;
+            }
+            if (showToolBar != undefined) {
+                this.#sfShowToolBar = showToolBar;
             }
             this.#SFDataTableSearchStr = undefined;
             //sort data
@@ -171,6 +175,9 @@ class SFDataTable {
     }
 
     SFDataTableGetToolBar() {
+        if(!this.#sfShowToolBar){
+            return "";
+        }
         let toolbar = "<div class='ui-widget' style='padding-top: 5px !important;'>";
         toolbar += " Search: <input type='text' style='border: 1px solid #E8EAEC;' id='" + this.#sfSearchID + "' class='ui-widget' name='SFSearch'  value='" + (this.#SFDataTableSearchStr == undefined ? "" : this.#SFDataTableSearchStr) + "'onkeypress='if(event.keyCode == 13) javascript:" + this.#instanceName + ".SFSearch()'>";
 
