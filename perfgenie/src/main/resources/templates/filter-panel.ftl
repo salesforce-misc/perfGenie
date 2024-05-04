@@ -544,6 +544,7 @@
     let uploadIDMap = {};
 
     let contextData;
+    let perfGenieFrames = {1:{},2:{}};
     let contextTree1Frames;
     let contextTree2Frames;
     let contextTree1JstackFrames=false;
@@ -623,11 +624,22 @@
         if (isJfrContext == false) {
             return id;
         }
-        if (contextTree1Frames[id] !== undefined) {
+        for (var profile in jfrprofiles1) {
+            if(perfGenieFrames[1][profile] != undefined && perfGenieFrames[1][profile][id] != undefined){
+                return perfGenieFrames[1][profile][id];
+            }
+        }
+        for (var profile in jfrprofiles2) {
+            if(perfGenieFrames[2][profile] != undefined && perfGenieFrames[2][profile][id] != undefined){
+                return perfGenieFrames[2][profile][id];
+            }
+        }
+
+        /*if (contextTree1Frames[id] !== undefined) {
             return contextTree1Frames[id];
         } else if (contextTree2Frames !== undefined && contextTree2Frames[id] !== undefined) {
             return contextTree2Frames[id];
-        }
+        }*/
         return "." + id;
     }
 
@@ -707,6 +719,65 @@
         return str + customEvent; //custom event added to filters
     }
 
+    function applyContextFilters(level,eventType){
+        let updateContextTable = false;
+        let start = performance.now();
+        if (level == FilterLevel.LEVEL1) {
+            let level1InputTmp = getLevel1FilterInput();
+            if (level1InputTmp !== contextInput[FilterLevel.LEVEL1][eventType]) {
+                contextInput[FilterLevel.LEVEL1][eventType] = level1InputTmp;
+                //level1  filter
+                //clean off level 2 history
+                prevReqTid = "";
+                prevReqTime = "";
+                document.getElementById("stack").innerHTML = "";
+                resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL1);
+                resetTreeInvertedLevel(FilterLevel.LEVEL1,eventType);
+                resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL2);
+                resetTreeInvertedLevel(FilterLevel.LEVEL2,eventType);
+                resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL3);
+                resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType);
+
+                onLevel1Filter(eventType);
+                updateContextTable = true;
+            }
+        }
+
+        if (level == FilterLevel.LEVEL2 || level == FilterLevel.LEVEL1) {
+            let level2InputTmp = filterBy + filterReq + filterStack + customEvent;
+            if (level2InputTmp !== contextInput[FilterLevel.LEVEL2][eventType]) {
+                contextInput[FilterLevel.LEVEL2][eventType] = level2InputTmp;
+                document.getElementById("stack").innerHTML = "";
+                document.getElementById("stackcontext").innerHTML = "";
+                document.getElementById("threadstate").innerHTML = "";
+                //clean off sub level history
+                prevReqCellSid = "";
+                prevReqCellTime = "";
+                prevReqCellObj = null;
+                resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL2);
+                resetTreeInvertedLevel(FilterLevel.LEVEL2,eventType);
+                resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL3);
+                resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType);
+                onLevel2Filter(eventType);
+            }
+        }
+
+        if (level == FilterLevel.LEVEL3 || level == FilterLevel.LEVEL2 || level == FilterLevel.LEVEL1) {
+            let level3InputTmp = filterBy + filterReq + filterStack + filterFrame + customEvent;
+
+            if (level3InputTmp !== contextInput[FilterLevel.LEVEL3][eventType]) {
+                contextInput[FilterLevel.LEVEL3][eventType] = level3InputTmp;
+                resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL3);
+                resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType);
+                onLevel3Filter(eventType);
+                updateContextTable = true;
+            }
+        }
+        let end = performance.now();
+        console.log("applyContextFilters: " + level + " eventType:" + eventType +" took:"+(end-start));
+        return updateContextTable;
+    }
+
     function filterToLevel(level) {
         let eventType = getEventType();
         console.log("filterToLevel start:" + level + " eventType:" + eventType);
@@ -719,9 +790,9 @@
         }
         filterStarted = true;
 
-        let updateContextTable = false;
-
         try {
+            let updateContextTable = applyContextFilters(level,eventType);
+            /*
             if (level == FilterLevel.LEVEL1) {
                 let level1InputTmp = getLevel1FilterInput();
                 if (level1InputTmp !== contextInput[FilterLevel.LEVEL1][eventType]) {
@@ -772,7 +843,7 @@
                     onLevel3Filter(eventType);
                     updateContextTable = true;
                 }
-            }
+            }*/
 
             if (updateContextTable) {
                 genRequestTable();
@@ -3754,10 +3825,8 @@
         loadDiagData1();
     }
 
-    function setContextTreeFrames(frames, count){
-        if(count == 1) {
-            contextTree1Frames = frames;
-        }
+    function setContextTreeFrames(frames, count, event){
+        perfGenieFrames[count][event]=frames;
     }
 
     function getContextData() {

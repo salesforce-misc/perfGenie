@@ -99,7 +99,7 @@
         }
 
         if(isSFProfile && !filterEvent.includes("jfr_dump")){
-            filterEvent = "jfr_dump.json.gz";
+           // filterEvent = "jfr_dump.json.gz";
         }
 
         for (var key in jfrprofiles1) {
@@ -325,7 +325,7 @@
         //data not available, retrieve and create context tree
         let eventType = getEventType();
         if(eventType.includes("jfr_dump")) {
-            retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, "jfr_dump.json.gz");
+            retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, eventType);
         }else{
             retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, getEventType());
         }
@@ -406,6 +406,8 @@
                     //$("#framefilterId").removeClass("hide");
                     isJfrContext = true;
                     const defaultResult = {error_messages: [], sz: 0, ch: []};
+                    setContextTreeFrames(contextTrees[0].context.frames, 1, eventType);
+                    /*
                     if (isJstackEvent) {
                         console.log("add frames1:" + eventType);
                         if(contextTree1Frames === undefined){
@@ -413,27 +415,33 @@
                             contextTree1Frames = contextTrees[0].context.frames;
                             contextTree1Frames[3506402] = "root";
                         }else{
-                            for (var key in contextTrees[0].context.frames) {
-                                if(contextTree1Frames[key] === undefined){
-                                    contextTree1Frames[key]=contextTrees[0].context.frames[key];
+                            if(contextTrees[0].context.frames != null) {
+                                for (var key in contextTrees[0].context.frames) {
+                                    if (contextTree1Frames[key] === undefined) {
+                                        contextTree1Frames[key] = contextTrees[0].context.frames[key];
+                                    }
                                 }
                             }
                         }
                     }else{
                         if(contextTree1JstackFrames === true){
-                            console.log("add frames1:" + eventType);
-                            contextTree1JstackFrames=false;
-                            for (var key in contextTrees[0].context.frames) {
-                                if(contextTree1Frames[key] === undefined){
-                                    contextTree1Frames[key]=contextTrees[0].context.frames[key];
+                            if(contextTrees[0].context.frames != null) {
+                                console.log("add frames1:" + eventType);
+                                contextTree1JstackFrames = false;
+                                for (var key in contextTrees[0].context.frames) {
+                                    if (contextTree1Frames[key] === undefined) {
+                                        contextTree1Frames[key] = contextTrees[0].context.frames[key];
+                                    }
                                 }
                             }
                         }else if(contextTree1Frames === undefined){
-                            console.log("add frames1:" + eventType);
-                            contextTree1Frames = contextTrees[0].context.frames;
-                            contextTree1Frames[3506402] = "root";
+                            if(contextTrees[0].context.frames != null) {
+                                console.log("add frames1:" + eventType);
+                                contextTree1Frames = contextTrees[0].context.frames;
+                                contextTree1Frames[3506402] = "root";
+                            }
                         }
-                    }
+                    }*/
 
                     if (isCalltree) {
                         setContextTree(contextTrees[0], 1, eventType);
@@ -443,7 +451,7 @@
                     }
                     contextTrees[0].context.start = Math.round(contextTrees[0].context.start / 1000000);
                     contextTrees[0].context.end = Math.round(contextTrees[0].context.end / 1000000);
-                    if (getEventType() == eventType){// || eventType == "jfr_dump.json.gz") { //todo check this
+                    if ( (getEventType() == eventType)){//} && !(eventType == "json-jstack" && eventType.contains("dump_"))) || eventType == "jfr_dump.json.gz") { //todo check this, dirty fix for sfdc
                         if(uploads[0] == "true" && fileIds[0] != "") {
                             setContextData({"records": {}, "tidlist": [], "header": {}});
                         }else{
@@ -458,7 +466,7 @@
                             }
                         }
                         for (var type in jfrprofiles1) {
-                            if(type != eventType) {
+                            if(type != eventType){//} && eventType != "jfr_dump.json.gz") {
                                 retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, type);
                             }
                         }
@@ -468,6 +476,10 @@
                 $("#framefilterId").addClass("hide");
                 if (contextTrees[0].context !== undefined && contextTrees[1].context !== undefined && contextTrees[0].context !== null && contextTrees[1].context !== null) {
                     isJfrContext = true;
+
+                    setContextTreeFrames(contextTrees[0].context.frames, 1, eventType);
+                    setContextTreeFrames(contextTrees[1].context.frames, 2, eventType);
+                    /*
                     if (isJstackEvent) {
                         console.log("add frames1:" + eventType);
                         if(contextTree1Frames === undefined){
@@ -475,25 +487,31 @@
                             contextTree1Frames = contextTrees[0].context.frames;
                             contextTree1Frames[3506402] = "root";
                         }else{
-                            for (var key in contextTrees[0].context.frames) {
-                                if(contextTree1Frames[key] === undefined){
-                                    contextTree1Frames[key]=contextTrees[0].context.frames[key];
+                            if(contextTrees[0].context.frames != null) {
+                                for (var key in contextTrees[0].context.frames) {
+                                    if (contextTree1Frames[key] === undefined) {
+                                        contextTree1Frames[key] = contextTrees[0].context.frames[key];
+                                    }
                                 }
                             }
                         }
                     }else{
                         if(contextTree1JstackFrames === true){
-                            console.log("add frames1:" + eventType);
-                            contextTree1JstackFrames=false;
-                            for (var key in contextTrees[0].context.frames) {
-                                if(contextTree1Frames[key] === undefined){
-                                    contextTree1Frames[key]=contextTrees[0].context.frames[key];
+                            if(contextTrees[0].context.frames != null) {
+                                console.log("add frames1:" + eventType);
+                                contextTree1JstackFrames=false;
+                                for (var key in contextTrees[0].context.frames) {
+                                    if (contextTree1Frames[key] === undefined) {
+                                        contextTree1Frames[key] = contextTrees[0].context.frames[key];
+                                    }
                                 }
                             }
                         }else if(contextTree1Frames === undefined){
-                            console.log("add frames1:" + eventType);
-                            contextTree1Frames = contextTrees[0].context.frames;
-                            contextTree1Frames[3506402] = "root";
+                            if(contextTrees[0].context.frames != null) {
+                                console.log("add frames1:" + eventType);
+                                contextTree1Frames = contextTrees[0].context.frames;
+                                contextTree1Frames[3506402] = "root";
+                            }
                         }
                     }
 
@@ -504,27 +522,35 @@
                             contextTree2Frames = contextTrees[1].context.frames;
                             contextTree2Frames[3506402] = "root";
                         }else{
-                            for (var key in contextTrees[1].context.frames) {
-                                if(contextTree2Frames[key] === undefined){
-                                    contextTree2Frames[key]=contextTrees[1].context.frames[key];
+                            if(contextTrees[1].context.frames != null) {
+                                for (var key in contextTrees[1].context.frames) {
+                                    if (contextTree2Frames[key] === undefined) {
+                                        contextTree2Frames[key] = contextTrees[1].context.frames[key];
+                                    }
                                 }
                             }
                         }
                     }else{
                         if(contextTree2JstackFrames === true){
-                            console.log("add frames2:" + eventType);
-                            contextTree2JstackFrames=false;
-                            for (var key in contextTrees[1].context.frames) {
-                                if(contextTree2Frames[key] === undefined){
-                                    contextTree2Frames[key]=contextTrees[1].context.frames[key];
+                            if(contextTrees[1].context.frames != null) {
+                                console.log("add frames2:" + eventType);
+                                contextTree2JstackFrames = false;
+                                for (var key in contextTrees[1].context.frames) {
+                                    if (contextTree2Frames[key] === undefined) {
+                                        contextTree2Frames[key] = contextTrees[1].context.frames[key];
+                                    }
                                 }
                             }
                         }else if(contextTree2Frames === undefined){
-                            console.log("add frames1:" + eventType);
-                            contextTree2Frames = contextTrees[1].context.frames;
-                            contextTree2Frames[3506402] = "root";
+                            if(contextTrees[1].context.frames != null) {
+                                console.log("add frames1:" + eventType);
+                                contextTree2Frames = contextTrees[1].context.frames;
+                                contextTree2Frames[3506402] = "root";
+                            }
                         }
                     }
+
+                     */
 
                     if (isCalltree) {
                         setmergedContextTree(mergeTreesV1(invertTreeV1(contextTrees[0], 1), invertTreeV1(contextTrees[1], 2), 1), eventType);
@@ -539,9 +565,9 @@
                     unhideFilterViewStatus();
                     $("#cct-panel").css("height","100%");
 
-                    if (eventType == getEventType()){ // || eventType == "jfr_dump.json.gz") { //todo check this
+                    if ( (getEventType() == eventType)){//} && !(eventType == "json-jstack" && eventType.contains("dump_"))) || eventType == "jfr_dump.json.gz") { //todo check this, dirty fix for sfdc
                         for (var type in jfrprofiles1) {
-                            if(type != eventType) {
+                            if(type != eventType){//} && eventType != "jfr_dump.json.gz") {
                                 retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, type);
                             }
                         }
@@ -550,8 +576,13 @@
             }
             if (!isJfrContext) {
                 updateProfilerView();
-            } else if (getEventType() == eventType) {
-                updateProfilerView();
+            } else if (getEventType() == eventType) {//if SF profile, we need to wait for jfr_dump.json.gz event
+                if(eventType.includes("jfr_dump") || eventType.includes("json-jstack")){
+                    console.log("waiting for jfr_dump.json.gz");
+                    incrementTimer = setInterval(waitAndupdateProfilerView, 1000);
+                }else {
+                    updateProfilerView();
+                }
             }
             spinnerToggle('spinnerId');
         }).catch(error => {
@@ -573,6 +604,31 @@
     function fetchOtherEvents(timeRange, tenant, host){
         for (var key in otherEvents1) {
             getOtherEvent(timeRange, tenant, host, key);
+        }
+    }
+
+    let incrementRefreshTimer = undefined;
+    let updateProfilerViewLock = false;
+    function waitAndrefreshTree(count) {
+        if (updateProfilerViewLock || getContextTree(1, "jfr_dump.json.gz")  === undefined) {
+            console.log("waitAndrefreshTree ... " + count);
+        } else {
+            updateProfilerViewLock = true;
+            clearInterval(incrementRefreshTimer);
+            refreshTree();
+            updateProfilerViewLock = false;
+        }
+    }
+
+    let incrementTimer = undefined;
+    function waitAndupdateProfilerView() {
+        if (updateProfilerViewLock || getContextTree(1, "jfr_dump.json.gz")  === undefined) {
+            console.log("waitAndupdateProfilerView ... ");
+        } else {
+            updateProfilerViewLock = true;
+            clearInterval(incrementTimer);
+            updateProfilerView();
+            updateProfilerViewLock = false;
         }
     }
 
@@ -604,7 +660,14 @@
                     fetchOtherEvents(timeRange, tenant, host);
                     showContextFilter();
                     hideFilterViewStatus();
-                    refreshTree();
+
+                    //if sfdc, we need to wait for jfr_dump.json.gz
+                    if(customEvent.includes("jfr_dump")){
+                        console.log("waiting for jfr_dump.json.gz");
+                        incrementRefreshTimer = setInterval(waitAndrefreshTree, 1000);
+                    }else {
+                        refreshTree();
+                    }
                 }
             }
         }, function (error) {

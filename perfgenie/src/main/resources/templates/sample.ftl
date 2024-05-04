@@ -150,7 +150,7 @@
     $("#smpl-grp-by").on("change", (event) => {
         updateUrl("smplBy",$("#smpl-grp-by").val(),true);
         smplBy = $("#smpl-grp-by").val();
-        genSampleTable(false);
+        genSampleTable(false, undefined);
     });
 
     $("#event-input-smpl").on("change", (event) => {
@@ -449,7 +449,7 @@
     Object.freeze(sfSampleTable);
 
     let sampleSortMap = undefined;
-    function genSampleTable(addContext) {
+    function genSampleTable(addContext, level) {
 
         let eventType = getEventType();
 
@@ -492,6 +492,7 @@
             let eventSampleCount = 0;
             if($("#event-type-sample").val() == "All" && sampletableFormat == 1){//process all events
                 eventType = tempeventTypeArray[tempeventTypeCount];
+                applyContextFilters(eventType,level);
                 addContext=true;
             }else if(tempeventTypeArray[tempeventTypeCount] != eventType){
                 continue;
@@ -920,7 +921,7 @@
             }
             tidSamplesCountMap = new Map([...tidSamplesCountMap.entries()].sort((a, b) => b[1] - a[1]));
 
-            let top = 100;
+            let top = 75;
             let uniquetimestamps = generateTimestamseries(tidSamplesTimestamps,tidSamplesCountMap, top);
             $("#sampletable").html("");
 
@@ -1213,7 +1214,7 @@
 
             resetTreeHeader("");
 
-            genSampleTable(true);
+            genSampleTable(true, level);
 
             end = performance.now();
             console.log("updateProfilerViewSample 3 time:" + (end - start));
@@ -1225,7 +1226,7 @@
 
             resetTreeHeader("");
 
-            genSampleTable(true);
+            genSampleTable(true, level);
 
             let end = performance.now();
             console.log("updateProfilerViewSample 4 time:" + (end - start));
