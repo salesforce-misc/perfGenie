@@ -932,7 +932,7 @@
             //sampletable
             let cellh = 7;
             let cellw = 3;
-            let x = 0;
+            let x = 30;
             let y = 10;
             d3.select("#sampletable").append("svg").attr("width", maxThreadSamples *cellw).attr("height", (top+2)*cellh);
 
@@ -944,6 +944,12 @@
             for (let [tid, value] of tidSamplesCountMap) {
                 if (count < top) {
                     count++;
+                    d3svg.append("text")
+                        .text(tid)
+                        .attr("x", 0)
+                        .style("font-size", "7px")
+                        .attr("y", y+cellh/2);
+
                     d3svg.append('line')
                         .style('stroke-dasharray', [2,1])
                         .style('stroke', '#E2E2E2')
@@ -987,7 +993,7 @@
                         x += cellw;
                     }
                     //console.log("matched len:" + i);
-                    x = 0;
+                    x = 30;
                     y += cellh;
                 }
             }
