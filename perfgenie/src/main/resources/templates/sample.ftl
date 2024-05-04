@@ -560,7 +560,7 @@
                         for (let i = 0; i < contextTidMap[tid].length; i++) {
                             if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
                                 let stack = contextTidMap[tid][i].hash;
-                                if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
+                                if (frameFilterString == "" || (frameFilterStackMap[combinedEventKey] != undefined && frameFilterStackMap[combinedEventKey][stack] !== undefined)) {
 
                                     if (tidSamplesTimestamps[tid] == undefined) {
                                         tidSamplesTimestamps[tid] = [];
@@ -600,7 +600,7 @@
                         for (let i = 0; i < contextTidMap[tid].length; i++) {
                             if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
                                 let stack = contextTidMap[tid][i].hash;
-                                if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
+                                if (frameFilterString == "" || (frameFilterStackMap[combinedEventKey] != undefined && frameFilterStackMap[combinedEventKey][stack] !== undefined)) {
 
                                     if (tidSamplesTimestamps[tid] == undefined) {
                                         tidSamplesTimestamps[tid] = [];
@@ -655,7 +655,7 @@
                                 for (let i = 0; i < contextTidMap[tid].length; i++) {
                                     if ((pStart === '' || pEnd === '') || ((contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd)) {
                                         let stack = contextTidMap[tid][i].hash;
-                                        if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
+                                        if (frameFilterString == "" || (frameFilterStackMap[combinedEventKey] != undefined && frameFilterStackMap[combinedEventKey][stack] !== undefined)) {
                                             let key = "";
                                             if (groupBySamples === "tid") {
                                                 key = tid;
@@ -700,7 +700,7 @@
                             for (let i = 0; i < contextTidMap[tid].length; i++) {
                                 if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
                                     let stack = contextTidMap[tid][i].hash;
-                                    if (frameFilterStackMap[combinedEventKey][stack] !== undefined) {
+                                    if ((frameFilterStackMap[combinedEventKey] != undefined && frameFilterStackMap[combinedEventKey][stack] !== undefined)) {
 
                                         if (tidSamplesTimestamps[tid] == undefined) {
                                             tidSamplesTimestamps[tid] = [];
@@ -765,7 +765,7 @@
                                 for (let i = 0; i < contextTidMap[tid].length; i++) {
                                     if ((pStart === '' || pEnd === '') || ((contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd)) {
                                         let stack = contextTidMap[tid][i].hash;
-                                        if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
+                                        if (frameFilterString == "" || (frameFilterStackMap[combinedEventKey] != undefined && frameFilterStackMap[combinedEventKey][stack] !== undefined)) {
                                             let key = "";
                                             if (groupBySamples === "tid") {
                                                 key = tid;
@@ -832,7 +832,7 @@
                                                 if ((pStart === '' || pEnd === '') || ((contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd)) {
                                                     let stack = contextTidMap[tid][i].hash;
                                                     //for (var stack in obj[combinedEventKey]) {
-                                                    if (frameFilterString == "" || frameFilterStackMap[combinedEventKey][stack] !== undefined) {
+                                                    if (frameFilterString == "" || (frameFilterStackMap[combinedEventKey] != undefined && frameFilterStackMap[combinedEventKey][stack] !== undefined)) {
 
                                                         if (tidSamplesTimestamps[tid] == undefined) {
                                                             tidSamplesTimestamps[tid] = [];
@@ -935,6 +935,8 @@
             let d3svg = d3.select("#sampletable").select("svg");
 
             let count = 0;
+            let minTimeStamp = 0;
+            let maxTimeStamp = 0;
             for (let [tid, value] of tidSamplesCountMap) {
                 if (count < top) {
                     count++;
@@ -949,6 +951,14 @@
                     let i = 0;
                     //console.log("total len:" + tidSamplesTimestamps[tid].length);
                     for (let timestamp in uniquetimestamps) {
+
+                        if(minTimeStamp == 0){
+                            minTimeStamp = timestamp;
+                        }
+                        if(timestamp > maxTimeStamp) {
+                            maxTimeStamp = timestamp;
+                        }
+
                         if (i < tidSamplesTimestamps[tid].length) {
                             if (uniquetimestamps[timestamp] == -1) {
                                 //put a dash rect
@@ -1083,6 +1093,8 @@
     }
 
     let maxThreadSamples=0;
+    let minThreadSamplesTimeStamp = 0;
+    let maxThreadSamplesTimeStamp = 0;
     function generateTimestamseries(tidSamplesTimestamps,tidSamplesCountMap, top){
 
         let tmpTimestampap = {};
@@ -1120,6 +1132,8 @@
         let end = performance.now();
         console.log("generateTimestamseries time :" + (end - start));
         maxThreadSamples = count;
+        minThreadSamplesTimeStamp = timestampArray[0];
+        maxThreadSamplesTimeStamp = timestampArray[timestampArray.length-1];
         return tmpTimestampap;
     }
 
