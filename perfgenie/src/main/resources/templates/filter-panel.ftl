@@ -999,8 +999,10 @@
     let prevReqCellTime = "";
     let prevReqCellObj = null;
 
-    function getStackTrace(stackid) {
-        let eventType = getEventType();
+    function getStackTrace(stackid, eventType) {
+        if(eventType == undefined) {
+            eventType = getEventType();
+        }
 
         let sampleType = eventType;
 

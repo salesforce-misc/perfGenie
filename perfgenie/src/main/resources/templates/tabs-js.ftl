@@ -611,7 +611,7 @@
     let updateProfilerViewLock = false;
     function waitAndrefreshTree(count) {
         if (updateProfilerViewLock || getContextTree(1, "jfr_dump.json.gz")  === undefined) {
-            console.log("waitAndrefreshTree ... " + count);
+            console.log("waitAndrefreshTree ... ");
         } else {
             updateProfilerViewLock = true;
             clearInterval(incrementRefreshTimer);
