@@ -914,6 +914,9 @@
         let start = performance.now();
         if (sampletableFormat == 1) {
             $('#stack-view-guid').text("");
+            prevSampleReqCellObj = undefined;
+            prevSampleReqCellSid = undefined;
+            prevSampleReqCellTime = undefined;
 
             let tidSamplesCountMap = new Map(); //sort tid based on number of samples
             for (var tid in tidSamplesTimestamps) {
@@ -1082,6 +1085,10 @@
         console.log("genSampleTable 1 time:" + (end - start) )
     }
 
+    let prevSampleReqCellObj = undefined;
+    let prevSampleReqCellSid = undefined;
+    let prevSampleReqCellTime = undefined;
+
     function showSVGSampleStack(obj) {
         let tempeventTypeArray = [];
         for (var tempeventType in jfrprofiles1) {//for all profile event types
@@ -1093,6 +1100,10 @@
         let eventType = tempeventTypeArray[obj.target.getAttribute("e")];
         let index = obj.target.getAttribute("in");
         let stackid = contextTree1[eventType].context.tidMap[pid][index].hash;
+
+        prevSampleReqCellObj = obj.target;
+        prevSampleReqCellSid = stackid;
+        prevSampleReqCellTime = contextTree1[eventType].context.tidMap[pid][index].time;
 
         updateUrl("stack_id",stackid,true);
         stack_id=stackid;

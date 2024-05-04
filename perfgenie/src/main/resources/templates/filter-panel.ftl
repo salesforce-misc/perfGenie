@@ -1482,6 +1482,17 @@
 
         const timelinepopupmodalElement = document.getElementById("timelinepopup");
         const timelineElement = document.getElementById("stackncontextview");
+        const timelineSamplesElement = document.getElementById("sampletable").getElementsByTagName("svg");
+
+        if(timelineSamplesElement.length != 0){
+            console.log("timelineSamplesElement  " + clickC + ":" + evt.keyCode);
+            if (evt.keyCode == 39) {
+                nextAvailableSampleStack();
+            } else if (evt.keyCode == 37) {
+                previousAvailableSampleStack();
+            }
+            clickC++;
+        }
 
         if (timelinepopupmodalElement !== null && timelinepopupmodalElement.style.display !== "none") {
             console.log("timelinepopup active " + clickC + ":" + evt.keyCode);
@@ -1504,6 +1515,30 @@
         }
         actViewKeyDown(evt);
     };
+
+    function nextAvailableSampleStack() {
+        var cur = prevSampleReqCellObj;
+        while (cur != null && cur.nextSibling != null) {
+            cur = cur.nextSibling;
+            if (!cur.classList.contains('hide')) {
+                cur.dispatchEvent(new Event('click'))
+                //cur.click();
+                break;
+            }
+        }
+    }
+
+    function previousAvailableSampleStack() {
+        var cur = prevSampleReqCellObj;
+        while (cur != null && cur.previousSibling != null) {
+            cur = cur.previousSibling;
+            if (!cur.classList.contains('hide')) {
+                cur.dispatchEvent(new Event('click'))
+                //cur.click();
+                break;
+            }
+        }
+    }
 
     function nextAvailablepopStack() {
         var cur = prevpopReqCellObj;
