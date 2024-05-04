@@ -566,7 +566,11 @@
                                     if (tidSamplesTimestamps[tid] == undefined) {
                                         tidSamplesTimestamps[tid] = [];
                                     }
-                                    tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount,i]);
+                                    if(isJstack){
+                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, jstackcolorsmap[contextTidMap[tid][i].ts], i]);
+                                    }else {
+                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i]);
+                                    }
                                     eventSampleCount++;
 
                                     let key = contextTidMap[tid][i].tn;
@@ -710,7 +714,11 @@
                                         if (tidSamplesTimestamps[tid] == undefined) {
                                             tidSamplesTimestamps[tid] = [];
                                         }
-                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount,i]);
+                                        if(isJstack){
+                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, jstackcolorsmap[contextTidMap[tid][i].ts], i]);
+                                        }else {
+                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i]);
+                                        }
                                         eventSampleCount++;
 
                                         let key = "";
@@ -842,7 +850,11 @@
                                                         if (tidSamplesTimestamps[tid] == undefined) {
                                                             tidSamplesTimestamps[tid] = [];
                                                         }
-                                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i]);
+                                                        if(isJstack){
+                                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, jstackcolorsmap[contextTidMap[tid][i].ts], i]);
+                                                        }else {
+                                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i]);
+                                                        }
                                                         eventSampleCount++;
 
                                                         cursampleCount++;
