@@ -946,14 +946,19 @@
             prevSampleReqCellSid = undefined;
             prevSampleReqCellTime = undefined;
 
+            let matchedTidCount = 0;
             let tidSamplesCountMap = new Map(); //sort tid based on number of samples
             for (var tid in tidSamplesTimestamps) {
                 tidSamplesCountMap.set(tid, tidSamplesTimestamps[tid].length);
                 tidSamplesTimestamps[tid].sort((a, b) => a[0] - b[0]);
+                matchedTidCount++;
             }
             tidSamplesCountMap = new Map([...tidSamplesCountMap.entries()].sort((a, b) => b[1] - a[1]));
 
             let top = 75;
+            if(matchedTidCount < top){
+                top = matchedTidCount+20;
+            }
             let uniquetimestamps = generateTimestamseries(tidSamplesTimestamps,tidSamplesCountMap, top);
             $("#sampletable").html("");
 
@@ -969,6 +974,7 @@
             let count = 0;
             let minTimeStamp = 0;
             let maxTimeStamp = 0;
+
             for (let [tid, value] of tidSamplesCountMap) {
                 if (count < top) {
                     count++;
@@ -988,43 +994,53 @@
 
                     let i = 0;
                     //console.log("total len:" + tidSamplesTimestamps[tid].length);
-                    for (let timestamp in uniquetimestamps) {
+                    let dupCount = 0;
+                    for (let [timestamp, check] of uniquetimestamps) {
 
-                        if(minTimeStamp == 0){
-                            minTimeStamp = timestamp;
-                        }
-                        if(timestamp > maxTimeStamp) {
-                            maxTimeStamp = timestamp;
-                        }
 
                         if (i < tidSamplesTimestamps[tid].length) {
-                            if (uniquetimestamps[timestamp] == -1) {
+                            if (check == -1) {
                                 //put a dash rect
                             } else if (timestamp == tidSamplesTimestamps[tid][i][0]) {
+                                if(minTimeStamp == 0){
+                                    minTimeStamp = timestamp;
+                                }
+                                if(timestamp > maxTimeStamp) {
+                                    maxTimeStamp = timestamp;
+                                }
                                 //put color rect
-                                d3svg.append("rect")
-                                    .attr("width", cellw)
-                                    .attr("height", cellh)
-                                    .attr("x", x)
-                                    .attr("y", y)
-                                    .attr("e", tidSamplesTimestamps[tid][i][1])
-                                    .attr("t", tid)
-                                    .attr("in", tidSamplesTimestamps[tid][i][2])
-                                    .attr("class", " tgl")
-                                    .attr("onclick", 'showSVGSampleStack(evt)')
-                                    .attr("fill", getSampleColor(tidSamplesTimestamps[tid][i][1]));
-                                i++;
+                                //handle duplicates
+                                if(timestamp == tidSamplesTimestamps[tid][i][0]) {
+                                    d3svg.append("rect")
+                                        .attr("width", cellw)
+                                        .attr("height", cellh)
+                                        .attr("x", x)
+                                        .attr("y", y)
+                                        .attr("e", tidSamplesTimestamps[tid][i][1])
+                                        .attr("t", tid)
+                                        .attr("in", tidSamplesTimestamps[tid][i][2])
+                                        .attr("class", " tgl")
+                                        .attr("onclick", 'showSVGSampleStack(evt)')
+                                        .attr("fill", getSampleColor(tidSamplesTimestamps[tid][i][1]));
+                                    i++;
+                                }
+                                while(i < tidSamplesTimestamps[tid].length && timestamp == tidSamplesTimestamps[tid][i][0]) {
+                                    i++;
+                                    dupCount++;
+                                }
                             }
                         } else {
                             //put a whitc rect
                         }
                         x += cellw;
                     }
-                    //console.log("matched len:" + i);
+
+                    //console.log("matched len:" + i + " dup:"+dupCount);
                     x = 30;
                     y += cellh;
                 }
             }
+            d3svg.style('width',uniquetimestamps.size*cellw+37);
 
         } else {
 
@@ -1199,7 +1215,7 @@
     let maxThreadSamplesTimeStamp = 0;
     function generateTimestamseries(tidSamplesTimestamps,tidSamplesCountMap, top){
 
-        let tmpTimestampap = {};
+        let tmpTimestampap = new Map();
         let timestampArray = [];
 
         let start = performance.now();
@@ -1210,8 +1226,8 @@
             if (count < top) {
                 count++;
                 for (let i = 0; i < tidSamplesTimestamps[tid].length; i++) {
-                    if (tmpTimestampap[tidSamplesTimestamps[tid][i][0]] == undefined) {
-                        tmpTimestampap[tidSamplesTimestamps[tid][i][0]] = true;
+                    if (!tmpTimestampap.hasOwnProperty(tidSamplesTimestamps[tid][i][0])) {
+                        tmpTimestampap.set(tidSamplesTimestamps[tid][i][0], true);
                         timestampArray.push(tidSamplesTimestamps[tid][i][0]);
                     }
                 }
@@ -1224,10 +1240,10 @@
         count = 0;
         for(let i = 0; i<timestampArray.length; i++){
             if((timestampArray[i]-prev) > 60000){
-                tmpTimestampap[Math.round((timestampArray[i]+prev)/2)] = -1;
+                tmpTimestampap.set(Math.round((timestampArray[i]+prev)/2),-1);
                 count++;
             }
-            tmpTimestampap[timestampArray[i]] = i;
+            tmpTimestampap.set(timestampArray[i], i);
             prev = timestampArray[i];
             count++;
         }
@@ -1236,6 +1252,8 @@
         maxThreadSamples = count;
         minThreadSamplesTimeStamp = timestampArray[0];
         maxThreadSamplesTimeStamp = timestampArray[timestampArray.length-1];
+        console.log("unique timestamps length:" + timestampArray.length);
+        tmpTimestampap = new Map([...tmpTimestampap.entries()].sort((a, b) => a[0] - b[0]));
         return tmpTimestampap;
     }
 
