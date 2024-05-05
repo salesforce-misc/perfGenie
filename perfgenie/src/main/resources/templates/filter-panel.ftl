@@ -1013,7 +1013,7 @@
 
         let arr = getTreeStack(tmpActiveTree, stackid, tmpcontextTree1Level1, 1);
         let ch = tmpcontextTree1Level1.ch;
-        stacktrace = stacktrace + getProfileName(sampleType) + "\n" + ((jstackidcolorsmap[code] != undefined) ? jstackidcolorsmap[code] : "") + ((timestamp != undefined) ? " " + moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss SSS') : "") + "\n";
+        stacktrace = stacktrace + getProfileName(sampleType) + ((timestamp != undefined) ? " " + moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss SSS') : "") + "\n" + ((jstackidcolorsmap[code] != undefined) ? jstackidcolorsmap[code] : "") +"\n";
         while (ch !== undefined && ch != null && ch.length == 1) {
             stacktrace = stacktrace + getFrameName(ch[0].nm) + "\n";
             ch = ch[0].ch;
