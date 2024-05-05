@@ -2159,12 +2159,59 @@
         return isEmpty;
     }
 
+    function filterOtherMatch(timestamp,contextdimIndexMap, contextSpanIndex, contexttimestampIndex) {
+        //TODO: test , time range filter apply to all context, so check if the record is overlapping with time range given.
+        if(pStart != '' && pEnd != ''){
+            if(!( timestamp >= pStart && timestamp <= pEnd)) {
+                return false;
+            }
+        }
+        //check if context filter matches the timestamp
+        let contextDataRecords = undefined;
+        if (contextData != undefined && contextData.records != undefined) {
+            contextDataRecords = contextData.records[samplesCustomEvent];
+        }
+        //are there context filters?
+        let arethereFilters = false;
+        for (let dim in contextdimIndexMap) {
+            if (filterMap[dim] != undefined) {
+                arethereFilters = true;
+                break;
+            }
+        }
+
+        if(arethereFilters) {
+            for (var tid in contextDataRecords) {
+                for(let i=0; i<contextDataRecords[tid].length; i++){
+                    let record = contextDataRecords[tid][i].record;
+                    let match = true;
+                    for (let dim in contextdimIndexMap) {
+                        if (dim === "tid" || dim === "timestamp") {
+                            if (!(filterMap[dim] == undefined || record[contextdimIndexMap[dim]] == filterMap[dim])) {
+                                match = false;
+                            }
+                        } else {
+                            if (!(filterMap[dim] == undefined || record[contextdimIndexMap[dim]]?.includes(filterMap[dim]))) {
+                                match = false;
+                            }
+                        }
+                    }
+                    if (match && record[contexttimestampIndex] <= timestamp && (record[contexttimestampIndex] + contextSpanIndex) >= timestamp) {
+                        return true; //at least one context matched
+                    }
+                }
+            }
+            return false;//none of the context matched
+        }
+        return true;
+    }
+
     function filterMatch(record, dimIndexMap, timestampIndex, recordSpan) {
         //TODO: time range filter apply to all context, so check if the record is overlapping with time range given.
-        if(pStart != '' && pEnd != ''){
-            if(!( (record[timestampIndex] >= pStart && record[timestampIndex] <= pEnd) || //request end in range
-                (record[timestampIndex] - recordSpan >= pStart && record.epoch - recordSpan <= pEnd) || //request start in range
-                (record[timestampIndex] - recordSpan <= pStart && record[timestampIndex] >= pEnd) ) //range is part of request span
+        if(pStart != '' && pEnd != ''){//assuming record timestamp is the start of the request and span is the duration it ran
+            if(!( (record[timestampIndex] >= pStart && record[timestampIndex] <= pEnd) || //request start in range
+                ((record[timestampIndex] + recordSpan) >= pStart && (record[timestampIndex] + recordSpan) <= pEnd) || //request end in range
+                (record[timestampIndex] <= pStart && (record[timestampIndex] + recordSpan) >= pEnd) ) //range is part of request span
             ){
                 return false;
             }
@@ -2325,15 +2372,12 @@
     }
 
     function drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, chartHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered, customEvent, groupByTypeSortByMetricMap) {
-        let viewNote = '';
 
-        if(!isContextViewFiltered){
-            if(customEvent == otherEvent){
-                getOtherHintNote(false, otherEvent);
-                //viewNote = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>" + getOtherHintNote(false, otherEvent) + "</div>";
-            }else {
-                getContextHintNote(false);
-                //viewNote = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>" + getContextHintNote(false) + "</div>";
+        if (customEvent == otherEvent) {
+            getOtherHintNote(false, otherEvent, isContextViewFiltered);
+        } else {
+            if (!isContextViewFiltered) {
+                getContextHintNote(false, customEvent);
             }
         }
 
@@ -2736,9 +2780,9 @@
         let enableOnClick = false;
         let subChart = true;
         let height = 375;
-        if(isContextViewFiltered){
-            document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
-        }else{
+        //if(isContextViewFiltered){
+        //    document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
+        //}else{
             if(customEvent == otherEvent) {
                 if(customEvent === "diagnostics(raw)") {
                     chartType = "scatter";
@@ -2749,13 +2793,15 @@
                     showPoint = true;
                     showLables = true;
                 }
-                getOtherHintNote(false, otherEvent);
+                getOtherHintNote(false, otherEvent, isContextViewFiltered);
                 document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
             }else{
-                getContextHintNote(false);
+                if(!isContextViewFiltered) {
+                    getContextHintNote(false, customEvent);
+                }
                 document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
             }
-        }
+        //}
         pinxs = {};//clear off while drawing new, this will be the source for next pinning
         pincolumns = [];//clear off while drawing new, this will be the source for next pinning
         let countMax = seriesCount;
@@ -3137,20 +3183,22 @@
         return flag;
     }
 
-    function getOtherHintNote(treeview, eventToHandle){
+    function getOtherHintNote(treeview, eventToHandle, isContextViewFiltered){
         if(eventToHandle == undefined){
             eventToHandle = customEvent;
         }
         let note = "<span style='color:darkorange'>Note:</span> Context hint(s) ";
         let filterSkipped = false;
         if(contextData.header != undefined && contextData.header[customEvent] != undefined) {
-            for (let val in contextData.header[customEvent]) {
-                const tokens = contextData.header[customEvent][val].split(":");
-                if (tokens[1] == "text" || tokens[1] == "timestamp") {
-                    if(filterMap[tokens[0]] != undefined) {
-                        if(!treeview) {
-                            note = note + " '" + tokens[0] + "'";
-                            filterSkipped = true;
+            if(!isContextViewFiltered) {
+                for (let val in contextData.header[customEvent]) {
+                    const tokens = contextData.header[customEvent][val].split(":");
+                    if (tokens[1] == "text" || tokens[1] == "timestamp") {
+                        if (filterMap[tokens[0]] != undefined) {
+                            if (!treeview) {
+                                note = note + " '" + tokens[0] + "'";
+                                filterSkipped = true;
+                            }
                         }
                     }
                 }
@@ -3319,7 +3367,9 @@
         if (tableFormat == 0) {
             toolBarOptions += "<option value='All records'>Show all records</option>";
         }
-
+        if(otherEvent == "diagnostics(raw)" && tableFormat ==0) {
+            groupBy="All records";
+        }
 
             if (contextData != undefined && contextData.header != undefined) {
                 let groups = [];
@@ -3360,18 +3410,19 @@
                 }
             }
 
-        if(otherEvent == "diagnostics(raw)" && tableFormat ==0) {
-            groupBy="All records";
-        }
+
 
         toolBarOptions += '             </select>';
 
-
         toolBarOptions += "&nbsp;<i title='click to see additional view/filter options' style='font-size:20px; cursor: pointer;' onclick='toggleToolbarFilters();' class='fa fa-filter'></i><span id ='toolbarfilters' style='display:"+toggleToolbarFiltersdisplay+"'>";
 
-        toolBarOptions +=    '&nbsp;&nbsp;<span title="Consider first N characters of group by option values">Len:</span> <input  style="height:30px;width:35px;text-align: left;" class="filterinput" id="groupby-length" type="text" value="'+groupByLength+'">\n';
-        toolBarOptions +=    '&nbsp;&nbsp;<span title="Sub string match with group by option values">Match:</span><input  style="height:30px;width:120px;text-align: left;" class="filterinput" id="groupby-match" type="text" value="'+groupByMatch+'">\n';
+        if(groupBy != "All records") {
+            toolBarOptions += '&nbsp;&nbsp;<span title="Consider first N characters of group by option values">Len:</span> <input  style="height:30px;width:35px;text-align: left;" class="filterinput" id="groupby-length" type="text" value="' + groupByLength + '">\n';
+        }
 
+        if(groupBy != "All records" && tableFormat != 0) {//use table search
+            toolBarOptions += '&nbsp;&nbsp;<span title="Sub string match with group by option values">Match:</span><input  style="height:30px;width:120px;text-align: left;" class="filterinput" id="groupby-match" type="text" value="' + groupByMatch + '">\n';
+        }
 
         if (tableFormat == 3) {
             if(seriesCount > 40){
@@ -3413,7 +3464,7 @@
                 '                            </select> ';
         }
 
-        if ((groupBy == "" || groupBy == undefined || groupBy == "All records") && tableFormat != 3 ) {
+        if ((groupBy == "" || groupBy == undefined || groupBy == "All records") && tableFormat != 3) {
             toolBarOptions += '                        </select>' +
                 '&nbsp;&nbsp;<span title="Show events above selected metric value">Threshold:</span> <select  style="height:30px;text-align: center; " class="spanMetric"  name="table-threshold" id="table-threshold">\n';
             if (contextData != undefined && contextData.header != undefined) {
@@ -3442,7 +3493,7 @@
             }
             toolBarOptions += '       </select> ';
 
-            if(otherEvent != customEvent){
+            if(otherEvent != customEvent && otherEvent == "diagnostics(raw)"){//only for diagnostics(raw) set it to 0
                 spanThreshold = 0;
             }
             toolBarOptions += '                        </select>' +
@@ -3464,6 +3515,69 @@
         });
         $("#add-chart").on("click", (event) => {
             addChart();
+        });
+
+        $("#filter-input").on("change", (event) => {
+            updateUrl("groupBy", $("#filter-input").val(), true);
+            groupBy = $("#filter-input").val();
+            tmpColorMap.clear();
+            genRequestTable();
+            updateRequestView();
+        });
+
+        $("#format-input").on("change", (event) => {
+            updateUrl("tableFormat", $("#format-input").val(), true);
+            tableFormat = $("#format-input").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#sort-input").on("change", (event) => {
+            updateUrl("sortBy", $("#sort-input").val(), true);
+            sortBy = $("#sort-input").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#line-type").on("change", (event) => {
+            updateUrl("cumulative", $("#line-type").val(), true);
+            cumulativeLine = $("#line-type").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#line-count").on("change", (event) => {
+            updateUrl("seriesCount", $("#line-count").val(), true);
+            seriesCount = $("#line-count").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#groupby-match").on("change", (event) => {
+            updateUrl("groupByMatch", $("#groupby-match").val(), true);
+            groupByMatch = $("#groupby-match").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#groupby-length").on("change", (event) => {
+            if($("#groupby-length").val() == "") {
+                $("#groupby-length").val("200");
+            }
+
+            updateUrl("groupByLength", $("#groupby-length").val(), true);
+            groupByLength = $("#groupby-length").val();
+
+            genRequestTable();
+            updateRequestView();
+        });
+
+        $("#table-threshold").on("change", (event) => {
+            updateUrl("tableThreshold", $("#table-threshold").val(), true);
+            tableThreshold = $("#table-threshold").val();
+            genRequestTable();
+            updateRequestView();
+        });
+        $("#span-threshold").on("change", (event) => {
+            updateUrl("spanThreshold", $("#span-threshold").val(), true);
+            spanThreshold = $("#span-threshold").val();
+            genRequestTable();
+            updateRequestView();
         });
 
         $("#other-event-input").on("change", (event) => {
@@ -3869,10 +3983,22 @@
     }
 
     function processCustomEvents() {
-
         if(contextData != undefined && contextData.records != undefined){
             if(contextData.header != undefined) {
                 for (var customevent in contextData.records) {
+                    if(contextData.header[customevent] != undefined){
+                        let spanExists = false;
+                        for (var header in contextData.header[customevent]) {
+                            if(header.includes("dduration") || header.includes("runTime")){
+                                spanExists=true;
+                                break;
+                            }
+                        }
+                        if(!spanExists){
+                            //todo: test: move custom event to other events is span does not exist
+                            otherEventsFetched[customevent]=true;
+                        }
+                    }
                     for (var tid in contextData.records[customevent]) {
                         //sort by timestamp
                         contextData.records[customevent][tid].sort(function (a, b) {
@@ -4765,7 +4891,7 @@
             }
             sfContextDataTable.SFDataTable(tableRows, tableHeader, "statetable", order);
             if(!isContextViewFiltered) {
-                getContextHintNote(false);
+                getContextHintNote(false, customEvent);
             }
         }
 
@@ -4780,6 +4906,7 @@
             updateRequestView();
         });*/
 
+        /*
         $("#filter-input").on("change", (event) => {
             updateUrl("groupBy", $("#filter-input").val(), true);
             groupBy = $("#filter-input").val();
@@ -4819,8 +4946,13 @@
             updateRequestView();
         });
         $("#groupby-length").on("change", (event) => {
+            if($("#groupby-length").val() == "") {
+                $("#groupby-length").val("200");
+            }
+
             updateUrl("groupByLength", $("#groupby-length").val(), true);
             groupByLength = $("#groupby-length").val();
+
             genRequestTable();
             updateRequestView();
         });
@@ -4837,6 +4969,9 @@
             genRequestTable();
             updateRequestView();
         });
+
+         */
+
         $("#cct-panel").css("height", "100%");
 
 
@@ -4960,6 +5095,22 @@
         let sortByFound = false;
         let groupByFound = false;
 
+        let contexttimestampIndex = -1;
+        let contextdimIndexMap = {};
+        let contextSpanIndex = -1;
+        for (let val in contextData.header[customEvent]) {
+            const tokens = contextData.header[customEvent][val].split(":");
+            if (tokens[1] == "text" || tokens[1] == "timestamp") {
+                contextdimIndexMap[tokens[0]] = val;
+                if ("timestamp" == tokens[0]) { // TODO: take from user
+                    contexttimestampIndex = val;
+                }
+            }
+            if ("duration" == tokens[0] || "runTime" == tokens[0]) { // TODO: take from user
+                contextSpanIndex = val;
+            }
+        }
+
         for (let val in contextData.header[otherEvent]) {
             const tokens = contextData.header[otherEvent][val].split(":");
             if (tokens[1] == "number") {
@@ -5020,19 +5171,24 @@
         //}
         //if only frame filter is selected then we need to include stacks that are not part of any request spans.
 
+        let applyContextOnOtherEvents = false;
+
+        isContextViewFiltered = applyContextOnOtherEvents;
+
         for (var tid in contextDataRecords) {
             let includeTid = false;
             let reqArray = [];
             let recordIndex = -1;
-            if (true || tidDatalistVal == undefined || tidDatalistVal == tid) {//no tid filter on other events
                 contextDataRecords[tid].forEach(function (obj) {
                     let record = obj.record;
                     let flag = false;
                     recordIndex++;
                     let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
-                    if (true || filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {//allways display other events
-                        if (record[spanIndex] == undefined) {
-                            flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
+                    if (!applyContextOnOtherEvents || filterOtherMatch(record[timestampIndex],contextdimIndexMap, contextSpanIndex, contexttimestampIndex)) {//allways display other events
+                        if ((pStart == '' || pEnd == '') || (record[timestampIndex] >= pStart && record[timestampIndex] <= pEnd)) {//apply time range filter
+                            //if(groupByMatch == '' || (record[groupByIndex]!= undefined && record[groupByIndex].includes != undefined && type.record[groupByIndex].includes(groupByMatch))){
+                                flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
+                            //}
                         }
                     }
 
@@ -5112,7 +5268,6 @@
                     lineCount++;
                     totalRows++;
                 }
-            }
         }
 
         let end1 = performance.now();
@@ -5167,13 +5322,14 @@
             }
             sfContextDataTable.SFDataTable(tableRows, tableHeader, "statetable", order);
 
-            if(!isContextViewFiltered) {
+            //if(!isContextViewFiltered) {
                 //$('#statetable').append("<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>"+getOtherHintNote(false, otherEvent)+"</div>");
-                getOtherHintNote(false, otherEvent);
-            }
+                getOtherHintNote(false, otherEvent, isContextViewFiltered);
+            //}
         }
-        setToolBarOptions("statetabledrp");
 
+        setToolBarOptions("statetabledrp");
+/*
         $("#filter-input").on("change", (event) => {
             updateUrl("groupBy", $("#filter-input").val(), true);
             groupBy = $("#filter-input").val();
@@ -5230,6 +5386,7 @@
             genRequestTable();
             updateRequestView();
         });
+        */
         $("#cct-panel").css("height", "100%");
 
         let end = performance.now();

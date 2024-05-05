@@ -739,19 +739,17 @@
     }
 
     function drowStateChartTSV(filteredTidRequests, chartWidth, downScale, minStart, chartHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered, customEvent, groupByTypeSortByMetricMap) {
-        let viewNote = '';
 
-        if(!isContextViewFiltered){
-            if(customEvent == otherEvent){
-                getOtherHintNote(false, otherEvent);
-                //viewNote = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>" + getOtherHintNote(false, otherEvent) + "</div>";
-            }else {
-                getContextHintNote(false);
-                //viewNote = "<div id='timeLineChartNote' class='col-lg-12' style='padding: 0 !important;'>" + getContextHintNote(false) + "</div>";
+        if (customEvent == otherEvent) {
+            getOtherHintNote(false, otherEvent);
+        } else {
+            if (!isContextViewFiltered) {
+                getContextHintNote(false, customEvent);
             }
         }
 
-        document.getElementById("statetableTSV").innerHTML = viewNote+"<div class='row col-lg-12' style='padding: 0 !important;'>"
+
+        document.getElementById("statetableTSV").innerHTML = "<div class='row col-lg-12' style='padding: 0 !important;'>"
             + "<div  style='width: 4%;float: left;'></div>"
             + "<div style=\"max-height: 50px;overflow: hidden;width: 96%;float: right;\">"
             + " <div class='row col-lg-12' style='padding: 0 !important;'>"

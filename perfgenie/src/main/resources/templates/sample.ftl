@@ -652,7 +652,7 @@
                 }
                 //if only frame filter is selected then we need to include stacks that are any stack sample and containing frame filter string
             } else if (frameFilterString !== "" && isFilterEmpty()) {
-                if (spanIndex == -1) { // record duration span not available
+                if (spanIndex == -1) { // we should never come here, record duration span not available
                     //Context hints cannot be applied, apply only time range filter and tid, threadname filter
                     isFilterOnType = false;
                     let threadNameTidMap = {};
@@ -766,7 +766,7 @@
                     }
                 }
             } else {
-                if (spanIndex == -1) { // record duration span not available
+                if (spanIndex == -1) { // we should never come here, record duration span not available
                     //Context hints cannot be applied, apply only time range filter and tid, threadname filter
                     isFilterOnType = false;
                     let threadNameTidMap = {};
@@ -843,7 +843,6 @@
                                     if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
                                         if (obj[combinedEventKey] != undefined) {
                                             flag = true;
-                                            //TODO: we are including all the samples in a matching request, some of them may not be part of timerange filter
                                             let key = record[dimIndexMap[groupBySamples]];
                                             if (key != undefined && key.slice != undefined) {
                                                 key = key.slice(0, samplesgroupByLength);
@@ -1376,7 +1375,7 @@
             console.log("updateProfilerViewSample 4 time:" + (end - start));
 
             if(!isFilterOnType){
-                addTabNote(true,getContextHintNote(true));
+                addTabNote(true,getContextHintNote(true,customEvent));
             }
         }
     }
