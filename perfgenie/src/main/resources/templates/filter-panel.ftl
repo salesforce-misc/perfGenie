@@ -2789,7 +2789,7 @@
                     enableOnClick = true;
                     subChart = false;
                     height = 300;
-                }else{
+                }else if(otherEventsFetched[otherEvent] != undefined){
                     showPoint = true;
                     showLables = true;
                 }

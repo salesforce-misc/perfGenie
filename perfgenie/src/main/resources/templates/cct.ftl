@@ -978,7 +978,7 @@
             console.log("updateProfilerView 4 time:" + (end - start));
         }
         if(!isFilterOnType){
-            addTabNote(true,getContextHintNote(true));
+            addTabNote(true,getContextHintNote(true,customEvent));
         }
     }
 
