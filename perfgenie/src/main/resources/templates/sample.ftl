@@ -583,25 +583,27 @@
                                     }
                                     eventSampleCount++;
 
-                                    let key = contextTidMap[tid][i].tn;
-                                    //consider
-                                    if (sampleSortMap.has(key)) {
-                                        sampleSortMap.set(key, sampleSortMap.get(key) + 1);
-                                    } else {
-                                        sampleSortMap.set(key, 1);
-                                    }
-
-                                    if (sampleCountMap.has(key)) {
-                                        let tmpMap = sampleCountMap.get(key);
-                                        if (tmpMap.has(stack)) {
-                                            tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                    if(sampletableFormat == 0) {
+                                        let key = contextTidMap[tid][i].tn;
+                                        //consider
+                                        if (sampleSortMap.has(key)) {
+                                            sampleSortMap.set(key, sampleSortMap.get(key) + 1);
                                         } else {
-                                            tmpMap.set(stack, 1);
+                                            sampleSortMap.set(key, 1);
                                         }
-                                    } else {
-                                        let tmpMap = new Map();
-                                        tmpMap.set(stack, 1);
-                                        sampleCountMap.set(key, tmpMap);
+
+                                        if (sampleCountMap.has(key)) {
+                                            let tmpMap = sampleCountMap.get(key);
+                                            if (tmpMap.has(stack)) {
+                                                tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                            } else {
+                                                tmpMap.set(stack, 1);
+                                            }
+                                        } else {
+                                            let tmpMap = new Map();
+                                            tmpMap.set(stack, 1);
+                                            sampleCountMap.set(key, tmpMap);
+                                        }
                                     }
                                 }
                             }
@@ -626,24 +628,25 @@
                                         tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i]);
                                     }
                                     eventSampleCount++;
-
-                                    let key = tid;
-                                    if (sampleSortMap.has(key)) {
-                                        sampleSortMap.set(key, sampleSortMap.get(key) + 1);
-                                    } else {
-                                        sampleSortMap.set(key, 1);
-                                    }
-                                    if (sampleCountMap.has(key)) {
-                                        let tmpMap = sampleCountMap.get(key);
-                                        if (tmpMap.has(stack)) {
-                                            tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                    if(sampletableFormat == 0) {
+                                        let key = tid;
+                                        if (sampleSortMap.has(key)) {
+                                            sampleSortMap.set(key, sampleSortMap.get(key) + 1);
                                         } else {
-                                            tmpMap.set(stack, 1);
+                                            sampleSortMap.set(key, 1);
                                         }
-                                    } else {
-                                        let tmpMap = new Map();
-                                        tmpMap.set(stack, 1);
-                                        sampleCountMap.set(key, tmpMap);
+                                        if (sampleCountMap.has(key)) {
+                                            let tmpMap = sampleCountMap.get(key);
+                                            if (tmpMap.has(stack)) {
+                                                tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                            } else {
+                                                tmpMap.set(stack, 1);
+                                            }
+                                        } else {
+                                            let tmpMap = new Map();
+                                            tmpMap.set(stack, 1);
+                                            sampleCountMap.set(key, tmpMap);
+                                        }
                                     }
                                 }
                             }
@@ -730,33 +733,34 @@
                                             tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i]);
                                         }
                                         eventSampleCount++;
-
-                                        let key = "";
-                                        if (contextTidMap[tid][i][samplesCustomEvent]?.obj != undefined) {
-                                            key = contextTidMap[tid][i][samplesCustomEvent].obj[dimIndexMap[groupBySamples]];
-                                        } else {
-                                            key = "stacks matched frame but no context match";
-                                        }
-                                        if (key != undefined && key.slice != undefined) {
-                                            key = key.slice(0, samplesgroupByLength);
-                                        }
-                                        //consider
-                                        if (sampleSortMap.has(key)) {
-                                            sampleSortMap.set(key, sampleSortMap.get(key) + 1);
-                                        } else {
-                                            sampleSortMap.set(key, 1);
-                                        }
-                                        if (sampleCountMap.has(key)) {
-                                            let tmpMap = sampleCountMap.get(key);
-                                            if (tmpMap.has(stack)) {
-                                                tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                        if(sampletableFormat == 0) {
+                                            let key = "";
+                                            if (contextTidMap[tid][i][samplesCustomEvent]?.obj != undefined) {
+                                                key = contextTidMap[tid][i][samplesCustomEvent].obj[dimIndexMap[groupBySamples]];
                                             } else {
-                                                tmpMap.set(stack, 1);
+                                                key = "stacks matched frame but no context match";
                                             }
-                                        } else {
-                                            let tmpMap = new Map();
-                                            tmpMap.set(stack, 1);
-                                            sampleCountMap.set(key, tmpMap);
+                                            if (key != undefined && key.slice != undefined) {
+                                                key = key.slice(0, samplesgroupByLength);
+                                            }
+                                            //consider
+                                            if (sampleSortMap.has(key)) {
+                                                sampleSortMap.set(key, sampleSortMap.get(key) + 1);
+                                            } else {
+                                                sampleSortMap.set(key, 1);
+                                            }
+                                            if (sampleCountMap.has(key)) {
+                                                let tmpMap = sampleCountMap.get(key);
+                                                if (tmpMap.has(stack)) {
+                                                    tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                                } else {
+                                                    tmpMap.set(stack, 1);
+                                                }
+                                            } else {
+                                                let tmpMap = new Map();
+                                                tmpMap.set(stack, 1);
+                                                sampleCountMap.set(key, tmpMap);
+                                            }
                                         }
                                     }
                                 }
@@ -801,27 +805,30 @@
                                                     key = "NA";
                                                 }
                                             }
-                                            if (key != undefined && key.slice != undefined) {
-                                                key = key.slice(0, samplesgroupByLength);
-                                            }
+                                            if(sampletableFormat == 0) {
+                                                if (key != undefined && key.slice != undefined) {
+                                                    key = key.slice(0, samplesgroupByLength);
+                                                }
 
                                             //consider
-                                            if (sampleSortMap.has(key)) {
-                                                sampleSortMap.set(key, sampleSortMap.get(key) + 1);
-                                            } else {
-                                                sampleSortMap.set(key, 1);
-                                            }
-                                            if (sampleCountMap.has(key)) {
-                                                let tmpMap = sampleCountMap.get(key);
-                                                if (tmpMap.has(stack)) {
-                                                    tmpMap.set(stack, tmpMap.get(stack) + 1);
+
+                                                if (sampleSortMap.has(key)) {
+                                                    sampleSortMap.set(key, sampleSortMap.get(key) + 1);
                                                 } else {
-                                                    tmpMap.set(stack, 1);
+                                                    sampleSortMap.set(key, 1);
                                                 }
-                                            } else {
-                                                let tmpMap = new Map();
-                                                tmpMap.set(stack, 1);
-                                                sampleCountMap.set(key, tmpMap);
+                                                if (sampleCountMap.has(key)) {
+                                                    let tmpMap = sampleCountMap.get(key);
+                                                    if (tmpMap.has(stack)) {
+                                                        tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                                    } else {
+                                                        tmpMap.set(stack, 1);
+                                                    }
+                                                } else {
+                                                    let tmpMap = new Map();
+                                                    tmpMap.set(stack, 1);
+                                                    sampleCountMap.set(key, tmpMap);
+                                                }
                                             }
                                         }
                                     }
@@ -868,26 +875,30 @@
 
                                                         cursampleCount++;
 
-                                                        if (sampleCountMap.has(key)) {
-                                                            let tmpMap = sampleCountMap.get(key);
-                                                            if (tmpMap.has(stack)) {
-                                                                tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                                        if(sampletableFormat == 0) {
+                                                            if (sampleCountMap.has(key)) {
+                                                                let tmpMap = sampleCountMap.get(key);
+                                                                if (tmpMap.has(stack)) {
+                                                                    tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                                                } else {
+                                                                    tmpMap.set(stack, 1);
+                                                                }
                                                             } else {
+                                                                let tmpMap = new Map();
                                                                 tmpMap.set(stack, 1);
+                                                                sampleCountMap.set(key, tmpMap);
                                                             }
-                                                        } else {
-                                                            let tmpMap = new Map();
-                                                            tmpMap.set(stack, 1);
-                                                            sampleCountMap.set(key, tmpMap);
                                                         }
                                                     }
                                                 }
                                             }
-                                            if (cursampleCount != 0) {
-                                                if (sampleSortMap.has(key)) {
-                                                    sampleSortMap.set(key, sampleSortMap.get(key) + cursampleCount);
-                                                } else {
-                                                    sampleSortMap.set(key, cursampleCount);
+                                            if(sampletableFormat == 0) {
+                                                if (cursampleCount != 0) {
+                                                    if (sampleSortMap.has(key)) {
+                                                        sampleSortMap.set(key, sampleSortMap.get(key) + cursampleCount);
+                                                    } else {
+                                                        sampleSortMap.set(key, cursampleCount);
+                                                    }
                                                 }
                                             }
 
