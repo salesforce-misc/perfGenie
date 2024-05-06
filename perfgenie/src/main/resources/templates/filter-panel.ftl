@@ -1540,7 +1540,7 @@
         var cur = prevpopReqCellObj;
         while (cur != null && cur.nextSibling != null) {
             cur = cur.nextSibling;
-            if (cur.tagName == 'rect') {
+            if (!cur.classList.contains('hide')) {
                 cur.dispatchEvent(new Event('click'))
                 //cur.click();
                 break;
