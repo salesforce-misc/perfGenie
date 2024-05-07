@@ -464,9 +464,11 @@
         tempeventTypeArray.sort();
 
         let jstackdiff = 0;
+        let jstactprofilestart = 0;
         let jstackEvent = getContextTree(1, "json-jstack") == undefined ?  "Jstack" : "json-jstack";
         if (getContextTree(1, jstackEvent) !== undefined) {
             jstackdiff = getContextTree(1, jstackEvent).context.start - jfrprofilestart;
+            jstactprofilestart = getContextTree(1, jstackEvent).context.start;
         }
 
         let tidSamplesTimestamps = {};
@@ -945,7 +947,7 @@
                 }
             }
 
-            console.log("count " + eventType +":"+eventSampleCount);
+            console.log("count " + eventType +":"+eventSampleCount + ":"+jfrprofilestart+":"+jstactprofilestart);
         }
 
         let start = performance.now();
@@ -973,7 +975,7 @@
             $("#sampletable").html("");
 
             //sampletable
-            let cellh = 7;
+            let cellh = 8;
             let cellw = 3;
             let x = 30;
             let y = 7;
@@ -991,7 +993,7 @@
                     d3svg.append("text")
                         .text(tid)
                         .attr("x", 0)
-                        .style("font-size", "7px")
+                        .style("font-size", cellh+"px")
                         .attr("y", y+cellh/2);
 
                     d3svg.append('line')
