@@ -2447,12 +2447,12 @@
                     tmpEpoch = minStart;
                 }
                 if (tmpEpoch >= curTime) {
-                    d3svg.append("rect")
+                   /* d3svg.append("rect")
                         .attr("width", (tmpEpoch - curTime) / downScale)
                         .attr("height", h)
                         .attr("x", x)
                         .attr("y", y)
-                        .attr("fill", "white");
+                        .attr("fill", "white");*/
 
                     x = x + (tmpEpoch - curTime) / downScale;
                     let key = (groupByIndex != -1 &&  record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
