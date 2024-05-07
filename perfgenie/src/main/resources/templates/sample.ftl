@@ -1055,7 +1055,7 @@
             d3svg.style('width',uniquetimestamps.size*cellw+37);
 
         } else {
-
+            $("#sampletablecontext").css("height", 0);
             //sort based on number of stacks
             for (let [key, value] of sampleCountMap) {
                 sampleCountMap.set(key, new Map([...value.entries()].sort((a, b) => b[1] - a[1])));
