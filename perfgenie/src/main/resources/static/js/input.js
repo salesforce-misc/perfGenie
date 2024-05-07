@@ -235,7 +235,7 @@ $(function () {
         format: 'Y-m-d H:i:s',
         formatDate: 'Y-m-d',
         formatTime: 'H:i',
-        step: 1
+        step: 5
     });
 
     jQuery("#endpicker1").datetimepicker({
@@ -256,7 +256,7 @@ $(function () {
         format: 'Y-m-d H:i:s',
         formatDate: 'Y-m-d',
         formatTime: 'H:i',
-        step: 1
+        step: 5
     });
 
     $("#submit-input").click(function () {

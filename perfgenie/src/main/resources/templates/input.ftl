@@ -33,8 +33,8 @@
 </style>
 
 
-<div  style="padding: 0px" id="accordion" class="row">
-    <div style="width:100%">Data source selector</div>
+<div  style="padding: 0px !important;" id="accordion" class="row">
+    <div style="width:100%;padding-top: 2px !important;padding-bottom: 2px !important;">Data source selector</div>
     <div  style="padding-bottom: 0px;" class="col-lg-12">
 
         <form  id="compare-context-selector-form" action="javascript:submitTo()" method="get"

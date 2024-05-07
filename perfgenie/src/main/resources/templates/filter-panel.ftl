@@ -2381,7 +2381,7 @@
             }
         }
 
-        document.getElementById("statetable").innerHTML = viewNote+"<div class='row col-lg-12' style='padding: 0 !important;'>"
+        document.getElementById("statetable").innerHTML = "<div class='row col-lg-12' style='padding: 0 !important;'>"
             + "<div  style='width: 4%;float: left;'></div>"
             + "<div style=\"max-height: 50px;overflow: hidden;width: 96%;float: right;\">"
             + " <div class='row col-lg-12' style='padding: 0 !important;'>"
@@ -2812,6 +2812,7 @@
             contextDataRecords = contextData.records[customEvent];
         }
 
+        let totalTimeSeriesPoints = 0;
         for (let [type, value1] of groupByTypeSortByMetricMap) {
             if((groupByMatch != '' && type!= undefined && type.includes != undefined && !type.includes(groupByMatch))){
                 continue;
@@ -2871,6 +2872,13 @@
             }
             pincolumns.push(series);
             pincolumns.push(series_x);
+
+            totalTimeSeriesPoints += series_x.length;
+        }
+
+        if(totalTimeSeriesPoints > 60) {
+            showPoint = false;
+            showLables = false;
         }
 
         pinYlabel = sortBy;
@@ -3291,6 +3299,7 @@
         console.log("getToolBarOptions1 otherEvent: " + otherEvent + " customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " tableThreshold:"+tableThreshold);
 
         let toolBarOptions = '<span title="JFR Event type">Data:</span> <select  style="height:30px;width:200px;text-align: center; " class="filterinput"  name="other-event-input" id="other-event-input">\n';
+
         if (contextData != undefined && contextData.records != undefined) {
             let otherEventFound = false;
             if(!(otherEventFound == '' || otherEventFound == undefined)) {
@@ -3301,10 +3310,8 @@
                     }
                 }
             }
-
             for (let value in contextData.records) {
                 if(otherEvent == '' || otherEvent == undefined || !otherEventFound){
-                    //otherEvent = customEvent;
                     console.log("otherEvent 1: " + otherEvent);
                     otherEventFound=true;
                 }
@@ -3318,25 +3325,47 @@
 
         toolBarOptions += '&nbsp;&nbsp;<span title="Context view format">Format:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="format-input" id="format-input">\n' +
             '                            <option ' + (tableFormat == 0 ? "selected" : "") + ' value=0>table</option>\n';
-            //'                            <option ' + (tableFormat == 1 ? "selected" : "") + ' value=1>percent</option>\n' +
+            //'                          <option ' + (tableFormat == 1 ? "selected" : "") + ' value=1>percent</option>\n' +
         if(otherEvent == customEvent) {
             toolBarOptions += '              <option ' + (tableFormat == 2 ? "selected" : "") + ' value=2>thread request view</option>\n';
-
-        }else if(tableFormat == 2) {
-            tableFormat = 0;
         }
-
         toolBarOptions +=    '           <option ' + (tableFormat == 3 ? "selected" : "") + ' value=3>metric timeline view</option>\n' +
             '                    </select>';
 
+        let addAllRows = false;
+        let addDim = false;
+        let addTimestampGroupBy = false;
+
+        if(tableFormat == 2 && otherEvent != customEvent) {
+            tableFormat = 0;
+        }
+
+        if(tableFormat == 0) {//table
+            if(otherEvent == "diagnostics(raw)"){//raw
+                addAllRows = true;
+                addDim = false;
+                groupBy="All records";
+                spanThreshold = 0;
+            }else{//context data or diag data
+                addAllRows = true;
+                addDim = true;
+            }
+            if(otherEvent == customEvent){//context
+                addTimestampGroupBy = true;
+            }
+        }else{//metric timeline, thread state
+            addDim = true;
+            addAllRows = false;
+            if (groupBy == "All records"){
+                groupBy = undefined;
+            }
+        }
 
         if (tableFormat == 2 || tableFormat == 3) {
-
             toolBarOptions += '                        </select>' +
                 '&nbsp;&nbsp;<span title="Sort context view by event metric">'+ ((tableFormat == 2)? "Sort by": "Series") +':</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="sort-input" id="sort-input">\n';
 
             if (contextData != undefined && contextData.header != undefined) {
-
                 let sortByFound = false;
                 if(!(sortBy == '' || sortBy == undefined)) {
                     for (let val in contextData.header[otherEvent]) {
@@ -3364,63 +3393,57 @@
 
         toolBarOptions += '&nbsp;&nbsp;<span title="Group by event dimension">Group by:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="filter-input" id="filter-input">\n';
 
-        if (tableFormat == 0) {
-            toolBarOptions += "<option value='All records'>Show all records</option>";
-        }
-        if(otherEvent == "diagnostics(raw)" && tableFormat ==0) {
-            groupBy="All records";
-        }
+        if (contextData != undefined && contextData.header != undefined) {
+            let groupByFound = false;
+            if (addAllRows) {
+                if (groupBy == "All records") {
+                    groupByFound = true;
+                    toolBarOptions += "<option " + (groupBy == "All records" ? "selected" : "") + " value='All records'>Show all records</option>";
+                } else {
+                    toolBarOptions += "<option " + (groupBy == "All records" ? "selected" : "") + " value='All records'>Show all records</option>";
+                }
+            }
 
-            if (contextData != undefined && contextData.header != undefined) {
-                let groups = [];
+            let groups = [];
+            for (let val in contextData.header[otherEvent]) {
+                const tokens = contextData.header[otherEvent][val].split(":");
+                if (tokens[1] == "text") {
+                    groups.push(tokens[0]);
+                } else if (tokens[1] == "timestamp" && addTimestampGroupBy) {
+                    groups.push(tokens[0]);
+                }
+            }
+            groups.sort();
+            if (addDim && !groupByFound) {
                 for (let val in contextData.header[otherEvent]) {
                     const tokens = contextData.header[otherEvent][val].split(":");
-                    if (tokens[1] == "text") {
-                        groups.push(tokens[0]);
-                    } else if (tokens[1] == "timestamp" && tableFormat == 0) {
-                        groups.push(tokens[0]);
+                    if (groupBy == tokens[0]) {
+                        groupByFound = true;
+                        break;
                     }
                 }
-                groups.sort();
-
-                let groupByFound = false;
-                if (!(groupBy == '' || groupBy == undefined || groupBy == "All records")) {
-                    for (let val in contextData.header[otherEvent]) {
-                        const tokens = contextData.header[otherEvent][val].split(":");
-                        if (groupBy == tokens[0]) {
-                            groupByFound = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (groupBy == "All records" && tableFormat == 0) {
-                    groupByFound = true;
-                }
-
+            }
+            if (addDim) {
                 for (let i = 0; i < groups.length; i++) {
                     if ((groupBy == '' || groupBy == undefined || !groupByFound)) {
                         groupBy = groups[i];
                         groupByFound = true;
                     }
-                    if(otherEvent != "diagnostics(raw)" || tableFormat !=0) {
-                        toolBarOptions += '<option ' + (groupBy == groups[i] ? "selected" : "") + " value='" + groups[i] + "'>" + groups[i] + "</option>\n";
-                    }
-
+                    toolBarOptions += '<option ' + (groupBy == groups[i] ? "selected" : "") + " value='" + groups[i] + "'>" + groups[i] + "</option>\n";
                 }
             }
-
-
-
+        }
         toolBarOptions += '             </select>';
 
         toolBarOptions += "&nbsp;<i title='click to see additional view/filter options' style='font-size:20px; cursor: pointer;' onclick='toggleToolbarFilters();' class='fa fa-filter'></i><span id ='toolbarfilters' style='display:"+toggleToolbarFiltersdisplay+"'>";
 
         if(groupBy != "All records") {
             toolBarOptions += '&nbsp;&nbsp;<span title="Consider first N characters of group by option values">Len:</span> <input  style="height:30px;width:35px;text-align: left;" class="filterinput" id="groupby-length" type="text" value="' + groupByLength + '">\n';
+        }else if(groupByLength < 200){
+            //groupByLength = 200;//todo check set to default
         }
 
-        if(groupBy != "All records" && tableFormat != 0) {//use table search
+        if(tableFormat != 0) {//use table search
             toolBarOptions += '&nbsp;&nbsp;<span title="Sub string match with group by option values">Match:</span><input  style="height:30px;width:120px;text-align: left;" class="filterinput" id="groupby-match" type="text" value="' + groupByMatch + '">\n';
         }
 
@@ -3451,7 +3474,6 @@
             if(seriesCount < 50){
                 seriesCount = 100;
             }
-
             toolBarOptions += '                        </select>' +
                 '&nbsp;&nbsp;<span title="Show top N threads">Top:</span> <select  style="height:30px;text-align: center; " class="filterinput"  name="line-count" id="line-count">\n' +
                 '                            <option ' + (seriesCount == 100 ? "selected" : "") + ' value=100>100</option>\n' +
@@ -3464,38 +3486,35 @@
                 '                            </select> ';
         }
 
-        if ((groupBy == "" || groupBy == undefined || groupBy == "All records") && tableFormat != 3) {
+        if(tableFormat == 0 && groupBy == "All records") {
             toolBarOptions += '                        </select>' +
                 '&nbsp;&nbsp;<span title="Show events above selected metric value">Threshold:</span> <select  style="height:30px;text-align: center; " class="spanMetric"  name="table-threshold" id="table-threshold">\n';
             if (contextData != undefined && contextData.header != undefined) {
                 let tableThresholdFound = false;
-                if(!(tableThreshold == '' || tableThreshold == undefined)) {
+                if (!(tableThreshold == '' || tableThreshold == undefined)) {
                     for (let val in contextData.header[otherEvent]) {
                         const tokens = contextData.header[otherEvent][val].split(":");
-                        if(tableThreshold == tokens[0]){
-                            tableThresholdFound = true;
-                            break;
+                        if (!(tokens[1] == "text" || tokens[1] == "timestamp")) {
+                            if (tableThreshold == tokens[0]) {
+                                tableThresholdFound = true;
+                                break;
+                            }
                         }
                     }
                 }
 
                 for (let val in contextData.header[otherEvent]) {
                     const tokens = contextData.header[otherEvent][val].split(":");
-
-                    if((tableThreshold == '' || tableThreshold == undefined || !tableThresholdFound) && !(tokens[1] == "text" || tokens[1] == "timestamp")){
-                        tableThreshold = tokens[0];
-                        tableThresholdFound = true;
-                    }
                     if (!(tokens[1] == "text" || tokens[1] == "timestamp")) {
+                        if ((tableThreshold == '' || tableThreshold == undefined || !tableThresholdFound)) {
+                            tableThreshold = tokens[0];
+                            tableThresholdFound = true;
+                        }
                         toolBarOptions += '<option ' + (tableThreshold == tokens[0] ? "selected" : "") + " value='" + tokens[0] + "'>" + tokens[0] + "</option>\n";
                     }
                 }
             }
             toolBarOptions += '       </select> ';
-
-            if(otherEvent != customEvent && otherEvent == "diagnostics(raw)"){//only for diagnostics(raw) set it to 0
-                spanThreshold = 0;
-            }
             toolBarOptions += '                        </select>' +
                 '&nbsp;&nbsp;<select  style="height:30px;text-align: center; " class="filterinput"  name="span-threshold" id="span-threshold">\n' +
                 '                            <option ' + (spanThreshold == 200 ? "selected" : "") + " value='200'>200</option>\n" +
@@ -3503,7 +3522,8 @@
                 '                            <option ' + (spanThreshold == 0 ? "selected" : "") + " value='0'>0</option>\n" +
                 '                            </select> ';
             toolBarOptions += "</span>";
-
+        }else{
+            spanThreshold = 0;
         }
 
         console.log("getToolBarOptions2 otherEvent: " + otherEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " tableThreshold:"+tableThreshold);
@@ -5432,7 +5452,7 @@
 </script>
 
 <div style="padding: 0px" id="contextfilter" class="row">
-    <h3 style="width:100%">Context filter</h3>
+    <h3 style="width:100%;padding-top: 2px !important;padding-bottom: 2px !important;">Context filter</h3>
     <div style="padding-top: 0px;" id="cct-panel" class="col-lg-12">
         <span id="filter-view-status" style="" class="hide"></span>
         <div id="contextpanel" class="hide">
