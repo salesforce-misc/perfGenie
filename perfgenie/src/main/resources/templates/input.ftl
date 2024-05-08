@@ -67,7 +67,7 @@
                     </datalist>
                 </td>
                 <td style="border: none;">
-                    <label for="bases1" id="base-label1">Profile: </label>
+                    <label title="profiles collected during selected time range" for="bases1" id="base-label1">Profile: </label>
                     <span id="filter-profile-note1" style="color:#F0B778; display: none">Retry by providing time range > 10 min</span>
                     <select style="height:30px;text-align: center;width: 200px" class="filterinput"   id="bases1" name="base1" value="" placeholder="Choose a profile...">
                     </select>
@@ -101,7 +101,7 @@
                     </datalist>
                 </td>
                 <td style="border: none;">
-                    <label for="bases2" id="base-label2">Profile: </label>
+                    <label title="profiles collected during selected time range" for="bases2" id="base-label2">Profile: </label>
                     <span id="filter-profile-note2" style="color:#F0B778; display: none">Retry by providing time range > 10 min</span>
                     <select  style="height:30px;text-align: center;width: 200px" class="filterinput" id="bases2" name="base2" value="" placeholder="Choose a profile...">
                     </select>

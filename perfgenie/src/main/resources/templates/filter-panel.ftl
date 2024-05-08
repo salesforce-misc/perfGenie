@@ -3318,7 +3318,7 @@
 
         console.log("getToolBarOptions1 otherEvent: " + otherEvent + " customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " tableThreshold:"+tableThreshold);
 
-        let toolBarOptions = '<span title="JFR Event type">Data:</span> <select  style="height:30px;width:200px;text-align: center; " class="filterinput"  name="other-event-input" id="other-event-input">\n';
+        let toolBarOptions = '<span title="selected context filter data, raw diagnostics data and diagnostics data ">Data:</span> <select  style="height:30px;width:200px;text-align: center; " class="filterinput"  name="other-event-input" id="other-event-input">\n';
 
         if (contextData != undefined && contextData.records != undefined) {
             let otherEventFound = false;
@@ -3343,7 +3343,7 @@
         toolBarOptions += '             </select>';
 
 
-        toolBarOptions += '&nbsp;&nbsp;<span title="Context view format">Format:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="format-input" id="format-input">\n' +
+        toolBarOptions += '&nbsp;&nbsp;<span title="Context view format [table view, thread request view and metric timeline view]">Format:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="format-input" id="format-input">\n' +
             '                            <option ' + (tableFormat == 0 ? "selected" : "") + ' value=0>table</option>\n';
             //'                          <option ' + (tableFormat == 1 ? "selected" : "") + ' value=1>percent</option>\n' +
         if(otherEvent == customEvent) {

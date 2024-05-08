@@ -336,7 +336,8 @@
     function retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, eventType) {
         let start = performance.now();
         if(getEventType() === eventType) {
-            resetTreeHeader("Retrieving profile data ...");
+            resetTreeHeader("<div style='padding-right: 10px'>Retrieving profile data ... <span style='float: right;' class='spinner' id='profilespinner'></span></div>");
+            showSpinner('profilespinner');
         }
         let isJstackEvent = false;
         if(eventType == "Jstack" || eventType == "json-jstack"){
@@ -634,7 +635,8 @@
 
     function getLogContext(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, eventType, start, end, customEvent) {
         unhideFilterViewStatus();
-        updateFilterViewStatus("Note: Retrieving request context from jfr, this may take few sec  ...");
+        updateFilterViewStatus("<div style='padding-right: 10px'>Note: Retrieving request context from jfr, this may take few sec  ... <span style='float: right;' class='spinner' id='contextspinner'></span></div>");
+        showSpinner('contextspinner');
 
         const callTreeUrl = getCallTreeUrl(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, customEvent);
         let toTenant = tenant;
