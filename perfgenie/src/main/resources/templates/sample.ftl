@@ -281,7 +281,7 @@
         let contextTidMap = undefined;
         let treeToProcess = getContextTree(1,event);
         let contextData = getContextData();
-        if(contextData == undefined || treeToProcess == undefined || [samplesCustomEvent + event+"-context"] != undefined) {
+        if(contextData == undefined || treeToProcess == undefined || treeToProcess[samplesCustomEvent + event+"-context"] != undefined) {
             console.log("addContextData skip:" + samplesCustomEvent + event);
             return false;
         }
@@ -353,6 +353,7 @@
                     let start =  record[timestampIndex] - contextStart;
 
                     //let stackMap = {};
+                    let errorOnce = true;
                     try {
                         //do a binary search
                         let entryIndex = isinRequest(contextTidMap[tid], start, end);
@@ -403,7 +404,10 @@
                             obj[combinedEventKey] = [minIndex, maxIndex];
                         }
                     } catch (err) {
-                        console.log("tid not found in JFR" + tid + " " + err.message);
+                        if(errorOnce) {
+                            errorOnce=false;
+                            console.log("tid not found in JFR " + tid + " " + err.message);
+                        }
                     }
                 }
             });
