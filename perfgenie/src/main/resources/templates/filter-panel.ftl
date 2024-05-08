@@ -1728,7 +1728,7 @@
                             if (flag) {
                                 let end = record[timestampIndex] - contextStart + recordSpan;
                                 let start = record[timestampIndex] - contextStart;
-
+                                let errorOnce = true;
                                 try {
                                     //do a binary search
                                     let entryIndex = isinRequest(contextTidMap[tid], start, end);
@@ -1772,7 +1772,10 @@
                                         }
                                     }
                                 } catch (err) {
-                                    console.log("tid not found in JFR" + tid + " " + err.message);
+                                    if(errorOnce) {
+                                        errorOnce=false;
+                                        console.log("tid not found in JFR" + tid + " " + err.message);
+                                    }
                                 }
                             }
                         }
@@ -4097,8 +4100,8 @@
                                 if (!(lastKey == obj.record[1] && lastReq == obj.record[10])) {
                                     lastKey = obj.record[1];
                                     lastReq = obj.record[10];
-                                    //join:2 time 1,tid 2,orgId 5,userId 6,log 4,uri 3,threadName 27,reqId 10,runTime 8,cpuTime 7,dbTime 9,NA,apexTime 17,dbCpuTime 21,gcTime 12,spTime 13,bytesAllocated 28,dequeueLatency NA
-                                    joinRecords[tid].push({"record": [obj.record[0], obj.record[1], obj.record[2], obj.record[5], obj.record[6], obj.record[4], obj.record[3], obj.record[27], obj.record[10], obj.record[8], obj.record[7], obj.record[9], "NA", obj.record[17], obj.record[21], obj.record[12], obj.record[13], obj.record[28], "NA"]});
+                                    //join:2 time 1,tid 2,orgId 5,userId 6,log 4,uri 3,threadName 27,reqId 10,runTime 8,cpuTime 7,dbTime 9,apexTime 17,dbCpuTime 21,gcTime 12,spTime 13,bytesAllocated 28,dequeueLatency NA
+                                    joinRecords[tid].push({"record": [obj.record[0], obj.record[1], obj.record[2], obj.record[5], obj.record[6], obj.record[4], obj.record[3], obj.record[27], obj.record[10], obj.record[8], obj.record[7], obj.record[9], obj.record[17], obj.record[21], obj.record[12], obj.record[13], obj.record[28], "NA"]});
                                 }
                             } else if (obj.record[0] == 6) {
                                 if (header[".Async + Sync"] == undefined) {
@@ -4117,7 +4120,7 @@
                                     lastKey = obj.record[1];
                                     lastReq = obj.record[9];
                                     //join:6 time 1,tid 2,orgId 5,userId NA,log 4,uri 13,threadName 3,reqId 9,runTime 7,cpuTime 6,dbTime 8,dbHoldingTime NA,apexTime NA,dbCpuTime 12,gcTime NA,spTime NA,bytesAllocated 14,dequeueLatency 16
-                                    joinRecords[tid].push({"record": [obj.record[0], obj.record[1], obj.record[2], obj.record[5], "NA", obj.record[4], obj.record[13], obj.record[3], obj.record[9], obj.record[7], obj.record[6], obj.record[8], "NA", "NA", obj.record[12], "NA", "NA", obj.record[14], Number(obj.record[16])]});
+                                    joinRecords[tid].push({"record": [obj.record[0], obj.record[1], obj.record[2], obj.record[5], "NA", obj.record[4], obj.record[13], obj.record[3], obj.record[9], obj.record[7], obj.record[6], obj.record[8], "NA", obj.record[12], "NA", "NA", obj.record[14], Number(obj.record[16])]});
                                 }
                             }
                             records[logContext][tid].push(obj);
@@ -4159,7 +4162,7 @@
                                 if (missingIDMap[obj.record[7]] == undefined) {
                                     let record = [obj.record[0], (obj.record[1] - obj.record[6]), obj.record[2], obj.record[3], "mqfrm-active", obj.record[4], obj.record[5], obj.record[6], 0, obj.record[7], obj.record[8], 0, obj.record[9], obj.record[10], obj.record[11], 0, 0, "NA", "NA", "NA", "NA"];
                                     missingmq.push({"record": record});
-                                    missingall.push({"record": [record[0], (obj.record[1] - obj.record[6]), record[2], record[5], "NA", record[4], record[13], record[3], record[9], record[7], record[6], record[8], "NA", "NA", record[12], "NA", "NA", record[14], Number(record[16])]});
+                                    missingall.push({"record": [record[0], (obj.record[1] - obj.record[6]), record[2], record[5], "NA", record[4], record[13], record[3], record[9], record[7], record[6], record[8], "NA", record[12], "NA", "NA", record[14], Number(record[16])]});
                                     missingIDMap[obj.record[7]] = 1;
                                 }
                             }
@@ -4244,7 +4247,7 @@
             return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","threadname:text","duration:number","orgId:text:organization Id","ThreadName:text","reqId:text:request Id","RequestType:text","CoreName:text","PartitionId:text","RevisionId:text","ConsumerName:text","KeyPrefix:text"];
         }else if(type == 20){
             //join:6 time 1,tid 2,orgId 5,userId NA,log 4,uri 13,threadName 3,reqId 9,runTime 7,cpuTime 6,dbTime 8,dbHoldingTime NA,apexTime NA,dbCpuTime 12,gcTime NA,spTime NA,bytesAllocated 14,dequeueLatency 16
-            return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","orgId:text","userId:text","logType:text","uri:text","threadname:text","reqId:text","runTime:number","cpuTime:number","dbTime:number","dbHoldingTime:number","apexTime:number","dbCpuTime:number","gcTime:number","spTime:number","bytesAllocated:number","dequeueLatency:number"];
+            return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","orgId:text","userId:text","logType:text","uri:text","threadname:text","reqId:text","runTime:number","cpuTime:number","dbTime:number","apexTime:number","dbCpuTime:number","gcTime:number","spTime:number","bytesAllocated:number","dequeueLatency:number"];
         }
         return undefined;
     }
