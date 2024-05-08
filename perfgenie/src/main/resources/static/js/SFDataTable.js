@@ -40,7 +40,7 @@ class SFDataTable {
             this.#SFDataTableSearchMatchedRows = [];
             this.#SFDataTableRows = rows;
             this.#SFDataTableHeader = header;
-            this.#SFDataTableID = id;
+
             this.#SFDataTablePage = 0;
             if (sortColIndex != undefined) {
                 this.#sfdtsci = sortColIndex;
@@ -50,9 +50,11 @@ class SFDataTable {
             }
             this.#SFDataTableSearchStr = undefined;
             //sort data
-            this.SFDataTableSort(1);
+            if(rows.length != 0) {
+                this.SFDataTableSort(1);
+            }
         }
-
+        this.#SFDataTableID = id;
         let table = this.SFDataTableGetToolBar() + "<table style='padding: 1px !important;' id='"+this.#sfDataTableID+"' class='ui-widget alternate_color'>\n";
         table += this.SFDataTableGetHeader();
         table += this.SFDataTableGetRows();
