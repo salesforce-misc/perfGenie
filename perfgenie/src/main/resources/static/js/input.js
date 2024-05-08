@@ -338,6 +338,7 @@ function addUploadedContext(csv,name){
     let lines = csv.split(/\r?\n/);
     let columnTypes = [];
     let checkUntil = 200
+    let checkReached = 0;
     let spanIndex = -1;
     for(let i=0; i<lines.length;i++){
         if(i==0){
@@ -370,6 +371,7 @@ function addUploadedContext(csv,name){
                 }
                 records[name][record[1]].push({"record": record});
                 if(i<checkUntil){
+                    checkReached++;
                     for(let k=2; k<record.length; k++){
                         if(isNaN(record[k])){
                             columnTypes[k]++;
@@ -380,7 +382,7 @@ function addUploadedContext(csv,name){
         }
     }
     for(let k=2; k<header[name].length; k++){
-        if( columnTypes[k] > 100){
+        if( columnTypes[k]/checkReached > 0.5){
             header[name][k] = header[name][k] + ":text";
         }else{
             header[name][k] = header[name][k] + ":number";
@@ -388,9 +390,8 @@ function addUploadedContext(csv,name){
     }
     for (let tid in  records[name]) {
         for (let k = 0; k < records[name][tid].length; k++) {
-
             for (let i = 2; i < records[name][tid][k].record.length; i++) {
-                if (columnTypes[i] <= 100) {
+                if (columnTypes[i]/checkReached <= 0.5) {
                     records[name][tid][k].record[i] = Number(records[name][tid][k].record[i]);
                 }
             }
