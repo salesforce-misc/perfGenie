@@ -1308,6 +1308,7 @@
     }
 
     //create html tree recursively
+    let prevSampleProfile = undefined;
     function updateProfilerViewSample(level, skipFilter) {
         addTabNote(false,"");
         let eventType = getEventType();
@@ -1351,13 +1352,13 @@
             let treeToProcess = getActiveTree(eventType, isCalltree);
             let selectedLevel = getSelectedLevel(getActiveTree(eventType, false));
 
-            if (prevCustomEvent === customEvent && currentLoadedTree === treeToProcess && prevOption === currentOption && isRefresh === false && isLevelRefresh === false && prevSelectedLevel === selectedLevel) {
+            if (prevSampleProfile != "All" && prevCustomEvent === customEvent && currentLoadedTree === treeToProcess && prevOption === currentOption && isRefresh === false && isLevelRefresh === false && prevSelectedLevel === selectedLevel) {
                 console.log("no change in sample table, option:" + (prevCustomEvent == customEvent) + ":" + (currentLoadedTree === treeToProcess)+":"+ (prevOption === currentOption) +" isRefresh:"+(isRefresh === false)+":"+" isLevelRefresh:"+(isLevelRefresh === false)+" selectedLevel:"+ (prevSelectedLevel === selectedLevel));
                 end = performance.now();
                 console.log("updateProfilerViewSample 1 time:" + (end - start));
                 return;
             }else{
-                console.log("change in sample table, option:" + (prevCustomEvent == customEvent) + ":" + (currentLoadedTree === treeToProcess)+":"+ (prevOption === currentOption) +" isRefresh:"+(isRefresh === false)+":"+" isLevelRefresh:"+(isLevelRefresh === false)+" selectedLevel:"+ (prevSelectedLevel === selectedLevel));
+                console.log("change in sample table, option:" + prevSampleProfile +":"+ (prevCustomEvent == customEvent) + ":" + (currentLoadedTree === treeToProcess)+":"+ (prevOption === currentOption) +" isRefresh:"+(isRefresh === false)+":"+" isLevelRefresh:"+(isLevelRefresh === false)+" selectedLevel:"+ (prevSelectedLevel === selectedLevel));
             }
             currentLoadedTree = treeToProcess;
             prevOption = currentOption;
@@ -1365,6 +1366,7 @@
             prevSelectedLevel = selectedLevel;
             isLevelRefresh = false;
             isRefresh = false;
+            prevSampleProfile = $("#event-type-sample").val();
 
             // if no data returned from our call don't try to parse it
             if (treeToProcess === undefined) {
@@ -1382,6 +1384,8 @@
             end = performance.now();
             console.log("updateProfilerViewSample 3 time:" + (end - start));
         }else{
+            prevSampleProfile = $("#event-type-sample").val();
+            
             let start = performance.now();
 
             let selectedLevel = getSelectedLevel(getActiveTree(eventType, false));
