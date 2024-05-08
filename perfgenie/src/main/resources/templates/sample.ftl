@@ -22,14 +22,13 @@
         <option value=1>thread sample view</option>
     </select>
 
-    <label  >Group by: </label>
-    <select  style="height:30px;text-align: center;" class="filterinput"  name="smpl-grp-by" id="smpl-grp-by">
-
-    </select>
-
-    <span title="Consider first N characters of group by option values">Len:</span><input  style="height:30px;width:35px;text-align: left;" class="filterinput" id="samples-groupby-length" type="text" value="">
-    <span title="Sub string match with group by option values">Match:</span><input  style="height:30px;width:120px;text-align: left;" class="filterinput" id="samples-groupby-match" type="text" value="">
-
+    <span id="extraoptions">
+        <label  >Group by: </label>
+        <select  style="height:30px;text-align: center;" class="filterinput"  name="smpl-grp-by" id="smpl-grp-by">
+        </select>
+        <span title="Consider first N characters of group by option values">Len:</span><input  style="height:30px;width:35px;text-align: left;" class="filterinput" id="samples-groupby-length" type="text" value="">
+        <span title="Sub string match with group by option values">Match:</span><input  style="height:30px;width:120px;text-align: left;" class="filterinput" id="samples-groupby-match" type="text" value="">
+    </span>
 </div>
 
 <div class="row">
@@ -960,6 +959,8 @@
         let start = performance.now();
         $("#sampletablecontext").html("");
         if (sampletableFormat == 1) {
+            $('#extraoptions').hide();
+            $("#sampletablecontext").css({"height":''});
             $('#stack-view-guid').text("");
             prevSampleReqCellObj = undefined;
             prevSampleReqCellSid = undefined;
@@ -985,7 +986,13 @@
             let cellh = 8;
             let cellw = 3;
             let x = 30;
-            let y = 7;
+            let y = 18;
+
+            if(getEventType() == "Jstack" || getEventType() == "json-jstack"){
+                cellh = 8;
+                cellw = 8;
+            }
+
             d3.select("#sampletable").append("svg").attr("width", (maxThreadSamples *cellw)+37).attr("height", (top+2)*cellh);
 
             let d3svg = d3.select("#sampletable").select("svg");
@@ -993,6 +1000,12 @@
             let count = 0;
             let minTimeStamp = 0;
             let maxTimeStamp = 0;
+
+            d3svg.append("text")
+                .text("Note: Top " + top + " threads sorted by number of samples")
+                .attr("x", 0)
+                .style("font-size", "12px")
+                .attr("y", 9);
 
             for (let [tid, value] of tidSamplesCountMap) {
                 if (count < top) {
@@ -1060,9 +1073,9 @@
                 }
             }
             d3svg.style('width',uniquetimestamps.size*cellw+37);
-
         } else {
-            $("#sampletablecontext").removeProp("height");
+            $('#extraoptions').show();
+            $("#sampletablecontext").css({"height":''});
             //sort based on number of stacks
             for (let [key, value] of sampleCountMap) {
                 sampleCountMap.set(key, new Map([...value.entries()].sort((a, b) => b[1] - a[1])));
@@ -1385,7 +1398,7 @@
             console.log("updateProfilerViewSample 3 time:" + (end - start));
         }else{
             prevSampleProfile = $("#event-type-sample").val();
-            
+
             let start = performance.now();
 
             let selectedLevel = getSelectedLevel(getActiveTree(eventType, false));
