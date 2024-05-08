@@ -5503,7 +5503,7 @@
                         </select>
                     </div>
                     <div  style="cursor:pointer;align-content:center; padding:0px !important;" class="col-2">
-                        <i title="add additional CSV context in the following format where timestamp ms is the request start time and duration is request span.&#013;&#010;timestamp,tid,duration,dim[...],measure[...]&#013;&#010;Example csv:&#013;&#010;timestamp,tid,logType,runTime,cpuTime,uri&#013;&#010;1715112977036,14776359,U,48,42,/aura&#013;&#010;..." style="text-align: left;" onclick="_upload()" style="font-size:18px;" class="fa fa-upload" aria-hidden="true"></i>
+                        <i title="add additional CSV context in the following format where timestamp ms is the request start time and duration is request span.&#013;&#010;timestamp,tid,duration,dim[...],measure[...]&#013;&#010;Example csv:&#013;&#010;timestamp,tid,logType,runTime,cpuTime,uri&#013;&#010;1715112977036,1477,U,48,42,/aura&#013;&#010;..." style="text-align: left;" onclick="_upload()" style="font-size:18px;" class="fa fa-upload" aria-hidden="true"></i>
                         <input style='display:none' id="context-file-input" type="file" />
                     </div>
                     </div>
