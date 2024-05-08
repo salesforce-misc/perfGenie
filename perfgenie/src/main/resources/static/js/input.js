@@ -363,7 +363,7 @@ function addUploadedContext(csv,name){
                 record[0] = record[0].replaceAll('.', '');
                 record[0] = Number(record[0]);//todo convert numbers for all measures
                 if(spanIndex != -1){
-                    record[0] = record[0] - Number(record[spanIndex]);
+                //    record[0] = record[0] - Number(record[spanIndex]); //if we use end timestamp
                 }
                 //record[1] = Number(record[1]);//tid
                 if(records[name][record[1]] == undefined){
