@@ -329,7 +329,84 @@ function getMetaData1(start, end, tenant, host) {
         }
     });
 }
+function addUploadedContext(csv,name){
+    let records = {};
+    let header = {};
+    header[name] = [];
+    records[name] = {};
 
+    let lines = csv.split(/\r?\n/);
+    let columnTypes = [];
+    let checkUntil = 200
+    let spanIndex = -1;
+    for(let i=0; i<lines.length;i++){
+        if(i==0){
+            header[name] = lines[i].split(/\,/);
+            header[name][0] = "timestamp:timestamp";
+            header[name][1] = "tid:text";
+            for(let k=0; k<header[name].length; k++){
+                columnTypes.push(0);
+                if(header[name][k] == "runTime" || header[name][k] == "duration"){
+                    spanIndex = k;
+                }
+            }
+        }else {
+            if(lines[i].length !=0 ) {
+                lines[i] = lines[i].replaceAll('\"', '');
+                let record = lines[i].split(/\,/);
+                for(let j=0; j< record.length;j++){
+                    if(record[j] == ''){
+                        record[j] = "NA";
+                    }
+                }
+                record[0] = record[0].replaceAll('.', '');
+                record[0] = Number(record[0]);//todo convert numbers for all measures
+                if(spanIndex != -1){
+                    record[0] = record[0] - Number(record[spanIndex]);
+                }
+                //record[1] = Number(record[1]);//tid
+                if(records[name][record[1]] == undefined){
+                    records[name][record[1]] = [];
+                }
+                records[name][record[1]].push({"record": record});
+                if(i<checkUntil){
+                    for(let k=2; k<record.length; k++){
+                        if(isNaN(record[k])){
+                            columnTypes[k]++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    for(let k=2; k<header[name].length; k++){
+        if( columnTypes[k] > 100){
+            header[name][k] = header[name][k] + ":text";
+        }else{
+            header[name][k] = header[name][k] + ":number";
+        }
+    }
+    for (let tid in  records[name]) {
+        for (let k = 0; k < records[name][tid].length; k++) {
+
+            for (let i = 2; i < records[name][tid][k].record.length; i++) {
+                if (columnTypes[i] <= 100) {
+                    records[name][tid][k].record[i] = Number(records[name][tid][k].record[i]);
+                }
+            }
+        }
+    }
+    contextData.header[name] = header[name];
+    contextData.records[name] = records[name];
+    $('#event-input').append($('<option>', {
+        value: name,
+        text: name
+    }));
+    Toastify({
+        text: name +" context loaded",
+        duration: 8000
+    }).showToast();
+}
 function loadDiagData1(){
     if(contextData == undefined || contextData.header == undefined){
         return;

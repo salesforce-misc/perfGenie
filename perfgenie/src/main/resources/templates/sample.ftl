@@ -281,7 +281,7 @@
         let contextTidMap = undefined;
         let treeToProcess = getContextTree(1,event);
         let contextData = getContextData();
-        if(contextData == undefined || treeToProcess[samplesCustomEvent + event+"-context"] != undefined) {
+        if(contextData == undefined || treeToProcess == undefined || [samplesCustomEvent + event+"-context"] != undefined) {
             console.log("addContextData skip:" + samplesCustomEvent + event);
             return false;
         }
@@ -557,6 +557,9 @@
 
             let tidDatalistVal = filterMap["tid"];
 
+            if(getContextTree(1, eventType) == undefined){
+                continue;
+            }
             let contextTidMap = getContextTree(1, eventType).context.tidMap;
             let contextStart = getContextTree(1, eventType).context.start;
 

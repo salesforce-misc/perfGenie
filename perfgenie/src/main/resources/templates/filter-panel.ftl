@@ -303,8 +303,22 @@
         $("#filter-reset").prop("disabled", shouldDisable);
     }
 
+    let uploadContextFileName = undefined;
     $(document).ready(function () {
 
+        $("#context-file-input").on("change", function (e) {
+            e.preventDefault();
+            if (e.target.files[0]) {
+                uploadContextFileName = e.target.files[0].name;
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const csv = e.target.result;
+                    let lines = csv.split(/\r?\n/);
+                    addUploadedContext(csv,uploadContextFileName);
+                };
+                reader.readAsText(e.target.files[0]);
+            }
+        });
         $("#queryfilter").on("change", (event) => {
             //validate manually edited filters
             $("#queryfilter").val($("#queryfilter").val().replace(/\s/g, ''));
@@ -3077,6 +3091,9 @@
                 addToFilter("pStart="+pStart);
                 addToFilter("pEnd="+pEnd);
             });
+            if(getContextTree(1,eventType) == undefined){
+                return;
+            }
             if(pStart != '') {
                 $("#filtertimepickerstart").val(moment.utc(Number(pStart)).format('YYYY-MM-DD HH:mm:ss'));
             }else{
@@ -5449,6 +5466,10 @@
         }
     }
 
+    function _upload(){
+        document.getElementById("context-file-input").click();
+    }
+
 </script>
 
 <div style="padding: 0px" id="contextfilter" class="row">
@@ -5475,6 +5496,12 @@
                     <select style="text-align: center; " class="form-control send-ga" name="event-input"
                             id="event-input">
                     </select>
+                    <div class="image-upload" style="display:none">
+                        <label for="file-input">
+                            <i onclick="_upload()" style="font-size:18px" class="fa fa-plus-square-o" aria-hidden="true"></i>
+                        </label>
+                        <input style='display:none' id="context-file-input" type="file" />
+                    </div>
                 </div>
                 <div class="col-lg-2">
                     <button style="cursor: pointer;" id="filter-apply" class="btn btn-block btn-info" type="submit">
