@@ -1073,7 +1073,7 @@
                     y += cellh;
                 }
             }
-            d3svg.style('width',uniquetimestamps.size*cellw+37);
+            d3svg.style('width',(uniquetimestamps.size*cellw+37 > 500)? uniquetimestamps.size*cellw+37 : 500);
         } else {
             $('#extraoptions').show();
             $("#sampletablecontext").css({"height":''});
