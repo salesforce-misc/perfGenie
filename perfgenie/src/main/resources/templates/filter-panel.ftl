@@ -5492,17 +5492,20 @@
                            onkeypress="if(event.keyCode == 13) javascript:applyFilter()"
                     >
                 </div>
-                <div class="col-lg-2">
-                    <select style="text-align: center; " class="form-control send-ga" name="event-input"
-                            id="event-input">
-                    </select>
-                    <div class="image-upload" style="display:none">
-                        <label for="file-input">
-                            <i onclick="_upload()" style="font-size:18px" class="fa fa-plus-square-o" aria-hidden="true"></i>
-                        </label>
+
+                    <div class="row">
+                    <div style="cursor:pointer;padding-right:1px !important; padding-left: 3px !important;" class="col-10">
+                        <select title="select context to be used for filtering" style="cursor:pointer;text-align: center;" class="form-control send-ga" name="event-input"
+                                id="event-input">
+                        </select>
+                    </div>
+                    <div  style="cursor:pointer;align-content:center; padding:0px !important;" class="col-2">
+                        <i title="add CSV context in the format timestamp,tid,duration,dimensions[...],measures[...]" style="text-align: left;" onclick="_upload()" style="font-size:18px;" class="fa fa-upload" aria-hidden="true"></i>
                         <input style='display:none' id="context-file-input" type="file" />
                     </div>
-                </div>
+                    </div>
+
+
                 <div class="col-lg-2">
                     <button style="cursor: pointer;" id="filter-apply" class="btn btn-block btn-info" type="submit">
                         Apply Filter(s)
