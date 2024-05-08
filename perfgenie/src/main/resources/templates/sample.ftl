@@ -22,10 +22,11 @@
         <option value=1>thread sample view</option>
     </select>
 
-    <span id="extraoptions">
+
         <label  >Group by: </label>
         <select  style="height:30px;text-align: center;" class="filterinput"  name="smpl-grp-by" id="smpl-grp-by">
         </select>
+    <span id="extraoptions">
         <span title="Consider first N characters of group by option values">Len:</span><input  style="height:30px;width:35px;text-align: left;" class="filterinput" id="samples-groupby-length" type="text" value="">
         <span title="Sub string match with group by option values">Match:</span><input  style="height:30px;width:120px;text-align: left;" class="filterinput" id="samples-groupby-match" type="text" value="">
     </span>
