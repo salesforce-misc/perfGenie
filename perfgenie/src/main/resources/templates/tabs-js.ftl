@@ -635,7 +635,7 @@
 
     function getLogContext(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, eventType, start, end, customEvent) {
         unhideFilterViewStatus();
-        updateFilterViewStatus("<div style='padding-right: 10px'>Note: Retrieving request context from jfr, this may take few sec  ... <span style='float: right;' class='spinner' id='contextspinner'></span></div>");
+        updateFilterViewStatus("<div style='padding-right: 0px'>Retrieving request context of profile, this may take few sec  ... <span style='float: right;' class='spinner' id='contextspinner'></span></div>");
         showSpinner('contextspinner');
 
         const callTreeUrl = getCallTreeUrl(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, customEvent);
