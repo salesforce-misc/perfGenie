@@ -39,7 +39,7 @@
 
 <div class="row">
     <div class="col-lg-7">
-        <div style="overflow: auto; padding-left: 0px; width: 100%;" class="cct-customized-scrollbar">
+        <div style="overflow: auto; padding-left: 0px;padding-right: 2px; width: 100%;" class="cct-customized-scrollbar">
             <div style="padding: 0px !important;"  id="sampletable" class="ui-widget sampletable col-lg-12">
             </div>
         </div>
@@ -1000,20 +1000,20 @@
                 cellw = 8;
             }
 
-            document.getElementById("sampletable").innerHTML = "<div class='row col-lg-12' style='padding: 0 !important;'>"
+            document.getElementById("sampletable").innerHTML = "<div class='row col-lg-12' style='padding: 0px !important;'>"
                 + "<div  style='width: 7%;float: left;'></div>"
                 + "<div style=\"max-height: 50px;overflow: hidden;width: 93%;float: right;\">"
-                + " <div class='row col-lg-12' style='padding: 0 !important;'>"
-                + "   <div class='xaxisidSamples col-lg-12' id='xaxisidSamples' style=\"padding: 0 !important; max-height: 50px;overflow: scroll;overflow-y: hidden;\" onscroll='OnScroll1Samples(this)'>"
+                + " <div class='row col-lg-12' style='padding: 0px !important;'>"
+                + "   <div class='xaxisidSamples col-lg-12' id='xaxisidSamples' style=\"padding: 0px !important; max-height: 50px;overflow: scroll;overflow-y: hidden;\" onscroll='OnScroll1Samples(this)'>"
                 + "   </div>"
                 + " </div>"
                 + "</div>"
                 + "</div>"
-                + "<div class='row col-lg-12' style='padding: 0 !important;'>"
+                + "<div class='row col-lg-12' style='padding: 0px !important;'>"
                 + " <div  id='yaxisidSamples' style=\"max-height: " + (top + 2) * cellh + "px;overflow: scroll;overflow-x: hidden;width: 7%;float: left;\" class='yaxisidSamples' onscroll='OnScroll0Samples(this)'></div>"
                 + " <div id='requestbarchartSampleswrapper' style=\"max-height: " + (top + 2) * cellh + "px;overflow: hidden;width: 93%;float: right;\">"
-                + "    <div class='row col-lg-12' style='padding: 0 !important;'>"
-                + "      <div class='requestbarchartSamples col-lg-12' onscroll='OnScroll2Samples(this)' style=\"padding: 0 !important; height: " + (top + 2) * cellh + "px;max-height: " + (top + 2) * cellh + "px;overflow: auto;\" id='requestbarchartSamples'>"
+                + "    <div class='row col-lg-12' style='padding: 0px !important;'>"
+                + "      <div class='requestbarchartSamples col-lg-12' onscroll='OnScroll2Samples(this)' style=\"padding: 0px !important; height: " + (top + 2) * cellh + "px;max-height: " + (top + 2) * cellh + "px;overflow: auto;\" id='requestbarchartSamples'>"
                 + "      </div>"
                 + "    </div>"
                 + " </div>"
