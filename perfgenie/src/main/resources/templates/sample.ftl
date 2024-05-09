@@ -992,8 +992,8 @@
             //sampletable
             let cellh = 8;
             let cellw = 4;
-            let x = 30;
-            let y = 18;
+            let x = 20;
+            let y = 10;
 
             if(isJstack){
                 cellh = 8;
@@ -1001,8 +1001,8 @@
             }
 
             document.getElementById("sampletable").innerHTML = "<div class='row col-lg-12' style='padding: 0 !important;'>"
-                + "<div  style='width: 8%;float: left;'></div>"
-                + "<div style=\"max-height: 50px;overflow: hidden;width: 92%;float: right;\">"
+                + "<div  style='width: 7%;float: left;'></div>"
+                + "<div style=\"max-height: 50px;overflow: hidden;width: 93%;float: right;\">"
                 + " <div class='row col-lg-12' style='padding: 0 !important;'>"
                 + "   <div class='xaxisidSamples col-lg-12' id='xaxisidSamples' style=\"padding: 0 !important; max-height: 50px;overflow: scroll;overflow-y: hidden;\" onscroll='OnScroll1Samples(this)'>"
                 + "   </div>"
@@ -1010,8 +1010,8 @@
                 + "</div>"
                 + "</div>"
                 + "<div class='row col-lg-12' style='padding: 0 !important;'>"
-                + " <div  id='yaxisidSamples' style=\"max-height: " + (top + 2) * cellh + "px;overflow: scroll;overflow-x: hidden;width: 8%;float: left;\" class='yaxisidSamples' onscroll='OnScroll0Samples(this)'></div>"
-                + " <div id='requestbarchartSampleswrapper' style=\"max-height: " + (top + 2) * cellh + "px;overflow: hidden;width: 92%;float: right;\">"
+                + " <div  id='yaxisidSamples' style=\"max-height: " + (top + 2) * cellh + "px;overflow: scroll;overflow-x: hidden;width: 7%;float: left;\" class='yaxisidSamples' onscroll='OnScroll0Samples(this)'></div>"
+                + " <div id='requestbarchartSampleswrapper' style=\"max-height: " + (top + 2) * cellh + "px;overflow: hidden;width: 93%;float: right;\">"
                 + "    <div class='row col-lg-12' style='padding: 0 !important;'>"
                 + "      <div class='requestbarchartSamples col-lg-12' onscroll='OnScroll2Samples(this)' style=\"padding: 0 !important; height: " + (top + 2) * cellh + "px;max-height: " + (top + 2) * cellh + "px;overflow: auto;\" id='requestbarchartSamples'>"
                 + "      </div>"
@@ -1158,7 +1158,7 @@
                     }
 
                     //console.log("matched len:" + i + " dup:"+dupCount);
-                    x = 30;
+                    x = 20;
                     y += cellh;
                 }
             }
