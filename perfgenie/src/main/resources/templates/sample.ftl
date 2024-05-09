@@ -878,7 +878,7 @@
                                                         if(isJstack){
                                                             tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time+jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i]);
                                                         }else {
-                                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i]);
+                                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i, contextTidMap[tid][i][customEvent]?.obj[1]]);
                                                         }
                                                         eventSampleCount++;
 
@@ -985,7 +985,7 @@
 
             //sampletable
             let cellh = 8;
-            let cellw = 3;
+            let cellw = 4;
             let x = 30;
             let y = 18;
 
@@ -1028,6 +1028,9 @@
                     let i = 0;
                     //console.log("total len:" + tidSamplesTimestamps[tid].length);
                     let dupCount = 0;
+                    let prevx = -1;
+                    let lastx = -1;
+                    let prevt = -1;
                     for (let [timestamp, check] of uniquetimestamps) {
 
 
@@ -1055,7 +1058,47 @@
                                         .attr("class", " tgl")
                                         .attr("onclick", 'showSVGSampleStack(evt)')
                                         .attr("fill", getSampleColor(tidSamplesTimestamps[tid][i][1]));
+
+                                    if(prevx == -1){
+                                        if (tidSamplesTimestamps[tid][i][3] != undefined) {
+                                            lastx = x;
+                                            prevx = x;
+                                        }
+                                    }else {
+                                        if (tidSamplesTimestamps[tid][i][3] == undefined) {
+                                            if ((prevx - lastx) > 1) {
+                                                d3svg.append('line')
+                                                    .style('stroke', 'blue')
+                                                    .attr('skip', true)
+                                                    .attr('x1', lastx)
+                                                    .attr('y1', y+cellh/2)
+                                                    .attr('x2', prevx+cellw)
+                                                    .style("opacity",2)
+                                                    .attr('y2', y+cellh/2);
+                                            }
+                                            prevx=-1;
+                                        } else if (tidSamplesTimestamps[tid][i][3] != undefined && prevt != tidSamplesTimestamps[tid][i][3]) {
+                                            //draw line
+                                            if ((prevx - lastx) > 1) {
+                                                d3svg.append('line')
+                                                    .style('stroke-width', 0.5)
+                                                    .style('stroke', 'blue')
+                                                    .attr('skip', true)
+                                                    .attr('x1', lastx)
+                                                    .attr('y1', y+cellh/2)
+                                                    .attr('x2', prevx+cellw)
+                                                    .attr('y2', y+cellh/2)
+                                                    .style("opacity",0.5);
+                                            }
+                                            lastx = x;
+                                        }else if (tidSamplesTimestamps[tid][i][3] != undefined) {
+                                            prevx = x;
+                                        }
+                                    }
+                                    prevt = tidSamplesTimestamps[tid][i][3];
+
                                     i++;
+
                                 }
                                 while(i < tidSamplesTimestamps[tid].length && timestamp == tidSamplesTimestamps[tid][i][0]) {
                                     i++;

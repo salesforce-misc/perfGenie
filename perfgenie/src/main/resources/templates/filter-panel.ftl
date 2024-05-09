@@ -1532,21 +1532,29 @@
 
     function nextAvailableSampleStack() {
         var cur = prevSampleReqCellObj;
-        while (cur != null && cur.nextSibling != null && cur.nextSibling.tagName == 'rect') {
+        while (cur != null && cur.nextSibling != null && (cur.nextSibling.tagName == 'rect' || cur.nextSibling.tagName == 'line')) {
             cur = cur.nextSibling;
-            prevSampleReqCellObj.classList.remove('stackCells')
-            cur.dispatchEvent(new Event('click'))
-            break;
+            if (!cur.hasAttribute('skip') && cur.tagName == 'rect') {
+                prevSampleReqCellObj.classList.remove('stackCells')
+                cur.dispatchEvent(new Event('click'))
+                break;
+            }else if( cur.tagName == 'line' && !cur.hasAttribute('skip')){
+                break;
+            }
         }
     }
 
     function previousAvailableSampleStack() {
         var cur = prevSampleReqCellObj;
-        while (cur != null && cur.previousSibling != null && cur.previousSibling.tagName == 'rect') {
+        while (cur != null && cur.previousSibling != null && (cur.previousSibling.tagName == 'rect' || cur.previousSibling.tagName == 'line') ) {
             cur = cur.previousSibling;
-            prevSampleReqCellObj.classList.remove('stackCells')
-            cur.dispatchEvent(new Event('click'))
-            break;
+            if (!cur.hasAttribute('skip')  && cur.tagName == 'rect') {
+                prevSampleReqCellObj.classList.remove('stackCells')
+                cur.dispatchEvent(new Event('click'))
+                break;
+            }else if( cur.tagName == 'line' && !cur.hasAttribute('skip')){
+                break;
+            }
         }
     }
 
