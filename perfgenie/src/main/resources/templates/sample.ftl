@@ -23,7 +23,7 @@
     </select>
 
 
-        <label  >Group by: </label>
+        <label  title="group by tid will show all samples in a thread, others need a matching context">Group by: </label>
         <select  style="height:30px;text-align: center;" class="filterinput"  name="smpl-grp-by" id="smpl-grp-by">
         </select>
     <span id="extraoptions">
@@ -1004,15 +1004,19 @@
                 + "</div>"
                 + "</div>"
 
-                + "<div class='row col-lg-12' style='padding: 0 !important;'>"
-                + " <div  id='yaxisidSamples' style=\"max-height: 400px;overflow: scroll;overflow-x: hidden;width: 8%;float: left;\" class='yaxisidSamples' onscroll='OnScroll0Samples(this)'></div>"
-                + " <div style=\"max-height: 400px;overflow: hidden;width: 92%;float: right;\">"
-                + "    <div class='row col-lg-12' style='padding: 0 !important;'>"
-                + "      <div class='requestbarchartSamples col-lg-12' onscroll='OnScroll2Samples(this)' style=\"padding: 0 !important; height: 400px;max-height: 400px;overflow: auto;\" id='requestbarchartSamples'>"
-                + "      </div>"
-                + "    </div>"
-                + " </div>"
-                + "</div>";
+
+
+                            + "<div class='row col-lg-12' style='padding: 0 !important;'>"
+                            + " <div  id='yaxisidSamples' style=\"max-height: "+(top+2)*cellh+"px;overflow: scroll;overflow-x: hidden;width: 8%;float: left;\" class='yaxisidSamples' onscroll='OnScroll0Samples(this)'></div>"
+                            + " <div id='requestbarchartSampleswrapper' style=\"max-height: "+(top+2)*cellh+"px;overflow: hidden;width: 92%;float: right;\">"
+                            + "    <div class='row col-lg-12' style='padding: 0 !important;'>"
+                            + "      <div class='requestbarchartSamples col-lg-12' onscroll='OnScroll2Samples(this)' style=\"padding: 0 !important; height: "+(top+2)*cellh+"px;max-height: "+(top+2)*cellh+"px;overflow: auto;\" id='requestbarchartSamples'>"
+                            + "      </div>"
+                            + "    </div>"
+                            + " </div>"
+                            + "</div>";
+
+
 
 
             d3.select("#requestbarchartSamples").append("svg").attr("width", (maxThreadSamples *cellw)+37).attr("height", (top+2)*cellh);
@@ -1158,7 +1162,11 @@
                     y += cellh;
                 }
             }
-            d3svg.style('width',(uniquetimestamps.size*cellw+37 > 500)? uniquetimestamps.size*cellw+37 : 500);
+            let requiredHeight = (uniquetimestamps.size*cellw+37 > 500)? uniquetimestamps.size*cellw+37 : 500;
+            d3svg.style('width',requiredHeight);
+            $("#yaxisidSamples").css({"max-height":requiredHeight});
+            $("#requestbarchartSampleswrapper").css({"max-height":requiredHeight});
+            $("#requestbarchartSamples").css({"max-height":requiredHeight});
         } else {
             $('#extraoptions').show();
             $("#sampletablecontext").css({"height":''});
