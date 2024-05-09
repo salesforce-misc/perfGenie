@@ -1380,7 +1380,7 @@
 
         updateUrl("stack_id",stackid,true);
         stack_id=stackid;
-        $('#stack-view-java-label-guid').text("Stack Trace at " + moment.utc(prevSampleReqCellTime).format('YYYY-MM-DD HH:mm:ss'));
+        $('#stack-view-java-label-guid').text("Stack Trace at " + moment.utc(prevSampleReqCellTime).format('YYYY-MM-DD HH:mm:ss.SSS'));
         $('#stack-view-guid').text(getStackTrace(stackid, eventType,obj.target.getAttribute("e"), prevSampleReqCellTime));
     }
 
