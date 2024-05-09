@@ -1003,21 +1003,15 @@
                 + " </div>"
                 + "</div>"
                 + "</div>"
-
-
-
-                            + "<div class='row col-lg-12' style='padding: 0 !important;'>"
-                            + " <div  id='yaxisidSamples' style=\"max-height: "+(top+2)*cellh+"px;overflow: scroll;overflow-x: hidden;width: 8%;float: left;\" class='yaxisidSamples' onscroll='OnScroll0Samples(this)'></div>"
-                            + " <div id='requestbarchartSampleswrapper' style=\"max-height: "+(top+2)*cellh+"px;overflow: hidden;width: 92%;float: right;\">"
-                            + "    <div class='row col-lg-12' style='padding: 0 !important;'>"
-                            + "      <div class='requestbarchartSamples col-lg-12' onscroll='OnScroll2Samples(this)' style=\"padding: 0 !important; height: "+(top+2)*cellh+"px;max-height: "+(top+2)*cellh+"px;overflow: auto;\" id='requestbarchartSamples'>"
-                            + "      </div>"
-                            + "    </div>"
-                            + " </div>"
-                            + "</div>";
-
-
-
+                + "<div class='row col-lg-12' style='padding: 0 !important;'>"
+                + " <div  id='yaxisidSamples' style=\"max-height: " + (top + 2) * cellh + "px;overflow: scroll;overflow-x: hidden;width: 8%;float: left;\" class='yaxisidSamples' onscroll='OnScroll0Samples(this)'></div>"
+                + " <div id='requestbarchartSampleswrapper' style=\"max-height: " + (top + 2) * cellh + "px;overflow: hidden;width: 92%;float: right;\">"
+                + "    <div class='row col-lg-12' style='padding: 0 !important;'>"
+                + "      <div class='requestbarchartSamples col-lg-12' onscroll='OnScroll2Samples(this)' style=\"padding: 0 !important; height: " + (top + 2) * cellh + "px;max-height: " + (top + 2) * cellh + "px;overflow: auto;\" id='requestbarchartSamples'>"
+                + "      </div>"
+                + "    </div>"
+                + " </div>"
+                + "</div><div>Note: Top " + top + " threads sorted by number of samples</div>";
 
             d3.select("#requestbarchartSamples").append("svg").attr("width", (maxThreadSamples *cellw)+37).attr("height", (top+2)*cellh);
             d3.select("#yaxisidSamples").append("svg").attr("width", 50).attr("height", (top+2)*cellh);
