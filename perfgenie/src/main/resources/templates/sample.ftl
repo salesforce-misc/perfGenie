@@ -586,9 +586,9 @@
                                         tidSamplesTimestamps[tid] = [];
                                     }
                                     if(isJstack){
-                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time+jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i]);
+                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time+jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                     }else {
-                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i]);
+                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                     }
                                     eventSampleCount++;
 
@@ -632,9 +632,9 @@
                                         tidSamplesTimestamps[tid] = [];
                                     }
                                     if(isJstack){
-                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time+jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i]);
+                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time+jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                     }else {
-                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i]);
+                                        tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                     }
                                     eventSampleCount++;
                                     if(sampletableFormat == 0) {
@@ -737,9 +737,9 @@
                                             tidSamplesTimestamps[tid] = [];
                                         }
                                         if(isJstack){
-                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time+jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i]);
+                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time+jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                         }else {
-                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i]);
+                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                         }
                                         eventSampleCount++;
                                         if(sampletableFormat == 0) {
@@ -876,9 +876,9 @@
                                                             tidSamplesTimestamps[tid] = [];
                                                         }
                                                         if(isJstack){
-                                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time+jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i]);
+                                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time+jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                                         }else {
-                                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i, contextTidMap[tid][i][customEvent]?.obj[1]]);
+                                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                                         }
                                                         eventSampleCount++;
 
@@ -989,35 +989,76 @@
             let x = 30;
             let y = 18;
 
-            if(getEventType() == "Jstack" || getEventType() == "json-jstack"){
+            if((getEventType() == "Jstack" || getEventType() == "json-jstack") && $("#event-type-sample").val() != "All"){
                 cellh = 8;
                 cellw = 8;
             }
 
-            d3.select("#sampletable").append("svg").attr("width", (maxThreadSamples *cellw)+37).attr("height", (top+2)*cellh);
+            document.getElementById("sampletable").innerHTML = "<div class='row col-lg-12' style='padding: 0 !important;'>"
+                + "<div  style='width: 8%;float: left;'></div>"
+                + "<div style=\"max-height: 50px;overflow: hidden;width: 92%;float: right;\">"
+                + " <div class='row col-lg-12' style='padding: 0 !important;'>"
+                + "   <div class='xaxisidSamples col-lg-12' id='xaxisidSamples' style=\"padding: 0 !important; max-height: 50px;overflow: scroll;overflow-y: hidden;\" onscroll='OnScroll1Samples(this)'>"
+                + "   </div>"
+                + " </div>"
+                + "</div>"
+                + "</div>"
 
-            let d3svg = d3.select("#sampletable").select("svg");
+                + "<div class='row col-lg-12' style='padding: 0 !important;'>"
+                + " <div  id='yaxisidSamples' style=\"max-height: 400px;overflow: scroll;overflow-x: hidden;width: 8%;float: left;\" class='yaxisidSamples' onscroll='OnScroll0Samples(this)'></div>"
+                + " <div style=\"max-height: 400px;overflow: hidden;width: 92%;float: right;\">"
+                + "    <div class='row col-lg-12' style='padding: 0 !important;'>"
+                + "      <div class='requestbarchartSamples col-lg-12' onscroll='OnScroll2Samples(this)' style=\"padding: 0 !important; height: 400px;max-height: 400px;overflow: auto;\" id='requestbarchartSamples'>"
+                + "      </div>"
+                + "    </div>"
+                + " </div>"
+                + "</div>";
 
+
+            d3.select("#requestbarchartSamples").append("svg").attr("width", (maxThreadSamples *cellw)+37).attr("height", (top+2)*cellh);
+            d3.select("#yaxisidSamples").append("svg").attr("width", 50).attr("height", (top+2)*cellh);
+            d3.select("#xaxisidSamples").append("svg").attr("width",  (maxThreadSamples *cellw)+37).attr("height", 10);
+
+            let d3yaxis = d3.select('#yaxisidSamples').select("svg");
+            let d3xaxis = d3.select('#xaxisidSamples').select("svg");
+            let d3svg = d3.select("#requestbarchartSamples").select("svg");
+
+            let layer1 = d3svg.append('g');
+            let layer2 = d3svg.append('g');
             let count = 0;
             let minTimeStamp = 0;
             let maxTimeStamp = 0;
 
-            d3svg.append("text")
+            let xinterval = 80;
+            let intervalcount = 0;
+            for (let [timestamp, check] of uniquetimestamps) {
+                if((intervalcount % xinterval) == 0) {
+                    d3xaxis.append("text")
+                        .text(moment.utc(jfrprofilestart+timestamp).format('HH:mm:ss'))//moment.utc(d * downScale + contextStart).format('MM-DD HH:mm:ss');
+                        .attr("x", intervalcount + x)
+                        .style("font-size", "10px")
+                        .attr("y", 10);
+                }
+                intervalcount++;
+            }
+
+
+            /*d3svg.append("text")
                 .text("Note: Top " + top + " threads sorted by number of samples")
-                .attr("x", 0)
+                .attr("x", x)
                 .style("font-size", "12px")
-                .attr("y", 9);
+                .attr("y", 9);*/
 
             for (let [tid, value] of tidSamplesCountMap) {
                 if (count < top) {
                     count++;
-                    d3svg.append("text")
+                    d3yaxis.append("text")
                         .text(tid)
-                        .attr("x", 0)
+                        .attr("x", 11)
                         .style("font-size", cellh+"px")
                         .attr("y", y+cellh/2);
 
-                    d3svg.append('line')
+                    layer1.append('line')
                         .style('stroke-dasharray', [2,1])
                         .style('stroke', '#E2E2E2')
                         .attr('x1', x)
@@ -1047,7 +1088,7 @@
                                 //put color rect
                                 //handle duplicates
                                 if(timestamp == tidSamplesTimestamps[tid][i][0]) {
-                                    d3svg.append("rect")
+                                    layer2.append("rect")
                                         .attr("width", cellw)
                                         .attr("height", cellh)
                                         .attr("x", x)
@@ -1067,22 +1108,23 @@
                                     }else {
                                         if (tidSamplesTimestamps[tid][i][3] == undefined) {
                                             if ((prevx - lastx) > 1) {
-                                                d3svg.append('line')
-                                                    .style('stroke', 'blue')
+                                                layer1.append('line')
+                                                    .style('stroke-width', 0.5)
+                                                    .style('stroke', 'red')
                                                     .attr('skip', true)
                                                     .attr('x1', lastx)
                                                     .attr('y1', y+cellh/2)
                                                     .attr('x2', prevx+cellw)
-                                                    .style("opacity",2)
+                                                    .style("opacity",0.5)
                                                     .attr('y2', y+cellh/2);
                                             }
                                             prevx=-1;
                                         } else if (tidSamplesTimestamps[tid][i][3] != undefined && prevt != tidSamplesTimestamps[tid][i][3]) {
                                             //draw line
                                             if ((prevx - lastx) > 1) {
-                                                d3svg.append('line')
+                                                layer1.append('line')
                                                     .style('stroke-width', 0.5)
-                                                    .style('stroke', 'blue')
+                                                    .style('stroke', 'red')
                                                     .attr('skip', true)
                                                     .attr('x1', lastx)
                                                     .attr('y1', y+cellh/2)
@@ -1209,6 +1251,54 @@
 
         let end = performance.now();
         console.log("genSampleTable 1 time:" + (end - start) )
+    }
+
+    function OnScroll0Samples(div) {
+        var d2 = document.getElementById("requestbarchartSamples");
+        d2.scrollTop = div.scrollTop;
+    }
+
+    function OnScroll1Samples(div) {
+        var d2 = document.getElementById("requestbarchartSamples");
+        d2.scrollLeft = div.scrollLeft;
+    }
+
+    function OnScroll2Samples(div) {
+        var d1 = document.getElementById("xaxisidSamples");
+        var d0 = document.getElementById("yaxisidSamples");
+        d0.scrollTop = div.scrollTop;
+        d1.scrollLeft = div.scrollLeft;
+    }
+
+
+    var TooltipTSV = undefined;
+    var mouseoverSVGSamples = function (key, obj) {
+        if (d3.select(obj).attr("style") == undefined || !d3.select(obj).attr("style").includes("opacity: 0")) {
+
+            //TooltipTSV.style("opacity", 1);
+
+            d3.select(obj)
+                .style("stroke", "black")
+                .style("cursor", "pointer");
+        }
+    }
+
+    var mousemoveSVGSamples = function (d, key, obj, metricVal) {
+        if (d3.select(obj).attr("style") == undefined || !d3.select(obj).attr("style").includes("opacity: 0")) {
+            /*TooltipTSV
+                .html(d + ", " + metricVal + '<br>Click to see request profile samples and context')
+                .style("left", (d3.mouse(obj)[0] + 20) + "px")
+                .style("top", (d3.mouse(obj)[1]) + "px");*/
+        }
+    }
+
+    var mouseleaveSVGSamples = function (key, obj) {
+        if (d3.select(obj).attr("style") == undefined || !d3.select(obj).attr("style").includes("opacity: 0")) {
+            //TooltipTSV.style("opacity", 0);
+            d3.select(obj)
+                .style("stroke", "none")
+                .style("cursor", "default");
+        }
     }
 
     let prevSampleReqCellObj = undefined;
