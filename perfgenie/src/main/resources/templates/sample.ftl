@@ -963,6 +963,7 @@
             $('#extraoptions').hide();
             $("#sampletablecontext").css({"height":''});
             $('#stack-view-guid').text("");
+            $('#stack-view-java-label-guid').text("Stack Trace");
             prevSampleReqCellObj = undefined;
             prevSampleReqCellSid = undefined;
             prevSampleReqCellTime = undefined;
@@ -1371,6 +1372,7 @@
 
         updateUrl("stack_id",stackid,true);
         stack_id=stackid;
+        $('#stack-view-java-label-guid').text("Stack Trace at " + moment.utc(prevSampleReqCellTime).format('YYYY-MM-DD HH:mm:ss'));
         $('#stack-view-guid').text(getStackTrace(stackid, eventType,obj.target.getAttribute("e"), prevSampleReqCellTime));
     }
 
