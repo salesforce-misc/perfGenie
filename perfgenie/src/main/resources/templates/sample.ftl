@@ -976,10 +976,15 @@
                 matchedTidCount++;
             }
             tidSamplesCountMap = new Map([...tidSamplesCountMap.entries()].sort((a, b) => b[1] - a[1]));
-
+            let isJstack = false;
+            if((getEventType() == "Jstack" || getEventType() == "json-jstack") && $("#event-type-sample").val() != "All"){
+                isJstack = true;
+            }
             let top = 75;
             if(matchedTidCount < top){
-                top = matchedTidCount+20;
+                top = matchedTidCount+5;
+            }else if(isJstack){
+                top = matchedTidCount + 5;
             }
             let uniquetimestamps = generateTimestamseries(tidSamplesTimestamps,tidSamplesCountMap, top);
             $("#sampletable").html("");
@@ -990,7 +995,7 @@
             let x = 30;
             let y = 18;
 
-            if((getEventType() == "Jstack" || getEventType() == "json-jstack") && $("#event-type-sample").val() != "All"){
+            if(isJstack){
                 cellh = 8;
                 cellw = 8;
             }
@@ -1157,11 +1162,14 @@
                     y += cellh;
                 }
             }
-            let requiredHeight = (uniquetimestamps.size*cellw+37 > 500)? uniquetimestamps.size*cellw+37 : 500;
-            d3svg.style('width',requiredHeight);
-            $("#yaxisidSamples").css({"max-height":requiredHeight});
-            $("#requestbarchartSampleswrapper").css({"max-height":requiredHeight});
-            $("#requestbarchartSamples").css({"max-height":requiredHeight});
+            let requiredWidth = (uniquetimestamps.size*cellw+37 > 500)? uniquetimestamps.size*cellw+37 : 500;
+            d3svg.style('width',requiredWidth);
+            if(y > 700){
+                y = 700;
+            }
+            $("#yaxisidSamples").css({"max-height":y});
+            $("#requestbarchartSampleswrapper").css({"max-height":y});
+            $("#requestbarchartSamples").css({"max-height":y});
         } else {
             $('#extraoptions').show();
             $("#sampletablecontext").css({"height":''});
