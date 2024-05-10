@@ -610,26 +610,40 @@
 
     let incrementRefreshTimer = undefined;
     let updateProfilerViewLock = false;
+    let waitForEventCount = 0;
+    let waitForEventMax = 30;
     function waitAndrefreshTree(count) {
-        if (updateProfilerViewLock || getContextTree(1, "jfr_dump.json.gz")  === undefined) {
-            console.log("waitAndrefreshTree ... ");
-        } else {
-            updateProfilerViewLock = true;
+        if(waitForEventCount > waitForEventMax){
             clearInterval(incrementRefreshTimer);
-            refreshTree();
-            updateProfilerViewLock = false;
+            console.log("waitAndrefreshTree timeout");
+        }else {
+            if ( (profile1 != undefined  && profile1 != "Jstacks") && (updateProfilerViewLock  || getContextTree(1, "jfr_dump.json.gz") === undefined)) {
+                waitForEventCount++;
+                console.log("waitAndrefreshTree ... ");
+            } else {
+                updateProfilerViewLock = true;
+                clearInterval(incrementRefreshTimer);
+                refreshTree();
+                updateProfilerViewLock = false;
+            }
         }
     }
 
     let incrementTimer = undefined;
     function waitAndupdateProfilerView() {
-        if (updateProfilerViewLock || getContextTree(1, "jfr_dump.json.gz")  === undefined) {
-            console.log("waitAndupdateProfilerView ... ");
-        } else {
-            updateProfilerViewLock = true;
+        if(waitForEventCount > waitForEventMax){
             clearInterval(incrementTimer);
-            updateProfilerView();
-            updateProfilerViewLock = false;
+            console.log("waitAndupdateProfilerView timeout");
+        }else {
+            if ((profile1 != undefined  && profile1 != "Jstacks") && (updateProfilerViewLock  ||  getContextTree(1, "jfr_dump.json.gz") === undefined)) {
+                waitForEventCount++;
+                console.log("waitAndupdateProfilerView ... ");
+            } else {
+                updateProfilerViewLock = true;
+                clearInterval(incrementTimer);
+                updateProfilerView();
+                updateProfilerViewLock = false;
+            }
         }
     }
 
@@ -651,25 +665,29 @@
                 toastr_warning("Failed to get Request context.");
                 setContextData({"records": {}, "tidlist": [], "header": {}});
                 fetchOtherEvents(timeRange, tenant, host);
+
+                showContextFilter();
+                hideFilterViewStatus();
+
+                refreshTreeAfterContext(customEvent);
             }else {
                 if(response.tidlist == undefined && response.error != undefined){
                     updateFilterViewStatus("Note: Failed to get Request context.");
                     toastr_warning("Failed to get Request context.");
                     setContextData({"records": {}, "tidlist": [], "header": {}});
                     fetchOtherEvents(timeRange, tenant, host);
+
+                    showContextFilter();
+                    hideFilterViewStatus();
+                    refreshTreeAfterContext(customEvent);
                 }else {
                     setContextData(response);
                     fetchOtherEvents(timeRange, tenant, host);
+
                     showContextFilter();
                     hideFilterViewStatus();
 
-                    //if sfdc, we need to wait for jfr_dump.json.gz
-                    if(customEvent.includes("jfr_dump")){
-                        console.log("waiting for jfr_dump.json.gz");
-                        incrementRefreshTimer = setInterval(waitAndrefreshTree, 1000);
-                    }else {
-                        refreshTree();
-                    }
+                    refreshTreeAfterContext(customEvent);
                 }
             }
         }, function (error) {
@@ -679,6 +697,16 @@
             toastr_warning("Failed to get Request context.");
             console.error(error);
         });
+    }
+
+    function refreshTreeAfterContext(customEvent){
+        //if sfdc, we need to wait for jfr_dump.json.gz
+        if(customEvent.includes("jfr_dump")){
+            console.log("waiting for jfr_dump.json.gz");
+            incrementRefreshTimer = setInterval(waitAndrefreshTree, 1000);
+        }else {
+            refreshTree();
+        }
     }
 
     function setOtherEventData(data){
@@ -699,6 +727,7 @@
                     text: customevent + " data loaded",
                     duration: 8000
                 }).showToast();
+                $("#cct-panel").css("height", "100%");//expand context table view
             }
         }
         console.log("setOtherEventData done");
