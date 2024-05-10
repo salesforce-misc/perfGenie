@@ -2178,7 +2178,7 @@
             }
         }
 
-        if(isSFDC && !customEvent.includes(".Async")){//sfdc patch
+        if(isSFDC && !customEvent.includes(".Async")){//sfdc patch, todo add default context config
             return false;
         }
         return isEmpty;
@@ -3121,7 +3121,7 @@
     function populateEventInputOptions(id){
         $('#'+id).empty();
         let events = [];
-
+        let eventsFound = false;
         if (contextData != undefined && contextData.records != undefined) {
             let customEventFound = false;
             if(!(customEvent == '' || customEvent == undefined)) {
@@ -3145,12 +3145,22 @@
                     console.log("customEvent 2: " +customEvent);
                     customEventFound=true;
                 }
+                eventsFound = true;
                 $('#'+id).append($('<option>', {
                     value:  events[i],
                     text:  events[i],
                     selected: (customEvent ==  events[i])
                 }));
             }
+        }
+
+        if(!eventsFound){
+            $('#'+id).append($('<option>', {
+                value:  "",
+                text:  "None",
+                selected: true,
+                disabled: true
+            }));
         }
 
         $("#event-input").on("change", (event) => {
@@ -5504,7 +5514,7 @@
                     >
                 </div>
 
-                    <div class="row">
+                    <div class="col-lg-2 row">
                     <div style="cursor:pointer;padding-right:1px !important; padding-left: 3px !important;" class="col-10">
                         <select title="select context to be used for filtering" style="cursor:pointer;text-align: center;" class="form-control send-ga" name="event-input"
                                 id="event-input">
