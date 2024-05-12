@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.Map;
 
 public interface IPerfGenieService {
+
     /**
      * Store an event iwth given metadata
      *
@@ -20,7 +21,7 @@ public interface IPerfGenieService {
      * @param dimMap    event dimentions
      * @return true/false
      */
-    boolean addEvent(final String payload, final long timestamp, final Map<String, Double> dimMap, final Map<String, String> queryMap) throws IOException;
+    boolean addEvent(final String payload, final long timestamp, final Map<String, Double> dimMap, final Map<String, String> queryMap, final String tenant) throws IOException;
 
     /**
      * get event metadata
@@ -79,7 +80,7 @@ public interface IPerfGenieService {
      * @param dimMap   event dimentions
      * @return none
      */
-    String getProfiles(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
+    String getGenieProfiles(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
 
     /**
      * get custom event data
@@ -91,11 +92,11 @@ public interface IPerfGenieService {
      * @param dimMap   event dimentions
      * @return none
      */
-    String getCustomEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
+    String getContextEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
 
     String getJstack(final String tenant, final long start, final long end, final Map<String, String> queryMap) throws IOException;
 
-    public String getInstances(long start, long end, final String tenant) throws IOException;
+    public String getInstances(long start, long end, final String tenant, final Map<String, String> queryMap) throws IOException;
     public String getOtherEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
 
     String getEvent(String tenant, long start, long end, Map<String, String> queryMap, Map<String, String> dimMap) throws IOException;

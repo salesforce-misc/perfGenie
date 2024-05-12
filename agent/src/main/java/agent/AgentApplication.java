@@ -17,6 +17,9 @@ import perfgenie.utils.*;
 
 import java.io.*;
 import java.net.InetAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -48,13 +51,13 @@ public class AgentApplication {
         logger.info("looking for Jfrs at " + config.getJfrdir());
         File folder = new File(config.getJfrdir());
         File[] listOfFiles = folder.listFiles();
-        Arrays.sort(listOfFiles, Comparator.comparingLong(File::lastModified));
 
         if (listOfFiles == null)
             return;
 
-        for (File file : listOfFiles) {
+        Arrays.sort(listOfFiles, Comparator.comparingLong(File::lastModified));
 
+        for (File file : listOfFiles) {
             if (file.isFile() && file.getName().contains(".jfr") || file.getName().contains(".jfr.gz")) {
                 logger.info("processing file: " + file.getName());
                 EventHandler handler = new EventHandler();
@@ -63,31 +66,44 @@ public class AgentApplication {
                 final Stopwatch timer = Stopwatch.createStarted();
                 try {
                     parser.parseStream(handler, file.getPath());
+                    handler.processMonitorLog("/tmp/jfrs/monitor.log");
+                    Path path = Paths.get("/tmp/jfrs/monitor.log");
+                    // deleteIfExists File
+                    try {
+                        Files.deleteIfExists(path);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     final Map<String, Double> dimMap = new HashMap<>();
                     final Map<String, String> queryMap = new HashMap<>();
                     queryMap.put("guid", guid);
-                    queryMap.put("tenant", tenant);
+                    queryMap.put("source", "genie");
+                    queryMap.put("tenant-id", tenant);
+                    queryMap.put("instance-id", host);
                     queryMap.put("host", host);
-                    queryMap.put("file-name", file.getName());
+                    queryMap.put("source-file", file.getName());
 
                     List<String> l = handler.getProfileList();
                     for (int i = 0; i < l.size(); i++) {
-                        Object profile = handler.getProfileTree(l.get(i));
+                        Object profile = handler.getProfileTree(config.getFilterDepth(),l.get(i),config.isExperimental());
                         queryMap.put("type", "jfrprofile");
-                        queryMap.put("name", l.get(i));
+                        queryMap.put("name", "jfr");
+                        queryMap.put("file-name", l.get(i));//
                         final String payload = Utils.toJson(profile);
                         int payloadSize = payload.length();
                         queryMap.put("size", String.valueOf(payloadSize));
-                        eventStore.addEvent(timestamp, queryMap, dimMap, payload);
+                        System.out.println(payloadSize);
+                        eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, payload, config.getTenant());
                     }
                     Object logContext = handler.getLogContext();
                     queryMap.put("type", "jfrevent");
-                    queryMap.put("name", "customEvent");
+                    queryMap.put("name", "jfr");
 
-                    eventStore.addEvent(timestamp, queryMap, dimMap, Utils.toJson(logContext));
+                    eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, Utils.toJson(logContext), config.getTenant());
                 } catch (Exception e) {
                     System.out.println(e);
-                    logger.warn("Exception parsing file " + file.getPath() + ":" + e.getStackTrace());
+                    logger.warn("Exception parsing file 3" + file.getPath() + ":" + e.getStackTrace());
+                    e.printStackTrace();
                 }
                 new File(file.getPath()).delete();
                 logger.info("successfully parsed " + file.getPath() + " and stored " + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
@@ -112,16 +128,20 @@ public class AgentApplication {
                     final Map<String, Double> dimMap = new HashMap<>();
                     final Map<String, String> queryMap = new HashMap<>();
                     queryMap.put("guid", guid);
-                    queryMap.put("tenant", tenant);
+                    queryMap.put("source", "genie");
+                    queryMap.put("tenant-id", tenant);
+                    queryMap.put("instance-id", host);
                     queryMap.put("host", host);
-                    queryMap.put("file-name", file.getName());
+                    queryMap.put("source-file", file.getName());
+                    queryMap.put("file-name", "json-jstack");
                     Object profile = handler.getProfileTree("Jstack");
-                    queryMap.put("type", "jstack");
-                    queryMap.put("name", "Jstack");
-                    eventStore.addEvent(timestamp, queryMap, dimMap, Utils.toJson(profile));
+                    queryMap.put("type", "json-jstack");
+                    queryMap.put("name", "jstack");
+                    eventStore.addGenieEvent(timestamp, queryMap, dimMap, Utils.toJson(profile),config.getTenant());
                 } catch (Exception e) {
                     System.out.println(e);
-                    logger.warn("Exception parsing file 1" + file.getPath() + ":" + e.getStackTrace());
+                    logger.warn("Exception parsing file 4" + file.getPath() + ":" + e.getStackTrace());
+                    e.printStackTrace();
                 }
                 new File(file.getPath()).delete();
                 logger.info("successfully parsed " + file.getPath() + " and stored event " + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));

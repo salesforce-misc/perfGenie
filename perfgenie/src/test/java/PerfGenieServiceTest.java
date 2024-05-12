@@ -67,11 +67,12 @@ public class PerfGenieServiceTest extends PerfGenieService {
         queryMap.put("file-name", "testfile");
         queryMap.put("type", "jfrprofile");
         queryMap.put("name", "testname");
-        boolean ret = serviceTest.addEvent(Utils.toJson(handler.getProfileTree("jdk.ExecutionSample")), timestamp, dimMap, queryMap);
+        queryMap.put("source", "genie");
+        boolean ret = serviceTest.addEvent(Utils.toJson(handler.getProfileTree("jdk.ExecutionSample")), timestamp, dimMap, queryMap, "dev");
 
         queryMap.put("type", "jfrevent");
         queryMap.put("name", "customEvent");
-        boolean ret1 = serviceTest.addEvent(Utils.toJson(handler.getLogContext()), timestamp, dimMap, queryMap);
+        boolean ret1 = serviceTest.addEvent(Utils.toJson(handler.getLogContext()), timestamp, dimMap, queryMap, "dev");
 
         assertTrue(ret==true, "true expected");
         assertTrue(ret1==true, "true expected");
@@ -85,6 +86,7 @@ public class PerfGenieServiceTest extends PerfGenieService {
         queryMap.put("tenant", "test");
         queryMap.put("name", "testname");
         queryMap.put("host", "localhost");
+        queryMap.put("source", "genie");
         long end = System.currentTimeMillis();
         long start = end-60000;
         String json = serviceTest.getMeta(start,end,queryMap,dimMap,"test","localhost");
@@ -103,6 +105,7 @@ public class PerfGenieServiceTest extends PerfGenieService {
         queryMap.put("file-name", "testfile");
         queryMap.put("type", "jfrprofile");
         queryMap.put("name", "testname");
+        queryMap.put("source", "genie");
         long end = System.currentTimeMillis();
         long start = end-60000;
         String json = serviceTest.getProfile("tenant", start,end,queryMap,dimMap);
@@ -121,6 +124,7 @@ public class PerfGenieServiceTest extends PerfGenieService {
         queryMap.put("file-name", "testfile");
         queryMap.put("type", "jfrprofile");
         queryMap.put("name", "testname");
+        queryMap.put("source", "genie");
         long end = System.currentTimeMillis();
         long start = end-60000;
         String json = serviceTest.getProfiles("tenant", start,end,queryMap,dimMap);
@@ -139,9 +143,10 @@ public class PerfGenieServiceTest extends PerfGenieService {
         queryMap.put("file-name", "testfile");
         queryMap.put("type", "jfrevent");
         queryMap.put("name", "customEvent");
+        queryMap.put("source", "genie");
         long end = System.currentTimeMillis();
         long start = end-60000;
-        String json = serviceTest.getCustomEvents("tenant", start,end,queryMap,dimMap);
+        String json = serviceTest.getContextEvents("tenant", start,end,queryMap,dimMap);
         ObjectMapper mapper = new ObjectMapper();
         JsonNode n = mapper.readTree(json);
         assertTrue(n.size()==3, "3 expected");

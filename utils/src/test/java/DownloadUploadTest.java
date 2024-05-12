@@ -35,9 +35,9 @@ public class DownloadUploadTest {
     @Test
     public void test() throws IOException {
         final String original = Resources.toString(Resources.getResource("test.jfr"), StandardCharsets.UTF_8);
-        eventStore.addEvent(timestamp, new HashMap<>(), new HashMap<>(), original);
+        eventStore.addEvent(timestamp, new HashMap<>(), new HashMap<>(), original, "dev");
 
-        final String downloaded = eventStore.getEvent(timestamp, timestamp, new HashMap<>(), new HashMap<>(), original.length());
+        final String downloaded = eventStore.getEvent(timestamp, timestamp, new HashMap<>(), new HashMap<>(), original.length(), "dev");
         assertEquals(original, downloaded);
     }
 

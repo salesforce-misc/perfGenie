@@ -12,6 +12,7 @@
     let treeThreshold = 0.01;
     let levelThreshold = 0;
 
+
     function handleTreeViewType(isCalltree){
         if(isCalltree){
             $("#tree-view-type option[value='calltree']").attr("selected", "selected");
@@ -850,8 +851,11 @@
                 const end = parseInt(timeRange.split(" - ")[1]);
                 endpoint = "/v1/jstack/" + tenant + "/?start=" + start + "&end=" + end +
                     "&metadata_query=" + encodeURIComponent("host=" + host) +
-                    "&metadata_query=" + encodeURIComponent("tenant=" + tenant) +
-                    "&metadata_query=" + encodeURIComponent("name=" + eventType);
+                    "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+                    "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
+                if(dataSource.includes("genie")){
+                    endpoint += "&metadata_query=" + encodeURIComponent("source=" + dataSource);
+                }
                 return endpoint;
             }else if (eventType == "json-jstack") {//sfdc
                 const start = parseInt(timeRange.split(" - ")[0]);
@@ -860,6 +864,9 @@
                     "&metadata_query=" + encodeURIComponent("host=" + host) +
                     "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
                     "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
+                if(dataSource.includes("genie")){
+                    endpoint += "&metadata_query=" + encodeURIComponent("source=" + dataSource);
+                }
                 return endpoint;
             }
 
@@ -882,13 +889,13 @@
                     if (eventType == "customEvent") {
                         endpoint = "/v1/customevents/" + tenant + "/?start=" + start + "&end=" + end +
                             "&metadata_query=" + encodeURIComponent("host=" + host) +
-                            "&metadata_query=" + encodeURIComponent("tenant=" + tenant) +
-                            "&metadata_query=" + encodeURIComponent("name=" + eventType);
+                            "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+                            "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
                     } else {
                         endpoint = "/v1/profiles/" + tenant + "/?start=" + start + "&end=" + end +
                             "&metadata_query=" + encodeURIComponent("host=" + host) +
-                            "&metadata_query=" + encodeURIComponent("tenant=" + tenant) +
-                            "&metadata_query=" + encodeURIComponent("name=" + eventType);
+                            "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+                            "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
                     }
                 }
             } else if(profile === "Jstacks"){
@@ -904,8 +911,8 @@
                 }else if (eventType == "customEvent") {
                         endpoint = "/v1/customevents/" + tenant + "/?start=" + start + "&end=" + end +
                             "&metadata_query=" + encodeURIComponent("host=" + host) +
-                            "&metadata_query=" + encodeURIComponent("tenant=" + tenant) +
-                            "&metadata_query=" + encodeURIComponent("name=" + eventType);
+                            "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+                            "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
                 }
             }else{
                 let array = profile.split(" - ");
@@ -920,11 +927,14 @@
                 }else {
                     endpoint = "/v1/profile/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
                         "&metadata_query=" + encodeURIComponent("host=" + host) +
-                        "&metadata_query=" + encodeURIComponent("tenant=" + tenant) +
+                        "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
                         "&metadata_query=" + encodeURIComponent("guid=" + guid) +
-                        "&metadata_query=" + encodeURIComponent("name=" + eventType);
+                        "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
                 }
             }
+        }
+        if(dataSource.includes("genie")){
+            endpoint += "&metadata_query=" + encodeURIComponent("source=" + dataSource);
         }
         return endpoint;
     }

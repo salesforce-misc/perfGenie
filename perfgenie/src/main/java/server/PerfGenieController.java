@@ -62,8 +62,7 @@ public class PerfGenieController {
 
         final Map<String, String> queryMap = queryToMap(metadataQuery);
         final Map<String, String> dimMap = new HashMap<>();
-
-        return service.getProfiles(tenant, start, end, queryMap, dimMap);
+        return service.getGenieProfiles(tenant, start, end, queryMap, dimMap);
     }
 
     @GetMapping(path = {"/v1/customevents", "/v1/customevents/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -74,8 +73,7 @@ public class PerfGenieController {
 
         final Map<String, String> queryMap = queryToMap(metadataQuery);
         final Map<String, String> dimMap = new HashMap<>();
-
-        return service.getCustomEvents(tenant, start, end, queryMap, dimMap);
+        return service.getContextEvents(tenant, start, end, queryMap, dimMap);
     }
 
     @GetMapping(path = {"/v1/otherevents", "/v1/otherevents/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -86,7 +84,6 @@ public class PerfGenieController {
 
         final Map<String, String> queryMap = queryToMap(metadataQuery);
         final Map<String, String> dimMap = new HashMap<>();
-
         return service.getOtherEvents(tenant, start, end, queryMap, dimMap);
     }
 
@@ -123,8 +120,7 @@ public class PerfGenieController {
                           @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
 
         final Map<String, String> queryMap = queryToMap(metadataQuery);
-        final Map<String, String> dimMap = new HashMap<>();
-        return service.getInstances(start, end, tenant);
+        return service.getInstances(start, end, tenant, queryMap);
     }
 
     @CrossOrigin

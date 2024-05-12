@@ -5,25 +5,31 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 
-function getMetaDataURL(start,end,tenant='dev', host){
-    const URL = "v1/meta/"+tenant+"/"+host+
+function getMetaDataURL(start,end,tenant='dev', host, source){
+    let URL = "v1/meta/"+tenant+"/"+host+
         "/?start=" + start +
         "&end=" + end;
+    if(source == "genie"){
+        URL += "&metadata_query=" + encodeURIComponent("source=" + source);
+    }
     return URL;
 }
 
 function getTenantDataURL(start,end,tenant='dev'){
-    const URL = "v1/tenants/"+tenant+
+    let URL = "v1/tenants/"+tenant+
         "/?start=" + start +
         "&end=" + end;
     return URL;
 }
 
 
-function getInstanceDataURL(start,end,tenant='dev'){
-    const URL = "v1/instances/"+tenant+
+function getInstanceDataURL(start,end,tenant='dev', source){
+    let URL = "v1/instances/"+tenant+
         "/?start=" + start +
         "&end=" + end;
+    if(source == "genie"){
+        URL += "&metadata_query=" + encodeURIComponent("source=" + source);
+    }
     return URL;
 }
 

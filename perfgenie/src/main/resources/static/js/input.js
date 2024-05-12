@@ -38,7 +38,7 @@ let jstackcolorsmap ={"RUNNABLE":9,"BLOCKED":10,"WAITING":11,"TIMED_WAITING":12}
 let jstackidcolorsmap ={9:"RUNNABLE",10:"BLOCKED",11:"WAITING",12:"TIMED_WAITING"};
 let profilecolors =["lightseagreen","#bbbb0d","deeppink","brown","dodgerblue","slateblue","blue","green","yellow","#29b193","#ee5869","#f6ab60","#377bb5"];
 let knowprofilecolormap = {"jfr_dump.json.gz":0,"jfr_dump_socket.json.gz":1,"jfr_dump_apex.json.gz":2, "jfr_dump_memory.json.gz":3, "json-jstack":4,"Jstack":4};
-
+let dataSource = "genie";
 function setSubmitDisabled(shouldDisable) {
     $("#submit-input").prop("disabled", shouldDisable);
 }
@@ -88,6 +88,7 @@ function addInputNote(toggle, msg){
 }
 
 $(function () {
+    dataSource = urlParams.get('dataSource') || "genie";
     startTime1 = Number(urlParams.get('startTime1')) || moment.utc(moment.utc().subtract('minute', 10).format('YYYY-MM-DD HH:mm:ss')).valueOf();
     startTime2 = Number(urlParams.get('startTime2')) || moment.utc(moment.utc().subtract('minute', 24 * 60 + 10).format('YYYY-MM-DD HH:mm:ss')).valueOf();
     endTime1 = Number(urlParams.get('endTime1')) || moment.utc(moment.utc().format('YYYY-MM-DD HH:mm:ss')).valueOf();
@@ -294,7 +295,7 @@ function getTenantData2(start, end) {
 }
 
 function getInstanceData1(start, end, tenant) {
-    let URL = getInstanceDataURL(start, end, tenant);
+    let URL = getInstanceDataURL(start, end, tenant, tenantData1[tenant]);
     showSpinner();
     $.ajax({
         url: URL, success: function (result) {
@@ -306,7 +307,7 @@ function getInstanceData1(start, end, tenant) {
 }
 
 function getInstanceData2(start, end, tenant) {
-    let URL =getInstanceDataURL(start, end, tenant);
+    let URL =getInstanceDataURL(start, end, tenant, tenantData2[tenant]);
     showSpinner();
     $.ajax({
         url: URL, success: function (result) {
@@ -318,7 +319,7 @@ function getInstanceData2(start, end, tenant) {
 }
 
 function getMetaData1(start, end, tenant, host) {
-    let URL = getMetaDataURL(start, end, tenant, host);
+    let URL = getMetaDataURL(start, end, tenant, host, instanceData1[host]);
     showSpinner();
     $.ajax({
         url: URL, success: function (result) {
@@ -499,7 +500,7 @@ function loadDiagData1(){
 }
 
 function getMetaData2(start, end, tenant, host) {
-    let URL = getMetaDataURL(start, end, tenant, host);
+    let URL = getMetaDataURL(start, end, tenant, host, instanceData2[host]);
     showSpinner();
     $.ajax({
         url: URL, success: function (result) {
@@ -596,6 +597,12 @@ function addInputToURL() {
     updateUrl("filterReq", '');
     updateUrl("stack_id", '');
     updateUrl("spanThreshold", 200);
+    if(instanceData1[host1] != undefined) {
+        updateUrl("dataSource", instanceData1[host1]);//todo, support different data sources for each host
+    }
+    if(instanceData2[host2] != undefined) {
+        updateUrl("dataSource", instanceData2[host2]);//todo, support different data sources for each host
+    }
 }
 
 function updateTenantDropdown1(start, end) {
@@ -710,6 +717,55 @@ function updateTypes1(tenant, host){
     let profiles = {};
     try {
         for (var key in metaData1) {
+            if(metaData1[key].metadata["file-name"] != undefined && metaData1[key].metadata["file-name"] == "json-jstack"){
+                jfrprofiles1[metaData1[key].metadata["file-name"]] = true;
+                continue;
+            }
+
+
+            let guid = metaData1[key].metadata["guid"];
+            let name = metaData1[key].metadata["file-name"];
+            if(metaData1[key].metadata["source-file"] != undefined){
+                name = metaData1[key].metadata["source-file"];
+            }
+
+            if (profiles[guid] == undefined && (tenant === metaData1[key].metadata.tenant || tenant === metaData1[key].metadata["tenant-id"]) && host === metaData1[key].metadata.host) {
+                let val = metaData1[key].timestampMillis + " - " + metaData1[key].metadata.guid;
+                if (profile1 == val || profile1 == "All") {//update only for matching profile
+                    if (name != undefined && name.includes("jfr_dump") && jfrprofiles1[name] == undefined) {//sfdc
+                            if (name.includes("dump_log")) {
+                                jfrevents1[name] = true;
+                            } else if(!name.includes("sql")){
+                                jfrprofiles1[name] = true;
+                            }
+                    }else if (metaData1[key].metadata.type == "jfrprofile" && jfrprofiles1[metaData1[key].metadata["file-name"]] == undefined) {
+                        jfrprofiles1[metaData1[key].metadata["file-name"]] = true;
+                    } else if (metaData1[key].metadata.type == "jfrevent" && jfrprofiles1[metaData1[key].metadata["file-name"]] == undefined) {
+                        jfrevents1[metaData1[key].metadata["file-name"]] = true;
+                    }
+                }else if(profile1 == "Jstacks"){
+                    if (name != undefined && name.includes("jfr_dump") && jfrprofiles1[name] == undefined) {//sfdc
+                        if (name.includes("dump_log")) {
+                            jfrevents1[name] = true;
+                        } else if (metaData1[key].metadata.type == "jfrevent" && jfrprofiles1[metaData1[key].metadata["name"]] == undefined) {
+                            jfrevents1[metaData1[key].metadata["name"]] = true;
+                        }
+                    }
+                }
+            }
+        }
+    }catch(e){
+        console.log(e);
+    }
+    console.log("jfrprofiles1:"+jfrprofiles1);
+}
+
+function updateTypes1old(tenant, host){
+    jfrevents1={};
+    jfrprofiles1={};
+    let profiles = {};
+    try {
+        for (var key in metaData1) {
 
             if (metaData1[key].metadata["name"] != undefined && ((metaData1[key].metadata["file-name"] != undefined && metaData1[key].metadata["file-name"] == "json-jstack") || metaData1[key].metadata.type == "jstack") && (tenant === metaData1[key].metadata.tenant || tenant === metaData1[key].metadata["tenant-id"]) && host === metaData1[key].metadata.host) {
                 if(metaData1[key].metadata["file-name"] != undefined && metaData1[key].metadata["file-name"] == "json-jstack"){
@@ -733,11 +789,11 @@ function updateTypes1(tenant, host){
                 let val = metaData1[key].timestampMillis + " - " + metaData1[key].metadata.guid;
                 if (profile1 == val || profile1 == "All") {//update only for matching profile
                     if (name != undefined && name.includes("jfr_dump") && jfrprofiles1[name] == undefined) {//sfdc
-                            if (name.includes("dump_log")) {
-                                jfrevents1[name] = true;
-                            } else if(!name.includes("sql")){
-                                jfrprofiles1[name] = true;
-                            }
+                        if (name.includes("dump_log")) {
+                            jfrevents1[name] = true;
+                        } else if(!name.includes("sql")){
+                            jfrprofiles1[name] = true;
+                        }
                     }else if (name == "json-stack" && jfrprofiles1[name] == undefined) {
                         jfrprofiles1[name] = true;
                     }else if (metaData1[key].metadata.type == "jfrprofile" && jfrprofiles1[metaData1[key].metadata.name] == undefined) {
@@ -820,6 +876,7 @@ function updateTypes2(tenant, host){
     console.log(jfrprofiles2);
 }
 
+
 function populateIDs1(tenant, host, clearInput) {
     if (tenant === undefined || tenant.length === 0 || host === undefined || host.length === 0) {
         return;
@@ -833,7 +890,84 @@ function populateIDs1(tenant, host, clearInput) {
     let profileFound = false;
     let jstackFound = false;
     for (var key in metaData1) {
-        if ((tenant === metaData1[key].metadata.tenant || tenant === metaData1[key].metadata["tenant-id"]) && (host === metaData1[key].metadata.host || tenant === metaData1[key].metadata["instance-id"])) {
+
+
+        let guid = metaData1[key].metadata["guid"];
+        let name = metaData1[key].metadata["name"];
+        let filename = metaData1[key].metadata["file-name"];
+        if(metaData1[key].metadata["source-file"] != undefined){
+            filename = metaData1[key].metadata["source-file"];
+        }
+
+        if ((tenant === metaData1[key].metadata["tenant-id"]) && (host === metaData1[key].metadata.host || host === metaData1[key].metadata["instance-id"])) {
+
+            if (metaData1[key].metadata["file-name"] != undefined && metaData1[key].metadata["file-name"] == "json-jstack") {
+                jstackFound = true;
+                continue;
+            }
+            if (name != undefined && name == "jfr") {
+                const index = guid.indexOf("jfr_dump");
+                if (index !== -1) { //sfdc
+                    guid = metaData1[key].metadata["guid"].substring(0, index);
+                    metaData1[key].metadata.guid = guid;
+                }
+                if (profiles[metaData1[key].metadata.guid] == undefined) {
+                    let str = moment.utc(metaData1[key].timestampMillis).format("YYYY-MM-DD HH:mm:ss");
+                    let val = metaData1[key].timestampMillis + " - " + metaData1[key].metadata.guid;
+                    if (filename != undefined) {
+                        if (filename.includes("jfr_dump")) {
+                            filename = "jfr-sfdc"; //sfdc
+                        }
+                        if (profile1 == val || profile1 == "") {
+                            profile1 = val;
+                            profileOptionHtml += "<option value=\"" + val + "\" selected>" + str + ":" + filename + "</option>";
+                        } else {
+                            profileOptionHtml += "<option value=\"" + val + "\">" + str + ":" + filename + "</option>";
+                        }
+                        profileFound = true;
+                        profiles[metaData1[key].metadata.guid] = 1;
+                    }
+                }
+            } else {//not a profile
+                if (name != undefined && otherEventsSupported[name]) {
+                    otherEvents1[name] = true;
+                }
+            }
+        }
+    }
+
+    if (profileFound) {
+        if (profile1 == "All") {
+            profileOptionHtml += "<option value=\"All\" selected>All profiles</option>";
+        } else {
+            profileOptionHtml += "<option value=\"All\">All profiles</option>";
+        }
+    }
+    if (jstackFound) {
+        if (profile1 == "Jstacks") {
+            profileOptionHtml += "<option value=\"Jstacks\" selected>Jstacks profile alone</option>";
+        } else {
+            profileOptionHtml += "<option value=\"Jstacks\">Jstacks profile alone</option>";
+        }
+    }
+    const optGroupTemplate = '<optgroup label="">OPTIONS</optgroup>';
+    baseDatalist.append(optGroupTemplate.replace("OPTIONS", profileOptionHtml));
+}
+
+function populateIDs1old(tenant, host, clearInput) {
+    if (tenant === undefined || tenant.length === 0 || host === undefined || host.length === 0) {
+        return;
+    }
+
+    let profiles = {};
+    let profileOptionHtml = "<option  value=''> Choose a profile... </option>";
+    const baseDatalist = $("#bases1");
+    baseDatalist.empty();
+
+    let profileFound = false;
+    let jstackFound = false;
+    for (var key in metaData1) {
+        if ((tenant === metaData1[key].metadata.tenant || tenant === metaData1[key].metadata["tenant-id"]) && (host === metaData1[key].metadata.host || host === metaData1[key].metadata["instance-id"])) {
             if ((metaData1[key].metadata["name"] != undefined && (metaData1[key].metadata["name"] == "jfr" || metaData1[key].metadata["name"] == "jstack" || metaData1[key].metadata["name"] == "Jstack")) || (metaData1[key].metadata["type"] != undefined && (metaData1[key].metadata["type"] == "jfrprofile" || metaData1[key].metadata["type"] == "jfrevent"))) {
                 if (metaData1[key].metadata["name"] != undefined && (metaData1[key].metadata["name"] == "Jstack" || metaData1[key].metadata["name"] == "jstack")) {
                     jstackFound = true;
