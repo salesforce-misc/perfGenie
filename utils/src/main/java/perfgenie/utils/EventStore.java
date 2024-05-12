@@ -220,7 +220,7 @@ public class EventStore {
             queryMap.put("tenant-id", tenant);
             queryMap.put("instance-id", instance);
             final List<Events.Event> results = this.cantor.events().get(
-                    NAMESPACE_EVENT_META,
+                    namespace,
                     start,
                     end,
                     queryMap,

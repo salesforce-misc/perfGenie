@@ -612,7 +612,7 @@
     let incrementRefreshTimer = undefined;
     let updateProfilerViewLock = false;
     let waitForEventCount = 0;
-    let waitForEventMax = 30;
+    let waitForEventMax = 600;
     function waitAndrefreshTree(count) {
         if(waitForEventCount > waitForEventMax){
             clearInterval(incrementRefreshTimer);

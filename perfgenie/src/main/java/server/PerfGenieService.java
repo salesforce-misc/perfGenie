@@ -446,13 +446,11 @@ public class PerfGenieService implements IPerfGenieService {
             Collections.sort(tosort);
             for (int i = 0; i< tosort.size(); i++ ) {
                 queryMap.put("guid", profiles.get(tosort.get(i)).get("guid"));
-                String result;
+                String result = eventStore.getGenieLargeEvent(tosort.get(i), tosort.get(i), queryMap, dimMap, tenant);
                 if(queryMap.containsKey(PerfGenieConstants.SOURCE_KEY)) {
-                    result = eventStore.getEvent(tosort.get(i), tosort.get(i), queryMap, dimMap, Integer.parseInt(profiles.get(tosort.get(i)).get("size")), tenant);
-                    aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(result, EventHandler.ContextResponse.class));
+                     aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(result, EventHandler.ContextResponse.class));
                 }else {
-                    result = eventStore.getEvent(tosort.get(i), tosort.get(i), queryMap, dimMap, 0,tenant);
-                    aggregator.aggregateSFLogContext((EventHandler.SFContextResponse) Utils.readValue(result, EventHandler.SFContextResponse.class));
+                     aggregator.aggregateSFLogContext((EventHandler.SFContextResponse) Utils.readValue(result, EventHandler.SFContextResponse.class));
                 }
             }
             if(queryMap.containsKey(PerfGenieConstants.SOURCE_KEY)) {
