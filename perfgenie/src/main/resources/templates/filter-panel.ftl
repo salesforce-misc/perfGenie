@@ -4039,6 +4039,15 @@
 
     function setContextTreeFrames(frames, count, event){
         perfGenieFrames[count][event]=frames;
+        if(count == 1) {
+            if(jfrprofiles1[event] == undefined){
+                jfrprofiles1[event] = true;
+            }
+        }else if(count == 2) {
+            if(jfrprofiles2[event] == undefined){
+                jfrprofiles2[event] = true;
+            }
+        }
     }
 
     function getContextData() {
