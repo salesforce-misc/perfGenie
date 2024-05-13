@@ -164,7 +164,8 @@
     });
 
     $("#sample-format-input").on("change", (event) => {
-        updateUrl("tableFormat", $("#sample-format-input").val(), true);
+
+        updateUrl("sampletableFormat", $("#sample-format-input").val(), true);
         sampletableFormat = $("#sample-format-input").val();
 
         if(sampletableFormat == 1 || sampletableFormat == 0) {
