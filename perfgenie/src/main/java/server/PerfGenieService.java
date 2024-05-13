@@ -210,21 +210,17 @@ public class PerfGenieService implements IPerfGenieService {
     }
 
     @Override
-    public boolean addEvent(final String payload, final long timestamp, final Map<String, Double> dimMap, final Map<String, String> queryMap, final String tenant) throws IOException {
-        return eventStore.addEvent(timestamp, queryMap, dimMap, payload, tenant);
+    public void addGenieLargeEvent(final String payload, final long timestamp, final Map<String, Double> dimMap, final Map<String, String> queryMap, final String tenant) throws IOException {
+        eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, payload, tenant);
     }
 
-    /*@Override
-    public String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
-        if(queryMap.containsKey("tenant-id")){
-            return eventStore.getMeta(start, end, queryMap, dimMap, queryMap.get("tenant-id"),queryMap.containsKey("instance-id") ? queryMap.get("tenant-id") : null);
-        }else {
-            return eventStore.getMeta(start, end, queryMap, dimMap, null, queryMap.containsKey("host") ? queryMap.get("host") : null);
-        }
-    }*/
+    @Override
+    public boolean addGenieEvent(final String payload, final long timestamp, final Map<String, Double> dimMap, final Map<String, String> queryMap, final String tenant) throws IOException {
+        return eventStore.addGenieEvent(timestamp, queryMap, dimMap, payload, tenant);
+    }
 
     @Override
-    public String getTenants(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
+    public String getGenieTenants(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
         List<String> namespaces = new ArrayList<>();
         namespaces.add("maiev-tenant-dev");//todo config.properties
 
@@ -232,17 +228,17 @@ public class PerfGenieService implements IPerfGenieService {
     }
 
     @Override
-    public String getInstances(long start, long end, final String tenant, final Map<String, String> queryMap) throws IOException {
+    public String getGenieInstances(long start, long end, final String tenant, final Map<String, String> queryMap) throws IOException {
         return eventStore.getGenieInstances(tenant, start, end, queryMap);
     }
 
     @Override
-    public String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String tenant, final String instance) throws IOException {
+    public String getGenieMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String tenant, final String instance) throws IOException {
         return eventStore.getGenieMeta(start, end, queryMap, dimMap, tenant, instance);
     }
 
     @Override
-    public String getProfile(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) {
+    public String getGenieProfile(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) {
         try {
             return eventStore.getGenieLargeEvent(start, end, queryMap, dimMap, tenant);
         } catch (Exception e) {
@@ -251,15 +247,9 @@ public class PerfGenieService implements IPerfGenieService {
     }
 
     @Override
-    public String getEvent(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) {
+    public String getGenieEvent(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) {
         try {
-            return eventStore.getDiagEvent(start, end, queryMap, dimMap, tenant);
-            /*
-            if(queryMap.containsKey("tenant-id")) {
-                return eventStore.getDiagEvent(start, end, queryMap, dimMap, "maiev-tenant-"+tenant);
-            }else{
-                return eventStore.getDiagEvent(start, end, queryMap, dimMap, null);
-            }*/
+            return eventStore.getGenieEvent(start, end, queryMap, dimMap, tenant);
         } catch (Exception e) {
             return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Profiles not found", queryMap, null));
         }
@@ -267,6 +257,7 @@ public class PerfGenieService implements IPerfGenieService {
 
     @Override
     public String getGenieProfiles(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
+
         Map<Long, Map<String, String>> profiles = eventStore.loadGenieProfiles(tenant, start, end, queryMap, dimMap, false);
 
             if (profiles == null || profiles.size() < 1) {
@@ -300,50 +291,8 @@ public class PerfGenieService implements IPerfGenieService {
             }
     }
 
-    public String getProfilesold(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
-        Map<Long, Map<String, String>> profiles = eventStore.loadGenieProfiles(tenant, start, end, queryMap, dimMap, false);
-
-        if (profiles == null || profiles.size() < 1) {
-            return Utils.toJson(new EventHandler.JfrParserResponse(null, "no profiles found for the given time range", queryMap, null));
-        }
-        try {
-            final EventHandler aggregator = new EventHandler();
-            List<Long> tosort = new ArrayList<>();
-            for (Long timestamp : profiles.keySet()) {
-                tosort.add(timestamp);
-            }
-            Collections.sort(tosort);
-            for (int i = 0; i< tosort.size(); i++ ) {
-                //long timestamp = Integer.parseInt(profiles.get(guid).get("timestamp"));
-                queryMap.put("guid", profiles.get(tosort.get(i)).get("guid"));
-                String result;
-                //if(queryMap.containsKey("tenant-id")) {
-                result = eventStore.getEvent(tosort.get(i), tosort.get(i), queryMap, dimMap, 0,tenant);
-                //}else {
-                // result = eventStore.getEvent(tosort.get(i), tosort.get(i), queryMap, dimMap, Integer.parseInt(profiles.get(tosort.get(i)).get("size")));
-                //}
-
-                aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(result, EventHandler.JfrParserResponse.class));
-            }
-            if(config.isExperimental()) {
-                SurfaceDataResponse res = genSurfaceData(aggregator.getAggregatedProfileTree(), tenant, queryMap.get("host"));
-                EventHandler.JfrParserResponse apr = (EventHandler.JfrParserResponse) aggregator.getAggregatedProfileTree();
-                apr.addMeta(ImmutableMap.of("data", Utils.toJson(res)));
-                final String response = Utils.toJson(apr);
-                return response;
-            }else{
-                EventHandler.JfrParserResponse apr = (EventHandler.JfrParserResponse) aggregator.getAggregatedProfileTree();
-                return Utils.toJson(apr);
-            }
-
-
-        } catch (Exception e) {
-            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate" + e.getMessage(), queryMap, null));
-        }
-    }
-
     @Override
-    public String getJstack(final String tenant, final long start, final long end, final Map<String, String> queryMap) throws IOException {
+    public String getJstackProfile(final String tenant, final long start, final long end, final Map<String, String> queryMap) throws IOException {
         final Map<String, String> dimMap = new HashMap<>();
         try{
             List<String> profiles = eventStore.getGeniePayLoads(tenant, start, end, queryMap, dimMap, true);
@@ -392,22 +341,15 @@ public class PerfGenieService implements IPerfGenieService {
     }
 
     @Override
-    public String getOtherEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
-        Map<Long,String> otherevents;
-        if(queryMap.containsKey("tenant-id")) {
-            queryMap.put("name", queryMap.get("name"));
-            otherevents = eventStore.getOtherPayLoads(tenant, start, end, queryMap, dimMap, true);
-        }else {
-             return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Not implemented ", queryMap, null));
-        }
-        if (otherevents == null || otherevents.size() < 1) {
-            return Utils.toJson(new EventHandler.JfrParserResponse(null, "no profiles found for the given time range", queryMap, null));
-        }
+    public String getOtherEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) {
         try {
+            Map<Long,String> otherevents = eventStore.getOtherPayLoads(tenant, start, end, queryMap, dimMap, true);
+            if (otherevents == null || otherevents.size() < 1) {
+                return Utils.toJson(new EventHandler.JfrParserResponse(null, "no events found for the given time range", queryMap, null));
+            }
             final EventHandler aggregator = new EventHandler();
             List<Long> keys = new ArrayList<Long>(otherevents.keySet());
             Collections.sort(keys);
-
             for (int i=0; i< keys.size(); i++) {
                 if(queryMap.get("name").contains("=top")) {
                     aggregator.aggregateTop(otherevents.get(keys.get(i)),keys.get(i));
@@ -420,7 +362,7 @@ public class PerfGenieService implements IPerfGenieService {
             logger.info(queryMap.get("name")+" response length: " + response.length());
             return response;
         } catch (Exception e) {
-            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate" + e.getMessage(), queryMap, null));
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate events " + e.getMessage(), queryMap, null));
         }
     }
 
@@ -428,8 +370,6 @@ public class PerfGenieService implements IPerfGenieService {
     public String getContextEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
         Map<Long, Map<String, String>> profiles;
         if(queryMap.containsKey(PerfGenieConstants.SOURCE_KEY)) {
-            queryMap.put("type", "jfrevent");
-            queryMap.put("name", "=customEvent");
             profiles = eventStore.loadGenieProfiles(tenant, start, end, queryMap, dimMap, false);
         }else {
             profiles = eventStore.loadGenieProfiles(tenant, start, end, queryMap, dimMap , false);

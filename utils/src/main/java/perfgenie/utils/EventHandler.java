@@ -688,6 +688,9 @@ public class EventHandler {
 
     private int getPackageNm(final IMCFrame frame, final StringBuilder stringBuilder, final Map<Integer, Integer> occuranceCount) {
         String name = frame.getMethod().getType().getPackage().getName();
+        if(name == null){
+            name = "NA";
+        }
         stringBuilder.setLength(0);
         if (Utils.trimAfterNthMatchingCharacter(name, stringBuilder, 3, '.')) {
             name = stringBuilder.toString();

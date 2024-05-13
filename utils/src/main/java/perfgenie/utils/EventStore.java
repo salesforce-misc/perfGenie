@@ -42,22 +42,34 @@ public class EventStore {
     public EventStore(final Config config) throws IOException {
         this.config = config;
         if (config.getStorageType().equals("mySQL")) {
-            this.cantor =  new CantorOnMysql(config.getMySQL_host(), config.getMySQL_port(), config.getMySQL_user(), config.getMySQL_pwd());
+            this.cantor = new CantorOnMysql(config.getMySQL_host(), config.getMySQL_port(), config.getMySQL_user(), config.getMySQL_pwd());
         } else if (config.getStorageType().equals("grpc")) {
-            this.cantor =   new CantorOnGrpc(config.getGrpc_target());
+            this.cantor = new CantorOnGrpc(config.getGrpc_target());
         } else {
-            this.cantor =   new CantorOnH2(config.getH2dir());//default
+            this.cantor = new CantorOnH2(config.getH2dir());//default
         }
         try {
-            this.cantor.events().store(
-                    NAMESPACE_EVENT_META,
-                    System.currentTimeMillis(),
-                    ImmutableMap.of(),
-                    ImmutableMap.of(),
-                    Utils.compress("genie started".getBytes(StandardCharsets.UTF_8)));
+            this.cantor.events().get(
+                    PerfGenieConstants.getEventNameSpace(config.getTenant(), true),
+                    0L,
+                    0L);
         } catch (Exception e) {
-            this.cantor.events().create(PerfGenieConstants.getLargeEventNameSpace(config.getTenant(),true));
-            this.cantor.events().create(PerfGenieConstants.getEventNameSpace(config.getTenant(),true));
+            this.cantor.events().create(PerfGenieConstants.getEventNameSpace(config.getTenant(), true));
+        }
+        try {
+            this.cantor.events().get(
+                    PerfGenieConstants.getLargeEventNameSpace(config.getTenant(), true),
+                    0L,
+                    0L);
+        } catch (Exception e) {
+            this.cantor.events().create(PerfGenieConstants.getLargeEventNameSpace(config.getTenant(), true));
+        }
+        try {
+            this.cantor.events().get(
+                    NAMESPACE_EVENT_META,
+                    0L,
+                    0L);
+        } catch (Exception e) {
             this.cantor.events().create(NAMESPACE_EVENT_META);
         }
     }
@@ -66,15 +78,27 @@ public class EventStore {
         this.cantor = cantor;
         this.config = config;
         try {
-            this.cantor.events().store(
-                    NAMESPACE_EVENT_META,
-                    System.currentTimeMillis(),
-                    ImmutableMap.of(),
-                    ImmutableMap.of(),
-                    Utils.compress("genie started".getBytes(StandardCharsets.UTF_8)));
+            this.cantor.events().get(
+                    PerfGenieConstants.getEventNameSpace(config.getTenant(), true),
+                    0L,
+                    0L);
         } catch (Exception e) {
-            this.cantor.events().create(PerfGenieConstants.getLargeEventNameSpace(config.getTenant(),true));
-            this.cantor.events().create(PerfGenieConstants.getEventNameSpace(config.getTenant(),true));
+            this.cantor.events().create(PerfGenieConstants.getEventNameSpace(config.getTenant(), true));
+        }
+        try {
+            this.cantor.events().get(
+                    PerfGenieConstants.getLargeEventNameSpace(config.getTenant(), true),
+                    0L,
+                    0L);
+        } catch (Exception e) {
+            this.cantor.events().create(PerfGenieConstants.getLargeEventNameSpace(config.getTenant(), true));
+        }
+        try {
+            this.cantor.events().get(
+                    NAMESPACE_EVENT_META,
+                    0L,
+                    0L);
+        } catch (Exception e) {
             this.cantor.events().create(NAMESPACE_EVENT_META);
         }
     }
@@ -88,7 +112,7 @@ public class EventStore {
                     queryMap,
                     dimMap,
                     null);
-            logger.info("addEvent successfully stored even in database under namespace: " + PerfGenieConstants.getEventNameSpace(tenant,true) + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+            logger.info("addGenieEventMetaData successfully added event metadata under namespace: " + NAMESPACE_EVENT_META + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
         }else{
             logger.error("addEvent missing value of " + PerfGenieConstants.TENANT_KEY);
             return false;
@@ -101,18 +125,23 @@ public class EventStore {
         if(payload != null) {
             queryMap.put("size", String.valueOf(payload.length()));
         }
-        if(queryMap.containsKey(PerfGenieConstants.TENANT_KEY)) {
-            addGenieEventMetaData(timestamp, queryMap, dimMap,config.getTenant());
+        try {
+            if (queryMap.containsKey(PerfGenieConstants.TENANT_KEY)) {
+                addGenieEventMetaData(timestamp, queryMap, dimMap, config.getTenant());
 
-            this.cantor.events().store(
-                    PerfGenieConstants.getEventNameSpace(tenant,true),
-                    timestamp,
-                    queryMap,
-                    dimMap,
-                    payload != null ? Utils.compress(payload.getBytes(StandardCharsets.UTF_8)) : null );
-            logger.info("addEvent successfully stored even in database under namespace: " + PerfGenieConstants.getEventNameSpace(tenant,true) + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
-        }else{
-            logger.error("addEvent missing value of " + PerfGenieConstants.TENANT_KEY);
+                this.cantor.events().store(
+                        PerfGenieConstants.getEventNameSpace(tenant, true),
+                        timestamp,
+                        queryMap,
+                        dimMap,
+                        payload != null ? Utils.compress(payload.getBytes(StandardCharsets.UTF_8)) : null);
+                logger.info("addEvent successfully stored even in database under namespace: " + PerfGenieConstants.getEventNameSpace(tenant, true) + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+            } else {
+                logger.error("addEvent missing value of " + PerfGenieConstants.TENANT_KEY);
+                return false;
+            }
+        }catch(Exception e){
+            logger.error("Failed to add event " + PerfGenieConstants.getEventNameSpace(tenant, true) + " " + queryMap.toString());
             return false;
         }
         return true;
@@ -149,7 +178,7 @@ public class EventStore {
             logger.warn("getTenants cantor tenants namespace does not exist");
         }
 
-        namespaces.add(NAMESPACE_EVENT_META);
+        namespaces.add(NAMESPACE_EVENT_META);//1715561760005
         for (final String namespace : namespaces) {
             final List<Events.Event> results = this.cantor.events().get(
                     NAMESPACE_EVENT_META,
@@ -248,14 +277,14 @@ public class EventStore {
         }
     }
 
-    public String getDiagEvent(final long start, final long end, final Map<String,
+    /*public String getDiagEvent(final long start, final long end, final Map<String,
             String> queryMap, final Map<String, String> dimMap, final String tenant) throws IOException {
 
         final Stopwatch timer = Stopwatch.createStarted();
         String namespace = queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getEventNameSpace(tenant, true) : PerfGenieConstants.getEventNameSpace(tenant, false);
 
         final List<Events.Event> results = this.cantor.events().get(
-                PerfGenieConstants.getEventNameSpace(tenant, true),
+                namespace,
                 start - 1,
                 end + 1,
                 queryMap,
@@ -271,57 +300,33 @@ public class EventStore {
             logger.warn("failed to fetch event from namespace: " + namespace + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
         }
         return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Event not found", queryMap, null));
+    }*/
+
+    public String getGenieEvent(final long start, final long end, final Map<String,
+            String> queryMap, final Map<String, String> dimMap, final String tenant) throws IOException {
+
+        final Stopwatch timer = Stopwatch.createStarted();
+        String namespace = queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getEventNameSpace(tenant, true) : PerfGenieConstants.getEventNameSpace(tenant, false);
+        final List<Events.Event> results = this.cantor.events().get(
+                namespace,
+                start - 1,
+                end + 1,
+                queryMap,
+                dimMap,
+                true
+        );
+        if (results.size() > 0) {
+            String res = new String(Utils.decompress(results.get(0).getPayload()));
+            logger.info("successfully fetched event from namespace: " + namespace + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+            return res;
+        } else {
+            logger.warn("failed to fetch event from namespace: " + namespace + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+        }
+        return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Event not found", queryMap, null));
     }
 
-    public String getEvent(final long start, final long end, final Map<String,
-            String> queryMap, final Map<String, String> dimMap, int payloadSize, final String tenant) throws IOException {
-        final Stopwatch timer = Stopwatch.createStarted();
-        if (queryMap.containsKey(PerfGenieConstants.SOURCE_KEY)) {//genie
-            if (enableLargeFile && payloadSize > LARGE_FILE_SIZE) {
-                String namespace = PerfGenieConstants.getLargeEventNameSpace(tenant, true);
-                String res = download(start, end, queryMap, dimMap, namespace);
-                logger.info("successfully fetched event from namespace: " + PerfGenieConstants.getLargeEventNameSpace(tenant, true) + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
-                return res;
-            } else {
-                String namespace = PerfGenieConstants.getEventNameSpace(tenant, true);
-                final List<Events.Event> results = this.cantor.events().get(
-                        PerfGenieConstants.getEventNameSpace(tenant, true),
-                        start - 1,
-                        end + 1,
-                        queryMap,
-                        dimMap,
-                        true
-                );
-                if (results.size() > 0) {
-                    String res = new String(Utils.decompress(results.get(0).getPayload()));
-                    logger.info("successfully fetched event from namespace: " + namespace + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
-                    return res;
-                } else {
-                    logger.warn("failed to fetch event from namespace: " + namespace + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
-                }
-            }
-        } else {//other
-            String namespace = PerfGenieConstants.getEventNameSpace(tenant, false);
-            final List<Events.Event> results = this.cantor.events().get(
-                    namespace,
-                    start - 1,
-                    end + 1,
-                    queryMap,
-                    dimMap,
-                    true
-            );
-            if (results.size() > 0) {
-                String res = new String(Utils.decompress(results.get(0).getPayload()));
-                logger.info("successfully fetched event from namespace: " + namespace + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
-                return res;
-            } else {
-                logger.warn("failed to fetch event from namespace: " + namespace + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
-            }
-        }
-        return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Profiles not found", queryMap, null));
-    }
     //done
-    public boolean addEvent(final long timestamp, final Map<String, String> queryMap, final Map<String, Double> dimMap, final String payload, final String tenant) throws IOException {
+    /*public boolean addEvent(final long timestamp, final Map<String, String> queryMap, final Map<String, Double> dimMap, final String payload, final String tenant) throws IOException {
         final Stopwatch timer = Stopwatch.createStarted();
         queryMap.put("size", String.valueOf(payload.length()));
 
@@ -343,10 +348,10 @@ public class EventStore {
             }
         }
         return true;
-    }
+    }*/
 
     //done
-    public boolean addMeta(final long timestamp, final Map<String, Double> dimMap, final Map<String, String> queryMap, final String tenant) throws IOException {
+   /* public boolean addMeta(final long timestamp, final Map<String, Double> dimMap, final Map<String, String> queryMap, final String tenant) throws IOException {
         final Stopwatch timer = Stopwatch.createStarted();
         String namespace = PerfGenieConstants.getEventNameSpace(tenant, true);
         this.cantor.events().store(
@@ -358,7 +363,8 @@ public class EventStore {
         logger.info("addMeta successfully stored metadata in database under namespace: " + namespace + " time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
 
         return true;
-    }
+    }*/
+
     public List getGeniePayLoads(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final boolean payload) throws IOException {
         String namespace = queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getEventNameSpace(tenant, true) : PerfGenieConstants.getEventNameSpace(tenant, false);
         final List<Events.Event> results = this.cantor.events().get(
@@ -379,6 +385,7 @@ public class EventStore {
         }
         return null;
     }
+
     public Map getOtherPayLoads(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final boolean payload) throws IOException {
         String namespace = queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getEventNameSpace(tenant, true) : PerfGenieConstants.getEventNameSpace(tenant, false);
         final List<Events.Event> results = this.cantor.events().get(
@@ -390,7 +397,7 @@ public class EventStore {
                 payload
         );
         if (results.size() > 0) {
-            Map<Long,String> payloads = new HashMap<>();
+            Map<Long,String> payloads = new HashMap<>();//timestamp payload map
             results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
             for (final Events.Event result : results) {
                 payloads.put(result.getTimestampMillis(),new String(Utils.decompress(result.getPayload())));
@@ -399,6 +406,7 @@ public class EventStore {
         }
         return null;
     }
+
     public Collection<com.salesforce.cantor.Events.Event> getHeartbeatEvents(final String tenant, final String instanceId, final long startTimestamp, final long endTimestamp) {
         try {
             return this.cantor.events().get(
@@ -414,7 +422,7 @@ public class EventStore {
         }
     }
     public Map<Long,Map<String, String>> loadGenieProfiles(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final boolean payload) throws IOException {
-        String namespace = queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getEventNameSpace(tenant, true) : PerfGenieConstants.getEventNameSpace(tenant, false);
+        String namespace = queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getLargeEventNameSpace(tenant, true) : PerfGenieConstants.getLargeEventNameSpace(tenant, false);
         final List<Events.Event> results = this.cantor.events().get(
                 namespace,
                 start,
@@ -466,7 +474,7 @@ public class EventStore {
                     return new String(Utils.decompress(Utils.decompress(outStream.toByteArray())));
                 }
             }catch(Exception e){
-                logger.error("Failed to download  {}", metadataQuery);
+                logger.error("Failed to download from {}  {}", namespace, metadataQuery);
                 e.printStackTrace();
                 return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to download 1 ", metadataQuery, null));
             }

@@ -96,6 +96,7 @@ public class AgentApplication {
                         eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, payload, config.getTenant());
                     }
                     Object logContext = handler.getLogContext();
+                    queryMap.put("file-name", "jfr-context");//
                     queryMap.put("type", "jfrevent");
                     queryMap.put("name", "jfr");
 

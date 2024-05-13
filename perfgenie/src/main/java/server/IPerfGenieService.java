@@ -21,7 +21,9 @@ public interface IPerfGenieService {
      * @param dimMap    event dimentions
      * @return true/false
      */
-    boolean addEvent(final String payload, final long timestamp, final Map<String, Double> dimMap, final Map<String, String> queryMap, final String tenant) throws IOException;
+    void addGenieLargeEvent(final String payload, final long timestamp, final Map<String, Double> dimMap, final Map<String, String> queryMap, final String tenant) throws IOException;
+
+    boolean addGenieEvent(final String payload, final long timestamp, final Map<String, Double> dimMap, final Map<String, String> queryMap, final String tenant) throws IOException;
 
     /**
      * get event metadata
@@ -44,7 +46,7 @@ public interface IPerfGenieService {
      * @param dimMap   event dimentions
      * @return none
      */
-    String getTenants(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
+    String getGenieTenants(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
 
 
     /**
@@ -56,7 +58,7 @@ public interface IPerfGenieService {
      * @param dimMap   event dimentions
      * @return none
      */
-    String getMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String namespace, final String instance) throws IOException;
+    String getGenieMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String namespace, final String instance) throws IOException;
 
     /**
      * get profile event data
@@ -68,7 +70,7 @@ public interface IPerfGenieService {
      * @param dimMap   event dimentions
      * @return none
      */
-    String getProfile(String tenant, long start, long end, Map<String, String> queryMap, Map<String, String> dimMap) throws IOException;
+    String getGenieProfile(String tenant, long start, long end, Map<String, String> queryMap, Map<String, String> dimMap) throws IOException;
 
     /**
      * get combined profile event data
@@ -94,11 +96,11 @@ public interface IPerfGenieService {
      */
     String getContextEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
 
-    String getJstack(final String tenant, final long start, final long end, final Map<String, String> queryMap) throws IOException;
+    String getJstackProfile(final String tenant, final long start, final long end, final Map<String, String> queryMap) throws IOException;
 
-    public String getInstances(long start, long end, final String tenant, final Map<String, String> queryMap) throws IOException;
-    public String getOtherEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
+    public String getGenieInstances(long start, long end, final String tenant, final Map<String, String> queryMap) throws IOException;
+    public String getOtherEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap);
 
-    String getEvent(String tenant, long start, long end, Map<String, String> queryMap, Map<String, String> dimMap) throws IOException;
+    String getGenieEvent(String tenant, long start, long end, Map<String, String> queryMap, Map<String, String> dimMap) throws IOException;
 
 }

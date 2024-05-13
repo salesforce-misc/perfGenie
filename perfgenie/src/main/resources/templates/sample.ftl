@@ -340,7 +340,7 @@
         }
 
         let combinedEventKey = event+samplesCustomEvent;
-        let combinedEventKeyn = event+"-"+samplesCustomEvent;
+        let errorOnce = true;
         for(var tid in contextDataRecords) {
             contextDataRecords[tid].forEach(function (obj) {
                 let record = obj.record;
@@ -353,7 +353,7 @@
                     let start =  record[timestampIndex] - contextStart;
 
                     //let stackMap = {};
-                    let errorOnce = true;
+
                     try {
                         //do a binary search
                         let entryIndex = isinRequest(contextTidMap[tid], start, end);
@@ -400,7 +400,6 @@
                                 curIndex++;
                             }
                             reqCount++;
-                            //obj[combinedEventKeyn] = stackMap;
                             obj[combinedEventKey] = [minIndex, maxIndex];
                         }
                     } catch (err) {
@@ -412,11 +411,9 @@
                 }
             });
         }
-
         if(event == "Jstack" || event == "json-jstack"){
             addContextDataJstack(event);
         }
-
         treeToProcess[samplesCustomEvent + event+"-context"] = "done";
         let end = performance.now();
         console.log("addContextData time:" + (end - start) + ":" + samplesCustomEvent + ":" + event + ":" +scount+":"+reqCount);

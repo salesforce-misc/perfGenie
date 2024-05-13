@@ -464,7 +464,7 @@
                                 break;
                             }
                             if(customEventCount == 0){
-                                getLogContext(dateRanges[0], pods[0], queries[0], profilers[0], tenants[0], profiles[0], hosts[0], uploads[0], fileIds[0], uploadTimes[0], aggregates[0], eventType, contextTrees[0].context.start, contextTrees[0].context.end, "customEvent");
+                                getLogContext(dateRanges[0], pods[0], queries[0], profilers[0], tenants[0], profiles[0], hosts[0], uploads[0], fileIds[0], uploadTimes[0], aggregates[0], eventType, contextTrees[0].context.start, contextTrees[0].context.end, "jfr-context");
                             }
                         }
                         for (var type in jfrprofiles1) {
@@ -846,21 +846,10 @@
         let endpoint = "";
         {
             //for any type of profile selection jstacks are handled in the same way
-            if (eventType == "Jstack") {
+            if (eventType == "Jstack" || eventType == "json-jstack") {
                 const start = parseInt(timeRange.split(" - ")[0]);
                 const end = parseInt(timeRange.split(" - ")[1]);
-                endpoint = "/v1/jstack/" + tenant + "/?start=" + start + "&end=" + end +
-                    "&metadata_query=" + encodeURIComponent("host=" + host) +
-                    "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
-                    "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
-                if(dataSource.includes("genie")){
-                    endpoint += "&metadata_query=" + encodeURIComponent("source=" + dataSource);
-                }
-                return endpoint;
-            }else if (eventType == "json-jstack") {//sfdc
-                const start = parseInt(timeRange.split(" - ")[0]);
-                const end = parseInt(timeRange.split(" - ")[1]);
-                endpoint = "/v1/jstack/" + tenant + "/?start=" + start + "&end=" + end +
+                endpoint = "/v1/jstacks/" + tenant + "/?start=" + start + "&end=" + end +
                     "&metadata_query=" + encodeURIComponent("host=" + host) +
                     "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
                     "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
@@ -873,42 +862,21 @@
             if (profile === "All") {
                 const start = parseInt(timeRange.split(" - ")[0]);
                 const end = parseInt(timeRange.split(" - ")[1]);
-                if(eventType.includes("jfr_dump")) {//sfdc
-                    if (eventType.includes("jfr_dump_log")) {
-                        endpoint = "/v1/customevents/" + tenant + "/?start=" + start + "&end=" + end +
-                            "&metadata_query=" + encodeURIComponent("host=" + host) +
-                            "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
-                            "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
-                    } else {
-                        endpoint = "/v1/profiles/" + tenant + "/?start=" + start + "&end=" + end +
-                            "&metadata_query=" + encodeURIComponent("host=" + host) +
-                            "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
-                            "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
-                    }
-                }else{
-                    if (eventType == "customEvent") {
-                        endpoint = "/v1/customevents/" + tenant + "/?start=" + start + "&end=" + end +
-                            "&metadata_query=" + encodeURIComponent("host=" + host) +
-                            "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
-                            "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
-                    } else {
-                        endpoint = "/v1/profiles/" + tenant + "/?start=" + start + "&end=" + end +
-                            "&metadata_query=" + encodeURIComponent("host=" + host) +
-                            "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
-                            "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
-                    }
+                if (eventType == "jfr-context" || eventType.includes("jfr_dump_log")) {
+                    endpoint = "/v1/customevents/" + tenant + "/?start=" + start + "&end=" + end +
+                        "&metadata_query=" + encodeURIComponent("host=" + host) +
+                        "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+                        "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
+                } else {
+                    endpoint = "/v1/profiles/" + tenant + "/?start=" + start + "&end=" + end +
+                        "&metadata_query=" + encodeURIComponent("host=" + host) +
+                        "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+                        "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
                 }
             } else if(profile === "Jstacks"){
                 const start = parseInt(timeRange.split(" - ")[0]);
                 const end = parseInt(timeRange.split(" - ")[1]);
-                if (eventType.includes("jfr_dump_log")) {//sfdc
-                    if (eventType.includes("jfr_dump_log")) {
-                        endpoint = "/v1/customevents/" + tenant + "/?start=" + start + "&end=" + end +
-                            "&metadata_query=" + encodeURIComponent("host=" + host) +
-                            "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
-                            "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
-                    }
-                }else if (eventType == "customEvent") {
+                if (eventType == "jfr-context" || eventType.includes("jfr_dump_log")) {
                         endpoint = "/v1/customevents/" + tenant + "/?start=" + start + "&end=" + end +
                             "&metadata_query=" + encodeURIComponent("host=" + host) +
                             "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
@@ -917,20 +885,12 @@
             }else{
                 let array = profile.split(" - ");
                 const timestamp = array[0];
-                let guid = array[1];
-                if(eventType.includes("jfr_dump")){//sfdc
-                    endpoint = "/v1/profile/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
-                        "&metadata_query=" + encodeURIComponent("host=" + host) +
-                        "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
-                        "&metadata_query=" + encodeURIComponent("guid=" + guid + eventType) +
-                        "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
-                }else {
-                    endpoint = "/v1/profile/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
-                        "&metadata_query=" + encodeURIComponent("host=" + host) +
-                        "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
-                        "&metadata_query=" + encodeURIComponent("guid=" + guid) +
-                        "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
-                }
+                let guid = eventType.includes("jfr_dump") ? array[1] + eventType : array[1];
+                endpoint = "/v1/profile/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
+                    "&metadata_query=" + encodeURIComponent("host=" + host) +
+                    "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+                    "&metadata_query=" + encodeURIComponent("guid=" + guid) +
+                    "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
             }
         }
         if(dataSource.includes("genie")){

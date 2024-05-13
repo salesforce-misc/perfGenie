@@ -1724,6 +1724,7 @@
                     }
                 }
             } else {
+                let errorOnce = true;
                 for (var tid in contextDataRecords) {
                     contextDataRecords[tid].forEach(function (obj) {
                         if (tidDatalistVal == undefined || tidDatalistVal == tid) {
@@ -1736,7 +1737,7 @@
                             if (flag) {
                                 let end = record[timestampIndex] - contextStart + recordSpan;
                                 let start = record[timestampIndex] - contextStart;
-                                let errorOnce = true;
+
                                 try {
                                     //do a binary search
                                     let entryIndex = isinRequest(contextTidMap[tid], start, end);
@@ -3139,6 +3140,10 @@
             events.sort();
 
             for (let i = 0; i < events.length; i++) {
+                if(otherEventsFetched[events[i]] != undefined){//this event is moved to other events
+                    continue;
+                }
+
                 if(customEvent == '' || customEvent == undefined || !customEventFound){
                     customEvent = events[i];
                     otherEvent =  events[i];
@@ -4047,13 +4052,12 @@
                     if(contextData.header[customevent] != undefined){
                         let spanExists = false;
                         for (var header in contextData.header[customevent]) {
-                            if(header.includes("dduration") || header.includes("runTime")){
+                            if(contextData.header[customevent][header].includes("duration") || contextData.header[customevent][header].includes("runTime")){
                                 spanExists=true;
                                 break;
                             }
                         }
                         if(!spanExists){
-                            //todo: test: move custom event to other events is span does not exist
                             otherEventsFetched[customevent]=true;
                         }
                     }

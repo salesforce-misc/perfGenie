@@ -30,6 +30,64 @@ public class PerfGenieController {
         this.service = service;
     }
 
+    //@CrossOrigin
+    @GetMapping(path = {"/v1/tenants", "/v1/tenants/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String tenants(@PathVariable(required = false, name = "tenant") String tenant,
+                       @RequestParam(required = false, name = "start") final long start,
+                       @RequestParam(required = false, name = "end") final long end,
+                       @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
+
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        final Map<String, String> dimMap = new HashMap<>();
+        return service.getGenieTenants(start, end, queryMap, dimMap);
+    }
+
+    //@CrossOrigin
+    @GetMapping(path = {"/v1/instances", "/v1/instances/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String instances(@PathVariable(required = false, name = "tenant") String tenant,
+                          @RequestParam(required = false, name = "start") final long start,
+                          @RequestParam(required = false, name = "end") final long end,
+                          @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
+
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        return service.getGenieInstances(start, end, tenant, queryMap);
+    }
+
+    //@CrossOrigin
+    @GetMapping(path = {"/v1/meta", "/v1/meta/{tenant}/{instance}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String meta(@PathVariable(required = false, name = "tenant") String tenant,
+                       @PathVariable(required = false, name = "instance") final String instance,
+                       @RequestParam(required = false, name = "start") final long start,
+                       @RequestParam(required = false, name = "end") final long end,
+                       @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
+
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        final Map<String, String> dimMap = new HashMap<>();
+        return service.getGenieMeta(start, end, queryMap, dimMap, tenant, instance);//, host);
+    }
+
+    //@CrossOrigin
+    @GetMapping(path = {"/v1/jstacks", "/v1/jstacks/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String jstacks(@PathVariable(required = false, name = "tenant") String tenant,
+                         @RequestParam(required = false, name = "start") final long start,
+                         @RequestParam(required = false, name = "end") final long end,
+                         @RequestParam("metadata_query") final List<String> metadataQuery) throws IOException {
+
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        return service.getJstackProfile(tenant, start, end, queryMap);
+    }
+
+    @GetMapping(path = {"/v1/event", "/v1/event/{tenant}"}, produces = MediaType.ALL_VALUE)
+    public String event(@PathVariable(required = false, name = "tenant") String tenant,
+                        @RequestParam(required = false, name = "start") final long start,
+                        @RequestParam(required = false, name = "end") final long end,
+                        @RequestParam("metadata_query") final List<String> metadataQuery) throws IOException {
+
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        final Map<String, String> dimMap = new HashMap<>();
+
+        return service.getGenieEvent(tenant, start, end, queryMap, dimMap);
+    }
     @GetMapping(path = {"/v1/profile", "/v1/profile/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String profile(@PathVariable(required = false, name = "tenant") String tenant,
                           @RequestParam(required = false, name = "start") final long start,
@@ -39,19 +97,7 @@ public class PerfGenieController {
         final Map<String, String> queryMap = queryToMap(metadataQuery);
         final Map<String, String> dimMap = new HashMap<>();
 
-        return service.getProfile(tenant, start, end, queryMap, dimMap);
-    }
-
-    @GetMapping(path = {"/v1/event", "/v1/event/{tenant}"}, produces = MediaType.ALL_VALUE)
-    public String event(@PathVariable(required = false, name = "tenant") String tenant,
-                          @RequestParam(required = false, name = "start") final long start,
-                          @RequestParam(required = false, name = "end") final long end,
-                          @RequestParam("metadata_query") final List<String> metadataQuery) throws IOException {
-
-        final Map<String, String> queryMap = queryToMap(metadataQuery);
-        final Map<String, String> dimMap = new HashMap<>();
-
-        return service.getEvent(tenant, start, end, queryMap, dimMap);
+        return service.getGenieProfile(tenant, start, end, queryMap, dimMap);
     }
 
     @GetMapping(path = {"/v1/profiles", "/v1/profiles/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -78,60 +124,13 @@ public class PerfGenieController {
 
     @GetMapping(path = {"/v1/otherevents", "/v1/otherevents/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String otherevents(@PathVariable(required = false, name = "tenant") String tenant,
-                               @RequestParam(required = false, name = "start") final long start,
-                               @RequestParam(required = false, name = "end") final long end,
-                               @RequestParam("metadata_query") final List<String> metadataQuery) throws IOException {
+                              @RequestParam(required = false, name = "start") final long start,
+                              @RequestParam(required = false, name = "end") final long end,
+                              @RequestParam("metadata_query") final List<String> metadataQuery) throws IOException {
 
         final Map<String, String> queryMap = queryToMap(metadataQuery);
         final Map<String, String> dimMap = new HashMap<>();
         return service.getOtherEvents(tenant, start, end, queryMap, dimMap);
-    }
-
-    @CrossOrigin
-    @GetMapping(path = {"/v1/meta", "/v1/meta/{tenant}/{instance}"}, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String meta(@PathVariable(required = false, name = "tenant") String tenant,
-                       @PathVariable(required = false, name = "instance") final String instance,
-                       @RequestParam(required = false, name = "start") final long start,
-                       @RequestParam(required = false, name = "end") final long end,
-                        @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
-
-        final Map<String, String> queryMap = queryToMap(metadataQuery);
-        final Map<String, String> dimMap = new HashMap<>();
-        return service.getMeta(start, end, queryMap, dimMap, tenant, instance);//, host);
-    }
-
-    @CrossOrigin
-    @GetMapping(path = {"/v1/tenants", "/v1/tenants/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String tenants(@PathVariable(required = false, name = "tenant") String tenant,
-                       @RequestParam(required = false, name = "start") final long start,
-                       @RequestParam(required = false, name = "end") final long end,
-                       @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
-
-        final Map<String, String> queryMap = queryToMap(metadataQuery);
-        final Map<String, String> dimMap = new HashMap<>();
-        return service.getTenants(start, end, queryMap, dimMap);
-    }
-
-    @CrossOrigin
-    @GetMapping(path = {"/v1/instances", "/v1/instances/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String instances(@PathVariable(required = false, name = "tenant") String tenant,
-                          @RequestParam(required = false, name = "start") final long start,
-                          @RequestParam(required = false, name = "end") final long end,
-                          @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
-
-        final Map<String, String> queryMap = queryToMap(metadataQuery);
-        return service.getInstances(start, end, tenant, queryMap);
-    }
-
-    @CrossOrigin
-    @GetMapping(path = {"/v1/jstack", "/v1/jstack/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String jstack(@PathVariable(required = false, name = "tenant") String tenant,
-                         @RequestParam(required = false, name = "start") final long start,
-                         @RequestParam(required = false, name = "end") final long end,
-                         @RequestParam("metadata_query") final List<String> metadataQuery) throws IOException {
-
-        final Map<String, String> queryMap = queryToMap(metadataQuery);
-        return service.getJstack(tenant, start, end, queryMap);
     }
 
     private static Map<String, String> queryToMap(final List<String> queryList) {

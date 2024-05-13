@@ -846,8 +846,9 @@
             skipFilter = false;
         }
         console.log("updateProfilerView start");
-        addTabNote(false,"");
+        $("ul.tree").html("");//reset
 
+        addTabNote(false,"");
 
         if (!skipFilter) {
             if (level == undefined) {
