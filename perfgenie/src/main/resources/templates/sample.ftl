@@ -619,7 +619,8 @@
                 }
                 //every sample will have a tid, so include all
             } else if (groupBySamples == "tid" && isFilterEmpty()) {
-                for (var tid in contextDataRecords) {
+                //for (var tid in contextDataRecords) {
+                for (var tid in contextTidMap) {
                     if (contextTidMap[tid] != undefined && (tidDatalistVal == undefined || tidDatalistVal == tid)) {
                         for (let i = 0; i < contextTidMap[tid].length; i++) {
                             if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
