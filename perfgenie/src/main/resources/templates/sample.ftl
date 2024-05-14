@@ -573,7 +573,8 @@
             //every sample of jstack has a tn
             let combinedEventKey = eventType + samplesCustomEvent;
             if ((eventType == "Jstack" || eventType == "json-jstack") && groupBySamples == "threadname" && isFilterEmpty(dimIndexMap)) {
-                for (var tid in contextDataRecords) {
+                //for (var tid in contextDataRecords) {
+                for (var tid in contextTidMap) {
                     if (contextTidMap[tid] != undefined && (tidDatalistVal == undefined || tidDatalistVal == tid)) {
                         for (let i = 0; i < contextTidMap[tid].length; i++) {
                             if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
@@ -725,7 +726,8 @@
                         }
                     }
                 } else {
-                    for (var tid in contextDataRecords) {
+                    //for (var tid in contextDataRecords) {
+                    for (var tid in contextTidMap) {
                         if (contextTidMap[tid] != undefined && (tidDatalistVal == undefined || tidDatalistVal == tid)) {
                             for (let i = 0; i < contextTidMap[tid].length; i++) {
                                 if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
@@ -1016,7 +1018,7 @@
                 + "      </div>"
                 + "    </div>"
                 + " </div>"
-                + "</div><div>Note: Top " + top + " threads sorted by number of samples</div>";
+                + "</div><div>Note: Top " + (top-5) + " threads sorted by number of samples</div>";
 
             d3.select("#requestbarchartSamples").append("svg").attr("width", (maxThreadSamples *cellw)+37).attr("height", (top+2)*cellh);
             d3.select("#yaxisidSamples").append("svg").attr("width", 50).attr("height", (top+2)*cellh);
