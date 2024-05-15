@@ -3222,8 +3222,8 @@
     function addContextHints(eventType) {
         let eventToUse = $("#event-input").val();
         let table = "<table  class='ui-widget' style='border-spacing: 2px; border-collapse: separate;border: hidden'><tr><td style='border: hidden'  id='filter-heading'>Context hints:</td>";
-        table += "<td style='border: hidden' class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('context=with');\" title='context=all/with/without, default is all samples' tabindex='-1'>with-context</a></td>";
-        table += "<td style='border: hidden' class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('context=without');\" title='context=all/with/without, default is all samples' tabindex='-1'>without-context</a></td>";
+        table += "<td style='border: hidden' class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('context=with');\" title='context=with, filter samples that match context. default is all samples' tabindex='-1'>with-context</a></td>";
+        table += "<td style='border: hidden' class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('context=without');\" title='context=without, filter samples that do not match context. default is all samples' tabindex='-1'>without-context</a></td>";
         /*if(eventToUse.includes(".Async")){//todo choose default all using config
             addToFilter('context=');
             fContext='';
