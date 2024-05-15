@@ -246,10 +246,10 @@
             var tableInnerHTML = "";
 
             jstack = getContextTree(1,eventType);
-            context = getContextData();
+            context = getContextData(1);
             let startMilli = getContextTree(1,eventType).context.start;
 
-            addContextData(eventType);
+            addContextData(eventType, 1);
 
 
 
@@ -303,9 +303,9 @@
 
             var tableInnerHTML = "";
             jstack = getContextTree(1,eventType);
-            context = getContextData();
+            context = getContextData(1);
             let startMilli = getContextTree(1,eventType).context.start;
-            addContextData(eventType);
+            addContextData(eventType, 1);
 
 
             let start1 = performance.now();
@@ -446,9 +446,10 @@
         let spanIndex = -1;
         let timestampIndex = -1;
 
+        let localContextData = getContextData(1);
 
-        for (let val in contextData.header[customEvent]) {
-            const tokens = contextData.header[customEvent][val].split(":");
+        for (let val in localContextData.header[customEvent]) {
+            const tokens = localContextData.header[customEvent][val].split(":");
             if (tokens[1] == "number") {
                 metricsIndexArray.push(val);
                 metricsIndexMap[tokens[0]] = val;
@@ -773,9 +774,10 @@
         let h = 8;
         let y = 0;
 
+        let localContextData = getContextData(1);
         let contextDataRecords = undefined;
-        if (contextData != undefined && contextData.records != undefined) {
-            contextDataRecords = contextData.records[customEvent];
+        if (localContextData != undefined && localContextData.records != undefined) {
+            contextDataRecords = localContextData.records[customEvent];
         }
 
         let curI = 0;

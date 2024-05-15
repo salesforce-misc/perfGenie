@@ -12,7 +12,6 @@
     let treeThreshold = 0.01;
     let levelThreshold = 0;
 
-
     function handleTreeViewType(isCalltree){
         if(isCalltree){
             $("#tree-view-type option[value='calltree']").attr("selected", "selected");
@@ -455,7 +454,7 @@
                     contextTrees[0].context.end = Math.round(contextTrees[0].context.end / 1000000);
                     if ( (getEventType() == eventType)){//} && !(eventType == "json-jstack" && eventType.contains("dump_"))) || eventType == "jfr_dump.json.gz") { //todo check this, dirty fix for sfdc
                         if(uploads[0] == "true" && fileIds[0] != "") {
-                            setContextData({"records": {}, "tidlist": [], "header": {}});
+                            setContextData({"records": {}, "tidlist": [], "header": {}},1);
                         }else{
                             let customEventCount = 0;
                             for (var customEvent in jfrevents1) {
@@ -664,7 +663,7 @@
                 console.log("log context not available in JFR, will fetch from Splunk");
                 updateFilterViewStatus("Note: Failed to get Request context.");
                 toastr_warning("Failed to get Request context.");
-                setContextData({"records": {}, "tidlist": [], "header": {}});
+                setContextData({"records": {}, "tidlist": [], "header": {}},1);
                 fetchOtherEvents(timeRange, tenant, host);
 
                 showContextFilter();
@@ -675,14 +674,14 @@
                 if(response.tidlist == undefined && response.error != undefined){
                     updateFilterViewStatus("Note: Failed to get Request context.");
                     toastr_warning("Failed to get Request context.");
-                    setContextData({"records": {}, "tidlist": [], "header": {}});
+                    setContextData({"records": {}, "tidlist": [], "header": {}},1);
                     fetchOtherEvents(timeRange, tenant, host);
 
                     showContextFilter();
                     hideFilterViewStatus();
                     refreshTreeAfterContext(customEvent);
                 }else {
-                    setContextData(response);
+                    setContextData(response,1);
                     fetchOtherEvents(timeRange, tenant, host);
 
                     showContextFilter();
@@ -692,7 +691,7 @@
                 }
             }
         }, function (error) {
-            setContextData({"records": {}, "tidlist": [], "header": {}});
+            setContextData({"records": {}, "tidlist": [], "header": {}},1);
             fetchOtherEvents(timeRange, tenant, host);
             updateFilterViewStatus("Note: Failed to get Request context.");
             toastr_warning("Failed to get Request context.");
@@ -711,15 +710,16 @@
     }
 
     function setOtherEventData(data){
-        if(contextData.records != undefined && data.records != undefined){
+        let localContextData = getContextData(1);
+        if(localContextData.records != undefined && data.records != undefined){
             for (var customevent in data.records) {
-                contextData.records[customevent] = data.records[customevent];
+                localContextData.records[customevent] = data.records[customevent];
             }
         }
-        if(contextData.header != undefined && data.header != undefined){
+        if(localContextData.header != undefined && data.header != undefined){
             for (var customevent in data.header) {
                 otherEventsFetched[customevent]=true;
-                contextData.header[customevent] = data.header[customevent];
+                localContextData.header[customevent] = data.header[customevent];
                 $('#other-event-input').append($('<option>', {
                     value: customevent,
                     text: customevent

@@ -70,10 +70,12 @@
     function updateEventInputOptions(id){
         $('#'+id).empty();
 
-        /*if (contextData != undefined && contextData.records != undefined) {
+        /*
+        let localContextData = getContextData(1);
+        if (localContextData != undefined && localContextData.records != undefined) {
             let samplesCustomEventFound = false;
             if(!(samplesCustomEvent == '' || samplesCustomEvent == undefined)) {
-                for (let value in contextData.records) {
+                for (let value in localContextData.records) {
                     if(samplesCustomEvent == value){
                         samplesCustomEventFound = true;
                         break;
@@ -81,7 +83,7 @@
                 }
             }
 
-            for (let value in contextData.records) {
+            for (let value in localContextData.records) {
                 if(samplesCustomEvent == '' || samplesCustomEvent == undefined || !samplesCustomEventFound){
                     samplesCustomEvent = value;
                     samplesCustomEventFound=true;
@@ -122,10 +124,12 @@
 
     function updateGroupByOptions(id){
         $('#'+id).empty();
-        if (contextData != undefined && contextData.header != undefined) {
+        let localContextData = getContextData(1);
+
+        if (localContextData != undefined && localContextData.header != undefined) {
             let groups = [];
-            for (let val in contextData.header[samplesCustomEvent]) {
-                const tokens = contextData.header[samplesCustomEvent][val].split(":");
+            for (let val in localContextData.header[samplesCustomEvent]) {
+                const tokens = localContextData.header[samplesCustomEvent][val].split(":");
                 if (tokens[1] == "text" || tokens[1] == "timestamp") {
                     groups.push(tokens[0]);
                 }
@@ -134,8 +138,8 @@
 
             let groupByFound = false;
             if(!(smplBy == '' || smplBy == undefined)) {
-                for (let val in contextData.header[samplesCustomEvent]) {
-                    const tokens = contextData.header[samplesCustomEvent][val].split(":");
+                for (let val in localContextData.header[samplesCustomEvent]) {
+                    const tokens = localContextData.header[samplesCustomEvent][val].split(":");
                     if(smplBy == tokens[0]){
                         groupByFound = true;
                         break;
@@ -300,6 +304,7 @@
 
     function getSamplesTableHeader(groupBySamples, row, event) {
 
+        let localContextData = getContextData(1);
         /*if(event === EventType.MEMORY) {
             totalSampleCount = totalSampleCount * 1024 * 1024;
             if(groupBySamples == "tid") {
@@ -311,9 +316,9 @@
             sfContextDataTable.addContextTableHeader(row,"Samples",1);
         }else{*/
             if(groupBySamples == "tid") {
-                sfSampleTable.addContextTableHeader(row,groupBySamples,1,"class='context-menu-three'",contextData.tooltips[groupBySamples]);
+                sfSampleTable.addContextTableHeader(row,groupBySamples,1,"class='context-menu-three'",localContextData.tooltips[groupBySamples]);
             }else{
-                sfSampleTable.addContextTableHeader(row,groupBySamples,-1,"class='context-menu-two'",contextData.tooltips[groupBySamples]);
+                sfSampleTable.addContextTableHeader(row,groupBySamples,-1,"class='context-menu-two'",localContextData.tooltips[groupBySamples]);
             }
             sfSampleTable.addContextTableHeader(row,"Sample Count",1);
             sfSampleTable.addContextTableHeader(row,"Samples",1);
@@ -384,6 +389,7 @@
         let isAll = (fContext === 'all' || fContext === '');
         let isWith = (fContext === 'with');
 
+        let localContextData = getContextData(1);
         //let table = "<table   style=\"width: 100%;\" id=\"sample-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\"><thead><tr><th width=\"50%\">" + getHearderFor(groupBySamples) + "</th><th width=\"10%\">Sample Count</th><th width=\"40%\">Samples</th></thead>";
         for (let tempeventTypeCount = 0; tempeventTypeCount< tempeventTypeArray.length; tempeventTypeCount++){
             let eventSampleCount = 0;
@@ -396,11 +402,12 @@
                 continue;
             }
             if (addContext) {
-                addContextData(eventType);
+                addContextData(eventType, 1);
             }
 
-            for (let val in contextData.header[samplesCustomEvent]) {
-                const tokens = contextData.header[samplesCustomEvent][val].split(":");
+
+            for (let val in localContextData.header[samplesCustomEvent]) {
+                const tokens = localContextData.header[samplesCustomEvent][val].split(":");
                 if (tokens[1] == "number") {
                     metricsIndexArray.push(val);
                     metricsIndexMap[tokens[0]] = val;
@@ -420,7 +427,7 @@
                     dimIndexMap[tokens[0]] = val;
                 }
             }
-            if (contextData == undefined) {
+            if (localContextData == undefined) {
                 //support only tid or tn
                 if (!(groupBySamples === "threadname" || groupBySamples === "tid")) {
                     //set default tid
@@ -433,8 +440,8 @@
                 }
             }
             let contextDataRecords = undefined;
-            if (contextData != undefined && contextData.records != undefined) {
-                contextDataRecords = contextData.records[samplesCustomEvent];
+            if (localContextData != undefined && localContextData.records != undefined) {
+                contextDataRecords = localContextData.records[samplesCustomEvent];
             }
 
             let tidDatalistVal = filterMap["tid"];
@@ -601,7 +608,7 @@
                     }
                 }
             } else {
-                if (contextData != undefined && contextData.records != undefined) {
+                if (localContextData != undefined && localContextData.records != undefined) {
                     if(isAll || isWith) {
                         for (var tid in contextDataRecords) {
                             if (tidDatalistVal == undefined || tidDatalistVal == tid) {
@@ -1244,7 +1251,7 @@
         addTabNote(false,"");
         let eventType = getEventType();
 
-        let contextData = getContextData();
+        let contextData = getContextData(1);
         if(contextData == undefined) {
             if(compareTree){
                 addTabNote(true,"This view is not supported when Compare option is selected.")
@@ -1307,8 +1314,6 @@
                 return;
             }
 
-            //addContextData(selectedLevel, eventType);
-
             resetTreeHeader("");
 
             genSampleTable(true, level);
@@ -1319,9 +1324,6 @@
             prevSampleProfile = $("#event-type-sample").val();
 
             let start = performance.now();
-
-            let selectedLevel = getSelectedLevel(getActiveTree(eventType, false));
-            //addContextData(selectedLevel, eventType);
 
             resetTreeHeader("");
 
