@@ -70,7 +70,6 @@
     function updateEventInputOptions(id){
         $('#'+id).empty();
 
-
         /*if (contextData != undefined && contextData.records != undefined) {
             let samplesCustomEventFound = false;
             if(!(samplesCustomEvent == '' || samplesCustomEvent == undefined)) {
@@ -144,22 +143,30 @@
                 }
             }
 
-            for (let i = 0; i < groups.length; i++) {
-                if ((smplBy == '' || smplBy == undefined || !groupByFound)) {
-                    smplBy = groups[i];
-                    groupByFound = true;
-                }
-                if (smplBy == groups[i]) {
-                    $('#' + id).append($('<option>', {
-                        value: groups[i],
-                        text: groups[i],
-                        selected: true
-                    }));
-                } else {
-                    $('#' + id).append($('<option>', {
-                        value: groups[i],
-                        text: groups[i]
-                    }));
+            if(fContext == 'without'){//without context supported only for tid
+                $('#' + id).append($('<option>', {
+                    value: 'tid',
+                    text: 'tid',
+                    selected: true
+                }));
+            }else {
+                for (let i = 0; i < groups.length; i++) {
+                    if ((smplBy == '' || smplBy == undefined || !groupByFound)) {
+                        smplBy = groups[i];
+                        groupByFound = true;
+                    }
+                    if (smplBy == groups[i]) {
+                        $('#' + id).append($('<option>', {
+                            value: groups[i],
+                            text: groups[i],
+                            selected: true
+                        }));
+                    } else {
+                        $('#' + id).append($('<option>', {
+                            value: groups[i],
+                            text: groups[i]
+                        }));
+                    }
                 }
             }
         }
@@ -360,6 +367,10 @@
         sampleTableHeader = [];
         sampleTableRows = [];
         moreSamples = [];
+
+        if(fContext == 'without'){//context without supported only for tid, todo support thread name for jstacks
+            groupBySamples = 'tid';
+        }
         getSamplesTableHeader(groupBySamples, sampleTableHeader, eventType);
         let totalSampleCount = getContextTree(1, eventType).tree.sz;
         let samplerowIndex = -1;
@@ -367,6 +378,7 @@
         if(addContext) {
             updateEventInputOptions('event-input-smpl');
             updateGroupByOptions('smpl-grp-by');
+            updateSampleFormatOptions('sample-format-input');
         }
 
         let isAll = (fContext === 'all' || fContext === '');
@@ -819,7 +831,7 @@
                         .text(tid)
                         .attr("x", 15)
                         .style("font-size", cellh+"px")
-                        .attr("y", y+cellh/2);
+                        .attr("y", y+cellh);
 
                     layer1.append('line')
                         .style('stroke-dasharray', [2,1])
@@ -1013,6 +1025,7 @@
         if(addContext) {
             updateEventInputOptions('event-input-smpl');
             updateGroupByOptions('smpl-grp-by');
+            updateSampleFormatOptions('sample-format-input');
 
             if(stack_id != '' && sampletableFormat == 0){
                 showSampleStack(stack_id);
@@ -1244,6 +1257,7 @@
 
         updateEventInputOptions('event-input-smpl');
         updateGroupByOptions('smpl-grp-by');
+        updateSampleFormatOptions('sample-format-input');
 
         if(skipFilter == undefined){
             skipFilter = false;
