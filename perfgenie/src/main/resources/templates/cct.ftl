@@ -846,7 +846,6 @@
             skipFilter = false;
         }
         console.log("updateProfilerView start");
-        $("ul.tree").html("");//reset
 
         addTabNote(false,"");
 
@@ -875,6 +874,7 @@
             }else{
                 console.log("change in tree, option:" + (prevCustomEvent == customEvent) + ":" + (currentLoadedTree === treeToProcess)+":"+ (prevOption === currentOption) +" isRefresh:"+(isRefresh === false)+":"+" isLevelRefresh:"+(isLevelRefresh === false)+" selectedLevel:"+ (prevSelectedLevel === selectedLevel));
             }
+            $("ul.tree").html("");//reset
 
             currentLoadedTree = treeToProcess;
             prevOption = currentOption;

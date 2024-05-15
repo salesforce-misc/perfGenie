@@ -174,23 +174,6 @@
         console.log("prepData time :" + (end - start));
     }
 
-    function addContextDataJstack(event){
-        let treeToProcess = getContextTree(1,event);
-        let contextTidMap = treeToProcess.context.tidMap;
-        prepData(event);
-
-        for(var tid in contextTidMap){
-            for (let i = 0; i < contextTidMap[tid].length; i++) {
-                if (contextTidMap[tid][i].tn == undefined) {
-                    let pair = contextTidMap[tid][i].ctx.split(";");
-                    contextTidMap[tid][i].tn = pair[1];
-                    contextTidMap[tid][i].ts = getThreadState(pair[0]);
-                    contextTidMap[tid][i].sampleNo = timestampArray.indexOf(contextTidMap[tid][i].time) + 1;
-                }
-            }
-        }
-    }
-
 
     function  updateProfilerViewTsview(level,skipFilter){
         let eventType = getEventType();
