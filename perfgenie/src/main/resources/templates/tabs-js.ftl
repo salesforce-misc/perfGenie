@@ -270,20 +270,20 @@
         }
     }
 
-    function createJFRCallTree(count) {
-        if (count == 1) {
-            if (getContextTree(1).context !== undefined && getContextTree(1).context !== null) {
+    function createJFRCallTree(length, eventType) {
+        if (length == 1) {
+            if (getContextTree(1, eventType).context !== undefined && getContextTree(1, eventType).context !== null) {
                 isJfrContext = true;
             } else {
                 const defaultResult = {error_messages: [], total: 0, roots: []};
-                setmergedContextTree(mergeTrees(invertTree(getContextTree(1)), defaultResult));
+                setmergedContextTree(mergeTrees(invertTree(getContextTree(1, eventType)), defaultResult));
             }
         } else {
-            if (getContextTree(1).context !== undefined && getContextTree(1).context !== null && getContextTree(2).context !== undefined && getContextTree(2).context !== null) {
+            if (getContextTree(1, eventType).context !== undefined && getContextTree(1, eventType).context !== null && getContextTree(2, eventType).context !== undefined && getContextTree(2, eventType).context !== null) {
                 isJfrContext = true;
-                setmergedContextTree(mergeTreesV1(invertTreeV1(getContextTree(1), 1), invertTreeV1(getContextTree(2), 2), 1));
+                setmergedContextTree(mergeTreesV1(invertTreeV1(getContextTree(1, eventType), 1), invertTreeV1(getContextTree(2, eventType), 2), 1));
             } else {
-                setmergedContextTree(mergeTrees(invertTree(getContextTree(1)), invertTree(getContextTree(2))));
+                setmergedContextTree(mergeTrees(invertTree(getContextTree(1, eventType)), invertTree(getContextTree(2, eventType))));
             }
         }
     }
@@ -309,11 +309,12 @@
 
     function createContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry) {
         let start = performance.now();
+        let eventType = getEventType();
         if (isCalltree == true && getmergedContextTree() === undefined && getContextTree(1) !== undefined) {
             // this will happen when backtrace view  is loaded and requesting a call tree view
             resetTreeHeader("Inverting tree ...");
             spinnerToggle('spinnerId');
-            createJFRCallTree(profiles.length); //generate call tree from back trace
+            createJFRCallTree(profiles.length, eventType); //generate call tree from back trace
 
             //apply filter and display tree
             updateProfilerView();
@@ -323,7 +324,7 @@
             return;
         }
         //data not available, retrieve and create context tree
-        let eventType = getEventType();
+
         if(eventType.includes("jfr_dump")) {
             retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, eventType);
         }else{

@@ -387,6 +387,7 @@
             pEnd='';
             fContext='';
             let hasReqIDFilter = false;
+            let eventType = getEventType();
             let array = $("#queryfilter").val().split(";");
             for (let i = 0; i < array.length; i++) {
                 if (array[i] != "") {
@@ -397,12 +398,12 @@
                     }else if(pair[0] == "pStart"){
                         pStart=Number(pair[1]);
                         if(pEnd === ''){
-                            pEnd = moment.utc( getContextTree(1).context.end);
+                            pEnd = moment.utc( getContextTree(1,eventType).context.end);// time range filter is not applicable for compare
                         }
                     }else if(pair[0] == "pEnd"){
                         pEnd=Number(pair[1]);
                         if(pStart === ''){
-                            pStart = moment.utc( getContextTree(1).context.start);
+                            pStart = moment.utc( getContextTree(1,eventType).context.start);// time range filter is not applicable for compare
                         }
                     }else if(pair[0] == "context"){
                         fContext=pair[1];
@@ -671,8 +672,8 @@
         return "." + id;
     }
 
-    function onLevel3Filter(eventType) {
-        console.log("onLevel3Filter start " + eventType);
+    function onLevel3Filter(eventType, count) {
+        console.log("onLevel3Filter "+count+"start " + eventType);
         if (filterFrame !== undefined && filterFrame != "") {
             updateStackIndex(getActiveTree(eventType, false));
             isLevelRefresh = true;
@@ -683,13 +684,13 @@
         }
     }
 
-    function onLevel2Filter(eventType) {
-        console.log("onLevel2Filter start " + eventType);
+    function onLevel2Filter(eventType, count) {
+        console.log("onLevel2Filter count: "+count+" start " + eventType);
         if (filterReq !== undefined && filterReq != "") {
             updateStackIndex(getActiveTree(eventType, false));//need this as stacks identified based on index
             let pair = filterReq.split("_");
             isLevelRefresh = true;
-            showRequestTimelineView(pair[0], pair[1], true, false, eventType);
+            showRequestTimelineView(pair[0], pair[1], true, false, eventType,count);
             if (getSelectedLevel(getActiveTree(eventType, false)) !== FilterLevel.LEVEL2) {
                 getActiveTree(eventType, false)[FilterLevel.LEVEL2] = 0;
             }
@@ -717,14 +718,14 @@
         }
     }
 
-    function onLevel1Filter(eventType) {
+    function onLevel1Filter(eventType, count) {
         console.log("onLevel1Filter start " +eventType);
         if (filterMap["tid"] == undefined && isFilterEmpty() && (pStart === '' || pEnd === '') && (fContext === 'all' || fContext === '') ) {
             //none
         } else {
             updateStackIndex(getActiveTree(eventType, false));//need this as stacks identified based on index
             isLevelRefresh = true;
-            filterOnType(eventType, 1);
+            filterOnType(eventType, count);
             if (getSelectedLevel(getActiveTree(eventType, false)) !== FilterLevel.LEVEL1) {
                 getActiveTree(eventType, false)[FilterLevel.LEVEL1] = 0;
             }
@@ -733,7 +734,7 @@
 
     let tableUpdateInput = "";
 
-    function getLevel1FilterInput() {
+    function getLevel1FilterInput(count) {
         let str = "";
         let array = filterBy.split(";");
         for (let i = 0; i < array.length; i++) {
@@ -744,14 +745,14 @@
                 }
             }
         }
-        return str + customEvent + fContext; //custom event, fContext added to filters
+        return str + customEvent + fContext + count; //custom event, fContext added to filters
     }
 
-    function applyContextFilters(level,eventType){
+    function applyContextFilters(level,eventType, count){
         let updateContextTable = false;
         let start = performance.now();
         if (level == FilterLevel.LEVEL1) {
-            let level1InputTmp = getLevel1FilterInput();
+            let level1InputTmp = getLevel1FilterInput(count);
             if (level1InputTmp !== contextInput[FilterLevel.LEVEL1][eventType]) {
                 contextInput[FilterLevel.LEVEL1][eventType] = level1InputTmp;
                 //level1  filter
@@ -766,13 +767,13 @@
                 resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL3);
                 resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType);
 
-                onLevel1Filter(eventType);
+                onLevel1Filter(eventType, count);
                 updateContextTable = true;
             }
         }
 
         if (level == FilterLevel.LEVEL2 || level == FilterLevel.LEVEL1) {
-            let level2InputTmp = filterBy + filterReq + filterStack + customEvent + fContext;
+            let level2InputTmp = filterBy + filterReq + filterStack + customEvent + fContext + count;
             if (level2InputTmp !== contextInput[FilterLevel.LEVEL2][eventType]) {
                 contextInput[FilterLevel.LEVEL2][eventType] = level2InputTmp;
                 document.getElementById("stack").innerHTML = "";
@@ -786,23 +787,23 @@
                 resetTreeInvertedLevel(FilterLevel.LEVEL2,eventType);
                 resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL3);
                 resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType);
-                onLevel2Filter(eventType);
+                onLevel2Filter(eventType,count);
             }
         }
 
         if (level == FilterLevel.LEVEL3 || level == FilterLevel.LEVEL2 || level == FilterLevel.LEVEL1) {
-            let level3InputTmp = filterBy + filterReq + filterStack + filterFrame + customEvent + fContext;
+            let level3InputTmp = filterBy + filterReq + filterStack + filterFrame + customEvent + fContext + count;
 
             if (level3InputTmp !== contextInput[FilterLevel.LEVEL3][eventType]) {
                 contextInput[FilterLevel.LEVEL3][eventType] = level3InputTmp;
                 resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL3);
                 resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType);
-                onLevel3Filter(eventType);
+                onLevel3Filter(eventType, count);
                 updateContextTable = true;
             }
         }
         let end = performance.now();
-        console.log("applyContextFilters: " + level + " eventType:" + eventType +" took:"+(end-start));
+        console.log("applyContextFilters count:"+count + " " + level + " eventType:" + eventType +" took:"+(end-start));
         return updateContextTable;
     }
 
@@ -820,7 +821,7 @@
         filterStarted = true;
 
         try {
-            let updateContextTable = applyContextFilters(level,eventType);
+            let updateContextTable = applyContextFilters(level,eventType, count);
 
             if (updateContextTable) {
                 genRequestTable();
@@ -830,8 +831,8 @@
 
             if (isCalltree) {
                 if (getSelectedLevel(getActiveTree(eventType, false)) === FilterLevel.UNDEFINED) {
-                    if (getContextTreeInverted(1, eventType) === undefined) {
-                        setContextTreeInverted(invertTreeV1(getContextTree(1, eventType), 1), 1, eventType);
+                    if (getContextTreeInverted(count, eventType) === undefined) {
+                        setContextTreeInverted(invertTreeV1(getContextTree(count, eventType), 1), 1, eventType);
                     }
                 } else if (getcontextTree1InvertedLevel(eventType, getSelectedLevel(getActiveTree(eventType, false))) === undefined) {
                     setcontextTree1InvertedLevel(invertTreeV1AtLevel(getActiveTree(eventType, false), 1), eventType, getSelectedLevel(getActiveTree(eventType, false)));
@@ -1384,7 +1385,7 @@
             setTimeout(function () {
                 $('#timelinepopup').focus();
                 let pair = filterReq.split("_");
-                showRequestTimelineView(pair[0], pair[1], false, allSamples, getEventType());
+                showRequestTimelineView(pair[0], pair[1], false, allSamples, getEventType(), 1);//todo for compare?
                 let stackPair = popfilterStack.split("_");
                 if ($("#" + stackPair[0] + "-" + stackPair[1] + "_pop").length != 0 && !$("#" + stackPair[0] + "-" + stackPair[1] + "_pop").hasClass("stackCells")) {
                     $("#" + stackPair[0] + "-" + stackPair[1] + "_pop").click();
@@ -1915,17 +1916,17 @@
         console.log("filterOnType 1");
     }
 
-    function showRequestTimelineView(tid, time, applyFilter, allSamples, eventType) {
+    function showRequestTimelineView(tid, time, applyFilter, allSamples, eventType, count) {
 
         let str = "";
         let table = "";
         let runTime = 0;
         let profilestart = 0;
-        let localContextData = getContextData(1);
+        let localContextData = getContextData(count);
 
         for (var tempeventType in jfrprofiles1) {
             if (profilestart == 0 && !(tempeventType == "Jstack" || tempeventType == "json-jstack") && getContextTree(1, tempeventType) != undefined) {
-                profilestart = getContextTree(1, tempeventType).context.start;
+                profilestart = getContextTree(count, tempeventType).context.start;
                 break;
             }
         }
@@ -1935,12 +1936,12 @@
         let jstackstart = 0;
         let jstackdiffstart = 0;
         let jstackdiff = 0;
-        let jstackEvent = getContextTree(1, "json-jstack") == undefined ?  "Jstack" : "json-jstack";
+        let jstackEvent = getContextTree(count, "json-jstack") == undefined ?  "Jstack" : "json-jstack";
 
-        if (getContextTree(1, jstackEvent) !== undefined) {
-            jstackdiffstart = time - getContextTree(1, jstackEvent).context.start;
-            jstackstart = getContextTree(1, jstackEvent).context.start;
-            jstackdiff = getContextTree(1, jstackEvent).context.start - profilestart;
+        if (getContextTree(count, jstackEvent) !== undefined) {
+            jstackdiffstart = time - getContextTree(count, jstackEvent).context.start;
+            jstackstart = getContextTree(count, jstackEvent).context.start;
+            jstackdiff = getContextTree(count, jstackEvent).context.start - profilestart;
         }
 
         let colorStackStr = "";
@@ -2020,8 +2021,8 @@
                 if (isJstack && applyFilter) {
                     filteredStackMap[FilterLevel.LEVEL2] = {};
                 }
-                if (getContextTree(1, jstackEvent) !== undefined && getContextTree(1, jstackEvent).context != undefined && getContextTree(1, jstackEvent).context.tidMap[tid] !== undefined) {
-                    getContextTree(1, jstackEvent).context.tidMap[tid].forEach(function (obj) {
+                if (getContextTree(count, jstackEvent) !== undefined && getContextTree(count, jstackEvent).context != undefined && getContextTree(count, jstackEvent).context.tidMap[tid] !== undefined) {
+                    getContextTree(count, jstackEvent).context.tidMap[tid].forEach(function (obj) {
                         if((pStart === '' || pEnd === '') || ((obj.time + jstackstart) >= pStart && (obj.time + jstackstart) <= pEnd)) { //todo: check time rang, we can use jstack context start
                             if (isAll || (isWith && obj[customEvent]?.obj != undefined) || (!isWith && obj[customEvent]?.obj == undefined)) {
                                 if (allSamples || (obj.time >= jstackdiffstart && obj.time <= jstackdiffstart + runTime)) {
@@ -2042,8 +2043,8 @@
                     });
                 }
             } else {
-                if (getContextTree(1, tempeventType) != undefined && getContextTree(1, tempeventType).context != undefined && getContextTree(1, tempeventType).context.tidMap[tid] !== undefined) {
-                    getContextTree(1, tempeventType).context.tidMap[tid].forEach(function (obj) {
+                if (getContextTree(count, tempeventType) != undefined && getContextTree(count, tempeventType).context != undefined && getContextTree(count, tempeventType).context.tidMap[tid] !== undefined) {
+                    getContextTree(count, tempeventType).context.tidMap[tid].forEach(function (obj) {
                         if((pStart === '' || pEnd === '') || ((obj.time + profilestart) >= pStart && (obj.time + profilestart) <= pEnd)) { //check time rang
                             if (isAll || (isWith && obj[customEvent]?.obj != undefined) || (!isWith && obj[customEvent]?.obj == undefined)) {
                                 if (allSamples || (obj.time >= start && obj.time <= start + runTime)) {
@@ -2170,8 +2171,8 @@
 
         let jstackinterval = 'x';
 
-        if (getContextTree(1, jstackEvent) != undefined && getContextTree(1, jstackEvent).meta != undefined && getContextTree(1, jstackEvent).meta['jstack-interval'] != undefined) {
-            jstackinterval = getContextTree(1, jstackEvent).meta['jstack-interval'];
+        if (getContextTree(count, jstackEvent) != undefined && getContextTree(count, jstackEvent).meta != undefined && getContextTree(count, jstackEvent).meta['jstack-interval'] != undefined) {
+            jstackinterval = getContextTree(count, jstackEvent).meta['jstack-interval'];
         }
 
         let timelinetitleIDHTML = "<select multiple=\"multiple\" style=\"border-color:#F2F2F3; height: 24px; width: 223px;\" name=\"timeline-event-type\" id=\"timeline-event-type\"> ";
@@ -2431,7 +2432,7 @@
     function svgShowReq(evt) {
         var svgobj = evt.target;
         if (svgobj.getAttribute("style") == undefined || !svgobj.getAttribute("style").includes("opacity: 0")) {
-            showRequestContextPopup(svgobj.getAttribute("id"));
+            showRequestContextPopup(svgobj.getAttribute("id"), false);
         }
     }
 
@@ -3218,7 +3219,7 @@
                 step: 1
             });
             $("#filtertimepickerstart").change(function (event) {
-                if (moment.utc($("#filtertimepickerstart").val()).valueOf() < getContextTree(1,eventType).context.start) {
+                if (moment.utc($("#filtertimepickerstart").val()).valueOf() < getContextTree(1,eventType).context.start) {//not applicable for compare
                     $("#filtertimepickerstart").val(moment.utc(getContextTree(1,eventType).context.start).format('YYYY-MM-DD HH:mm:ss'));
                     pStart = getContextTree(1,eventType).context.start;
                 }else{
@@ -3234,7 +3235,7 @@
                 addToFilter("pEnd="+pEnd);
             });
             $("#filtertimepickerend").change(function (event) {
-                if (moment.utc($("#filtertimepickerend").val()).valueOf() > getContextTree(1,eventType).context.end) {
+                if (moment.utc($("#filtertimepickerend").val()).valueOf() > getContextTree(1,eventType).context.end) {//not applicable for compare
                     $("#filtertimepickerend").val(moment.utc(getContextTree(1,eventType).context.end).format('YYYY-MM-DD HH:mm:ss'));
                     pEnd = getContextTree(1,eventType).context.end;
                 }else{
@@ -3249,7 +3250,7 @@
                 addToFilter("pStart="+pStart);
                 addToFilter("pEnd="+pEnd);
             });
-            if(getContextTree(1,eventType) == undefined){
+            if(getContextTree(1,eventType) == undefined){//not applicable for compare
                 return;
             }
             if(pStart != '') {
@@ -4779,7 +4780,7 @@
 
         let isAll = (fContext === 'all' || fContext === '');
         if(!isAll){
-            addContextData(eventType,1);
+            addContextData(eventType,1);//todo compare context table
         }
         let isWith = (fContext === 'with');
 
