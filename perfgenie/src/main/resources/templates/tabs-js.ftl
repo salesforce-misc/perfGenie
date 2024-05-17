@@ -468,7 +468,7 @@
 
                     if ( (getEventType() == eventType)){//} && !(eventType == "json-jstack" && eventType.contains("dump_"))) || eventType == "jfr_dump.json.gz") { //todo check this, dirty fix for sfdc
 
-                        //getLogContextWrapper(dateRanges, pods, queries, profilers, tenants, profiles, hosts, uploads, fileIds, uploadTimes, aggregates, eventType, contextTrees, customEvent);
+                        getLogContextWrapper(dateRanges, pods, queries, profilers, tenants, profiles, hosts, uploads, fileIds, uploadTimes, aggregates, eventType, contextTrees, customEvent);
 
                         for (var type in jfrprofiles1) {
                             if(type != eventType){//} && eventType != "jfr_dump.json.gz") {
