@@ -279,7 +279,7 @@
             if (getContextTree(1, eventType).context !== undefined && getContextTree(1, eventType).context !== null && getContextTree(2, eventType).context !== undefined && getContextTree(2, eventType).context !== null) {
                 isJfrContext = true;
                 setmergedContextTree(mergeTreesV1(invertTreeV1(getContextTree(1, eventType), 1), invertTreeV1(getContextTree(2, eventType), 2), 1));
-            } 
+            }
         }
     }
 
@@ -327,6 +327,18 @@
         }
         let end = performance.now();
         console.log("createContextTree time:" + (end - start));
+    }
+
+    function getLogContextWrapper(dateRanges, pods, queries, profilers, tenants, profiles, hosts, uploads, fileIds, uploadTimes, aggregates, eventType, contextTrees, customEvent){
+        let customEventCount = 0;
+        for (var customEvent in jfrevents1) {
+            getLogContext(dateRanges, pods, queries, profilers, tenants, profiles, hosts, uploads, fileIds, uploadTimes, aggregates, eventType, contextTrees, customEvent);
+            customEventCount++;
+            break;
+        }
+        if(customEventCount == 0){
+            getLogContext(dateRanges, pods, queries, profilers, tenants, profiles, hosts, uploads, fileIds, uploadTimes, aggregates, eventType, contextTrees, "jfr-context");
+        }
     }
 
     function retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, eventType) {
@@ -402,12 +414,12 @@
                 if (contextTrees[0].context !== undefined && contextTrees[0].context !== null) {
                     //$("#framefilterId").removeClass("hide");
                     isJfrContext = true;
-                    const defaultResult = {error_messages: [], sz: 0, ch: []};
+                    //const defaultResult = {error_messages: [], sz: 0, ch: []};
                     setContextTreeFrames(contextTrees[0].context.frames, 1, eventType);
 
                     if (isCalltree) {
                         setContextTree(contextTrees[0], 1, eventType);
-                        setContextTreeInverted(invertTreeV1(contextTrees[0], 1), 1, eventType);
+                        //setContextTreeInverted(invertTreeV1(contextTrees[0], 1), 1, eventType);
                     } else {
                         setContextTree(contextTrees[0], 1, eventType);
                     }
@@ -417,15 +429,7 @@
                         if(uploads[0] == "true" && fileIds[0] != "") {
                             setContextData({"records": {}, "tidlist": [], "header": {}},1);
                         }else{
-                            let customEventCount = 0;
-                            for (var customEvent in jfrevents1) {
-                                getLogContext(dateRanges[0], pods[0], queries[0], profilers[0], tenants[0], profiles[0], hosts[0], uploads[0], fileIds[0], uploadTimes[0], aggregates[0], eventType, contextTrees[0].context.start, contextTrees[0].context.end, customEvent);
-                                customEventCount++;
-                                break;
-                            }
-                            if(customEventCount == 0){
-                                getLogContext(dateRanges[0], pods[0], queries[0], profilers[0], tenants[0], profiles[0], hosts[0], uploads[0], fileIds[0], uploadTimes[0], aggregates[0], eventType, contextTrees[0].context.start, contextTrees[0].context.end, "jfr-context");
-                            }
+                            getLogContextWrapper(dateRanges, pods, queries, profilers, tenants, profiles, hosts, uploads, fileIds, uploadTimes, aggregates, eventType, contextTrees, customEvent);
                         }
                         for (var type in jfrprofiles1) {
                             if(type != eventType){//} && eventType != "jfr_dump.json.gz") {
@@ -451,6 +455,11 @@
                         setContextTree(contextTrees[1], 2, eventType);
                         //setmergedBacktraceTree(mergeTreesV1(contextTrees[0], contextTrees[1], 1), eventType);
                     }
+                    contextTrees[0].context.start = Math.round(contextTrees[0].context.start / 1000000);
+                    contextTrees[0].context.end = Math.round(contextTrees[0].context.end / 1000000);
+                    contextTrees[1].context.start = Math.round(contextTrees[1].context.start / 1000000);
+                    contextTrees[1].context.end = Math.round(contextTrees[1].context.end / 1000000);
+
                     console.log("Skipping context data for compare tree");
                     updateFilterViewStatus("Note: Context filter is disabled when compare option selected.");
 
@@ -458,6 +467,9 @@
                     $("#cct-panel").css("height","100%");
 
                     if ( (getEventType() == eventType)){//} && !(eventType == "json-jstack" && eventType.contains("dump_"))) || eventType == "jfr_dump.json.gz") { //todo check this, dirty fix for sfdc
+
+                        //getLogContextWrapper(dateRanges, pods, queries, profilers, tenants, profiles, hosts, uploads, fileIds, uploadTimes, aggregates, eventType, contextTrees, customEvent);
+
                         for (var type in jfrprofiles1) {
                             if(type != eventType){//} && eventType != "jfr_dump.json.gz") {
                                 retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, type);
@@ -538,7 +550,123 @@
         }
     }
 
-    function getLogContext(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, eventType, start, end, customEvent) {
+    function fetchContextData(dateRanges, pods, queries, profilers, tenants, profiles, hosts, uploads, fileIds, uploadTimes, aggregates, eventType){
+        const requests = [];
+        let datacenters = [];
+        for (let i = 0; i < tenants.length; i++) {
+            if (tenants[i].includes(".")) {
+                datacenters[i] = tenants[i].split(".")[0].trim();
+                tenants[i] = tenants[i].split(".")[1].trim();
+            }else {
+                datacenters[i] = tenants[i];
+            }
+        }
+        let toTenant = "";
+        if (uploads[0] != "true" && isS3 == "false") {
+            toTenant = datacenters[0];
+        }
+        const callTreeUrl = getCallTreeUrl(dateRanges[0], pods[0], queries[0], profilers[0], tenants[0], profiles[0], hosts[0], uploads[0], fileIds[0], uploadTimes[0], aggregates[0], eventType);
+        requests.push(callTreePerfGenieAjax(toTenant, "GET", callTreeUrl, result => result));
+        if (profiles.length === 2) {
+            let toTenant = "";
+            if (uploads[1] != "true") {
+                toTenant = datacenters[1];
+            }
+            const callTreeUrl = getCallTreeUrl(dateRanges[1], pods[1], (queries.length === 2) ? queries[1] : '', (profilers.length === 2) ? profilers[1] : '', (tenants.length === 2) ? tenants[1] : '', (profiles.length === 2) ? profiles[1] : '', (hosts.length === 2) ? hosts[1] : '', (uploads.length === 2) ? uploads[1] : '', (fileIds.length === 2) ? fileIds[1] : '', (uploadTimes.length === 2) ? uploadTimes[1] : '', aggregates[1], eventType);
+            requests.push(callTreePerfGenieAjax(toTenant, "GET", callTreeUrl, result => result));
+        }
+        return Promise.all(requests);
+    }
+
+
+    function getLogContext(dateRanges, pods, queries, profilers, tenants, profiles, hosts, uploads, fileIds, uploadTimes, aggregates, eventType, contextTrees, customEvent) {
+        let start = performance.now();
+
+        unhideFilterViewStatus();
+        updateFilterViewStatus("<div style='padding-right: 0px'>Retrieving request context of profile, this may take few sec  ... <span style='float: right;' class='spinner' id='contextspinner'></span></div>");
+        showSpinner('contextspinner');
+
+        let queryResults = fetchContextData(dateRanges, pods, queries, profilers, tenants, profiles, hosts, uploads, fileIds, uploadTimes, aggregates, customEvent);
+        if (queryResults === undefined) {
+            let end = performance.now();
+            console.log("getLogContext 0 time:" + (end - start) + " event:" + customEvent);
+            return;
+        }
+        console.log("getLogContext done");
+
+        queryResults.then(contextDatas => {
+            let isError = false;
+            if (contextDatas.length === 1) {
+                if(contextDatas[0] === "") {
+                    console.log("log context not available in JFR");
+                    updateFilterViewStatus("Note: Failed to get Request context.");
+                    toastr_warning("Failed to get Request context.");
+                    setContextData({"records": {}, "tidlist": [], "header": {}},1);
+                    fetchOtherEvents(dateRanges[0], tenants[0], hosts[0]);
+                    showContextFilter();
+                    hideFilterViewStatus();
+                    refreshTreeAfterContext(customEvent);
+                }else {
+                    if(contextDatas[0].tidlist == undefined && contextDatas[0].error != undefined){
+                        updateFilterViewStatus("Note: Failed to get Request context.");
+                        toastr_warning("Failed to get Request context.");
+                        setContextData({"records": {}, "tidlist": [], "header": {}},1);
+                        fetchOtherEvents(dateRanges[0], tenants[0], hosts[0]);
+                        showContextFilter();
+                        hideFilterViewStatus();
+                        refreshTreeAfterContext(customEvent);
+                    }else {
+                        setContextData(contextDatas[0],1);
+                        fetchOtherEvents(dateRanges[0], tenants[0], hosts[0]);
+                        showContextFilter();
+                        hideFilterViewStatus();
+                        refreshTreeAfterContext(customEvent);
+                    }
+                }
+            }else{
+                if(contextDatas[0] === "" || contextDatas[1] === "") {
+                    console.log("log context not available in JFR");
+                    updateFilterViewStatus("Note: Failed to get Request context.");
+                    toastr_warning("Failed to get Request context.");
+                    setContextData({"records": {}, "tidlist": [], "header": {}},1);
+                    setContextData({"records": {}, "tidlist": [], "header": {}},2);
+                    fetchOtherEvents(dateRanges[0], tenants[0], hosts[0]);
+                    fetchOtherEvents(dateRanges[1], tenants[1], hosts[1]);
+                    showContextFilter();
+                    hideFilterViewStatus();
+                    refreshTreeAfterContext(customEvent);
+                }else {
+                    if(contextDatas[0].tidlist == undefined && contextDatas[0].error != undefined){
+                        updateFilterViewStatus("Note: Failed to get Request context.");
+                        toastr_warning("Failed to get Request context.");
+                        setContextData({"records": {}, "tidlist": [], "header": {}},2);
+                        fetchOtherEvents(dateRanges[0], tenants[0], hosts[0]);
+                        fetchOtherEvents(dateRanges[1], tenants[1], hosts[1]);
+                        showContextFilter();
+                        hideFilterViewStatus();
+                        refreshTreeAfterContext(customEvent);
+                    }else {
+                        setContextData(contextDatas[0],1);
+                        setContextData(contextDatas[1],2);
+                        fetchOtherEvents(dateRanges[0], tenants[0], hosts[0]);
+                        fetchOtherEvents(dateRanges[1], tenants[1], hosts[1]);
+                        showContextFilter();
+                        hideFilterViewStatus();
+                        refreshTreeAfterContext(customEvent);
+                    }
+                }
+            }
+
+            }).catch(error => {
+                setContextData({"records": {}, "tidlist": [], "header": {}},1);
+                fetchOtherEvents(timeRanges[0], tenants[0], hosts[0]);
+                updateFilterViewStatus("Note: Failed to get Request context.");
+                toastr_warning("Failed to get Request context.");
+                console.error(error);
+            });
+    }
+
+    function getLogContextold(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, eventType, start, end, customEvent) {
         unhideFilterViewStatus();
         updateFilterViewStatus("<div style='padding-right: 0px'>Retrieving request context of profile, this may take few sec  ... <span style='float: right;' class='spinner' id='contextspinner'></span></div>");
         showSpinner('contextspinner');
@@ -673,6 +801,8 @@
             updateProfilerViewSurface(level);
         }
     }
+
+
 
     // [ajax request(s)] gets context tree data
     function fetchData(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, eventType) {
