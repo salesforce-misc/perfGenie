@@ -610,7 +610,7 @@
     let multiSelect = {};
 
     //one for LEVEL1, 2 for LEVEL2 and 3 for LEVEL3
-    let contextInput = {1:{},2:{},3:{}};
+    let contextInput = {1:{1:{},2:{},3:{}},2:{1:{},2:{},3:{}}};
     let filterStarted = false;
     let currentLoadedTree = null;
 
@@ -754,7 +754,7 @@
 
     let tableUpdateInput = "";
 
-    function getLevel1FilterInput(count) {
+    function getLevel1FilterInput() {
         let str = "";
         let array = filterBy.split(";");
         for (let i = 0; i < array.length; i++) {
@@ -765,7 +765,7 @@
                 }
             }
         }
-        return str + customEvent + fContext + count; //custom event, fContext added to filters
+        return str + customEvent + fContext; //custom event, fContext added to filters
     }
 
     function applyContextFilters(level,eventType, count){
@@ -773,8 +773,8 @@
         let start = performance.now();
         if (level == FilterLevel.LEVEL1) {
             let level1InputTmp = getLevel1FilterInput(count);
-            if (level1InputTmp !== contextInput[FilterLevel.LEVEL1][eventType]) {
-                contextInput[FilterLevel.LEVEL1][eventType] = level1InputTmp;
+            if (level1InputTmp !== contextInput[count][FilterLevel.LEVEL1][eventType]) {
+                contextInput[count][FilterLevel.LEVEL1][eventType] = level1InputTmp;
                 //level1  filter
                 //clean off level 2 history
                 prevReqTid = "";
@@ -799,9 +799,9 @@
         }
 
         if (level == FilterLevel.LEVEL2 || level == FilterLevel.LEVEL1) {
-            let level2InputTmp = filterBy + filterReq + filterStack + customEvent + fContext + count;
-            if (level2InputTmp !== contextInput[FilterLevel.LEVEL2][eventType]) {
-                contextInput[FilterLevel.LEVEL2][eventType] = level2InputTmp;
+            let level2InputTmp = filterBy + filterReq + filterStack + customEvent + fContext;
+            if (level2InputTmp !== contextInput[count][FilterLevel.LEVEL2][eventType]) {
+                contextInput[count][FilterLevel.LEVEL2][eventType] = level2InputTmp;
                 document.getElementById("stack").innerHTML = "";
                 document.getElementById("stackcontext").innerHTML = "";
                 document.getElementById("threadstate").innerHTML = "";
@@ -822,10 +822,10 @@
         }
 
         if (level == FilterLevel.LEVEL3 || level == FilterLevel.LEVEL2 || level == FilterLevel.LEVEL1) {
-            let level3InputTmp = filterBy + filterReq + filterStack + filterFrame + customEvent + fContext + count;
+            let level3InputTmp = filterBy + filterReq + filterStack + filterFrame + customEvent + fContext;
 
-            if (level3InputTmp !== contextInput[FilterLevel.LEVEL3][eventType]) {
-                contextInput[FilterLevel.LEVEL3][eventType] = level3InputTmp;
+            if (level3InputTmp !== contextInput[count][FilterLevel.LEVEL3][eventType]) {
+                contextInput[count][FilterLevel.LEVEL3][eventType] = level3InputTmp;
                 //resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL3);
                 resetTreeLevel(getContextTree(count,eventType), FilterLevel.LEVEL3);
                 resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType, count);
