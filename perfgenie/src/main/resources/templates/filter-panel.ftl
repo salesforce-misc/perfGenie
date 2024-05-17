@@ -363,9 +363,14 @@
             fContext='';
             isFilterOnType=true;
             for (var key in jfrprofiles1) {
-                resetTreeInvertedLevel(FilterLevel.LEVEL1, key);
-                resetTreeInvertedLevel(FilterLevel.LEVEL2, key);
-                resetTreeInvertedLevel(FilterLevel.LEVEL3, key);
+                resetTreeInvertedLevel(FilterLevel.LEVEL1, key, 1);
+                resetTreeInvertedLevel(FilterLevel.LEVEL2, key, 1);
+                resetTreeInvertedLevel(FilterLevel.LEVEL3, key, 1);
+            }
+            for (var key in jfrprofiles2) {
+                resetTreeInvertedLevel(FilterLevel.LEVEL1, key, 2);
+                resetTreeInvertedLevel(FilterLevel.LEVEL2, key, 2);
+                resetTreeInvertedLevel(FilterLevel.LEVEL3, key, 2);
             }
 
             resetTreeAllLevel(getActiveTree(getEventType(), false));
@@ -548,8 +553,8 @@
     let contextTree1 = {};
     let contextTree2 = {};
 
-    let contextTreeInverted1 = {};
-    let contextTreeInverted2 = {};
+    let contextTreeInverted = {};
+    //let contextTreeInverted2 = {};
 
     let mergedContextTree = {};
     let mergedBacktraceTree = {};
@@ -567,15 +572,15 @@
 
     let contextData = {};
     let perfGenieFrames = {1:{},2:{}};
-    let contextTree1Frames;
-    let contextTree2Frames;
-    let contextTree1JstackFrames=false;
-    let contextTree2JstackFrames=false;
+    //let contextTree1Frames;
+    //let contextTree2Frames;
+    //let contextTree1JstackFrames=false;
+    //let contextTree2JstackFrames=false;
     let isJfrContext = false;
     let isS3 = "true";
 
     //1 for LEVEL1, 2 for LEVEL2 and 3 for LEVEL3
-    let contextTree1InvertedLevel = {};
+    let contextTreeInvertedLevel = {};
 
     let prevReqTid = "";
     let prevReqTime = "";
@@ -761,11 +766,11 @@
                 prevReqTime = "";
                 document.getElementById("stack").innerHTML = "";
                 resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL1);
-                resetTreeInvertedLevel(FilterLevel.LEVEL1,eventType);
+                resetTreeInvertedLevel(FilterLevel.LEVEL1,eventType, count);
                 resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL2);
-                resetTreeInvertedLevel(FilterLevel.LEVEL2,eventType);
+                resetTreeInvertedLevel(FilterLevel.LEVEL2,eventType, count);
                 resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL3);
-                resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType);
+                resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType, count);
 
                 onLevel1Filter(eventType, count);
                 updateContextTable = true;
@@ -784,9 +789,9 @@
                 prevReqCellTime = "";
                 prevReqCellObj = null;
                 resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL2);
-                resetTreeInvertedLevel(FilterLevel.LEVEL2,eventType);
+                resetTreeInvertedLevel(FilterLevel.LEVEL2,eventType, count);
                 resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL3);
-                resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType);
+                resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType, count);
                 onLevel2Filter(eventType,count);
             }
         }
@@ -797,7 +802,7 @@
             if (level3InputTmp !== contextInput[FilterLevel.LEVEL3][eventType]) {
                 contextInput[FilterLevel.LEVEL3][eventType] = level3InputTmp;
                 resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL3);
-                resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType);
+                resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType, count);
                 onLevel3Filter(eventType, count);
                 updateContextTable = true;
             }
@@ -812,8 +817,18 @@
         let eventType = getEventType();
         console.log("filterToLevel start:" + level + " eventType:" + eventType);
         if (getContextData(count) === undefined || isJfrContext == false) {
+            if(compareTree){
+                if (getActiveTree(getEventType(), isCalltree) === undefined) {
+                    if (isCalltree) {
+                        setmergedContextTree(mergeTreesV1(invertTreeV1(getContextTree(1,eventType), 1), invertTreeV1(getContextTree(2,eventType), 2), 1), eventType);
+                    } else {
+                        setmergedBacktraceTree(mergeTreesV1(getContextTree(1,eventType), getContextTree(2,eventType), 1), eventType);
+                    }
+                }
+            }
             return true;
         }
+
         if (filterStarted) {
             toastr_warning("Please wait for previous filter to finish.");
             return false;
@@ -834,15 +849,15 @@
                     if (getContextTreeInverted(count, eventType) === undefined) {
                         setContextTreeInverted(invertTreeV1(getContextTree(count, eventType), 1), 1, eventType);
                     }
-                } else if (getcontextTree1InvertedLevel(eventType, getSelectedLevel(getActiveTree(eventType, false))) === undefined) {
-                    setcontextTree1InvertedLevel(invertTreeV1AtLevel(getActiveTree(eventType, false), 1), eventType, getSelectedLevel(getActiveTree(eventType, false)));
+                } else if (getcontextTreeInvertedLevel(eventType, getSelectedLevel(getActiveTree(eventType, false)), count) === undefined) {
+                    setcontextTreeInvertedLevel(invertTreeV1AtLevel(getActiveTree(eventType, false), 1), eventType, getSelectedLevel(getActiveTree(eventType, false)), count);
                 }
             }
 
             if (!compareTree && isJfrContext){
                 let treeToProcess = getActiveTree(eventType, isCalltree);
                 let selectedLevel = getSelectedLevel(getActiveTree(eventType, false));
-                if(getSelectedLevel(getActiveTree(eventType, false)) !== FilterLevel.UNDEFINED && !isCalltree){
+                if(selectedLevel !== FilterLevel.UNDEFINED && !isCalltree){
                     sortTreeLevelBySizeWrapper(treeToProcess, selectedLevel);
                     updateStackIndex(treeToProcess);//should we always do this?
                 }else{
@@ -860,10 +875,10 @@
         return true;
     }
 
-    function resetTreeInvertedLevel(level, eventType) {
+    function resetTreeInvertedLevel(level, eventType, count) {
         //for (var key in jfrprofiles1) {
             console.log("resetTreeInvertedLevel: " + level +":"+eventType);
-            setcontextTree1InvertedLevel(undefined, eventType, level);
+            setcontextTreeInvertedLevel(undefined, eventType, level, count);
         //}
     }
 
@@ -1146,6 +1161,7 @@
         return -1;
     }
 
+    /*
     function logColor(line) {
         if (line == "U") {
             return "#DA823B";
@@ -1156,7 +1172,7 @@
         } else {
             return "#828282";
         }
-    }
+    }*/
 
     let curStackIDT = undefined;
     let curLevelT = undefined;
@@ -4068,27 +4084,34 @@
         if (eventType == undefined) {
             eventType = getEventType();
         }
+        if(contextTreeInverted[count] == undefined){
+            contextTreeInverted[count] = {};
+        }
+        contextTreeInverted[count][eventType] = tree;
+
+        /*
         if (count == 1) {
             contextTreeInverted1[eventType] = tree;
         } else {
             contextTreeInverted2[eventType] = tree;
-        }
+        }*/
     }
 
     function getContextTreeInverted(count, eventType) {
         if (eventType == undefined) {
             eventType = getEventType();
         }
-
         if(eventType == undefined) {
             return undefined;
         }
-
-        if (count == 1) {
+        if(contextTreeInverted[count] != undefined && contextTreeInverted[count][eventType] != undefined){
+            return contextTreeInverted[count][eventType];
+        }
+        /*if (count == 1) {
             return contextTreeInverted1[eventType];
         } else {
             return contextTreeInverted2[eventType];
-        }
+        }*/
     }
 
     function setmergedContextTree(tree, eventType) {
@@ -4125,22 +4148,25 @@
         return mergedBacktraceTree[eventType];
     }
 
-    function setcontextTree1InvertedLevel(tree, eventType, level) {
+    function setcontextTreeInvertedLevel(tree, eventType, level, count) {
         if (eventType == undefined) {
             eventType = getEventType();
         }
-        if(contextTree1InvertedLevel[eventType] == undefined){
-            contextTree1InvertedLevel[eventType] = {};
+        if(contextTreeInvertedLevel[count] == undefined){
+            contextTreeInvertedLevel[count] = {};
         }
-        contextTree1InvertedLevel[eventType][level] = tree;
+        if(contextTreeInvertedLevel[count][eventType] == undefined){
+            contextTreeInvertedLevel[count][eventType] = {};
+        }
+        contextTreeInvertedLevel[count][eventType][level] = tree;
     }
 
-    function getcontextTree1InvertedLevel(eventType, level) {
+    function getcontextTreeInvertedLevel(eventType, level, count) {
         if (eventType == undefined) {
             eventType = getEventType();
         }
-        if(contextTree1InvertedLevel[eventType] != undefined) {
-            return contextTree1InvertedLevel[eventType][level];
+        if(contextTreeInvertedLevel[count] != undefined && contextTreeInvertedLevel[count][eventType] != undefined) {
+            return contextTreeInvertedLevel[count][eventType][level];
         }
         return undefined;
     }
@@ -4163,7 +4189,7 @@
                 if(getSelectedLevel(tree) === FilterLevel.UNDEFINED){
                     return getContextTreeInverted(1, eventType);
                 }else {
-                    return getcontextTree1InvertedLevel(eventType, getSelectedLevel(tree));
+                    return getcontextTreeInvertedLevel(eventType, getSelectedLevel(tree), 1);
                 }
             }else {
                 return getmergedContextTree();

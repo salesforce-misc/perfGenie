@@ -274,17 +274,12 @@
         if (length == 1) {
             if (getContextTree(1, eventType).context !== undefined && getContextTree(1, eventType).context !== null) {
                 isJfrContext = true;
-            } else {
-                const defaultResult = {error_messages: [], total: 0, roots: []};
-                setmergedContextTree(mergeTrees(invertTree(getContextTree(1, eventType)), defaultResult));
             }
         } else {
             if (getContextTree(1, eventType).context !== undefined && getContextTree(1, eventType).context !== null && getContextTree(2, eventType).context !== undefined && getContextTree(2, eventType).context !== null) {
                 isJfrContext = true;
                 setmergedContextTree(mergeTreesV1(invertTreeV1(getContextTree(1, eventType), 1), invertTreeV1(getContextTree(2, eventType), 2), 1));
-            } else {
-                setmergedContextTree(mergeTrees(invertTree(getContextTree(1, eventType)), invertTree(getContextTree(2, eventType))));
-            }
+            } 
         }
     }
 
@@ -310,7 +305,7 @@
     function createContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry) {
         let start = performance.now();
         let eventType = getEventType();
-        if (isCalltree == true && getmergedContextTree() === undefined && getContextTree(1) !== undefined) {
+        if (isCalltree == true && getmergedContextTree() === undefined && getContextTree(1, eventType) !== undefined) {
             // this will happen when backtrace view  is loaded and requesting a call tree view
             resetTreeHeader("Inverting tree ...");
             spinnerToggle('spinnerId');
@@ -409,41 +404,6 @@
                     isJfrContext = true;
                     const defaultResult = {error_messages: [], sz: 0, ch: []};
                     setContextTreeFrames(contextTrees[0].context.frames, 1, eventType);
-                    /*
-                    if (isJstackEvent) {
-                        console.log("add frames1:" + eventType);
-                        if(contextTree1Frames === undefined){
-                            contextTree1JstackFrames = true;
-                            contextTree1Frames = contextTrees[0].context.frames;
-                            contextTree1Frames[3506402] = "root";
-                        }else{
-                            if(contextTrees[0].context.frames != null) {
-                                for (var key in contextTrees[0].context.frames) {
-                                    if (contextTree1Frames[key] === undefined) {
-                                        contextTree1Frames[key] = contextTrees[0].context.frames[key];
-                                    }
-                                }
-                            }
-                        }
-                    }else{
-                        if(contextTree1JstackFrames === true){
-                            if(contextTrees[0].context.frames != null) {
-                                console.log("add frames1:" + eventType);
-                                contextTree1JstackFrames = false;
-                                for (var key in contextTrees[0].context.frames) {
-                                    if (contextTree1Frames[key] === undefined) {
-                                        contextTree1Frames[key] = contextTrees[0].context.frames[key];
-                                    }
-                                }
-                            }
-                        }else if(contextTree1Frames === undefined){
-                            if(contextTrees[0].context.frames != null) {
-                                console.log("add frames1:" + eventType);
-                                contextTree1Frames = contextTrees[0].context.frames;
-                                contextTree1Frames[3506402] = "root";
-                            }
-                        }
-                    }*/
 
                     if (isCalltree) {
                         setContextTree(contextTrees[0], 1, eventType);
@@ -481,85 +441,15 @@
 
                     setContextTreeFrames(contextTrees[0].context.frames, 1, eventType);
                     setContextTreeFrames(contextTrees[1].context.frames, 2, eventType);
-                    /*
-                    if (isJstackEvent) {
-                        console.log("add frames1:" + eventType);
-                        if(contextTree1Frames === undefined){
-                            contextTree1JstackFrames = true;
-                            contextTree1Frames = contextTrees[0].context.frames;
-                            contextTree1Frames[3506402] = "root";
-                        }else{
-                            if(contextTrees[0].context.frames != null) {
-                                for (var key in contextTrees[0].context.frames) {
-                                    if (contextTree1Frames[key] === undefined) {
-                                        contextTree1Frames[key] = contextTrees[0].context.frames[key];
-                                    }
-                                }
-                            }
-                        }
-                    }else{
-                        if(contextTree1JstackFrames === true){
-                            if(contextTrees[0].context.frames != null) {
-                                console.log("add frames1:" + eventType);
-                                contextTree1JstackFrames=false;
-                                for (var key in contextTrees[0].context.frames) {
-                                    if (contextTree1Frames[key] === undefined) {
-                                        contextTree1Frames[key] = contextTrees[0].context.frames[key];
-                                    }
-                                }
-                            }
-                        }else if(contextTree1Frames === undefined){
-                            if(contextTrees[0].context.frames != null) {
-                                console.log("add frames1:" + eventType);
-                                contextTree1Frames = contextTrees[0].context.frames;
-                                contextTree1Frames[3506402] = "root";
-                            }
-                        }
-                    }
-
-                    if (isJstackEvent) {
-                        console.log("add frames2:" + eventType);
-                        if(contextTree2Frames === undefined){
-                            contextTree2JstackFrames = true;
-                            contextTree2Frames = contextTrees[1].context.frames;
-                            contextTree2Frames[3506402] = "root";
-                        }else{
-                            if(contextTrees[1].context.frames != null) {
-                                for (var key in contextTrees[1].context.frames) {
-                                    if (contextTree2Frames[key] === undefined) {
-                                        contextTree2Frames[key] = contextTrees[1].context.frames[key];
-                                    }
-                                }
-                            }
-                        }
-                    }else{
-                        if(contextTree2JstackFrames === true){
-                            if(contextTrees[1].context.frames != null) {
-                                console.log("add frames2:" + eventType);
-                                contextTree2JstackFrames = false;
-                                for (var key in contextTrees[1].context.frames) {
-                                    if (contextTree2Frames[key] === undefined) {
-                                        contextTree2Frames[key] = contextTrees[1].context.frames[key];
-                                    }
-                                }
-                            }
-                        }else if(contextTree2Frames === undefined){
-                            if(contextTrees[1].context.frames != null) {
-                                console.log("add frames1:" + eventType);
-                                contextTree2Frames = contextTrees[1].context.frames;
-                                contextTree2Frames[3506402] = "root";
-                            }
-                        }
-                    }
-
-                     */
 
                     if (isCalltree) {
-                        setmergedContextTree(mergeTreesV1(invertTreeV1(contextTrees[0], 1), invertTreeV1(contextTrees[1], 2), 1), eventType);
+                        setContextTree(contextTrees[0], 1, eventType);
+                        setContextTree(contextTrees[1], 2, eventType);
+                        //setmergedContextTree(mergeTreesV1(invertTreeV1(contextTrees[0], 1), invertTreeV1(contextTrees[1], 2), 1), eventType);
                     } else {
                         setContextTree(contextTrees[0], 1, eventType);
                         setContextTree(contextTrees[1], 2, eventType);
-                        setmergedBacktraceTree(mergeTreesV1(contextTrees[0], contextTrees[1], 1), eventType);
+                        //setmergedBacktraceTree(mergeTreesV1(contextTrees[0], contextTrees[1], 1), eventType);
                     }
                     console.log("Skipping context data for compare tree");
                     updateFilterViewStatus("Note: Context filter is disabled when compare option selected.");
