@@ -768,9 +768,11 @@
         return str + customEvent + fContext; //custom event, fContext added to filters
     }
 
+    let hasFilterChanged = false;
     function applyContextFilters(level,eventType, count){
         let updateContextTable = false;
         let start = performance.now();
+        hasFilterChanged = false;
         if (level == FilterLevel.LEVEL1) {
             let level1InputTmp = getLevel1FilterInput(count);
             if (level1InputTmp !== contextInput[count][FilterLevel.LEVEL1][eventType]) {
@@ -795,6 +797,7 @@
 
                 onLevel1Filter(eventType, count);
                 updateContextTable = true;
+                hasFilterChanged = true;
             }
         }
 
@@ -818,6 +821,7 @@
                 setmergedContextTree(undefined, eventType);
                 setmergedBacktraceTree(undefined, eventType);
                 onLevel2Filter(eventType,count);
+                hasFilterChanged = true;
             }
         }
 
@@ -835,6 +839,7 @@
 
                 onLevel3Filter(eventType, count);
                 updateContextTable = true;
+                hasFilterChanged = true;
             }
         }
         let end = performance.now();
@@ -880,9 +885,20 @@
                     if (selectedLevel === FilterLevel.UNDEFINED) {
                         if (getContextTreeInverted(count, eventType) === undefined) {
                             setContextTreeInverted(invertTreeV1(getContextTree(count, eventType), 1), count, eventType);
+                            sortTreeBySize(getContextTreeInverted(count,eventType));
                         }
                     } else if (getcontextTreeInvertedLevel(eventType, selectedLevel, count) === undefined) {
                         setcontextTreeInvertedLevel(invertTreeV1AtLevel(getContextTree(count,eventType), 1, selectedLevel), eventType, selectedLevel, count);
+                        sortTreeBySize(getcontextTreeInvertedLevel(eventType,selectedLevel,count));
+                    }
+                }else{
+                    if(hasFilterChanged) {
+                        if (selectedLevel !== FilterLevel.UNDEFINED) {
+                            sortTreeLevelBySizeWrapper(getContextTree(count, eventType), selectedLevel);
+                            updateStackIndex(getContextTree(count, eventType));//should we always do this?
+                        } else {
+                            sortTreeBySize(getContextTree(count, eventType));
+                        }
                     }
                 }
             }
@@ -908,17 +924,18 @@
                 }
             }
 
+            /*
             if (!compareTree && isJfrContext) {
                 let treeToProcess = getActiveTree(eventType, isCalltree);
                 //let selectedLevel = getSelectedLevel(getActiveTree(eventType, false));
                 let selectedLevel = getSelectedLevel(getContextTree(1, eventType));
                 if (selectedLevel !== FilterLevel.UNDEFINED && !isCalltree) {
-                    sortTreeLevelBySizeWrapper(treeToProcess, selectedLevel);
-                    updateStackIndex(treeToProcess);//should we always do this?
+                    //sortTreeLevelBySizeWrapper(treeToProcess, selectedLevel);
+                    //updateStackIndex(treeToProcess);//should we always do this?
                 } else {
-                    sortTreeBySize(treeToProcess);
+                    //sortTreeBySize(treeToProcess);
                 }
-            }
+            }*/
 
             if (updateContextTable) {
                 genRequestTable();
