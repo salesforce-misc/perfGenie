@@ -4308,10 +4308,16 @@
 
     function setContextData(data, count){
         contextData[count] = data;
-        processCustomEvents();
-        populateEventInputOptions("event-input");
-        setToolBarOptions("statetabledrp");
-        loadDiagData1();
+        processCustomEvents(count);
+        if(count == 1) {
+            populateEventInputOptions("event-input");
+            setToolBarOptions("statetabledrp");
+        }
+        if(count == 1) {
+            loadDiagData1();
+        }else{
+            loadDiagData2();
+        }
     }
 
     function setContextTreeFrames(frames, count, event){
@@ -4331,8 +4337,8 @@
         return contextData[count];
     }
 
-    function processCustomEvents() {
-        let localContextData = getContextData(1);
+    function processCustomEvents(count) {
+        let localContextData = getContextData(count);
 
         if(localContextData != undefined && localContextData.records != undefined){
             if(localContextData.header != undefined) {
@@ -4854,10 +4860,7 @@
 
         addContextHints(eventType);
 
-        if(compareTree){
-            console.log("skip genRequestTable " + eventType);
-            return;
-        }
+
 
         let start1 = performance.now();
 
@@ -4866,6 +4869,11 @@
             return;
         }
 
+        if(compareTree){
+            console.log("skip genRequestTable " + eventType);
+            return;
+        }
+        
         if (customEvent == "" || customEvent == undefined) {
             return;
         }

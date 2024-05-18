@@ -410,7 +410,9 @@ function addUploadedContext(csv,name){
     }).showToast();
 }
 function loadDiagData1(){
-    if(contextData == undefined || contextData.header == undefined){
+
+    let localcontextData = getContextData(1);
+    if(localcontextData == undefined || localcontextData.header == undefined){
         return;
     }
 
@@ -480,11 +482,11 @@ function loadDiagData1(){
     let isloaded = false;
     for (let key in header) {
         otherEventsFetched[key]=true;
-        contextData.header[key] = header[key];
+        localcontextData.header[key] = header[key];
         isloaded=true;
     }
     for (let key in records) {
-        contextData.records[key] = records[key];
+        localcontextData.records[key] = records[key];
         $('#other-event-input').append($('<option>', {
             value: key,
             text: key
@@ -507,8 +509,100 @@ function getMetaData2(start, end, tenant, host) {
             hideSpinner();
             metaData2 = result;
             populateIDs2(tenant, host);
+            loadDiagData2();
         }
     });
+}
+
+function loadDiagData2(){
+    let localcontextData = getContextData(2);
+    if(localcontextData == undefined || localcontextData.header == undefined){
+        return;
+    }
+
+    let records = {};
+    let header = {};
+
+    for (let key in metaData2) {
+        if(metaData2[key].metadata.name != undefined) {
+            if(metaData2[key].metadata.name === "jfr"){
+                continue;
+            }
+            if(!metaData2[key].metadata.name.includes("json") && (metaData2[key].metadata["file-name"] == undefined || !metaData2[key].metadata["file-name"].includes("json")) ) {
+                let diagnostics = []
+                diagnostics.push(metaData2[key].timestampMillis);
+                diagnostics.push(metaData2[key].metadata.name);
+                diagnostics.push(1);
+                //1_048_576
+                diagnostics.push(metaData2[key].metadata.guid);
+                diagnostics.push(metaData2[key].dimensions[".maiev-event-payload-size"] == undefined ? 0 : Number(metaData2[key].dimensions[".maiev-event-payload-size"]));
+                if (header["diagnostics(raw)"] == undefined) {
+                    header["diagnostics(raw)"] = ["timestamp:timestamp", "event:text", "count:number","guid:text","size:number"];
+                    records["diagnostics(raw)"] = {};
+                    records["diagnostics(raw)"][1] = [];
+                }
+                records["diagnostics(raw)"][1].push({"record": diagnostics});
+            }
+
+            let dimExists = false;
+            for(let dim in metaData2[key].dimensions) {
+                if(dim.charAt(0) !== '.' && dim !== 'exit_code') {
+                    dimExists=true;
+                    break;
+                }
+            }
+
+            if (dimExists) {
+                let headerExists = true;
+                if (header[metaData2[key].metadata.name] == undefined) {
+                    header[metaData2[key].metadata.name] = [];
+                    header[metaData2[key].metadata.name].push("timestamp:timestamp");
+                    header[metaData2[key].metadata.name].push("name:text");
+                    headerExists=false;
+                }
+                if (records[metaData2[key].metadata.name] == undefined) {
+                    records[metaData2[key].metadata.name] = {};
+                    records[metaData2[key].metadata.name][1] = [];
+                }
+                let record = [];
+
+
+                record.push(metaData2[key].timestampMillis);
+                record.push(metaData2[key].metadata.name);
+
+                for(let dim in metaData2[key].dimensions)
+                {
+                    if(dim.charAt(0) !=='.' && dim !== 'exit_code'){
+                        if(!headerExists){
+                            header[metaData2[key].metadata.name].push(dim+":number");
+                        }
+                        record.push(Number(metaData2[key].dimensions[dim]));
+                    }
+                }
+                records[metaData2[key].metadata.name][1].push({"record" : record});
+            }
+        }
+    }
+    let isloaded = false;
+    for (let key in header) {
+        otherEventsFetched[key]=true;
+        localcontextData.header[key] = header[key];
+        isloaded=true;
+    }
+    for (let key in records) {
+        localcontextData.records[key] = records[key];
+        $('#other-event-input').append($('<option>', {
+            value: key,
+            text: key
+        }));
+    }
+    if(isloaded){
+        Toastify({
+            text: "diagnostics(raw) events loaded",
+            duration: 8000
+        }).showToast();
+        $("#cct-panel").css("height", "100%");//expand context table view
+    }
 }
 
 function addInputToURL() {
