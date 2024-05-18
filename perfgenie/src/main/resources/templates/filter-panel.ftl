@@ -3299,12 +3299,15 @@
                     table += "<td style='border: hidden' class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('frame=xxxx');\" title='Narrows down a filter to a single frame. For example frame=xxxx' tabindex='-1'>frame</a></td>";
                 }
             }
-            table += "<td style='border: hidden' class='all-hints'>Start:<input  style='height:30px;text-align: center;' class='filterinput' id='filtertimepickerstart' type='text'></td>";
-            table += "<td style='border: hidden' class='all-hints'>End:<input  style='height:30px;text-align: center;' class='filterinput' id='filtertimepickerend' type='text'></td>";
+            if(!compareTree) {
+                table += "<td style='border: hidden' class='all-hints'>Start:<input  style='height:30px;text-align: center;' class='filterinput' id='filtertimepickerstart' type='text'></td>";
+                table += "<td style='border: hidden' class='all-hints'>End:<input  style='height:30px;text-align: center;' class='filterinput' id='filtertimepickerend' type='text'></td>";
+            }
         }
         table += "</tr></table>";
         $("#contexthints").html(table);
-        if (localContextData != undefined && localContextData.header != undefined) {
+
+        if (!compareTree && localContextData != undefined && localContextData.header != undefined) {
             jQuery("#filtertimepickerstart").datetimepicker({
                 format: 'Y-m-d H:i:s',
                 formatDate: 'Y-m-d',
@@ -4871,9 +4874,10 @@
 
         if(compareTree){
             console.log("skip genRequestTable " + eventType);
+            $("#statetable").html("Context data view work TBD")
             return;
         }
-        
+
         if (customEvent == "" || customEvent == undefined) {
             return;
         }

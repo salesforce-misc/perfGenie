@@ -460,10 +460,10 @@
                     contextTrees[1].context.start = Math.round(contextTrees[1].context.start / 1000000);
                     contextTrees[1].context.end = Math.round(contextTrees[1].context.end / 1000000);
 
-                    console.log("Skipping context data for compare tree");
-                    updateFilterViewStatus("Note: Context filter is disabled when compare option selected.");
-
-                    unhideFilterViewStatus();
+                    //console.log("Skipping context data for compare tree");
+                    //updateFilterViewStatus("Note: Context filter is disabled when compare option selected.");
+                    //unhideFilterViewStatus();
+                    
                     $("#cct-panel").css("height","100%");
 
                     if ( (getEventType() == eventType)){//} && !(eventType == "json-jstack" && eventType.contains("dump_"))) || eventType == "jfr_dump.json.gz") { //todo check this, dirty fix for sfdc
