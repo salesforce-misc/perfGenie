@@ -892,6 +892,7 @@
                         sortTreeBySize(getcontextTreeInvertedLevel(eventType,selectedLevel,count));
                     }
                 }else{
+                    let selectedLevel = getSelectedLevel(getContextTree(count,eventType));
                     if(hasFilterChanged) {
                         if (selectedLevel !== FilterLevel.UNDEFINED) {
                             sortTreeLevelBySizeWrapper(getContextTree(count, eventType), selectedLevel);
@@ -3251,6 +3252,228 @@
 
     }
 
+    function otherdrawTimelineChart(filteredTidRequests, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered, customEvent) {
+        let chartType = "line";
+        let showPoint = false;
+        let showLables = false;
+        let enableOnClick = false;
+        let subChart = true;
+        let height = 375;
+        //if(isContextViewFiltered){
+        //    document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
+        //}else{
+        if(customEvent == otherEvent) {
+            if(customEvent === "diagnostics(raw)") {
+                chartType = "scatter";
+                enableOnClick = true;
+                subChart = false;
+                height = 300;
+            }else if(otherEventsFetched[otherEvent] != undefined){
+                showPoint = true;
+                showLables = true;
+            }
+            getOtherHintNote(false, otherEvent, isContextViewFiltered);
+            document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
+        }else{
+            if(!isContextViewFiltered) {
+                getContextHintNote(false, customEvent);
+            }
+            document.getElementById("statetable").innerHTML = "<div id='timeLineChart' class='col-lg-12' style='padding: 0 !important;'></div>"
+        }
+        //}
+        pinxs = {};//clear off while drawing new, this will be the source for next pinning
+        pincolumns = [];//clear off while drawing new, this will be the source for next pinning
+        let countMax = seriesCount;
+        let curI = 0;
+        pincolor = {};//clear off while drawing new, this will be the source for next pinning
+
+        let contextDataRecordsLength = compareTree ? 2 : 1;
+
+        for(let contextDataRecordNumber = 1; contextDataRecordNumber <= contextDataRecordsLength; contextDataRecordNumber ++) {
+
+            let contextDataRecords = undefined;
+            let localContextData = getContextData(contextDataRecordNumber);
+            if (localContextData != undefined && localContextData.records != undefined) {
+                contextDataRecords = localContextData.records[customEvent];
+            }
+
+            let totalTimeSeriesPoints = 0;
+            for (let [type, value1] of groupByTypeSortByMetricMap[contextDataRecordNumber]) {
+                if ((groupByMatch != '' && type != undefined && type.includes != undefined && !type.includes(groupByMatch))) {
+                    continue;
+                }
+                if (curI >= countMax) {
+                    break;
+                }
+                let legend = (groupByCountSum[contextDataRecordNumber] == 0 ? 0 : (100 * value1 / groupByCountSum[contextDataRecordNumber]).toFixed(2)) + "% " + type + ":" + sortBy;
+
+                curI++
+                pincolor[type] = tmpColorMap.get(type);
+                let series = [];
+                let series_x = [];
+                let cumulative_map = new Map();
+                pinxs[legend] = legend + "_x";
+                series_x.push(legend + "_x");
+                series.push(legend);
+                for (let [tid, value] of tidSortByMetricMap[contextDataRecordNumber]) {
+                    for (let index of filteredTidRequests[contextDataRecordNumber][tid]) {
+                        let record = contextDataRecords[tid][index].record;
+                        let tmpEpoch = record[timestampIndex];
+                        let tmpRunTime = record[spanIndex] == undefined ? 0 : record[spanIndex];
+                        let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+
+                        if (key == type) {
+                            let diff = record[sortByIndex];
+                            if (cumulative_map.has(tmpEpoch + tmpRunTime)) {
+                                cumulative_map.set(tmpEpoch + tmpRunTime, cumulative_map.get(tmpEpoch + tmpRunTime) + diff);
+                            } else {
+                                cumulative_map.set(tmpEpoch + tmpRunTime, diff);
+                            }
+                        }
+
+                    }
+                }
+                const tmpSort = new Map([...cumulative_map].sort((a, b) => a[0] - b[0]));
+                let tmpValSum = 0;
+                let prevTmpTime = 0;
+                let tmpValMax = 0;
+                for (let [tmpTime, tmpVal] of tmpSort) {
+                    tmpValSum += tmpVal;
+                    if (tmpValMax < tmpVal) {
+                        tmpValMax = tmpVal;
+                    }
+                    //make series points once every 1000ms to improve chart performance
+                    if (prevTmpTime == 0 || (tmpTime - prevTmpTime) >= 1000) {
+                        series_x.push(tmpTime);
+                        if (cumulativeLine != 0) {
+                            series.push(tmpValMax);
+                            tmpValSum = 0;
+                            tmpValMax = 0;
+                        } else {
+                            series.push(tmpValSum);
+                        }
+                        prevTmpTime = tmpTime;
+                    }
+                }
+                pincolumns.push(series);
+                pincolumns.push(series_x);
+
+                totalTimeSeriesPoints += series_x.length;
+            }
+            if(totalTimeSeriesPoints > 60) {
+                showPoint = false;
+                showLables = false;
+            }
+        }
+
+        pinYlabel = sortBy;
+        if(enableOnClick){
+            var chart = c3.generate({
+                data: {
+                    xs: pinxs,
+                    columns: pincolumns,
+                    colors: pincolor,
+                    type: chartType,
+                    onclick: function (d) {
+                        showDiagData(d);
+                    }
+                },
+                bar: {
+                    width: {
+                        ratio: 5
+                    }
+                },
+                axis: {
+                    x: {
+                        type: "timeseries",
+                        localtime: false,
+                        tick: {
+                            format: function (d) {
+                                const time = moment.utc(d);
+                                if (time.year() > 1970) {
+                                    return time.format("D/M HH:mm:ss") + " click to view data";
+                                }
+                                return (time.format("X") / 60).toFixed(2) + "m";
+                            },
+                            count: 100,
+                        }
+                    },
+                    y: {
+                        label: sortBy
+                    },
+                },
+                bindto: document.getElementById("timeLineChart"),
+                size: {
+                    height: height
+                },
+                legend: {
+                    position: 'right'
+                },
+                subchart: {
+                    show: subChart
+                },
+                point: {
+                    show: showPoint,
+                    r: function (d) {
+                        return 5;
+                    }
+                }
+            });
+            $("#timeLineChart").data('c3-chart', chart);
+        }else {
+            var chart = c3.generate({
+                data: {
+                    xs: pinxs,
+                    columns: pincolumns,
+                    colors: pincolor,
+                    labels: showLables,
+                    type: chartType
+                },
+                bar: {
+                    width: {
+                        ratio: 5
+                    }
+                },
+                axis: {
+                    x: {
+                        type: "timeseries",
+                        localtime: false,
+                        tick: {
+                            format: function (d) {
+                                const time = moment.utc(d);
+                                if (time.year() > 1970) {
+                                    return time.format("D/M HH:mm:ss");
+                                }
+                                return (time.format("X") / 60).toFixed(2) + "m";
+                            },
+                            count: 100,
+                        }
+                    },
+                    y: {
+                        label: sortBy
+                    },
+                },
+                bindto: document.getElementById("timeLineChart"),
+                size: {
+                    height: height
+                },
+                legend: {
+                    position: 'right'
+                },
+                subchart: {
+                    show: subChart
+                },
+                point: {
+                    show: showPoint,
+                    r: function (d) {
+                        return 5;
+                    }
+                }
+            });
+            $("#timeLineChart").data('c3-chart', chart);
+        }
+    }
+
     function getOrderandType() {
         return 1;
     }
@@ -3593,7 +3816,9 @@
     function setToolBarOptions(id) {
 
         console.log("getToolBarOptions1 otherEvent: " + otherEvent + " customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " tableThreshold:"+tableThreshold);
-
+        if(compareTree) {
+            tableFormat = 0;
+        }
         let toolBarOptions = '<span title="selected context filter data, raw diagnostics data and diagnostics data ">Data:</span> <select  style="height:30px;width:200px;text-align: center; " class="filterinput"  name="other-event-input" id="other-event-input">\n';
 
         let localContextData = getContextData(1);
@@ -3623,11 +3848,15 @@
         toolBarOptions += '&nbsp;&nbsp;<span title="Context view format [table view, thread request view and metric timeline view]">Format:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="format-input" id="format-input">\n' +
             '                            <option ' + (tableFormat == 0 ? "selected" : "") + ' value=0>table</option>\n';
             //'                          <option ' + (tableFormat == 1 ? "selected" : "") + ' value=1>percent</option>\n' +
-        if(otherEvent == customEvent) {
-            toolBarOptions += '              <option ' + (tableFormat == 2 ? "selected" : "") + ' value=2>thread request view</option>\n';
+        if(!compareTree) {
+            if (otherEvent == customEvent) {
+                toolBarOptions += '              <option ' + (tableFormat == 2 ? "selected" : "") + ' value=2>thread request view</option>\n';
+            }
+
+            toolBarOptions += '           <option ' + (tableFormat == 3 ? "selected" : "") + ' value=3>metric timeline view</option>\n';
         }
-        toolBarOptions +=    '           <option ' + (tableFormat == 3 ? "selected" : "") + ' value=3>metric timeline view</option>\n' +
-            '                    </select>';
+
+        toolBarOptions +=    '                    </select>';
 
         let addAllRows = false;
         let addDim = false;
@@ -4862,9 +5091,7 @@
         setToolBarOptions("statetabledrp");
 
         addContextHints(eventType);
-
-
-
+        
         let start1 = performance.now();
 
         if(otherEvent !== customEvent){
@@ -5441,13 +5668,13 @@
         let rowHeight = 8;
         let filteredTidRequests = {};
         let lineCount = 0;
-        if (tableFormat == 2 || tableFormat == 3) {
+       /* if (tableFormat == 2 || tableFormat == 3) {
             tidIndex = {};
-        }
-        let tmpTidSortByMetricMap = new Map();
-        let tmpGgroupByTypeSortByMetricMap = new Map();
+        }*/
+        let tmpTidSortByMetricMap = {};
+        let tmpGgroupByTypeSortByMetricMap = {};
         let groupByCount = 0;
-        let groupByCountSum = 0;
+        let groupByCountSum = {};
         //status graph end
 
         let metricSumMap = {};
@@ -5479,7 +5706,6 @@
         let contextSpanIndex = -1;
 
         let localContextData = getContextData(1);
-
         for (let val in localContextData.header[customEvent]) {
             const tokens = localContextData.header[customEvent][val].split(":");
             if (tokens[1] == "text" || tokens[1] == "timestamp") {
@@ -5523,53 +5749,52 @@
             }
         }
 
-        if (!groupByFound) {
-            //groupBy = "tid";
-            //groupByIndex=tidRowIndex;
-        }
-        if (!sortByFound) {
-            //sortBy = "duration";
-            //sortByIndex = spanIndex;
-        }
 
-        //addContextHints();
-
-        let contextStart = getContextTree(1, eventType).context.start;
-        let contextTidMap = getContextTree(1, eventType).context.tidMap;
-        let contextDataRecords = undefined;
-        if (localContextData != undefined && localContextData.records != undefined) {
-            contextDataRecords = localContextData.records[otherEvent];
-        }
 
         let rowIndex = -1;
         tableHeader = [];
         tableRows = [];
         getContextTableHeadernew(groupBy, tableHeader, otherEvent, false);
 
-        let table = "<table   style=\"border:none;padding=0px;width: 100%;\" id=\"state-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\">" + getEventTableHeader(groupBy);
-
-        //if((!isFilterEmpty(dimIndexMap) || frameFilterString !== "") && spanIndex == -1 ){
-        //    isContextViewFiltered = false;//record do not have duration span to apply context filters
-        //}
-        //if only frame filter is selected then we need to include stacks that are not part of any request spans.
-
         let applyContextOnOtherEvents = false;
 
         isContextViewFiltered = applyContextOnOtherEvents;
 
-        for (var tid in contextDataRecords) {
-            let includeTid = false;
-            let reqArray = [];
-            let recordIndex = -1;
+        let contextDataRecordsLength = compareTree ? 2 : 1;
+
+        for(let contextDataRecordNumber = 1; contextDataRecordNumber <= contextDataRecordsLength; contextDataRecordNumber ++) {
+            if(filteredTidRequests[contextDataRecordNumber] == undefined){
+                filteredTidRequests[contextDataRecordNumber] = {};
+            }
+            if(tmpTidSortByMetricMap[contextDataRecordNumber] == undefined){
+                tmpTidSortByMetricMap[contextDataRecordNumber] = new Map();
+            }
+            if(tmpGgroupByTypeSortByMetricMap[contextDataRecordNumber] == undefined){
+                tmpGgroupByTypeSortByMetricMap[contextDataRecordNumber] = new Map();
+            }
+            if(groupByCountSum[contextDataRecordNumber] == undefined){
+                groupByCountSum[contextDataRecordNumber] = 0;
+            }
+
+
+            localContextData = getContextData(contextDataRecordNumber);
+            let contextDataRecords = undefined;
+            if (localContextData != undefined && localContextData.records != undefined) {
+                contextDataRecords = localContextData.records[otherEvent];
+            }
+            for (var tid in contextDataRecords) {
+                let includeTid = false;
+                let reqArray = [];
+                let recordIndex = -1;
                 contextDataRecords[tid].forEach(function (obj) {
                     let record = obj.record;
                     let flag = false;
                     recordIndex++;
                     let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
-                    if (!applyContextOnOtherEvents || filterOtherMatch(record[timestampIndex],contextdimIndexMap, contextSpanIndex, contexttimestampIndex)) {//allways display other events
+                    if (!applyContextOnOtherEvents || filterOtherMatch(record[timestampIndex], contextdimIndexMap, contextSpanIndex, contexttimestampIndex)) {//allways display other events
                         if ((pStart == '' || pEnd == '') || (record[timestampIndex] >= pStart && record[timestampIndex] <= pEnd)) {//apply time range filter
                             //if(groupByMatch == '' || (record[groupByIndex]!= undefined && record[groupByIndex].includes != undefined && type.record[groupByIndex].includes(groupByMatch))){
-                                flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
+                            flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
                             //}
                         }
                     }
@@ -5581,27 +5806,27 @@
                             if ((recordSpan + record[timestampIndex]) > maxEndTimeOfReq) {
                                 maxEndTimeOfReq = recordSpan + record[timestampIndex];
                             }
-                            let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                            let key = contextDataRecordNumber + ":" + ((groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex]);
                             if (!tmpColorMap.has(key)) {
                                 tmpColorMap.set(key, randomColor());
                                 groupByCount++;
                             }
                             let metricValue = record[metricsIndexMap[sortBy]];
                             if (metricValue != undefined) {
-                                groupByCountSum += metricValue;
+                                groupByCountSum[contextDataRecordNumber] += metricValue;
                             } else {
                                 metricValue = 0;
                             }
-                            if (tmpGgroupByTypeSortByMetricMap.has(key)) {
-                                tmpGgroupByTypeSortByMetricMap.set(key, tmpGgroupByTypeSortByMetricMap.get(key) + metricValue);
+                            if (tmpGgroupByTypeSortByMetricMap[contextDataRecordNumber].has(key)) {
+                                tmpGgroupByTypeSortByMetricMap[contextDataRecordNumber].set(key, tmpGgroupByTypeSortByMetricMap[contextDataRecordNumber].get(key) + metricValue);
                             } else {
-                                tmpGgroupByTypeSortByMetricMap.set(key, metricValue);
+                                tmpGgroupByTypeSortByMetricMap[contextDataRecordNumber].set(key, metricValue);
                             }
 
-                            if (tmpTidSortByMetricMap.has(tid)) {
-                                tmpTidSortByMetricMap.set(tid, tmpTidSortByMetricMap.get(tid) + metricValue);
+                            if (tmpTidSortByMetricMap[contextDataRecordNumber].has(tid)) {
+                                tmpTidSortByMetricMap[contextDataRecordNumber].set(tid, tmpTidSortByMetricMap[contextDataRecordNumber].get(tid) + metricValue);
                             } else {
-                                tmpTidSortByMetricMap.set(tid, metricValue);
+                                tmpTidSortByMetricMap[contextDataRecordNumber].set(tid, metricValue);
                             }
                         }
                         if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
@@ -5615,25 +5840,25 @@
                                         sfContextDataTable.addContextTableRow(tableRows[rowIndex], Number(record[field]), "id='" + record[tidRowIndex] + "_dummy'" + " hint='tid'");
                                     } else {
                                         if (isDimIndexMap[field] == undefined) {
-                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field]);
+                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],  record[field]);
                                         } else {
                                             if (otherEvent === "diagnostics(raw)" && field == 3) {
                                                 //1_048_576
-                                                if(record[4] > 1048576*10){
+                                                if (record[4] > 1048576 * 10) {
                                                     sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='event larger than 10Mb, click to download' style='cursor: pointer;' class='fa fa-download' onclick='alert(\"todo over 10 Mb file\")'></a>", " hint='download'");
-                                                }else{
+                                                } else {
                                                     sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-eye' onclick='getDiagEvent(" + record[0] + ", \"" + record[3] + "\",\"" + record[1] + "\")'></a>", " hint='view'");
                                                 }
                                                 //sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-download' onclick='downloadDiagEvent(" + record[0] + ", \"" + record[3] + "\",\"" + record[1]+ "\"," + true + "," + false + ",\"text\",this)'></a>", " hint='download'");
                                             } else {
-                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field], "' hint='" + isDimIndexMap[field] + "'");
+                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex], contextDataRecordNumber + ":" + record[field], "' hint='" + isDimIndexMap[field] + "'");
                                             }
                                         }
                                     }
                                 }
                             }
                         } else {
-                            let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                            let key = contextDataRecordNumber + ":" + ((groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex]);
                             if (metricSumMap[key] == undefined) {
                                 metricSumMap[key] = Array(metricsIndexArray.length + 1).fill(0);
                             }
@@ -5646,10 +5871,11 @@
                     }
                 });
                 if (includeTid) {
-                    filteredTidRequests[tid] = reqArray;
+                    filteredTidRequests[contextDataRecordNumber][tid] = reqArray;
                     lineCount++;
                     totalRows++;
                 }
+            }
         }
 
         let end1 = performance.now();
@@ -5671,21 +5897,26 @@
                 chartWidth = 600000;
             }
             chartWidth = chartWidth / downScale;
-            const tidSortByMetricMap = new Map([...tmpTidSortByMetricMap.entries()].sort((a, b) => b[1] - a[1]));
-            const groupByTypeSortByMetricMap = new Map([...tmpGgroupByTypeSortByMetricMap.entries()].sort((a, b) => b[1] - a[1]));
+            let tidSortByMetricMap = {};
+            let groupByTypeSortByMetricMap = {};
+            for(let contextDataRecordNumber = 1; contextDataRecordNumber <= contextDataRecordsLength; contextDataRecordNumber ++) {
+                tidSortByMetricMap[contextDataRecordNumber] = new Map([...tmpTidSortByMetricMap[contextDataRecordNumber].entries()].sort((a, b) => b[1] - a[1]));
+                groupByTypeSortByMetricMap[contextDataRecordNumber] = new Map([...tmpGgroupByTypeSortByMetricMap[contextDataRecordNumber].entries()].sort((a, b) => b[1] - a[1]));
+            }
+
             //generate tidIndex for Yaxis
             let index = 0;
-            for (let [tid, value] of tidSortByMetricMap) {
+            /*for (let [tid, value] of tidSortByMetricMap) {
                 tidIndex[index] = tid;
                 index++;
-            }
+            }*/
             if (tableFormat == 2) {
-                drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered, otherEvent);
-                addLegend("#legendid", groupByTypeSortByMetricMap, groupByCount, groupByCountSum);
-                addYAxis("#yaxisid", 0, 0, 0, 17, 0, lineCount, 500, totalRows * rowHeight);
-                addXAxis("#xaxisid", 15, 0, 0, 0, 0, chartWidth, chartWidth, 50, minStart, downScale);
+                //drowStateChart(filteredTidRequests, chartWidth, downScale, minStart, totalRows * rowHeight, tidSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, tidRowIndex, isContextViewFiltered, otherEvent);
+                //addLegend("#legendid", groupByTypeSortByMetricMap, groupByCount, groupByCountSum);
+                //addYAxis("#yaxisid", 0, 0, 0, 17, 0, lineCount, 500, totalRows * rowHeight);
+                //addXAxis("#xaxisid", 15, 0, 0, 0, 0, chartWidth, chartWidth, 50, minStart, downScale);
             } else {
-                drawTimelineChart(filteredTidRequests, minStart, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered, otherEvent);
+                otherdrawTimelineChart(filteredTidRequests, tidSortByMetricMap, groupByTypeSortByMetricMap, groupByCountSum, timestampIndex, spanIndex, groupByIndex, sortByIndex, isContextViewFiltered, otherEvent);
             }
         } else {
             if (!(groupBy == "" || groupBy == undefined || groupBy == "All records")) {
@@ -5711,64 +5942,7 @@
         }
 
         setToolBarOptions("statetabledrp");
-/*
-        $("#filter-input").on("change", (event) => {
-            updateUrl("groupBy", $("#filter-input").val(), true);
-            groupBy = $("#filter-input").val();
-            tmpColorMap.clear();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#format-input").on("change", (event) => {
-            updateUrl("tableFormat", $("#format-input").val(), true);
-            tableFormat = $("#format-input").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#sort-input").on("change", (event) => {
-            updateUrl("sortBy", $("#sort-input").val(), true);
-            sortBy = $("#sort-input").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#line-type").on("change", (event) => {
-            updateUrl("cumulative", $("#line-type").val(), true);
-            cumulativeLine = $("#line-type").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#line-count").on("change", (event) => {
-            updateUrl("seriesCount", $("#line-count").val(), true);
-            seriesCount = $("#line-count").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#groupby-match").on("change", (event) => {
-            updateUrl("groupByMatch", $("#groupby-match").val(), true);
-            groupByMatch = $("#groupby-match").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#groupby-length").on("change", (event) => {
-            updateUrl("groupByLength", $("#groupby-length").val(), true);
-            groupByLength = $("#groupby-length").val();
-            genRequestTable();
-            updateRequestView();
-        });
 
-        $("#table-threshold").on("change", (event) => {
-            updateUrl("tableThreshold", $("#table-threshold").val(), true);
-            tableThreshold = $("#table-threshold").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#span-threshold").on("change", (event) => {
-            updateUrl("spanThreshold", $("#span-threshold").val(), true);
-            spanThreshold = $("#span-threshold").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        */
         $("#cct-panel").css("height", "100%");
 
         let end = performance.now();

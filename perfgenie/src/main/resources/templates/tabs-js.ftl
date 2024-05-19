@@ -463,7 +463,7 @@
                     //console.log("Skipping context data for compare tree");
                     //updateFilterViewStatus("Note: Context filter is disabled when compare option selected.");
                     //unhideFilterViewStatus();
-                    
+
                     $("#cct-panel").css("height","100%");
 
                     if ( (getEventType() == eventType)){//} && !(eventType == "json-jstack" && eventType.contains("dump_"))) || eventType == "jfr_dump.json.gz") { //todo check this, dirty fix for sfdc
@@ -505,9 +505,9 @@
         console.log("retrievAndcreateContextTree 5 time:" + (end - start) + " event:" + eventType);
     }
 
-    function fetchOtherEvents(timeRange, tenant, host){
+    function fetchOtherEvents(timeRange, tenant, host, count){
         for (var key in otherEvents1) {
-            getOtherEvent(timeRange, tenant, host, key);
+            getOtherEvent(timeRange, tenant, host, key, count);
         }
     }
 
@@ -602,7 +602,7 @@
                     updateFilterViewStatus("Note: Failed to get Request context.");
                     toastr_warning("Failed to get Request context.");
                     setContextData({"records": {}, "tidlist": [], "header": {}},1);
-                    fetchOtherEvents(dateRanges[0], tenants[0], hosts[0]);
+                    fetchOtherEvents(dateRanges[0], tenants[0], hosts[0], 1);
                     showContextFilter();
                     hideFilterViewStatus();
                     refreshTreeAfterContext(customEvent);
@@ -611,13 +611,13 @@
                         updateFilterViewStatus("Note: Failed to get Request context.");
                         toastr_warning("Failed to get Request context.");
                         setContextData({"records": {}, "tidlist": [], "header": {}},1);
-                        fetchOtherEvents(dateRanges[0], tenants[0], hosts[0]);
+                        fetchOtherEvents(dateRanges[0], tenants[0], hosts[0], 1);
                         showContextFilter();
                         hideFilterViewStatus();
                         refreshTreeAfterContext(customEvent);
                     }else {
                         setContextData(contextDatas[0],1);
-                        fetchOtherEvents(dateRanges[0], tenants[0], hosts[0]);
+                        fetchOtherEvents(dateRanges[0], tenants[0], hosts[0], 1);
                         showContextFilter();
                         hideFilterViewStatus();
                         refreshTreeAfterContext(customEvent);
@@ -630,8 +630,8 @@
                     toastr_warning("Failed to get Request context.");
                     setContextData({"records": {}, "tidlist": [], "header": {}},1);
                     setContextData({"records": {}, "tidlist": [], "header": {}},2);
-                    fetchOtherEvents(dateRanges[0], tenants[0], hosts[0]);
-                    fetchOtherEvents(dateRanges[1], tenants[1], hosts[1]);
+                    fetchOtherEvents(dateRanges[0], tenants[0], hosts[0], 1);
+                    fetchOtherEvents(dateRanges[1], tenants[1], hosts[1], 2);
                     showContextFilter();
                     hideFilterViewStatus();
                     refreshTreeAfterContext(customEvent);
@@ -640,16 +640,16 @@
                         updateFilterViewStatus("Note: Failed to get Request context.");
                         toastr_warning("Failed to get Request context.");
                         setContextData({"records": {}, "tidlist": [], "header": {}},2);
-                        fetchOtherEvents(dateRanges[0], tenants[0], hosts[0]);
-                        fetchOtherEvents(dateRanges[1], tenants[1], hosts[1]);
+                        fetchOtherEvents(dateRanges[0], tenants[0], hosts[0], 1);
+                        fetchOtherEvents(dateRanges[1], tenants[1], hosts[1], 2);
                         showContextFilter();
                         hideFilterViewStatus();
                         refreshTreeAfterContext(customEvent);
                     }else {
                         setContextData(contextDatas[0],1);
                         setContextData(contextDatas[1],2);
-                        fetchOtherEvents(dateRanges[0], tenants[0], hosts[0]);
-                        fetchOtherEvents(dateRanges[1], tenants[1], hosts[1]);
+                        fetchOtherEvents(dateRanges[0], tenants[0], hosts[0], 1);
+                        fetchOtherEvents(dateRanges[1], tenants[1], hosts[1], 2);
                         showContextFilter();
                         hideFilterViewStatus();
                         refreshTreeAfterContext(customEvent);
@@ -659,7 +659,7 @@
 
             }).catch(error => {
                 setContextData({"records": {}, "tidlist": [], "header": {}},1);
-                fetchOtherEvents(timeRanges[0], tenants[0], hosts[0]);
+                fetchOtherEvents(timeRanges[0], tenants[0], hosts[0], 1);
                 updateFilterViewStatus("Note: Failed to get Request context.");
                 toastr_warning("Failed to get Request context.");
                 console.error(error);
@@ -728,8 +728,8 @@
         }
     }
 
-    function setOtherEventData(data){
-        let localContextData = getContextData(1);
+    function setOtherEventData(data, count){
+        let localContextData = getContextData(count);
         if(localContextData.records != undefined && data.records != undefined){
             for (var customevent in data.records) {
                 localContextData.records[customevent] = data.records[customevent];
@@ -752,7 +752,7 @@
         }
         console.log("setOtherEventData done");
     }
-    function getOtherEvent(timeRange, tenant, host, customEvent) {
+    function getOtherEvent(timeRange, tenant, host, customEvent, count) {
         const callTreeUrl = getEventUrl(timeRange, tenant, host, customEvent);
         let toTenant = tenant;
         if(isS3 == "true") {
@@ -763,7 +763,7 @@
             if(response == undefined || response === "" || response.header == undefined) {
                 console.log("Warn: unable to fetch other event" + customEvent);
             }else {
-                setOtherEventData(response);
+                setOtherEventData(response, count);
             }
         }, function (error) {
             console.log("Warn: unable to fetch other event" + customEvent);
