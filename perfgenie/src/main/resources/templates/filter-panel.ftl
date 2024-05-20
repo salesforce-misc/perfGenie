@@ -905,7 +905,7 @@
             }
 
             if(compareTree && isJfrContext){
-                let selectedLevel = getSelectedLevel(getContextTree(1, eventType)); //both trees are expected to be on same level
+                let selectedLevel = getSelectedLevel(getTree(1, eventType)); //both trees are expected to be on same level
                 if(isCalltree) {
                     if (getmergedContextTree(eventType) == undefined) {
                         if (selectedLevel === FilterLevel.UNDEFINED) {
@@ -3513,6 +3513,8 @@
             fContext='';
         }*/
         if (localContextData != undefined && localContextData.header != undefined) {
+            showContextFilter();
+            hideFilterViewStatus();
             for (let val in localContextData.header[eventToUse]) {
                 const tokens = localContextData.header[eventToUse][val].split(":");
                 if (tokens[1] == "text") {
@@ -5097,6 +5099,7 @@
 
         if(compareTree){
             console.log("skip genRequestTable " + eventType);
+            addContextHints(eventType);
             $("#statetable").html("Context data view work TBD")
             return;
         }

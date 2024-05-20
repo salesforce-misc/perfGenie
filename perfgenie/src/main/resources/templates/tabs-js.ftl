@@ -618,8 +618,8 @@
                     }else {
                         setContextData(contextDatas[0],1);
                         fetchOtherEvents(dateRanges[0], tenants[0], hosts[0], 1);
-                        showContextFilter();
-                        hideFilterViewStatus();
+                        //showContextFilter();
+                        //hideFilterViewStatus();
                         refreshTreeAfterContext(customEvent);
                     }
                 }
@@ -650,8 +650,8 @@
                         setContextData(contextDatas[1],2);
                         fetchOtherEvents(dateRanges[0], tenants[0], hosts[0], 1);
                         fetchOtherEvents(dateRanges[1], tenants[1], hosts[1], 2);
-                        showContextFilter();
-                        hideFilterViewStatus();
+                        //showContextFilter();
+                        //hideFilterViewStatus();
                         refreshTreeAfterContext(customEvent);
                     }
                 }
