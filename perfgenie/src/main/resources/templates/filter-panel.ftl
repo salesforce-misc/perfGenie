@@ -3003,8 +3003,12 @@
         }
     }
 
-    function getDiagEvent(timestamp, guid, name) {
-        const callTreeUrl = getDiagEventUrl(timestamp, tenant1, host1, guid, name);
+    function getDiagEvent(timestamp, guid, name, count) {
+        if(count == undefined){
+            count = 1;
+        }
+
+        const callTreeUrl = getDiagEventUrl(timestamp, (count == 1 ? tenant1 : tenant2) , (count == 1 ? host1 : host2), guid, name);
 
         if($("#diagevent").length == 0) {
             $('#statetablewrapper').append("<div id='diagevent'style='max-height: 400px; overflow: auto; border-style: dotted hidden; padding: 10px;' class='col-lg-12'><div style='float:right;cursor: pointer;' onclick='closePin(\"diagevent\")'>Close</div><div id='diageventheader'>" + moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event:" + otherEvent +  ", Name:" + name + "</div><span style='float:right;' class='spinner' id='spinner2'></span>" + "<pre id=\"diageventval\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupdiagview col-lg-12\" >" + "</div>");
@@ -5849,7 +5853,7 @@
                                                 if (record[4] > 1048576 * 10) {
                                                     sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='event larger than 10Mb, click to download' style='cursor: pointer;' class='fa fa-download' onclick='alert(\"todo over 10 Mb file\")'></a>", " hint='download'");
                                                 } else {
-                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-eye' onclick='getDiagEvent(" + record[0] + ", \"" + record[3] + "\",\"" + record[1] + "\")'></a>", " hint='view'");
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-eye' onclick='getDiagEvent(" + record[0] + ", \"" + record[3] + "\",\"" + record[1] + "\",\"" + contextDataRecordNumber + "\")'></a>", " hint='view'");
                                                 }
                                                 //sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-download' onclick='downloadDiagEvent(" + record[0] + ", \"" + record[3] + "\",\"" + record[1]+ "\"," + true + "," + false + ",\"text\",this)'></a>", " hint='download'");
                                             } else {
