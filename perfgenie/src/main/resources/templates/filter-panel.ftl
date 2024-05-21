@@ -528,7 +528,6 @@
 
         sortBy = urlParams.get('sortBy') || '';
 
-        sortBy = urlParams.get('sortBy') || '';
         cumulativeLine = urlParams.get('cumulative') || '0';
         seriesCount = urlParams.get('seriesCount') || 10;
         groupByMatch = urlParams.get('groupByMatch') || '';
