@@ -305,7 +305,13 @@
     function createContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry) {
         let start = performance.now();
         let eventType = getEventType();
-        if (isCalltree == true && getmergedContextTree() === undefined && getContextTree(1, eventType) !== undefined) {
+
+        if(getContextTree(1, eventType) !== undefined){//data already fetched, try updateProfilerView
+            updateProfilerView();
+            console.log("createContextTree skip data fetch");
+            return;
+        }
+        /*if (isCalltree == true && getmergedContextTree() === undefined && getContextTree(1, eventType) !== undefined) {
             // this will happen when backtrace view  is loaded and requesting a call tree view
             resetTreeHeader("Inverting tree ...");
             spinnerToggle('spinnerId');
@@ -317,7 +323,9 @@
             let end = performance.now();
             console.log("createContextTree time:" + (end - start));
             return;
-        }
+        }*/
+
+
         //data not available, retrieve and create context tree
 
         if(eventType.includes("jfr_dump")) {
@@ -482,7 +490,7 @@
                 updateProfilerView();
             } else if (getEventType() == eventType) {//if SF profile, we need to wait for jfr_dump.json.gz event
                 if(eventType.includes("jfr_dump") || eventType.includes("json-jstack")){
-                    console.log("waiting for jfr_dump.json.gz");
+                    //console.log("waiting for jfr_dump.json.gz ...");
                     incrementTimer = setInterval(waitAndupdateProfilerView, 1000);
                 }else {
                     updateProfilerView();
@@ -521,8 +529,10 @@
             console.log("waitAndrefreshTree timeout");
         }else {
             if ( (profile1 != undefined  && profile1 != "Jstacks") && (updateProfilerViewLock  || getContextTree(1, "jfr_dump.json.gz") === undefined)) {
+                if(waitForEventCount == 0){
+                    console.log("waitAndrefreshTree ... ");
+                }
                 waitForEventCount++;
-                console.log("waitAndrefreshTree ... ");
             } else {
                 updateProfilerViewLock = true;
                 clearInterval(incrementRefreshTimer);
@@ -539,8 +549,10 @@
             console.log("waitAndupdateProfilerView timeout");
         }else {
             if ((profile1 != undefined  && profile1 != "Jstacks") && (updateProfilerViewLock  ||  getContextTree(1, "jfr_dump.json.gz") === undefined)) {
+                if(waitForEventCount == 0){
+                    console.log("waitAndupdateProfilerView ... ");
+                }
                 waitForEventCount++;
-                console.log("waitAndupdateProfilerView ... ");
             } else {
                 updateProfilerViewLock = true;
                 clearInterval(incrementTimer);
@@ -721,7 +733,7 @@
     function refreshTreeAfterContext(customEvent){
         //if sfdc, we need to wait for jfr_dump.json.gz
         if(customEvent.includes("jfr_dump")){
-            console.log("waiting for jfr_dump.json.gz");
+            //console.log("waiting for jfr_dump.json.gz ...");
             incrementRefreshTimer = setInterval(waitAndrefreshTree, 1000);
         }else {
             refreshTree();
@@ -750,16 +762,26 @@
                 $("#cct-panel").css("height", "100%");//expand context table view
             }
         }
-        console.log("setOtherEventData done");
+        console.log("setOtherEventData done count:" + count);
     }
+    let otherEventsMaxAjaxTris = {};
     function getOtherEvent(timeRange, tenant, host, customEvent, count) {
         const callTreeUrl = getEventUrl(timeRange, tenant, host, customEvent);
+        if(otherEventsMaxAjaxTris[callTreeUrl] == undefined){
+            otherEventsMaxAjaxTris[callTreeUrl] = 1;
+        }else{
+            otherEventsMaxAjaxTris[callTreeUrl]++;
+        }
+        if(otherEventsMaxAjaxTris[callTreeUrl] > 1){
+            console.log("getOtherEvent already fetched count:" + count);
+            return;
+        }
         let toTenant = tenant;
         if(isS3 == "true") {
             toTenant = "";
         }
         let request = stackDigVizAjax(toTenant, "GET", callTreeUrl, function (response) { // success function
-            console.log("getOtherEvent done");
+            console.log("getOtherEvent done count:" + count);
             if(response == undefined || response === "" || response.header == undefined) {
                 console.log("Warn: unable to fetch other event" + customEvent);
             }else {
@@ -805,6 +827,8 @@
 
 
     // [ajax request(s)] gets context tree data
+    let numberOfTries = {};
+    let maxAjaxRetries = 1;
     function fetchData(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, eventType) {
         const requests = [];
         let datacenters = [];
@@ -822,6 +846,18 @@
             toTenant = datacenters[0];
         }
         const callTreeUrl = getCallTreeUrl(dateRanges[0], pods[0], queries[0], profilers[0], tenants[0], profiles[0], hosts[0], uploads[0], fileIds[0], uploadTimes[0], aggregates[0], eventType);
+
+        if(numberOfTries[callTreeUrl] == undefined){
+            numberOfTries[callTreeUrl] = 1;
+        }else{
+            numberOfTries[callTreeUrl]++;
+        }
+
+        if(numberOfTries[callTreeUrl] > maxAjaxRetries){
+            console.log("fetchData reached max for this URL:" + callTreeUrl);
+            return undefined;
+        }
+
         if (retry) {
             requests.push(callTreePerfGenieAjax(toTenant, "GET", callTreeUrl, result => result));
         } else {

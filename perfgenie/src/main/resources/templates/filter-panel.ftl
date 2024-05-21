@@ -683,8 +683,8 @@
     }
 
     function onLevel3Filter(eventType, count) {
-        console.log("onLevel3Filter "+count+"start " + eventType);
         if (filterFrame !== undefined && filterFrame != "") {
+            console.log("onLevel3Filter "+count+" event:" + eventType);
             //updateStackIndex(getActiveTree(eventType, false));
             updateStackIndex(getTree(count,eventType));
             isLevelRefresh = true;
@@ -699,8 +699,9 @@
     }
 
     function onLevel2Filter(eventType, count) {
-        console.log("onLevel2Filter count: "+count+" start " + eventType);
+
         if (filterReq !== undefined && filterReq != "") {
+            console.log("onLevel2Filter count: "+count+" event:" + eventType);
             //updateStackIndex(getActiveTree(eventType, false));//need this as stacks identified based on index
             updateStackIndex(getTree(count,eventType));//need this as stacks identified based on index
             let pair = filterReq.split("_");
@@ -715,8 +716,8 @@
     }
 
     function updateRequestView() {
-        console.log("updateRequestView start");
         if (filterReq !== undefined && filterReq != "") {
+            console.log("updateRequestView start");
             let pair = filterReq.split("_");
             if ($("#" + filterReq).length != 0 && !$("#" + filterReq).hasClass("rsCell")) {
                 $("#" + filterReq).addClass("rsCell");
@@ -736,10 +737,10 @@
     }
 
     function onLevel1Filter(eventType, count) {
-        console.log("onLevel1Filter start " +eventType);
         if (filterMap["tid"] == undefined && isFilterEmpty() && (pStart === '' || pEnd === '') && (fContext === 'all' || fContext === '') ) {
             //none
         } else {
+            console.log("onLevel1Filter count:"+count+ " event:" +eventType);
             //updateStackIndex(getActiveTree(eventType, false));//need this as stacks identified based on index
             updateStackIndex(getTree(count,eventType));//need this as stacks identified based on index
             isLevelRefresh = true;
@@ -843,14 +844,14 @@
             }
         }
         let end = performance.now();
-        console.log("applyContextFilters count:"+count + " " + level + " eventType:" + eventType +" took:"+(end-start));
+        //console.log("applyContextFilters count:"+count + " " + level + " eventType:" + eventType +" took:"+(end-start));
         return updateContextTable;
     }
 
     function filterToLevel(level) {
         let count = 1;
         let eventType = getEventType();
-        console.log("filterToLevel start:" + level + " eventType:" + eventType);
+        //console.log("filterToLevel level:" + level + " eventType:" + eventType);
         if (getContextData(count) === undefined || isJfrContext == false) {
             if(compareTree){
                 if (getActiveTree(getEventType(), isCalltree) === undefined) {
@@ -874,7 +875,7 @@
             let updateContextTable = false;
             let numberOfTrees = compareTree ? 2 : 1;
             for(let count = 1; count <= numberOfTrees; count++) {
-                console.log("applying filters count:" + count + " level:"+ level + " eventType:" + eventType);
+                console.log("filterToLevel count:" + count + " level:"+ level + " eventType:" + eventType);
 
                 if(applyContextFilters(level, eventType, count)){
                     updateContextTable = true;
@@ -954,7 +955,7 @@
 
     function resetTreeInvertedLevel(level, eventType, count) {
         //for (var key in jfrprofiles1) {
-            console.log("resetTreeInvertedLevel: " + level +":"+eventType);
+            //console.log("resetTreeInvertedLevel: " + level +":"+eventType);
             setcontextTreeInvertedLevel(undefined, eventType, level, count);
         //}
     }
@@ -1841,7 +1842,7 @@
     }
 
     function filterOnType(eventType, count) {
-        console.log("filterOnType start " + eventType);
+        console.log("filterOnType count:"+count+" event:" + eventType);
         let scount = 0;
         let stackMap = {};
 
@@ -2011,7 +2012,7 @@
             //getTreeStackLevel(getActiveTree(eventType, false), stack, stackMap[stack], FilterLevel.LEVEL1);
             getTreeStackLevel(getTree(count, eventType), stack, stackMap[stack], FilterLevel.LEVEL1);
         }
-        console.log("filterOnType 1");
+        console.log("filterOnType end");
     }
 
     function showRequestTimelineView(tid, time, applyFilter, allSamples, eventType, count) {
@@ -4160,6 +4161,7 @@
     }
 
     function invertTreeV1(tree, num) {
+        console.log("invertTreeV1");
         if (tree['tree'] !== undefined) {
             tree = tree['tree'];
         }
@@ -4218,6 +4220,7 @@
     }
 
     function invertTreeV1AtLevel(tree, num,level) {
+        console.log("invertTreeV1AtLevel");
         if (tree['tree'] !== undefined) {
             tree = tree['tree'];
         }
@@ -4313,22 +4316,22 @@
     function getSelectedLevel(tree) {
 
         if(tree === undefined){
-            console.log("getSelectedLevel:" + FilterLevel.UNDEFINED);
+            //console.log("getSelectedLevel:" + FilterLevel.UNDEFINED);
             return FilterLevel.UNDEFINED;
         }
         if(tree[FilterLevel.LEVEL3] !== undefined) {
-            console.log("getSelectedLevel:" + FilterLevel.LEVEL3);
+            //console.log("getSelectedLevel:" + FilterLevel.LEVEL3);
             return FilterLevel.LEVEL3;
         }
         if(tree[FilterLevel.LEVEL2] !== undefined) {
-            console.log("getSelectedLevel:" + FilterLevel.LEVEL2);
+            //console.log("getSelectedLevel:" + FilterLevel.LEVEL2);
             return FilterLevel.LEVEL2;
         }
         if(tree[FilterLevel.LEVEL1] !== undefined) {
-            console.log("getSelectedLevel:" + FilterLevel.LEVEL1);
+            //console.log("getSelectedLevel:" + FilterLevel.LEVEL1);
             return FilterLevel.LEVEL1;
         }
-        console.log("getSelectedLevel:" + FilterLevel.UNDEFINED);
+        //console.log("getSelectedLevel:" + FilterLevel.UNDEFINED);
         return FilterLevel.UNDEFINED;
     }
 
@@ -4510,6 +4513,8 @@
             tree =  tree['tree'];
         }
         let selectedLevel = getSelectedLevel(tree);
+
+        console.log("getActiveTree level:" + selectedLevel + " event:"+eventType + " ct:" + isCT + " cmp:" + compareTree);
 
         if (isCT) {
             if(isJfrContext && !compareTree) {
@@ -4799,6 +4804,7 @@
     //jfr context start
     // merge trees
     function mergeTreesV1(contextTreeMaster, contextTreeBranch, excludeDepth) {
+        console.log("mergeTreesV1");
         if ((isJfrContext) || (compareTree && isJfrContext)) {
             if (contextTreeMaster['merged'] !== undefined) {
                 toastr_warning("mergeTreesV1 already done");

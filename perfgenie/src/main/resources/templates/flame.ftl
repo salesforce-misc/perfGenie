@@ -144,7 +144,8 @@ In other words, data that's in the second set but not in the first will not be d
             console.debug("filterToLevel time:" + (end - start));
 
             let treeToProcess = getActiveTree(getEventType(), isCalltree);
-            let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
+            //let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
+            let selectedLevel = getSelectedLevel(getTree(1, getEventType()));//both trees should be at the same level
 
             if (prevCustomEvent === customEvent && currentLoadedTree === treeToProcess && prevOption === currentOption && isRefresh === false && isLevelRefresh === false && prevSelectedLevel === selectedLevel) {
                 console.log("no change in tree, option:" + (prevCustomEvent == customEvent) + ":" + prevOption + ":" + isRefresh + ":" + ":" + isLevelRefresh + ":" + selectedLevel);
