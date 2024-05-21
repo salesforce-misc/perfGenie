@@ -690,7 +690,20 @@ function addInputToURL() {
     updateUrl("filterStack", '');
     updateUrl("filterReq", '');
     updateUrl("stack_id", '');
-    updateUrl("spanThreshold", 200);
+    updateUrl("spanThreshold", 0);
+    updateUrl("filterBy", '');
+    updateUrl("filterEvent", '');
+    updateUrl("pStart", '');
+    updateUrl("pEnd", '');
+    updateUrl("fContext", '');
+    updateUrl("tableFormat", '0');
+    updateUrl("sampletableFormat", '0');
+    updateUrl("sortBy", '');
+    updateUrl("cumulative", '0');
+    updateUrl("seriesCount", '10');
+    updateUrl("groupByMatch", '');
+    updateUrl("groupByLength", '200');
+
     if(instanceData1[host1] != undefined) {
         updateUrl("dataSource", instanceData1[host1]);//todo, support different data sources for each host
     }
