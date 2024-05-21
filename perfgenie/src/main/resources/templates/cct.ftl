@@ -501,7 +501,7 @@
 
     let totalLiCount = 0;
     function isSkipSubtree(bsz, csz) {
-        if ((bsz === 0 && currentOption === 2) || (csz === 0 && currentOption === 3)) {
+        if ((bsz === 0 && currentOption === 2) || (csz === 0 && currentOption === 3) || (bsz == 0 && csz == 0)) {
             return true;
         }
         return false;

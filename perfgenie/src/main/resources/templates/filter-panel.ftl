@@ -919,7 +919,7 @@
                         if (selectedLevel === FilterLevel.UNDEFINED) {
                             setmergedBacktraceTree(mergeTreesV1(getContextTree(1, eventType), getContextTree(2, eventType), 1), eventType);
                         } else {
-                            setmergedBacktraceTree(mergeTreesV1Level(getContextTree(1, eventType), getContextTree(2, eventType), 1), eventType);//todo implement at level
+                            setmergedBacktraceTree(mergeTreesV1Level(getContextTree(1, eventType), getContextTree(2, eventType), 1, selectedLevel), eventType);//todo implement at level
                         }
                     }
                 }
@@ -4831,15 +4831,194 @@
             }
             contextTreeMaster['merged'] = true;
             return contextTreeMaster;
-        } /*else {
-            const diffJson = breadthFirstDiffV1(contextTreeMaster, contextTreeBranch, excludeDepth);
-            if (diffJson.children.length === 0) {
+        }
+    }
+
+    function mergeTreesV1Level(contextTreeMaster, contextTreeBranch, excludeDepth , level) {
+        console.log("mergeTreesV1");
+        if ((isJfrContext) || (compareTree && isJfrContext)) {
+            if (contextTreeMaster['merged'] !== undefined) {
+                toastr_warning("mergeTreesV1 already done");
+            }
+            if (contextTreeMaster['tree'] !== undefined) {
+                contextTreeMaster = contextTreeMaster['tree'];
+            }
+            if (contextTreeBranch['tree'] !== undefined) {
+                contextTreeBranch = contextTreeBranch['tree'];
+            }
+            mergeTreesV2Level(contextTreeMaster, contextTreeBranch, level);
+
+            updateStackIndex(contextTreeMaster);
+
+            if (contextTreeMaster.ch == null || contextTreeMaster.ch.length === 0) {
                 toastr_warning("Nothing to display");
                 //return;
+            } else {
+                contextTreeMaster.bsz = contextTreeMaster.sz;
+                contextTreeMaster.csz = contextTreeBranch.sz;
             }
-            return diffJson;
-        }*/
+            contextTreeMaster['merged'] = true;
+            return contextTreeMaster;
+        }
     }
+
+    //This will not create an extra tree to merge, memory optimization
+    function mergeTreesV2Level(contextTreeBase, contextTreeCanary, level) {
+        let baseCh = contextTreeBase['ch'];
+        let canaryCh = contextTreeCanary['ch'];
+
+        let baseLen = (baseCh !== null) ? baseCh.length : 0;
+        let canaryLen = (canaryCh !== null) ? canaryCh.length : 0;
+
+        //sort children based on name
+        if (baseCh != null) {
+            baseCh.sort(function (a, b) {
+                if (a.nm == b.nm) {
+                    return 0;
+                } else if (a.nm < b.nm) {
+                    return -1;
+                } else {
+                    return 1;
+                }
+            });
+        }
+        if (canaryCh != null) {
+            canaryCh.sort(function (a, b) {
+                if (a.nm == b.nm) {
+                    return 0;
+                } else if (a.nm < b.nm) {
+                    return -1;
+                } else {
+                    return 1;
+                }
+            });
+        }
+
+        let baseIndex = 0;
+        let canaryIndex = 0;
+        let appendIndex = baseLen;
+        while (baseIndex < baseLen && canaryIndex < canaryLen) {
+            if (baseCh[baseIndex]['nm'] == canaryCh[canaryIndex]['nm']) {
+                if(canaryCh[canaryIndex][level] != undefined) {
+                    baseCh[baseIndex]['csz'] = canaryCh[canaryIndex][level];
+                }else{
+                    baseCh[baseIndex]['csz'] = 0;
+                }
+                if( baseCh[baseIndex][level] != undefined) {
+                    baseCh[baseIndex]['bsz'] = baseCh[baseIndex][level];
+                }else{
+                    baseCh[baseIndex]['bsz'] = 0;
+                }
+                mergeTreesV2Level(baseCh[baseIndex], canaryCh[canaryIndex], level);//merge recurrsively
+                baseIndex++;
+                canaryIndex++;
+            } else if (baseCh[baseIndex]['nm'] < canaryCh[canaryIndex]['nm']) {
+                baseCh[baseIndex]['csz'] = 0;
+                if(baseCh[baseIndex][level]) {
+                    baseCh[baseIndex]['bsz'] = baseCh[baseIndex][level];
+                }else{
+                    baseCh[baseIndex]['bsz'] = 0;
+                }
+                sortBaseTreeLevelBySizeWrapper(baseCh[baseIndex], level);//make sure sub tree is sorted by size
+                baseIndex++;
+            } else if (baseCh[baseIndex]['nm'] > canaryCh[canaryIndex]['nm']) {
+                baseCh[appendIndex] = canaryCh[canaryIndex];
+                if(canaryCh[canaryIndex][level] != undefined) {
+                    baseCh[appendIndex]['csz'] = canaryCh[canaryIndex][level];
+                }else{
+                    baseCh[appendIndex]['csz'] = 0;
+                }
+                baseCh[appendIndex]['bsz'] = 0;
+                sortCanaryTreeLevelBySizeWrapper(baseCh[appendIndex], level);//make sure sub tree is sorted by size
+                appendIndex++;
+                canaryIndex++;
+            }
+        }
+
+        //update remaining baseCh
+        for (let index = baseIndex; index < baseLen; index++) {
+            baseCh[index]['csz'] = 0;
+            if(baseCh[index][level] != undefined){
+                baseCh[index]['bsz'] = baseCh[index][level];
+            }else{
+                baseCh[index]['bsz'] = 0;
+            }
+            //TODO update all childs bsz to sz and csz to 0
+            sortBaseTreeLevelBySizeWrapper(baseCh[index], level);//make sure sub tree is sorted by size
+        }
+
+        //append remaining canaryCh to baseCh
+        for (let index = canaryIndex; index < canaryLen; index++) {
+            if (baseCh === null) {
+                baseCh = [];
+            }
+            baseCh[appendIndex] = canaryCh[index];
+            if(canaryCh[index][level] != undefined){
+                baseCh[appendIndex]['csz'] = canaryCh[index][level];
+            }else{
+                baseCh[appendIndex]['csz'] = 0;
+            }
+
+            baseCh[appendIndex]['bsz'] = 0;
+            sortCanaryTreeLevelBySizeWrapper(baseCh[appendIndex], level);//make sure sub tree is sorted by size
+            index++;
+            appendIndex++;
+        }
+        //sort merged children based on frame count
+        if (baseCh != null) {
+            baseCh.sort(function (a, b) {
+                return b.bsz + b.csz - a.bsz - a.csz
+            });
+        }
+    }
+
+    function sortBaseTreeLevelBySizeWrapper(tree, level){
+        //console.log("sortBaseTreeBySize");
+        sortBaseTreeLevelBySize(tree, level);
+    }
+
+    function sortBaseTreeLevelBySize(tree, level) {
+        let ch = tree['ch'];
+        if (ch != undefined && ch !== null) {
+            for (let index = 0; index < ch.length; index++) {
+                ch[index]['csz'] = 0;
+                if(ch[index][level] != undefined){
+                    ch[index]['bsz'] = ch[index][level];
+                }else{
+                    ch[index]['bsz'] = 0;
+                }
+                sortBaseTreeLevelBySize(ch[index], level);
+            }
+            ch.sort(function (a, b) {
+                return b.bsz + b.csz - a.bsz - a.csz
+            });
+        }
+    }
+
+    function sortCanaryTreeLevelBySizeWrapper(tree, level) {
+        //console.log("sortCanaryTreeBySize");
+        sortCanaryTreeLevelBySize(tree, level);
+    }
+
+    function sortCanaryTreeLevelBySize(tree, level) {
+        let ch = tree['ch'];
+        if (ch != undefined && ch !== null) {
+            for (let index = 0; index < ch.length; index++) {
+                if(ch[index][level] != undefined){
+                    ch[index]['csz'] = ch[index][level];
+                }else{
+                    ch[index]['csz'] = 0;
+                }
+                ch[index]['bsz'] = 0;
+                sortCanaryTreeLevelBySize(ch[index], level);
+            }
+            ch.sort(function (a, b) {
+                return b.bsz + b.csz - a.bsz - a.csz
+            });
+        }
+    }
+
+
     function updateStackIndex(contextTreeMaster){
         contextTreeMaster["treeIndex"] = getSelectedLevel(contextTreeMaster);
         console.log("updateStackIndex:" + contextTreeMaster["treeIndex"]);
