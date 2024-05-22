@@ -11,8 +11,10 @@ import com.google.common.base.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import perfgenie.utils.Utils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -88,6 +90,18 @@ public class PerfGenieController {
 
         return service.getGenieEvent(tenant, start, end, queryMap, dimMap);
     }
+    @GetMapping(path = {"/v2/profile", "/v2/profile/{tenant}"}, produces = MediaType.ALL_VALUE)
+    public byte[] profilev2(@PathVariable(required = false, name = "tenant") String tenant,
+                          @RequestParam(required = false, name = "start") final long start,
+                          @RequestParam(required = false, name = "end") final long end,
+                          @RequestParam("metadata_query") final List<String> metadataQuery) throws IOException {
+
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        final Map<String, String> dimMap = new HashMap<>();
+
+        return Utils.compress(service.getGenieProfile(tenant, start, end, queryMap, dimMap).getBytes(StandardCharsets.UTF_8));
+    }
+
     @GetMapping(path = {"/v1/profile", "/v1/profile/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String profile(@PathVariable(required = false, name = "tenant") String tenant,
                           @RequestParam(required = false, name = "start") final long start,
@@ -98,6 +112,17 @@ public class PerfGenieController {
         final Map<String, String> dimMap = new HashMap<>();
 
         return service.getGenieProfile(tenant, start, end, queryMap, dimMap);
+    }
+
+    @GetMapping(path = {"/v2/profiles", "/v2/profiles/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public byte[] profilesv2(@PathVariable(required = false, name = "tenant") String tenant,
+                           @RequestParam(required = false, name = "start") final long start,
+                           @RequestParam(required = false, name = "end") final long end,
+                           @RequestParam("metadata_query") final List<String> metadataQuery) throws IOException {
+
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        final Map<String, String> dimMap = new HashMap<>();
+        return Utils.compress(service.getGenieProfiles(tenant, start, end, queryMap, dimMap).getBytes(StandardCharsets.UTF_8));
     }
 
     @GetMapping(path = {"/v1/profiles", "/v1/profiles/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)

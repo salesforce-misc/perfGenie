@@ -4546,7 +4546,12 @@
     }
 
     function setContextData(data, count){
-        contextData[count] = data;
+        if(genieVersion == "v2") {
+            var gunzip = new Zlib.Gunzip(data);
+            contextData[count] = gunzip.decompress();
+        }else{
+            contextData[count] = data;
+        }
         processCustomEvents(count);
         if(count == 1) {
             populateEventInputOptions("event-input");

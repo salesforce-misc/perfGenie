@@ -34,6 +34,7 @@
 
     <link rel="stylesheet" href="/css/profiler.css">
     <script src="/js/input.js"></script>
+    <script src="/js/zlib.min.js"></script>
     <script src="/js/utils.js"></script>
     <script src="/js/SFlameGraph.js"></script>
     <script src="/js/SFDataTable.js"></script>

@@ -943,11 +943,20 @@
                 let array = profile.split(" - ");
                 const timestamp = array[0];
                 let guid = eventType.includes("jfr_dump") ? array[1] + eventType : array[1];
-                endpoint = "/v1/profile/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
-                    "&metadata_query=" + encodeURIComponent("host=" + host) +
-                    "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
-                    "&metadata_query=" + encodeURIComponent("guid=" + guid) +
-                    "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
+                genieVersion
+                if (eventType == "jfr-context" || eventType.includes("jfr_dump_log")) {
+                    endpoint = "/"+genieVersion+"/profile/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
+                        "&metadata_query=" + encodeURIComponent("host=" + host) +
+                        "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+                        "&metadata_query=" + encodeURIComponent("guid=" + guid) +
+                        "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
+                }else{
+                    endpoint = "/v1/profile/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
+                        "&metadata_query=" + encodeURIComponent("host=" + host) +
+                        "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+                        "&metadata_query=" + encodeURIComponent("guid=" + guid) +
+                        "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
+                }
             }
         }
         if(dataSource.includes("genie")){

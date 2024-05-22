@@ -39,7 +39,7 @@ let jstackidcolorsmap ={9:"RUNNABLE",10:"BLOCKED",11:"WAITING",12:"TIMED_WAITING
 let profilecolors =["lightseagreen","#bbbb0d","deeppink","brown","dodgerblue","slateblue","blue","green","yellow","#29b193","#ee5869","#f6ab60","#377bb5"];
 let knowprofilecolormap = {"jfr_dump.json.gz":0,"jfr_dump_socket.json.gz":1,"jfr_dump_apex.json.gz":2, "jfr_dump_memory.json.gz":3, "json-jstack":4,"Jstack":4};
 let dataSource = "genie";
-let isZip = true;
+let genieVersion = 'v2';
 function setSubmitDisabled(shouldDisable) {
     $("#submit-input").prop("disabled", shouldDisable);
 }
@@ -88,7 +88,8 @@ function addInputNote(toggle, msg){
     }
 }
 
-$(function () {
+$(document).ready(() => {
+
     dataSource = urlParams.get('dataSource') || "genie";
     startTime1 = Number(urlParams.get('startTime1')) || moment.utc(moment.utc().subtract('minute', 10).format('YYYY-MM-DD HH:mm:ss')).valueOf();
     startTime2 = Number(urlParams.get('startTime2')) || moment.utc(moment.utc().subtract('minute', 24 * 60 + 10).format('YYYY-MM-DD HH:mm:ss')).valueOf();
