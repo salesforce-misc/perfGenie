@@ -2852,6 +2852,7 @@
             }
         }
 
+
         for(let i=0; i<pinCount; i++) {
             if ($('#pinid' + i).length) {
                 if(enableOnClick) {
@@ -2879,18 +2880,20 @@
         let showPoint = false;
         let showLables = false;
         let enableOnClick = false;
-        let subChart = true;
         let height = 300;
 
-        if (customEvent != otherEvent) {
-            if (otherEvent === "diagnostics(raw)") {
+        if(customEvent != otherEvent) {
+            if(otherEvent === "diagnostics(raw)") {
                 chartType = "scatter";
-                enableOnClick = true;
-                subChart = false;
-            } else {
+                height = 300;
+            }else if(otherEventsFetched[otherEvent] != undefined){
                 showPoint = true;
                 showLables = true;
             }
+        }
+        if(pincolumns.length > 60) {
+            showPoint = false;
+            showLables = false;
         }
 
         pinCount++;
