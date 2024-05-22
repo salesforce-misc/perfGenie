@@ -3868,7 +3868,7 @@
             for (let value in localContextData.records) {
                 if(value == customEvent){
                     if(selected){
-                        toolBarOptions += '<option value=' + value + "'>" + value + "</option>\n";
+                        toolBarOptions += "<option value='" + value + "'>" + value + "</option>\n";
                     }else{
                         toolBarOptions += '<option ' + ((customEvent == value) ? "selected" : "") + " value='" + value + "'>" + value + "</option>\n";
                     }
