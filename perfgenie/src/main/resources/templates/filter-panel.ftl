@@ -2892,7 +2892,7 @@
             }
         }
 
-        if(pincolumns.length > 30) {
+        if(pincolumns.length > 8) {
             showPoint = false;
         }
         if(pincolumns.length > 5) {
@@ -3149,7 +3149,7 @@
             totalTimeSeriesPoints += series_x.length;
         }
 
-        if(totalTimeSeriesPoints > 30) {
+        if(totalTimeSeriesPoints > 8) {
             showPoint = false;
         }
         if(totalTimeSeriesPoints > 5) {
