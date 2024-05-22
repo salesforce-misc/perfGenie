@@ -3011,10 +3011,10 @@
         const callTreeUrl = getDiagEventUrl(timestamp, (count == 1 ? tenant1 : tenant2) , (count == 1 ? host1 : host2), guid, name);
 
         if($("#diagevent").length == 0) {
-            $('#statetablewrapper').append("<div id='diagevent'style='max-height: 400px; overflow: auto; border-style: dotted hidden; padding: 10px;' class='col-lg-12'><div style='float:right;cursor: pointer;' onclick='closePin(\"diagevent\")'>Close</div><div id='diageventheader'>" + moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event:" + otherEvent +  ", Name:" + name + "</div><span style='float:right;' class='spinner' id='spinner2'></span>" + "<pre id=\"diageventval\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupdiagview col-lg-12\" >" + "</div>");
+            $('#statetablewrapper').append("<div id='diagevent'style='max-height: 400px; overflow: auto; border-style: dotted hidden; padding: 10px;' class='col-lg-12'><div style='float:right;cursor: pointer;' onclick='closePin(\"diagevent\")'>Close</div><div id='diageventheader'>" + moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event"+count+":" + otherEvent +  ", Name:" + name + "</div><span style='float:right;' class='spinner' id='spinner2'></span>" + "<pre id=\"diageventval\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupdiagview col-lg-12\" >" + "</div>");
         }else{
             $("#diageventval").html("");
-            $("#diageventheader").html( moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event:" + otherEvent +  ", Name:" + name);
+            $("#diageventheader").html( moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event"+count+":" + otherEvent +  ", Name:" + name);
         }
         showSpinner("spinner2");
 
@@ -5285,7 +5285,7 @@
             return;
         }
 
-        if(compareTree){
+        if(false && compareTree){
             console.log("skip genRequestTable " + eventType);
             addContextHints(eventType);
             $("#statetable").html("Context data view work TBD")
@@ -5335,9 +5335,6 @@
         let groupByFound = false;
 
         let isAll = (fContext === 'all' || fContext === '');
-        if(!isAll){
-            addContextData(eventType,1);//todo compare context table
-        }
         let isWith = (fContext === 'with');
 
         let localContextData = getContextData(1);
@@ -5381,163 +5378,73 @@
             //sortByIndex = spanIndex;
         }
 
-        let contextStart = getContextTree(1,eventType).context.start;
-        let contextTidMap = getContextTree(1,eventType).context.tidMap;
-        let contextDataRecords = undefined;
-        if (localContextData != undefined && localContextData.records != undefined) {
-            contextDataRecords = localContextData.records[customEvent];
-        }
+
 
         let rowIndex = -1;
         tableHeader = [];
         tableRows = [];
-        getContextTableHeadernew(groupBy, tableHeader, customEvent);
+        getContextTableHeadernew(groupBy, tableHeader, customEvent, true);
 
-        let table = "<table   style=\"border:none;padding=0px;width: 100%;\" id=\"state-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\">" + getEventTableHeader(groupBy);
+        //let table = "<table   style=\"border:none;padding=0px;width: 100%;\" id=\"state-table\" class=\"table compact table-striped table-bordered  table-hover dataTable\">" + getEventTableHeader(groupBy);
 
         if((!isFilterEmpty(dimIndexMap) || frameFilterString !== "") && spanIndex == -1 ){
             isContextViewFiltered = false;//record do not have duration span to apply context filters
         }
         let combinedEventKey = event + customEvent;
-        //if only frame filter is selected then we need to include stacks that are not part of any request spans.
-        if(isAll || isWith) {//without context will not have a context table data
-            if (frameFilterString !== "" && tidDatalistVal == undefined && isFilterEmpty(dimIndexMap)) {
-                for (var tid in contextTidMap) {
-                    if (isJstack) {
-                        for (let index = 0; index < contextTidMap[tid].length; index++) {
-                            if ((pStart === '' || pEnd === '') || (contextTidMap[tid][index].time + contextStart) >= pStart && (contextTidMap[tid][index].time + contextStart) <= pEnd) { // apply time range filter
-                                //if (isAll || (isWith && contextTidMap[tid][index][customEvent]?.obj != undefined) || (!isWith && contextTidMap[tid][index][customEvent]?.obj == undefined)) {
+
+        let contextDataRecordsLength = compareTree ? 2 : 1;
+
+        for(let contextDataRecordNumber = 1; contextDataRecordNumber <= contextDataRecordsLength; contextDataRecordNumber ++) {
+
+            if(metricSumMap[contextDataRecordNumber] == undefined){
+                metricSumMap[contextDataRecordNumber] = {};
+            }
+
+            if (!isAll) {
+                addContextData(eventType, contextDataRecordNumber);//todo compare context table
+            }
+            localContextData = getContextData(contextDataRecordNumber);
+            let contextStart = getContextTree(contextDataRecordNumber, eventType).context.start;
+            let contextTidMap = getContextTree(contextDataRecordNumber, eventType).context.tidMap;
+            let contextDataRecords = undefined;
+            if (localContextData != undefined && localContextData.records != undefined) {
+                contextDataRecords = localContextData.records[customEvent];
+            }
+
+            //if only frame filter is selected then we need to include stacks that are not part of any request spans.
+            if (isAll || isWith) {//without context will not have a context table data
+                if (frameFilterString !== "" && tidDatalistVal == undefined && isFilterEmpty(dimIndexMap)) {
+                    for (var tid in contextTidMap) {
+                        if (isJstack) {
+                            for (let index = 0; index < contextTidMap[tid].length; index++) {
+                                if ((pStart === '' || pEnd === '') || (contextTidMap[tid][index].time + contextStart) >= pStart && (contextTidMap[tid][index].time + contextStart) <= pEnd) { // apply time range filter
+                                    //if (isAll || (isWith && contextTidMap[tid][index][customEvent]?.obj != undefined) || (!isWith && contextTidMap[tid][index][customEvent]?.obj == undefined)) {
                                     if (frameFilterStackMap[combinedEventKey][contextTidMap[tid][index].hash] !== undefined) {
                                         if (filteredStackMap[FilterLevel.LEVEL3][tid] == undefined) {
                                             filteredStackMap[FilterLevel.LEVEL3][tid] = [];
                                         }
                                         filteredStackMap[FilterLevel.LEVEL3][tid].push(contextTidMap[tid][index]);
                                     }
-                                //}
+                                    //}
+                                }
                             }
                         }
-                    }
-                    //generate context table data, need to include requests that has frame filter found stacks
-                    if (contextDataRecords[tid] != undefined) {
-                        let includeTid = false;
-                        let reqArray = [];
-                        let recordIndex = -1;
-                        contextDataRecords[tid].forEach(function (obj) {
-                            let record = obj.record;
-                            let flag = false;
-                            recordIndex++;
-                            let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
-                            if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
-                                if (record[spanIndex] == undefined) {
-                                    flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
-                                } else {
-                                    let end = record[timestampIndex] - contextStart + recordSpan;
-                                    let start = record[timestampIndex] - contextStart;
-                                    try {
-                                        //do a binary search
-                                        let entryIndex = isinRequest(contextTidMap[tid], start, end);
-                                        if (entryIndex != -1) {
-                                            let requestArr = contextTidMap[tid];
-                                            flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false, tid);
-                                        }
-                                    } catch (err) {
-                                        //console.log("tid not found in JFR" + tid.key + " " + err.message);
-                                    }
-                                }
-                            }
-
-                            if (flag) {
-                                if ((tableFormat == 2 || tableFormat == 3)) {
-                                    includeTid = true;
-                                    reqArray.push(recordIndex);
-                                    if ((recordSpan + record[timestampIndex]) > maxEndTimeOfReq) {
-                                        maxEndTimeOfReq = recordSpan + record[timestampIndex];
-                                    }
-                                    let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
-                                    if (!tmpColorMap.has(key)) {
-                                        tmpColorMap.set(key, randomColor());
-                                        groupByCount++;
-                                    }
-                                    let metricValue = record[metricsIndexMap[sortBy]];
-                                    if (metricValue != undefined) {
-                                        groupByCountSum += metricValue;
+                        //generate context table data, need to include requests that has frame filter found stacks
+                        if (contextDataRecords[tid] != undefined) {
+                            let includeTid = false;
+                            let reqArray = [];
+                            let recordIndex = -1;
+                            contextDataRecords[tid].forEach(function (obj) {
+                                let record = obj.record;
+                                let flag = false;
+                                recordIndex++;
+                                let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
+                                if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
+                                    if (record[spanIndex] == undefined) {
+                                        flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
                                     } else {
-                                        metricValue = 0;
-                                    }
-                                    if (tmpGgroupByTypeSortByMetricMap.has(key)) {
-                                        tmpGgroupByTypeSortByMetricMap.set(key, tmpGgroupByTypeSortByMetricMap.get(key) + metricValue);
-                                    } else {
-                                        tmpGgroupByTypeSortByMetricMap.set(key, metricValue);
-                                    }
-
-                                    if (tmpTidSortByMetricMap.has(tid)) {
-                                        tmpTidSortByMetricMap.set(tid, tmpTidSortByMetricMap.get(tid) + metricValue);
-                                    } else {
-                                        tmpTidSortByMetricMap.set(tid, metricValue);
-                                    }
-                                }
-                                if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
-                                    if (record[metricsIndexMap[tableThreshold]] >= spanThreshold) {//todo change names tableThreshold to recordInput, spanThreshold to recordThreshold
-                                        rowIndex++;
-                                        tableRows[rowIndex] = [];
-                                        for (let field in record) {
-                                            if (field == timestampIndex) {
-                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex], moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'), "id='" + record[tidRowIndex] + "_" + record[field] + "'");
-                                            } else if (field == tidRowIndex) {
-                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex], Number(record[field]), "id='" + record[tidRowIndex] + "_dummy'" + " hint='tid'");
-                                            } else {
-                                                if (isDimIndexMap[field] == undefined) {
-                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field]);
-                                                } else {
-                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field], "' hint='" + isDimIndexMap[field] + "'");
-                                                }
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
-
-                                    if (metricSumMap[key] == undefined) {
-                                        metricSumMap[key] = Array(metricsIndexArray.length + 1).fill(0);
-                                    }
-
-                                    for (let i = 0; i < metricsIndexArray.length; i++) {
-                                        metricSumMap[key][i] += record[metricsIndexArray[i]];
-                                    }
-                                    metricSumMap[key][metricsIndexArray.length] += 1;
-                                }
-                            }
-                        });
-                        if (includeTid) {
-                            filteredTidRequests[tid] = reqArray;
-                            lineCount++;
-                            totalRows++;
-                        }
-                    }
-                }
-            } else {
-                for (var tid in contextDataRecords) {
-                    let includeTid = false;
-                    let reqArray = [];
-                    let recordIndex = -1;
-                    if (tidDatalistVal == undefined || tidDatalistVal == tid) {
-                        contextDataRecords[tid].forEach(function (obj) {
-                            let record = obj.record;
-                            let flag = false;
-                            recordIndex++;
-                            let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
-                            if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
-                                if (record[spanIndex] == undefined) {
-                                    flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
-                                } else {
-                                    //context filter matched, but check if samples of request is matching frame filter
-                                    if (frameFilterString !== "") {
-                                        flag = false;
-
-                                        //check if the request has a stack and if stack is in frameFilterStackMap
                                         let end = record[timestampIndex] - contextStart + recordSpan;
                                         let start = record[timestampIndex] - contextStart;
-
                                         try {
                                             //do a binary search
                                             let entryIndex = isinRequest(contextTidMap[tid], start, end);
@@ -5546,79 +5453,191 @@
                                                 flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false, tid);
                                             }
                                         } catch (err) {
-                                            //console.log("tid not found in JFR" + tid + " " + err.message);
+                                            //console.log("tid not found in JFR" + tid.key + " " + err.message);
                                         }
-                                    } else {
-                                        flag = true;
                                     }
                                 }
-                            }
 
-                            if (flag) {
-                                if ((tableFormat == 2 || tableFormat == 3)) {
-                                    includeTid = true;
-                                    reqArray.push(recordIndex);
-                                    if ((recordSpan + record[timestampIndex]) > maxEndTimeOfReq) {
-                                        maxEndTimeOfReq = recordSpan + record[timestampIndex];
-                                    }
-                                    let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
-                                    if (!tmpColorMap.has(key)) {
-                                        tmpColorMap.set(key, randomColor());
-                                        groupByCount++;
-                                    }
-                                    let metricValue = record[metricsIndexMap[sortBy]];
-                                    if (metricValue != undefined) {
-                                        groupByCountSum += metricValue;
-                                    } else {
-                                        metricValue = 0;
-                                    }
-                                    if (tmpGgroupByTypeSortByMetricMap.has(key)) {
-                                        tmpGgroupByTypeSortByMetricMap.set(key, tmpGgroupByTypeSortByMetricMap.get(key) + metricValue);
-                                    } else {
-                                        tmpGgroupByTypeSortByMetricMap.set(key, metricValue);
-                                    }
+                                if (flag) {
+                                    if ((tableFormat == 2 || tableFormat == 3)) {
+                                        includeTid = true;
+                                        reqArray.push(recordIndex);
+                                        if ((recordSpan + record[timestampIndex]) > maxEndTimeOfReq) {
+                                            maxEndTimeOfReq = recordSpan + record[timestampIndex];
+                                        }
+                                        let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                        if (!tmpColorMap.has(key)) {
+                                            tmpColorMap.set(key, randomColor());
+                                            groupByCount++;
+                                        }
+                                        let metricValue = record[metricsIndexMap[sortBy]];
+                                        if (metricValue != undefined) {
+                                            groupByCountSum += metricValue;
+                                        } else {
+                                            metricValue = 0;
+                                        }
+                                        if (tmpGgroupByTypeSortByMetricMap.has(key)) {
+                                            tmpGgroupByTypeSortByMetricMap.set(key, tmpGgroupByTypeSortByMetricMap.get(key) + metricValue);
+                                        } else {
+                                            tmpGgroupByTypeSortByMetricMap.set(key, metricValue);
+                                        }
 
-                                    if (tmpTidSortByMetricMap.has(tid)) {
-                                        tmpTidSortByMetricMap.set(tid, tmpTidSortByMetricMap.get(tid) + metricValue);
-                                    } else {
-                                        tmpTidSortByMetricMap.set(tid, metricValue);
+                                        if (tmpTidSortByMetricMap.has(tid)) {
+                                            tmpTidSortByMetricMap.set(tid, tmpTidSortByMetricMap.get(tid) + metricValue);
+                                        } else {
+                                            tmpTidSortByMetricMap.set(tid, metricValue);
+                                        }
                                     }
-                                }
-                                if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
-                                    if (record[metricsIndexMap[tableThreshold]] >= spanThreshold) {
-                                        rowIndex++;
-                                        tableRows[rowIndex] = [];
-                                        for (let field in record) {
-                                            if (field == timestampIndex) {
-                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex], moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'), "id='" + record[tidRowIndex] + "_" + record[field] + "'");
-                                            } else if (field == tidRowIndex) {
-                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex], Number(record[field]), "id='" + record[tidRowIndex] + "_dummy'" + " hint='tid'");
-                                            } else {
-                                                if (isDimIndexMap[field] == undefined) {
-                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field]);
+                                    if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
+                                        if (record[metricsIndexMap[tableThreshold]] >= spanThreshold) {//todo change names tableThreshold to recordInput, spanThreshold to recordThreshold
+                                            rowIndex++;
+                                            tableRows[rowIndex] = [];
+                                            if(compareTree){
+                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex], contextDataRecordNumber);
+                                            }
+                                            for (let field in record) {
+                                                if (field == timestampIndex) {
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'), "id='" + record[tidRowIndex] + "_" + record[field] + "'");
+                                                } else if (field == tidRowIndex) {
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], Number(record[field]), "id='" + record[tidRowIndex] + "_dummy'" + " hint='tid'");
                                                 } else {
-                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field], "' hint='" + isDimIndexMap[field] + "'");
+                                                    if (isDimIndexMap[field] == undefined) {
+                                                        sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field]);
+                                                    } else {
+                                                        sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field], "' hint='" + isDimIndexMap[field] + "'");
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
-                                } else {
-                                    let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
-                                    if (metricSumMap[key] == undefined) {
-                                        metricSumMap[key] = Array(metricsIndexArray.length + 1).fill(0);
-                                    }
+                                    } else {
+                                        let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
 
-                                    for (let i = 0; i < metricsIndexArray.length; i++) {
-                                        metricSumMap[key][i] += record[metricsIndexArray[i]];
+                                        if (metricSumMap[contextDataRecordNumber][key] == undefined) {
+                                            metricSumMap[contextDataRecordNumber][key] = Array(metricsIndexArray.length + 1).fill(0);
+                                        }
+
+                                        for (let i = 0; i < metricsIndexArray.length; i++) {
+                                            metricSumMap[contextDataRecordNumber][key][i] += record[metricsIndexArray[i]];
+                                        }
+                                        metricSumMap[contextDataRecordNumber][key][metricsIndexArray.length] += 1;
                                     }
-                                    metricSumMap[key][metricsIndexArray.length] += 1;
                                 }
+                            });
+                            if (includeTid) {
+                                filteredTidRequests[tid] = reqArray;
+                                lineCount++;
+                                totalRows++;
                             }
-                        });
-                        if (includeTid) {
-                            filteredTidRequests[tid] = reqArray;
-                            lineCount++;
-                            totalRows++;
+                        }
+                    }
+                } else {
+                    for (var tid in contextDataRecords) {
+                        let includeTid = false;
+                        let reqArray = [];
+                        let recordIndex = -1;
+                        if (tidDatalistVal == undefined || tidDatalistVal == tid) {
+                            contextDataRecords[tid].forEach(function (obj) {
+                                let record = obj.record;
+                                let flag = false;
+                                recordIndex++;
+                                let recordSpan = record[spanIndex] == undefined ? 0 : record[spanIndex];
+                                if (filterMatch(record, dimIndexMap, timestampIndex, recordSpan)) {
+                                    if (record[spanIndex] == undefined) {
+                                        flag = true; //include all records when 'duration' span is not available. context view cannot be filtered
+                                    } else {
+                                        //context filter matched, but check if samples of request is matching frame filter
+                                        if (frameFilterString !== "") {
+                                            flag = false;
+
+                                            //check if the request has a stack and if stack is in frameFilterStackMap
+                                            let end = record[timestampIndex] - contextStart + recordSpan;
+                                            let start = record[timestampIndex] - contextStart;
+
+                                            try {
+                                                //do a binary search
+                                                let entryIndex = isinRequest(contextTidMap[tid], start, end);
+                                                if (entryIndex != -1) {
+                                                    let requestArr = contextTidMap[tid];
+                                                    flag = isRequestHasFrame(requestArr, entryIndex, event, start, end, false, tid);
+                                                }
+                                            } catch (err) {
+                                                //console.log("tid not found in JFR" + tid + " " + err.message);
+                                            }
+                                        } else {
+                                            flag = true;
+                                        }
+                                    }
+                                }
+
+                                if (flag) {
+                                    if ((tableFormat == 2 || tableFormat == 3)) {
+                                        includeTid = true;
+                                        reqArray.push(recordIndex);
+                                        if ((recordSpan + record[timestampIndex]) > maxEndTimeOfReq) {
+                                            maxEndTimeOfReq = recordSpan + record[timestampIndex];
+                                        }
+                                        let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                        if (!tmpColorMap.has(key)) {
+                                            tmpColorMap.set(key, randomColor());
+                                            groupByCount++;
+                                        }
+                                        let metricValue = record[metricsIndexMap[sortBy]];
+                                        if (metricValue != undefined) {
+                                            groupByCountSum += metricValue;
+                                        } else {
+                                            metricValue = 0;
+                                        }
+                                        if (tmpGgroupByTypeSortByMetricMap.has(key)) {
+                                            tmpGgroupByTypeSortByMetricMap.set(key, tmpGgroupByTypeSortByMetricMap.get(key) + metricValue);
+                                        } else {
+                                            tmpGgroupByTypeSortByMetricMap.set(key, metricValue);
+                                        }
+
+                                        if (tmpTidSortByMetricMap.has(tid)) {
+                                            tmpTidSortByMetricMap.set(tid, tmpTidSortByMetricMap.get(tid) + metricValue);
+                                        } else {
+                                            tmpTidSortByMetricMap.set(tid, metricValue);
+                                        }
+                                    }
+                                    if (groupBy == "" || groupBy == undefined || groupBy == "All records") {
+                                        if (record[metricsIndexMap[tableThreshold]] >= spanThreshold) {
+                                            rowIndex++;
+                                            tableRows[rowIndex] = [];
+                                            if(compareTree){
+                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex], contextDataRecordNumber);
+                                            }
+                                            for (let field in record) {
+                                                if (field == timestampIndex) {
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'), "id='" + record[tidRowIndex] + "_" + record[field] + "'");
+                                                } else if (field == tidRowIndex) {
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], Number(record[field]), "id='" + record[tidRowIndex] + "_dummy'" + " hint='tid'");
+                                                } else {
+                                                    if (isDimIndexMap[field] == undefined) {
+                                                        sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field]);
+                                                    } else {
+                                                        sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field], "' hint='" + isDimIndexMap[field] + "'");
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        let key = (groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex];
+                                        if (metricSumMap[contextDataRecordNumber][key] == undefined) {
+                                            metricSumMap[contextDataRecordNumber][key] = Array(metricsIndexArray.length + 1).fill(0);
+                                        }
+
+                                        for (let i = 0; i < metricsIndexArray.length; i++) {
+                                            metricSumMap[contextDataRecordNumber][key][i] += record[metricsIndexArray[i]];
+                                        }
+                                        metricSumMap[contextDataRecordNumber][key][metricsIndexArray.length] += 1;
+                                    }
+                                }
+                            });
+                            if (includeTid) {
+                                filteredTidRequests[tid] = reqArray;
+                                lineCount++;
+                                totalRows++;
+                            }
                         }
                     }
                 }
@@ -5667,104 +5686,35 @@
             }
         } else {
             if (!(groupBy == "" || groupBy == undefined || groupBy == "All records")) {
-                for (let dim in metricSumMap) {
-                    rowIndex++;
-                    tableRows[rowIndex] = [];
-                    if(groupBy == "tid"){
-                        sfContextDataTable.addContextTableRow(tableRows[rowIndex],(dim == undefined ? "NA" : Number(dim)),"id='"+Number(dim) + "_dummy'" + " hint='"+groupBy+"'");
-                    }else {
-                        sfContextDataTable.addContextTableRow(tableRows[rowIndex],(dim == undefined ? "NA" : dim),"hint='"+groupBy+"'");
-                    }
-                    for (let i = 0; i < metricSumMap[dim].length; i++) {
-                        sfContextDataTable.addContextTableRow(tableRows[rowIndex],Math.round(metricSumMap[dim][i] * 100) / 100);
+                for(let contextDataRecordNumber = 1; contextDataRecordNumber <= contextDataRecordsLength; contextDataRecordNumber ++) {
+                    for (let dim in metricSumMap[contextDataRecordNumber]) {
+                        rowIndex++;
+                        tableRows[rowIndex] = [];
+                        if(compareTree){
+                            sfContextDataTable.addContextTableRow(tableRows[rowIndex], contextDataRecordNumber, "hint='" + contextDataRecordNumber + "'");
+                        }
+                        if (groupBy == "tid") {
+                            sfContextDataTable.addContextTableRow(tableRows[rowIndex], (dim == undefined ? "NA" : Number(dim)), "id='" + Number(dim) + "_dummy'" + " hint='" + groupBy + "'");
+                        } else {
+                            sfContextDataTable.addContextTableRow(tableRows[rowIndex], (dim == undefined ? "NA" : dim), "hint='" + groupBy + "'");
+                        }
+                        for (let i = 0; i < metricSumMap[contextDataRecordNumber][dim].length; i++) {
+                            sfContextDataTable.addContextTableRow(tableRows[rowIndex], Math.round(metricSumMap[contextDataRecordNumber][dim][i] * 100) / 100);
+                        }
                     }
                 }
             }
-            sfContextDataTable.SFDataTable(tableRows, tableHeader, "statetable", order);
+            if(compareTree){
+                sfContextDataTable.SFDataTable(tableRows, tableHeader, "statetable", 2);
+            }else {
+                sfContextDataTable.SFDataTable(tableRows, tableHeader, "statetable", order);
+            }
             if(!isContextViewFiltered) {
                 getContextHintNote(false, customEvent);
             }
         }
 
-        //setToolBarOptions("statetabledrp");
-
-        /*$("#event-input").on("change", (event) => {
-            updateUrl("customevent", $("#event-input").val(), true);
-            customEvent = $("#event-input").val();
-            tmpColorMap.clear();
-            setToolBarOptions("statetabledrp");
-            genRequestTable();
-            updateRequestView();
-        });*/
-
-        /*
-        $("#filter-input").on("change", (event) => {
-            updateUrl("groupBy", $("#filter-input").val(), true);
-            groupBy = $("#filter-input").val();
-            tmpColorMap.clear();
-            genRequestTable();
-            updateRequestView();
-        });
-
-        $("#format-input").on("change", (event) => {
-            updateUrl("tableFormat", $("#format-input").val(), true);
-            tableFormat = $("#format-input").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#sort-input").on("change", (event) => {
-            updateUrl("sortBy", $("#sort-input").val(), true);
-            sortBy = $("#sort-input").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#line-type").on("change", (event) => {
-            updateUrl("cumulative", $("#line-type").val(), true);
-            cumulativeLine = $("#line-type").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#line-count").on("change", (event) => {
-            updateUrl("seriesCount", $("#line-count").val(), true);
-            seriesCount = $("#line-count").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#groupby-match").on("change", (event) => {
-            updateUrl("groupByMatch", $("#groupby-match").val(), true);
-            groupByMatch = $("#groupby-match").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#groupby-length").on("change", (event) => {
-            if($("#groupby-length").val() == "") {
-                $("#groupby-length").val("200");
-            }
-
-            updateUrl("groupByLength", $("#groupby-length").val(), true);
-            groupByLength = $("#groupby-length").val();
-
-            genRequestTable();
-            updateRequestView();
-        });
-
-        $("#table-threshold").on("change", (event) => {
-            updateUrl("tableThreshold", $("#table-threshold").val(), true);
-            tableThreshold = $("#table-threshold").val();
-            genRequestTable();
-            updateRequestView();
-        });
-        $("#span-threshold").on("change", (event) => {
-            updateUrl("spanThreshold", $("#span-threshold").val(), true);
-            spanThreshold = $("#span-threshold").val();
-            genRequestTable();
-            updateRequestView();
-        });
-
-         */
-
         $("#cct-panel").css("height", "100%");
-
 
         let end = performance.now();
         console.log("genRequestTable end time:" + (end - start1));
@@ -6118,6 +6068,7 @@
                     }
                 }
             }
+
             sfContextDataTable.SFDataTable(tableRows, tableHeader, "statetable", order);
 
             //if(!isContextViewFiltered) {
@@ -6140,6 +6091,11 @@
         if(addrightclick == undefined){
             addrightclick = true;//default true
         }
+
+        if(compareTree && addrightclick){
+            sfContextDataTable.addContextTableHeader(row, "Data", 1);
+        }
+
         if (!(groupBy == undefined || groupBy == "" || groupBy == "All records")) {
             if(groupBy == "tid") {
                 sfContextDataTable.addContextTableHeader(row,groupBy,1,addrightclick ? "class='context-menu-three' " : "", localContextData.tooltips[groupBy]);
