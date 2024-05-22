@@ -2891,10 +2891,14 @@
                 showLables = true;
             }
         }
-        if(pincolumns.length > 60) {
+
+        if(pincolumns.length > 30) {
             showPoint = false;
+        }
+        if(pincolumns.length > 5) {
             showLables = false;
         }
+
 
         pinCount++;
         $('#statetablewrapper').append("<div id='"+closepin+"'style='border-style: dotted hidden hidden hidden;' class='statetable col-lg-12'><div style='float:right;cursor: pointer;' onclick='closePin(\""+closepin+"\")'>Close</div><div>Pinned chart Event:"+otherEvent+", groupBy:"+groupBy+", Len:"+groupByLength+", Match:"+groupByMatch+", sortBy:"+sortBy+", Top:"+seriesCount+"</div><div id='"+pinid+"' class='col-lg-12' style='padding: 0 !important;'></div></div>");
@@ -3145,8 +3149,10 @@
             totalTimeSeriesPoints += series_x.length;
         }
 
-        if(totalTimeSeriesPoints > 60) {
+        if(totalTimeSeriesPoints > 30) {
             showPoint = false;
+        }
+        if(totalTimeSeriesPoints > 5) {
             showLables = false;
         }
 
