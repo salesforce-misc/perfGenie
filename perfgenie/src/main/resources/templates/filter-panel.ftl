@@ -5944,7 +5944,7 @@
                             if ((recordSpan + record[timestampIndex]) > maxEndTimeOfReq) {
                                 maxEndTimeOfReq = recordSpan + record[timestampIndex];
                             }
-                            let key = contextDataRecordNumber + ":" + ((groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex]);
+                            let key =  ((groupByIndex != -1 && record[groupByIndex] != undefined && record[groupByIndex].slice != undefined) ? record[groupByIndex].slice(0, groupByLength) : record[groupByIndex]);
                             if (!tmpColorMap.has(key)) {
                                 tmpColorMap.set(key, randomColor());
                                 groupByCount++;
