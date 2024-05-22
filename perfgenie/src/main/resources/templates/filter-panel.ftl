@@ -2892,10 +2892,10 @@
             }
         }
 
-        if(pincolumns.length > 8) {
+        if(pincolumns[0] != undefined && pincolumns[0].length > 10) {
             showPoint = false;
         }
-        if(pincolumns.length > 5) {
+        if(pincolumns[0] != undefined && pincolumns[0].length > 10) {
             showLables = false;
         }
 
