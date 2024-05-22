@@ -3504,6 +3504,9 @@
     }
 
     function addContextHints(eventType) {
+        if(compareTree){
+            $('#context-file-input-id').hide();
+        }
         let localContextData = getContextData(1);
         let eventToUse = $("#event-input").val();
         let table = "<table  class='ui-widget' style='border-spacing: 2px; border-collapse: separate;border: hidden'><tr><td style='border: hidden'  id='filter-heading'>Context hints:</td>";
@@ -5471,7 +5474,7 @@
                                             groupByCount++;
                                         }
                                         let metricValue = record[metricsIndexMap[sortBy]];
-                                        if (metricValue != undefined) {
+                                        if (metricValue != undefined && !isNaN(metricValue)) {
                                             groupByCountSum += metricValue;
                                         } else {
                                             metricValue = 0;
@@ -5582,7 +5585,7 @@
                                             groupByCount++;
                                         }
                                         let metricValue = record[metricsIndexMap[sortBy]];
-                                        if (metricValue != undefined) {
+                                        if (metricValue != undefined && !isNaN(metricValue)) {
                                             groupByCountSum += metricValue;
                                         } else {
                                             metricValue = 0;
@@ -6161,7 +6164,7 @@
                                 id="event-input">
                         </select>
                     </div>
-                    <div  style="cursor:pointer;align-content:center; padding:0px !important;" class="col-2">
+                    <div id="context-file-input-id" style="cursor:pointer;align-content:center; padding:0px !important;" class="col-2">
                         <i title="add additional CSV context in the following format where timestamp ms is the request start time and duration is request span.&#013;&#010;timestamp,tid,duration,dim[...],measure[...]&#013;&#010;Example csv:&#013;&#010;timestamp,tid,logType,runTime,cpuTime,uri&#013;&#010;1715112977036,1477,U,48,42,/aura&#013;&#010;..." style="text-align: left;" onclick="_upload()" style="font-size:18px;" class="fa fa-upload" aria-hidden="true"></i>
                         <input style='display:none' id="context-file-input" type="file" />
                     </div>

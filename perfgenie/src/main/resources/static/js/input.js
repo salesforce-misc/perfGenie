@@ -398,8 +398,9 @@ function addUploadedContext(csv,name){
             }
         }
     }
-    contextData.header[name] = header[name];
-    contextData.records[name] = records[name];
+    let localContextData = getContextData(1);
+    localContextData.header[name] = header[name];
+    localContextData.records[name] = records[name];
     $('#event-input').append($('<option>', {
         value: name,
         text: name
@@ -786,6 +787,9 @@ function populateHostsSelector1(start, end, tenant) {
     const optGroupTemplate = '<optgroup label="">OPTIONS</optgroup>';
     hostDatalist.append(optGroupTemplate.replace("OPTIONS", hostOptionHtml));
     if (tenant != undefined && host1 != undefined) {
+        if(profile1 != undefined){
+            $("#bases1").val(profile1);
+        }
         getMetaData1(start, end, tenant, host1);
     }
 }
@@ -814,6 +818,9 @@ function populateHostsSelector2(start, end, tenant) {
     const optGroupTemplate = '<optgroup label="">OPTIONS</optgroup>';
     hostDatalist.append(optGroupTemplate.replace("OPTIONS", hostOptionHtml));
     if (tenant2 != undefined && host2 != undefined) {
+        if(profile2 != undefined){
+            $("#bases2").val(profile2);
+        }
         getMetaData2(start, end, tenant, host2);
     }
 }
