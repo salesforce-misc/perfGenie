@@ -3841,24 +3841,40 @@
 
         let localContextData = getContextData(1);
         if (localContextData != undefined && localContextData.records != undefined) {
-            let otherEventFound = false;
-            if(!(otherEventFound == '' || otherEventFound == undefined)) {
+            let customEventFound = false;
+            if(!(customEvent == '' || customEvent == undefined)) {
                 for (let value in localContextData.records) {
-                    if(otherEvent == value){
-                        otherEventFound = true;
+                    if(customEvent == value){
+                        customEventFound = true;
                         break;
                     }
                 }
             }
+            let selected = false;
             for (let value in localContextData.records) {
-                if(otherEvent == '' || otherEvent == undefined || !otherEventFound){
-                    console.log("otherEvent 1: " + otherEvent);
-                    otherEventFound=true;
-                }
-                if(customEvent == value || otherEventsFetched[value] != undefined) {
-                    toolBarOptions += '<option ' + ((otherEvent == value || customEvent == value) ? "selected" : "") + " value='" + value + "'>" + value + "</option>\n";
+                if(otherEventsFetched[value] != undefined) {
+                    if(!customEventFound){
+                        otherEvent = value;
+                        customEventFound=true;
+                    }
+                    if(otherEvent == value){
+                        selected = true;
+                        toolBarOptions += '<option ' + ((otherEvent == value) ? "selected" : "") + " value='" + value + "'>" + value + "</option>\n";
+                    }else{
+                        toolBarOptions += '<option ' + ((otherEvent == value) ? "selected" : "") + " value='" + value + "'>" + value + "</option>\n";
+                    }
                 }
             }
+            for (let value in localContextData.records) {
+                if(value == customEvent){
+                    if(selected){
+                        toolBarOptions += '<option value=' + value + "'>" + value + "</option>\n";
+                    }else{
+                        toolBarOptions += '<option ' + ((customEvent == value) ? "selected" : "") + " value='" + value + "'>" + value + "</option>\n";
+                    }
+                }
+            }
+
         }
         toolBarOptions += '             </select>';
 
