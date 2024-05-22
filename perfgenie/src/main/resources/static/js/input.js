@@ -39,6 +39,7 @@ let jstackidcolorsmap ={9:"RUNNABLE",10:"BLOCKED",11:"WAITING",12:"TIMED_WAITING
 let profilecolors =["lightseagreen","#bbbb0d","deeppink","brown","dodgerblue","slateblue","blue","green","yellow","#29b193","#ee5869","#f6ab60","#377bb5"];
 let knowprofilecolormap = {"jfr_dump.json.gz":0,"jfr_dump_socket.json.gz":1,"jfr_dump_apex.json.gz":2, "jfr_dump_memory.json.gz":3, "json-jstack":4,"Jstack":4};
 let dataSource = "genie";
+let isZip = true;
 function setSubmitDisabled(shouldDisable) {
     $("#submit-input").prop("disabled", shouldDisable);
 }
@@ -336,6 +337,8 @@ function addUploadedContext(csv,name){
     header[name] = [];
     records[name] = {};
 
+    let isContext = false;
+
     let lines = csv.split(/\r?\n/);
     let columnTypes = [];
     let checkUntil = 200
@@ -350,6 +353,7 @@ function addUploadedContext(csv,name){
                 columnTypes.push(0);
                 if(header[name][k] == "runTime" || header[name][k] == "duration"){
                     spanIndex = k;
+                    isContext = true;
                 }
             }
         }else {
@@ -401,14 +405,29 @@ function addUploadedContext(csv,name){
     let localContextData = getContextData(1);
     localContextData.header[name] = header[name];
     localContextData.records[name] = records[name];
-    $('#event-input').append($('<option>', {
-        value: name,
-        text: name
-    }));
-    Toastify({
-        text: name +" context loaded",
-        duration: 8000
-    }).showToast();
+    if(isContext) {
+        $('#event-input').append($('<option>', {
+            value: name,
+            text: name
+        }));
+
+        Toastify({
+            text: name + " context loaded",
+            duration: 8000
+        }).showToast();
+    }else{
+        otherEvents1[name] = true;
+
+        $('#other-event-input').append($('<option>', {
+            value: name,
+            text: name
+        }));
+
+        Toastify({
+            text: name + " data loaded",
+            duration: 8000
+        }).showToast();
+    }
 }
 function loadDiagData1(){
 
