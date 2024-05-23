@@ -17,9 +17,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
@@ -38,6 +41,8 @@ public class EventStore {
     public static Long tenantsCacheTime = System.currentTimeMillis();
 
     private static Lock cacheLock = new ReentrantLock();
+
+    final CommandExecutor executor = CommandExecutor.getInstance();
 
     public EventStore(final Config config) throws IOException {
         this.config = config;
@@ -264,43 +269,73 @@ public class EventStore {
         return "";
     }
 
+    public static boolean waitForFile(final String filePath, long timeout) throws IOException, InterruptedException {
+        long maxWaitSec = timeout*60*1000;
+        long checkInterval = 1000; // 1 second
+        long startTime = System.currentTimeMillis();
+        File file = new File(filePath);
+        while (System.currentTimeMillis() - startTime < maxWaitSec) {
+            if (file.exists()) {
+                return true;
+            }
+            try {
+                Thread.sleep(checkInterval);
+            } catch (InterruptedException e) {
+                System.err.println("Thread was interrupted.");
+            }
+        }
+        return false;
+    }
+
     public String getGenieLargeEvent(final long start, final long end, final Map<String,
             String> queryMap, final Map<String, String> dimMap, final String tenant) throws IOException {
+
         String namespace = queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getLargeEventNameSpace(tenant, true) : PerfGenieConstants.getLargeEventNameSpace(tenant, false);
         final Stopwatch timer = Stopwatch.createStarted();
         try {
-            String res = download(start, end, queryMap, dimMap, namespace);
-            logger.info("successfully fetched event from namespace: " + namespace + " time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
-            return res;
+            if(queryMap.containsKey("file-name") && queryMap.get("file-name").contains(".jfr.gz")){
+                final String filepath = config.getJfrdir() +"/"+ Long.toString(start);
+                queryMap.put("guid",queryMap.get("guid").replace(queryMap.get("file-name").replace("=",""), ""));
+                if(downloadToFile(start, end, queryMap, dimMap, namespace,filepath+".tmp")){
+                    File f = new File(filepath+"jfr_dump.json");
+                    if(!f.exists()) {
+                        executor.addCommand("java -Xloggc:"+config.getJfrdir()+"/jfrparsergc.log -XX:ErrorFile="+config.getJfrdir()+"/jfrparser_error.log -XX:ParallelGCThreads=8 -XX:+PrintGCDetails -XX:NewSize=400m -XX:MaxNewSize=400m -Xms7G -Xmx7G  -cp "+config.getJfrparser()+" Parser -c -jfr " + filepath + ".tmp  -timeout 90000 -json " + filepath + "jfr_dump.json");
+                    }
+                    if(waitForFile(filepath+"jfr_dump.json", 2)){
+                        logger.info("successfully parsed jfr: " + queryMap + " time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+                        final HashMap<String, Long> profiles = new HashMap();
+                        Thread.sleep(5000);//let parser create all files
+                        File folder = new File(config.getJfrdir());
+                        File[] listOfFiles = folder.listFiles();
+                        if(listOfFiles != null) {
+                            for (File file : listOfFiles) {
+                                if(file.getName().contains(Long.toString(start))){
+                                    String tmpfileName = file.getName();
+                                    if(!(tmpfileName.contains("_sql.json") || tmpfileName.contains(".tmp"))) {
+                                        tmpfileName = tmpfileName.replace(Long.toString(start), "");
+                                        profiles.put(tmpfileName+".gz", start);
+                                    }
+                                }
+                            }
+                            return Utils.toJson(profiles);
+                        }else {
+                            return Utils.toJson(new EventHandler.JfrParserResponse(null, "parsed json not found", queryMap, null));
+                        }
+                    }else{
+                        return Utils.toJson(new EventHandler.JfrParserResponse(null, "Failed to parse jfr", queryMap, null));
+                    }
+                }else {
+                    return Utils.toJson(new EventHandler.JfrParserResponse(null, "Failed to download jfr", queryMap, null));
+                }
+            }else{
+                String res = download(start, end, queryMap, dimMap, namespace);
+                logger.info("successfully fetched event from namespace: " + namespace + " time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+                return res;
+            }
         }catch(Exception e){
             return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Event not found", queryMap, null));
         }
     }
-
-    /*public String getDiagEvent(final long start, final long end, final Map<String,
-            String> queryMap, final Map<String, String> dimMap, final String tenant) throws IOException {
-
-        final Stopwatch timer = Stopwatch.createStarted();
-        String namespace = queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getEventNameSpace(tenant, true) : PerfGenieConstants.getEventNameSpace(tenant, false);
-
-        final List<Events.Event> results = this.cantor.events().get(
-                namespace,
-                start - 1,
-                end + 1,
-                queryMap,
-                dimMap,
-                true
-        );
-        if (results.size() > 0) {
-
-            String res = new String(Utils.decompress(results.get(0).getPayload()));
-            logger.info("successfully fetched event from namespace: " + namespace + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
-            return res;
-        }else{
-            logger.warn("failed to fetch event from namespace: " + namespace + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
-        }
-        return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Event not found", queryMap, null));
-    }*/
 
     public String getGenieEvent(final long start, final long end, final Map<String,
             String> queryMap, final Map<String, String> dimMap, final String tenant) throws IOException {
@@ -455,8 +490,66 @@ public class EventStore {
         logger.info("Completed uploading to {} {} as {} cantor events", namespace, metadata, dimensions.get("chunk-total").longValue());
     }
 
+    public final Map<String, Boolean> downloadRequests = new ConcurrentHashMap<String,Boolean>();
+    private synchronized boolean downloadToFile(final long startTimestamp, final long endTimestamp, final Map<String,
+            String> metadataQuery, final Map<String, String> dimensionsQuery, final String namespace, final String filepath) throws IOException {
+
+        String req = metadataQuery.toString() + Long.toString(startTimestamp);
+
+        File file = new File(filepath);
+
+        if(downloadRequests.containsKey(req)){
+            logger.info("duplicate  download req  {}", metadataQuery);
+            return false;
+        }else if(file.exists()){
+            logger.info("already download req  {}", metadataQuery);
+            return true;
+        }
+
+        downloadRequests.put(req,true);
+        logger.info("Started downloading  {}", metadataQuery);
+        if(namespace != null){
+            try {
+                final DownloadIterator iterator = new DownloadIterator(namespace, startTimestamp, endTimestamp, metadataQuery, dimensionsQuery);
+                ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+                Path path = Paths.get(filepath);
+                while (iterator.hasNext()) {
+                    final Events.Event event = iterator.next();
+                    outStream.write(event.getPayload());
+                    outStream.flush();
+                }
+                logger.info("Completed downloading {}", metadataQuery);
+                if(metadataQuery.containsKey(PerfGenieConstants.SOURCE_KEY)) {//genie
+                    Files.write(path, outStream.toByteArray());
+                    return true;
+                }else{
+                    Files.write(path, Utils.decompress(outStream.toByteArray()));
+                    return true;
+                }
+            }catch(Exception e){
+                logger.error("Failed to download from {}  {}", namespace, metadataQuery);
+                e.printStackTrace();
+                downloadRequests.remove(req);
+                return false;
+            }
+        }
+        downloadRequests.remove(req);
+        return false;
+    }
+
     private String download(final long startTimestamp, final long endTimestamp, final Map<String,
             String> metadataQuery, final Map<String, String> dimensionsQuery, final String namespace) throws IOException {
+
+        if(metadataQuery.containsKey("file-name")){
+             String filepath = config.getJfrdir() +"/"+ Long.toString(startTimestamp) + metadataQuery.get("file-name");
+             filepath = filepath.replace("=","");
+            filepath = filepath.replace(".gz","");
+             File f = new File(filepath);
+             if(f.exists()){
+                 logger.info("using local downloaded  {}", metadataQuery);
+                  return new String(Files.readAllBytes(Paths.get(filepath)));
+             }
+        }
         logger.info("Started downloading  {}", metadataQuery);
         if(namespace != null){
             try {

@@ -88,7 +88,8 @@ function addInputNote(toggle, msg){
     }
 }
 
-$(function () {
+$(document).ready(function () {
+
     dataSource = urlParams.get('dataSource') || "genie";
     startTime1 = Number(urlParams.get('startTime1')) || moment.utc(moment.utc().subtract('minute', 10).format('YYYY-MM-DD HH:mm:ss')).valueOf();
     startTime2 = Number(urlParams.get('startTime2')) || moment.utc(moment.utc().subtract('minute', 24 * 60 + 10).format('YYYY-MM-DD HH:mm:ss')).valueOf();
@@ -941,11 +942,84 @@ function updateTypes2(tenant, host){
 }
 
 
-function populateIDs1(tenant, host, clearInput) {
+let toPArse = {1:[],2:[]};
+
+function addToParse(count, tenant, host, timestamp, eventType, guid){
+    let endpoint = "/v1/profile/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
+        "&metadata_query=" + encodeURIComponent("host=" + host) +
+        "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+        "&metadata_query=" + encodeURIComponent("guid=" + guid) +
+        "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
+    toPArse[count].push(endpoint);
+}
+
+function parsePendingJFRs1(tenant, host){
+    addInputNote(true,(toPArse[1].length + toPArse[2].length) +" full JFRs found, sequential download and parsing will take few minutes, please be patient ...")
+    showSpinner();
+    const requests = [];
+    for(let i=0; i< toPArse[1].length; i++){
+        requests.push(callTreePerfGenieAjax(tenant, "GET", toPArse[1][i], result => result));
+    }
+    let queryResults = Promise.all(requests);
+    queryResults.then(contextDatas => {
+
+        for (var key in contextDatas) {
+            for(let k in contextDatas[key]){
+                let meta = {"dimensions": {}, "metadata": {}, "timestampMillis": 0, "payload": ""};
+                meta.metadata["tenant-id"] = tenant;
+                meta.metadata["name"] = "jfr";
+                meta.metadata["host"] = host;
+                meta.metadata["instance-id"] = host;
+                meta.metadata["file-name"] = k;
+                meta.metadata["guid"] =  contextDatas[key][k] + k; //change guid
+                meta.timestampMillis = contextDatas[key][k];
+                metaData1.push(meta);
+            }
+        }
+
+        populateIDs1(tenant, host, false, true);
+        addInputNote(false,"");
+        hideSpinner();
+    });
+}
+
+function parsePendingJFRs2(tenant, host){
+    addInputNote(true,(toPArse[1].length + toPArse[2].length) +" full JFRs found, sequential download and parsing will take few minutes, please be patient ...")
+    showSpinner();
+    const requests = [];
+    for(let i=0; i< toPArse[2].length; i++){
+        requests.push(callTreePerfGenieAjax(tenant, "GET", toPArse[1][i], result => result));
+    }
+    let queryResults = Promise.all(requests);
+    queryResults.then(contextDatas => {
+
+        for (var key in contextDatas) {
+            for(let k in contextDatas[key]){
+                let meta = {"dimensions": {}, "metadata": {}, "timestampMillis": 0, "payload": ""};
+                meta.metadata["tenant-id"] = tenant;
+                meta.metadata["name"] = "jfr";
+                meta.metadata["host"] = host;
+                meta.metadata["instance-id"] = host;
+                meta.metadata["file-name"] = k;
+                meta.metadata["guid"] =  contextDatas[key][k] + k; //change guid
+                meta.timestampMillis = contextDatas[key][k];
+                metaData2.push(meta);
+            }
+        }
+
+        populateIDs2(tenant, host, false, true);
+        addInputNote(false,"");
+        hideSpinner();
+    });
+}
+
+function populateIDs1(tenant, host, clearInput, skipPArsing) {
     if (tenant === undefined || tenant.length === 0 || host === undefined || host.length === 0) {
         return;
     }
-
+    if(skipPArsing == undefined){
+        skipPArsing = false;
+    }
     let profiles = {};
     let profileOptionHtml = "<option  value=''> Choose a profile... </option>";
     const baseDatalist = $("#bases1");
@@ -953,11 +1027,36 @@ function populateIDs1(tenant, host, clearInput) {
 
     let profileFound = false;
     let jstackFound = false;
+
+    let needToParse = false;
+    toPArse[1]=[];
+    if(!skipPArsing) {
+        for (var key in metaData1) {
+
+            let guid = metaData1[key].metadata["guid"];
+            let name = metaData1[key].metadata["name"];
+            let filename = metaData1[key].metadata["file-name"];
+
+            if (filename != undefined && filename.includes(".jfr.gz")) {//need to parse
+                addToParse(1, tenant, host, metaData1[key].timestampMillis, filename, guid)
+                needToParse = true;
+            }
+        }
+    }
+    if(needToParse){//populateIDs1 after parsing
+        parsePendingJFRs1(tenant, host);
+        return;
+    }
     for (var key in metaData1) {
 
         let guid = metaData1[key].metadata["guid"];
         let name = metaData1[key].metadata["name"];
         let filename = metaData1[key].metadata["file-name"];
+
+        if(filename!= undefined && filename.includes(".jfr.gz")){
+            continue;
+        }
+
         if(metaData1[key].metadata["source-file"] != undefined){
             filename = metaData1[key].metadata["source-file"];
         }
@@ -1017,9 +1116,12 @@ function populateIDs1(tenant, host, clearInput) {
     baseDatalist.append(optGroupTemplate.replace("OPTIONS", profileOptionHtml));
 }
 
-function populateIDs2(tenant, host, clearInput) {
+function populateIDs2(tenant, host, clearInput, skipPArsing) {
     if (tenant === undefined || tenant.length === 0 || host === undefined || host.length === 0) {
         return;
+    }
+    if(skipPArsing == undefined){
+        skipPArsing = false;
     }
     let profiles = {};
     let profileOptionHtml = "<option  value=''> Choose a profile... </option>";
@@ -1028,6 +1130,27 @@ function populateIDs2(tenant, host, clearInput) {
 
     let profileFound = false;
     let jstackFound = false;
+
+    let needToParse = false;
+    toPArse[2]=[];
+    if(!skipPArsing) {
+        for (var key in metaData2) {
+
+            let guid = metaData2[key].metadata["guid"];
+            let name = metaData2[key].metadata["name"];
+            let filename = metaData2[key].metadata["file-name"];
+
+            if (filename != undefined && filename.includes(".jfr.gz")) {//need to parse
+                addToParse(2, tenant, host, metaData2[key].timestampMillis, filename, guid)
+                needToParse = true;
+            }
+        }
+    }
+    if(needToParse){//populateIDs1 after parsing
+        parsePendingJFRs2(tenant, host);
+        return;
+    }
+
     for (var key in metaData2) {
         let guid = metaData2[key].metadata["guid"];
         let name = metaData2[key].metadata["name"];

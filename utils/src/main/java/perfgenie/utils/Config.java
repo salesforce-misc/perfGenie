@@ -40,6 +40,12 @@ public  class Config {
 
     String tenant = "dev";
 
+    String jfrparser = "parserv1.jar";
+
+    public String getJfrparser() {
+        return jfrparser;
+    }
+
     public String getH2dir() {
         return h2dir;
     }
@@ -176,6 +182,12 @@ public  class Config {
             if(prop.getProperty("isExperimental") != null){
                 isExperimental= prop.getProperty("isExperimental").equals("true");
             }
+
+            if(prop.getProperty("jfrparser") != null){
+                jfrparser= prop.getProperty("jfrparser");
+            }
+
+
 
             logger.info("profiles being parsed:" + profiles.toString());
             logger.info("customevents being parsed:" + customevents.toString());
