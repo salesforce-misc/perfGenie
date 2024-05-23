@@ -964,16 +964,18 @@ function parsePendingJFRs1(tenant, host){
     queryResults.then(contextDatas => {
 
         for (var key in contextDatas) {
-            for(let k in contextDatas[key]){
-                let meta = {"dimensions": {}, "metadata": {}, "timestampMillis": 0, "payload": ""};
-                meta.metadata["tenant-id"] = tenant;
-                meta.metadata["name"] = "jfr";
-                meta.metadata["host"] = host;
-                meta.metadata["instance-id"] = host;
-                meta.metadata["file-name"] = k;
-                meta.metadata["guid"] =  contextDatas[key][k] + k; //change guid
-                meta.timestampMillis = contextDatas[key][k];
-                metaData1.push(meta);
+            for(let k in contextDatas[key]) {
+                if (contextDatas[key].error != undefined && contextDatas[key].error != "") {
+                    let meta = {"dimensions": {}, "metadata": {}, "timestampMillis": 0, "payload": ""};
+                    meta.metadata["tenant-id"] = tenant;
+                    meta.metadata["name"] = "jfr";
+                    meta.metadata["host"] = host;
+                    meta.metadata["instance-id"] = host;
+                    meta.metadata["file-name"] = k;
+                    meta.metadata["guid"] = contextDatas[key][k] + k; //change guid
+                    meta.timestampMillis = contextDatas[key][k];
+                    metaData1.push(meta);
+                }
             }
         }
 
