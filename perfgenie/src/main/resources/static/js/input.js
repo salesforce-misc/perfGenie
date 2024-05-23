@@ -965,7 +965,7 @@ function parsePendingJFRs1(tenant, host){
 
         for (var key in contextDatas) {
             for(let k in contextDatas[key]) {
-                if (contextDatas[key].error != undefined && contextDatas[key].error != "") {
+                if (contextDatas[key].error == undefined || contextDatas[key].error == "") {
                     let meta = {"dimensions": {}, "metadata": {}, "timestampMillis": 0, "payload": ""};
                     meta.metadata["tenant-id"] = tenant;
                     meta.metadata["name"] = "jfr";
@@ -997,7 +997,7 @@ function parsePendingJFRs2(tenant, host){
 
         for (var key in contextDatas) {
             for(let k in contextDatas[key]){
-                if(contextDatas[key].error != undefined && contextDatas[key].error != "") {
+                if (contextDatas[key].error == undefined || contextDatas[key].error == "") {
                     let meta = {"dimensions": {}, "metadata": {}, "timestampMillis": 0, "payload": ""};
                     meta.metadata["tenant-id"] = tenant;
                     meta.metadata["name"] = "jfr";
