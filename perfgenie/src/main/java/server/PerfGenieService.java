@@ -118,8 +118,8 @@ public class PerfGenieService implements IPerfGenieService {
                 final Stopwatch timer = Stopwatch.createStarted();
                 try {
                     parser.parseStream(handler, file.getPath());
-                    handler.processMonitorLog("/tmp/jfrs/monitor.log");
-                    Path path = Paths.get("/tmp/jfrs/monitor.log");
+                    handler.processMonitorLog(config.getJfrdir()+"/monitor.log");
+                    Path path = Paths.get(config.getJfrdir()+"/monitor.log");
                     // deleteIfExists File
                     try {
                         Files.deleteIfExists(path);
