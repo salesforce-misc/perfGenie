@@ -1124,15 +1124,9 @@ public class EventHandler {
         header.add("timestamp:timestamp");
         header.add("tid:text");
         header.add("ppid:text");
-        //header.add("PR:number");
-        //header.add("NI:number");
-        //header.add("VIRT:text");
-        //header.add("RES:text");
-        //header.add("SHR:text");
-        //header.add("S:text");
+        header.add("RSS:number");
         header.add("%CPU:number");
         header.add("%MEM:number");
-        //header.add("TIME+:text");
         header.add("COMMAND:text");
         initializeEvent("ps-processes");
         addHeader("ps-processes", header);
@@ -1151,6 +1145,7 @@ public class EventHandler {
                 int tid = Integer.parseInt(processMatcher.group(1));
                 record.add(tid);//tid
                 record.add(processMatcher.group(2));//ppid
+                record.add(Long.parseLong(processMatcher.group(7)));//rss
                 record.add(Double.parseDouble(processMatcher.group(7)));//cpu
                 record.add(Double.parseDouble(processMatcher.group(8)));//mem
                 String cmd = processMatcher.group(11);//cmd
