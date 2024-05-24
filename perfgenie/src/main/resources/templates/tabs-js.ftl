@@ -409,7 +409,7 @@
                 }
                 spinnerToggle('spinnerId');
                 hideSpinner('profilespinner');
-                resetTreeHeader("<div style='padding-right: 10px'>Failed to retrieve profile data<span style='float: right;' class='spinner' id='profilespinner'></span></div>");
+                resetTreeHeader("<div style='padding-right: 10px'>Failed to retrieve profile data of "+eventType+"<span style='float: right;' class='spinner' id='profilespinner'></span></div>");
                 return;
             }
 
