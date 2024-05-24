@@ -408,6 +408,8 @@
                     console.log("retrievAndcreateContextTree 1 time:" + (end - start) + " event:" + eventType);
                 }
                 spinnerToggle('spinnerId');
+                hideSpinner('profilespinner');
+                resetTreeHeader("<div style='padding-right: 10px'>Failed to retrieve profile data<span style='float: right;' class='spinner' id='profilespinner'></span></div>");
                 return;
             }
 
