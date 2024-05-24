@@ -964,7 +964,7 @@ function addToParse(count, tenant, host, timestamp, eventType, guid){
 }
 
 function parsePendingJFRs1(tenant, host){
-    addInputNote(true,(toPArse[1].length + toPArse[2].length) +" full JFRs found, sequential download and parsing will take few minutes, please be patient ...")
+    addInputNote(true,(toPArse[1].length + toPArse[2].length) +" full JFR(s) found, sequential download and parsing will take few minutes, please be patient ...")
     showSpinner();
     const requests = [];
     for(let i=0; i< toPArse[1].length; i++){
@@ -996,11 +996,11 @@ function parsePendingJFRs1(tenant, host){
 }
 
 function parsePendingJFRs2(tenant, host){
-    addInputNote(true,(toPArse[1].length + toPArse[2].length) +" full JFRs found, sequential download and parsing will take few minutes, please be patient ...")
+    addInputNote(true,(toPArse[1].length + toPArse[2].length) +" full JFR(s) found, sequential download and parsing will take few minutes, please be patient ...")
     showSpinner();
     const requests = [];
     for(let i=0; i< toPArse[2].length; i++){
-        requests.push(callTreePerfGenieAjax(tenant, "GET", toPArse[1][i], result => result));
+        requests.push(callTreePerfGenieAjax(tenant, "GET", toPArse[2][i], result => result));
     }
     let queryResults = Promise.all(requests);
     queryResults.then(contextDatas => {
