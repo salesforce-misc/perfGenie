@@ -1145,7 +1145,7 @@ public class EventHandler {
                 int tid = Integer.parseInt(processMatcher.group(1));
                 record.add(tid);//tid
                 record.add(processMatcher.group(2));//ppid
-                record.add(Long.parseLong(processMatcher.group(7)));//rss
+                record.add(Long.parseLong(processMatcher.group(6)));//rss
                 record.add(Double.parseDouble(processMatcher.group(7)));//cpu
                 record.add(Double.parseDouble(processMatcher.group(8)));//mem
                 String cmd = processMatcher.group(11);//cmd
