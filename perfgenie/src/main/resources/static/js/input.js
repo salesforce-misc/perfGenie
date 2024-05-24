@@ -851,6 +851,11 @@ function updateTypes1(tenant, host){
     let profiles = {};
     try {
         for (var key in metaData1) {
+
+            if(metaData1[key].metadata["file-name"] != undefined && metaData1[key].metadata["file-name"].includes(".jfr.gz")){
+                continue;
+            }
+
             if(metaData1[key].metadata["file-name"] != undefined && metaData1[key].metadata["file-name"] == "json-jstack"){
                 jfrprofiles1[metaData1[key].metadata["file-name"]] = true;
                 continue;
@@ -899,6 +904,11 @@ function updateTypes2(tenant, host){
     let profiles = {};
     try {
         for (var key in metaData2) {
+
+            if(metaData2[key].metadata["file-name"] != undefined && metaData2[key].metadata["file-name"].includes(".jfr.gz")){
+                continue;
+            }
+
             if(metaData2[key].metadata["file-name"] != undefined && metaData2[key].metadata["file-name"] == "json-jstack"){
                 jfrprofiles2[metaData2[key].metadata["file-name"]] = true;
                 continue;

@@ -466,13 +466,48 @@ public class EventStore {
                 dimMap,
                 payload
         );
+        Map<Long, Map<String, String>> profiles = new HashMap<>();
         if (results.size() > 0) {
-            Map<Long, Map<String, String>> profiles = new HashMap<>();
             results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
             for (final Events.Event result : results) {
                 profiles.put(result.getTimestampMillis(), result.getMetadata());
+
             }
             return profiles;
+        }
+        
+        if(queryMap.containsKey(PerfGenieConstants.SOURCE_KEY)){//for sfdc check full jfrs too
+            //try to look for full jfrs, sfdc fix
+            final Map<String, String> tmpqueryMap = new HashMap<>();
+            tmpqueryMap.put("host",queryMap.get("host"));
+            tmpqueryMap.put("tenant-id",queryMap.get("tenant-id"));
+            tmpqueryMap.put("file-name","=jfr_dump_toparse.jfr.gz");
+
+            final List<Events.Event> results1 = this.cantor.events().get(
+                    namespace,
+                    start,
+                    end,
+                    tmpqueryMap,
+                    dimMap,
+                    payload
+            );
+            if (results1.size() > 0) {
+                //Map<Long, Map<String, String>> profiles = new HashMap<>();
+                results1.sort(Comparator.comparing(Events.Event::getTimestampMillis));
+                final HashMap<Long, Boolean> check = new HashMap<>();
+                for (final Events.Event result : results1) {
+                    if(!check.containsKey(result.getTimestampMillis())) {
+                        final Map<String, String> meta = new HashMap<>();
+                        meta.put("host",queryMap.get("host").replace("=",""));
+                        meta.put("tenant-id",queryMap.get("tenant-id").replace("=",""));
+                        meta.put("file-name",queryMap.get("file-name").replace("=",""));
+                        meta.put("guid",result.getMetadata().get("guid") + queryMap.get("file-name").replace("=",""));
+                        profiles.put(result.getTimestampMillis(), meta);
+                        check.put(result.getTimestampMillis(), true);
+                    }
+                }
+                return profiles;
+            }
         }
         return null;
     }
