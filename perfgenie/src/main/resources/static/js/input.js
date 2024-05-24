@@ -726,10 +726,14 @@ function addInputToURL() {
     updateUrl("groupByLength", '200');
 
     if(instanceData1[host1] != undefined) {
-        updateUrl("dataSource", instanceData1[host1]);//todo, support different data sources for each host
+        if(instanceData1[host1] != undefined) {
+            updateUrl("dataSource", instanceData1[host1]);//todo, support different data sources for each host
+        }
     }
     if(instanceData2[host2] != undefined) {
-        updateUrl("dataSource", instanceData2[host2]);//todo, support different data sources for each host
+        if(instanceData1[host1] != undefined) {
+            updateUrl("dataSource", instanceData2[host2]);//todo, support different data sources for each host
+        }
     }
 }
 
