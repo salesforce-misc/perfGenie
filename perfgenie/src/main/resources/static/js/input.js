@@ -81,7 +81,7 @@ function addInputNote(toggle, msg){
             $( "#input-info" ).toggle( "slide", { direction: "left" }, 500 );
         }
     }else{
-        if($( "#input-info-text" ).html("") != "") {
+        if($( "#input-info-text" ).html() != "") {
             $("#input-info").css("display", "none");
             $("#input-info-text").html("");
         }
