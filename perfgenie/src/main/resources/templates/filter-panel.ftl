@@ -2830,6 +2830,10 @@
     }
 
     function closePin(id){
+        if(id == "diagevent"){
+            updateUrl("diagEvent","");
+            diagEvent = '';
+        }
         $("#"+id).remove();
     }
 
@@ -3031,6 +3035,8 @@
             if(response == undefined || response === "") {
                 console.log("Warn: unable to fetch diag event " + name);
             }else {
+                diagEvent = timestamp + "_" + guid + "_" + name + "_" + count;
+                updateUrl("diagEvent", diagEvent);
                 $("#diageventval").html(response);
             }
         }, function (error) {

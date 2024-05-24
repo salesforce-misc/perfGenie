@@ -39,6 +39,8 @@ let jstackidcolorsmap ={9:"RUNNABLE",10:"BLOCKED",11:"WAITING",12:"TIMED_WAITING
 let profilecolors =["lightseagreen","#bbbb0d","deeppink","brown","dodgerblue","slateblue","blue","green","yellow","#29b193","#ee5869","#f6ab60","#377bb5"];
 let knowprofilecolormap = {"jfr_dump.json.gz":0,"jfr_dump_socket.json.gz":1,"jfr_dump_apex.json.gz":2, "jfr_dump_memory.json.gz":3, "json-jstack":4,"Jstack":4};
 let dataSource = "genie";
+let diagEvent = '';
+
 let isZip = true;
 function setSubmitDisabled(shouldDisable) {
     $("#submit-input").prop("disabled", shouldDisable);
@@ -101,6 +103,7 @@ $(document).ready(function () {
     tenant2 = urlParams.get('tenant2') || undefined;
     profile1 = urlParams.get('profile1') || undefined;
     profile2 = urlParams.get('profile2') || undefined;
+    diagEvent = urlParams.get('diagEvent') || '';
     let tempstr = urlParams.get('types') || undefined;
     if (tempstr != undefined) {
         let tokens = tempstr.split("\:");
@@ -519,6 +522,11 @@ function loadDiagData1(){
             duration: 8000
         }).showToast();
         $("#cct-panel").css("height", "100%");//expand context table view
+
+        if(diagEvent != ''){
+            let values = diagEvent.split("_");
+            getDiagEvent(Number(values[0]),values[1],values[2],values[3]);
+        }
     }
 }
 
@@ -724,6 +732,7 @@ function addInputToURL() {
     updateUrl("seriesCount", '10');
     updateUrl("groupByMatch", '');
     updateUrl("groupByLength", '200');
+    updateUrl("diagEvent", '');
 
     if(instanceData1[host1] != undefined) {
         if(instanceData1[host1] != undefined) {
