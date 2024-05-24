@@ -728,11 +728,15 @@ function addInputToURL() {
     if(instanceData1[host1] != undefined) {
         if(instanceData1[host1] != undefined) {
             updateUrl("dataSource", instanceData1[host1]);//todo, support different data sources for each host
+        }else{
+            updateUrl("dataSource", "other");
         }
     }
     if(instanceData2[host2] != undefined) {
         if(instanceData1[host1] != undefined) {
             updateUrl("dataSource", instanceData2[host2]);//todo, support different data sources for each host
+        }else{
+            updateUrl("dataSource", "other");
         }
     }
 }
