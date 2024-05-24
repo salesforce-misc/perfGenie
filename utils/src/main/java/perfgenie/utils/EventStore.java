@@ -473,10 +473,10 @@ public class EventStore {
                 profiles.put(result.getTimestampMillis(), result.getMetadata());
 
             }
-            return profiles;
+            //return profiles;
         }
-        
-        if(queryMap.containsKey(PerfGenieConstants.SOURCE_KEY)){//for sfdc check full jfrs too
+
+        if(!queryMap.containsKey(PerfGenieConstants.SOURCE_KEY)){//for sfdc check full jfrs too
             //try to look for full jfrs, sfdc fix
             final Map<String, String> tmpqueryMap = new HashMap<>();
             tmpqueryMap.put("host",queryMap.get("host"));
@@ -506,9 +506,12 @@ public class EventStore {
                         check.put(result.getTimestampMillis(), true);
                     }
                 }
-                return profiles;
             }
         }
+        if(profiles.size() > 0){
+            return profiles;
+        }
+
         return null;
     }
 
