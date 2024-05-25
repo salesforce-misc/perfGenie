@@ -139,6 +139,8 @@ In other words, data that's in the second set but not in the first will not be d
                 let end = performance.now();
                 console.debug("filterToLevel time:" + (end - start));
                 $("#flamegraphdiv").html("");//reset
+                currentLoadedTree = undefined;
+                addTabNote(true, getProfileName(getEventType()) + " Not available to show");
                 return;
             }
             let end = performance.now();

@@ -859,6 +859,8 @@
                 let end = performance.now();
                 console.log("filterToLevel time:" + (end - start));
                 $("ul.tree").html("");//reset
+                addTabNote(true, getProfileName(getEventType()) + " Not available to show");
+                currentLoadedTree = undefined;
                 return;
             }
             let end = performance.now();
