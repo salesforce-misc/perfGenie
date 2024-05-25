@@ -2829,9 +2829,12 @@
         $(id).html(table);
     }
 
-    function closePin(id){
-        if(id == "diagevent"){
+    function closePin(id,e){
+        if(id.includes("diagevent")){
             updateUrl("diagEvent","");
+            if(e !== undefined) {
+                //$("#diagclose").remove();
+            }
             diagEvent = '';
         }
         $("#"+id).remove();
@@ -3041,6 +3044,52 @@
             }
         }, function (error) {
             hideSpinner("spinner2");
+            console.log("Warn: unable to fetch diag event" + name);
+        });
+    }
+
+
+
+    function addDiagPanel(){
+        //$("#sfContextDataTableSFDataTable tr:first")
+        //t.children().length
+        //<td style="padding: 0px;border: none;align-items:center;" rowspan="2">
+        if($("#diageventnn").length == 0) {
+            let firstRow = $("#sfContextDataTableSFDataTable  tr:nth-child(1)");
+            if(firstRow != undefined){
+                let lastTd = firstRow.children()[firstRow.children().length - 1];
+                $("<td style='padding: 0px;border: none;align-items:center;' rowspan='10'>" + "<div id='diageventnn' style='width:"+(window.innerWidth - $("#sfContextDataTableSFDataTable").innerWidth() - 70)+";max-height: "+($("#sfContextDataTableSFDataTable").innerHeight()-$(firstRow).innerHeight()) +"px; overflow: auto; border-style: dotted hidden; padding: 10px;' class='col-lg-12'> </div></td>").insertAfter(lastTd);
+            }
+        }
+    }
+
+    function getDiagEventn(e, timestamp, guid, name, count) {
+
+        if(count == undefined){
+            count = 1;
+        }
+        const callTreeUrl = getDiagEventUrl(timestamp, (count == 1 ? tenant1 : tenant2) , (count == 1 ? host1 : host2), guid, name);
+        addDiagPanel();
+        //$("<a id='diagclose' title='click to close' style='padding-left:10px; cursor: pointer;' class='fa fa-times-circle' onclick='closePin(\"diageventn\", this)'></a>").insertAfter(e);
+        //e.after("<a title='click to close' style='cursor: pointer;' class='fa fa-times-circle' onclick='closePin(\"diageventn\", this)'></a>");
+        $("#diageventnn").html("<div id='diageventn'>" +
+            "<div style='float:right;cursor: pointer;' onclick='closePin(\"diageventn\", this)'>Close</div><div id='diageventheadern'>" + moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event"+count+":" + otherEvent +  ", Name:" + name + "</div>"+
+        "<span style='float:right;' class='spinner' id='spinner3'></span>" + "<pre id=\"diageventvaln\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupdiagview col-lg-12\" >" + "</div>");
+        showSpinner("spinner3");
+        let request = stackDigVizAjax(tenant1, "GET", callTreeUrl, function (response) { // success function
+            hideSpinner("spinner3");
+            console.log("getDiagEvent done");
+            if(response == undefined || response === "") {
+                console.log("Warn: unable to fetch diag event " + name);
+            }else {
+                diagEvent = timestamp + "_" + guid + "_" + name + "_" + count;
+                //$("#diageventn").width(window.innerWidth - $("#"+e.parentNode.getAttribute("id")).prev().innerWidth() - $("#"+e.parentNode.getAttribute("id")).next().innerWidth() - 10);
+                updateUrl("diagEvent", diagEvent);
+                $("#diageventvaln").html(response);
+            }
+        }, function (error) {
+            hideSpinner("spinner3");
+            $("#diageventvaln").html("unable to fetch diag event " + name);
             console.log("Warn: unable to fetch diag event" + name);
         });
     }
@@ -6002,27 +6051,39 @@
                             if (record[metricsIndexMap[tableThreshold]] >= spanThreshold) {
                                 rowIndex++;
                                 tableRows[rowIndex] = [];
-                                for (let field in record) {
-                                    if (field == timestampIndex) {
-                                        sfContextDataTable.addContextTableRow(tableRows[rowIndex], moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'), "id='" + record[tidRowIndex] + "_" + record[field] + "'");
-                                    } else if (field == tidRowIndex) {
-                                        sfContextDataTable.addContextTableRow(tableRows[rowIndex], Number(record[field]), "id='" + record[tidRowIndex] + "_dummy'" + " hint='tid'");
+                                if (otherEvent === "diagnostics(raw)") {
+                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], moment.utc(record[0]).format('YYYY-MM-DD HH:mm:ss SSS'));
+                                    if (record[4] > 1048576 * 10) {
+                                        sfContextDataTable.addContextTableRow(tableRows[rowIndex], (contextDataRecordNumber + ":" + record[1]) + " <a title='event larger than 10Mb, click to download' style='cursor: pointer;' class='fa fa-download' onclick='alert(\"todo over 10 Mb file\")'></a>", " hint='download'");
                                     } else {
-                                        if (isDimIndexMap[field] == undefined) {
-                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex],  record[field]);
-                                        } else {
-                                            if (otherEvent === "diagnostics(raw)" && field == 3) {
-                                                //1_048_576
-                                                if (record[4] > 1048576 * 10) {
-                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='event larger than 10Mb, click to download' style='cursor: pointer;' class='fa fa-download' onclick='alert(\"todo over 10 Mb file\")'></a>", " hint='download'");
-                                                } else {
-                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-eye' onclick='getDiagEvent(" + record[0] + ", \"" + record[3] + "\",\"" + record[1] + "\",\"" + contextDataRecordNumber + "\")'></a>", " hint='view'");
-                                                }
-                                                //sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-download' onclick='downloadDiagEvent(" + record[0] + ", \"" + record[3] + "\",\"" + record[1]+ "\"," + true + "," + false + ",\"text\",this)'></a>", " hint='download'");
+                                        sfContextDataTable.addContextTableRow(tableRows[rowIndex], (contextDataRecordNumber + ":" + record[1]) + " <a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-eye' onclick='getDiagEventn(this, " + record[0] + ", \"" + record[3] + "\",\"" + record[1] + "\",\"" + contextDataRecordNumber + "\")'></a>", "id='" + record[0] + "'");
+                                    }
+                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[4]);
+                                }else {
+                                    for (let field in record) {
+
+                                            if (field == timestampIndex) {
+                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex], moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'), "id='" + record[tidRowIndex] + "_" + record[field] + "'");
+                                            } else if (field == tidRowIndex) {
+                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex], Number(record[field]), "id='" + record[tidRowIndex] + "_dummy'" + " hint='tid'");
                                             } else {
-                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex], contextDataRecordNumber + ":" + record[field], "' hint='" + isDimIndexMap[field] + "'");
+                                                if (isDimIndexMap[field] == undefined) {
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field]);
+                                                } else {
+                                                    if (otherEvent === "diagnostics(raw)" && field == 3) {
+                                                        //1_048_576
+                                                        if (record[4] > 1048576 * 10) {
+                                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='event larger than 10Mb, click to download' style='cursor: pointer;' class='fa fa-download' onclick='alert(\"todo over 10 Mb file\")'></a>", " hint='download'");
+                                                        } else {
+                                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-eye' onclick='getDiagEvent(" + record[0] + ", \"" + record[3] + "\",\"" + record[1] + "\",\"" + contextDataRecordNumber + "\")'></a>", " hint='view'");
+                                                        }
+                                                        //sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-download' onclick='downloadDiagEvent(" + record[0] + ", \"" + record[3] + "\",\"" + record[1]+ "\"," + true + "," + false + ",\"text\",this)'></a>", " hint='download'");
+                                                    } else {
+                                                        sfContextDataTable.addContextTableRow(tableRows[rowIndex], contextDataRecordNumber + ":" + record[field], "' hint='" + isDimIndexMap[field] + "'");
+                                                    }
+                                                }
                                             }
-                                        }
+
                                     }
                                 }
                             }

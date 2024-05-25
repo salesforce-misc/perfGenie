@@ -457,7 +457,8 @@ function loadDiagData1(){
                 diagnostics.push(metaData1[key].metadata.guid);
                 diagnostics.push(metaData1[key].dimensions[".maiev-event-payload-size"] == undefined ? 0 : Number(metaData1[key].dimensions[".maiev-event-payload-size"]));
                 if (header["diagnostics(raw)"] == undefined) {
-                    header["diagnostics(raw)"] = ["timestamp:timestamp", "event:text", "count:number","guid:text","size:number"];
+                   // header["diagnostics(raw)"] = ["timestamp:timestamp", "event:text", "count:number","guid:text","size:number"];
+                    header["diagnostics(raw)"] = ["timestamp:timestamp", "event:text","size:number"];
                     records["diagnostics(raw)"] = {};
                     records["diagnostics(raw)"][1] = [];
                 }
