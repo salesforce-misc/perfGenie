@@ -3058,7 +3058,7 @@
             let firstRow = $("#sfContextDataTableSFDataTable  tr:nth-child(1)");
             if(firstRow != undefined){
                 let lastTd = firstRow.children()[firstRow.children().length - 1];
-                $("<td style='padding: 0px;border: none;align-items:center;' rowspan='10'>" + "<div id='diageventnn' style='width:"+(window.innerWidth - $("#sfContextDataTableSFDataTable").innerWidth() - 70)+";max-height: "+($("#sfContextDataTableSFDataTable").innerHeight()-$(firstRow).innerHeight()) +"px; overflow: auto; border-style: dotted hidden; padding: 10px;' class='col-lg-12'> </div></td>").insertAfter(lastTd);
+                $("<td style='padding: 0px;border: none;align-items:center;' rowspan='10'>" + "<div id='diageventnn' style='width:"+(window.innerWidth - $("#sfContextDataTableSFDataTable").innerWidth() - 70)+";height: "+($("#sfContextDataTableSFDataTable").innerHeight()-$(firstRow).innerHeight()) +"px; overflow: auto; border-style: dotted hidden; padding: 10px;' class='col-lg-12'> </div></td>").insertAfter(lastTd);
             }
         }
     }
