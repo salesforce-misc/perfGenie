@@ -355,6 +355,8 @@ public class PerfGenieService implements IPerfGenieService {
                     aggregator.aggregateTop(otherevents.get(keys.get(i)),keys.get(i));
                 }else if(queryMap.get("name").contains("=ps")){
                     aggregator.aggregatePS(otherevents.get(keys.get(i)),keys.get(i));
+                }else if(queryMap.get("name").contains("=pidstat")){
+                    aggregator.aggregatePIDSTAT(otherevents.get(keys.get(i)),keys.get(i));
                 }
             }
             final EventHandler.ContextResponse res = (EventHandler.ContextResponse) aggregator.getLogContext();

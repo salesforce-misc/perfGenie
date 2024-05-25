@@ -1143,7 +1143,7 @@ public class EventHandler {
                 List<Object> record = new ArrayList<>();
                 record.add(timestamp);//timestamp
                 int tid = Integer.parseInt(processMatcher.group(1));
-                record.add(tid);//tid
+                record.add(processMatcher.group(1));//tid
                 record.add(processMatcher.group(2));//ppid
                 record.add(Long.parseLong(processMatcher.group(6)));//rss
                 record.add(Double.parseDouble(processMatcher.group(7)));//cpu
@@ -1166,6 +1166,52 @@ public class EventHandler {
                     }
                 }
                 processContext(record, tid, "ps-processes");
+            }
+        }
+        System.out.println("aggregatePS");
+    }
+
+    public void aggregatePIDSTAT(final String pidstatOutput, final Long timestamp) throws IOException {
+        // Split the input into lines
+        String[] lines = pidstatOutput.split("\n");
+        if (lines.length < 2) {
+            System.out.println("Invalid ps output format");
+        }
+        //PID  PPID   LWP NLWP    VSZ   RSS %MEM %CPU  MAJFL  MINFL CMD
+        List<String> header = new ArrayList<>();
+        header.add("timestamp:timestamp");
+        header.add("tgid:text");
+        header.add("tid:text");
+        header.add("user%:number");
+        header.add("system%:number");
+        header.add("%CPU:number");
+        header.add("CPU:number");
+        header.add("RSS:number");
+        header.add("%MEM:number");
+        header.add("COMMAND:text");
+        initializeEvent("pidstat-extract");
+        addHeader("pidstat-extract", header);
+        //#Time   UID      TGID(2)       TID(3)    %usr %system  %guest    %CPU(7)   CPU  minflt/s  majflt/s     VSZ    RSS(12)   %MEM(13)   kB_rd/s   kB_wr/s kB_ccwr/s   cswch/s nvcswch/s  Command(19)
+        for (int i = 3; i < lines.length; i++) {
+            List<Object> record = new ArrayList<>();
+            String[] parts = lines[i].trim().split("\\s+");
+            if(parts.length > 10){
+                int tid = Integer.parseInt(parts[3]);
+                try {
+                    record.add(Long.parseLong(parts[0])*1000);
+                    record.add(Integer.parseInt(parts[2]));
+                    record.add(tid);//tid
+                    record.add(Double.parseDouble(parts[4]));
+                    record.add(Double.parseDouble(parts[5]));
+                    record.add(Double.parseDouble(parts[7]));
+                    record.add(Integer.parseInt(parts[8]));
+                    record.add(Long.parseLong(parts[12]));
+                    record.add(Double.parseDouble(parts[13]));
+                    record.add(parts[19]);
+                }catch (Exception e){
+                    System.out.println("check");
+                }
+                processContext(record, tid, "pidstat-extract");
             }
         }
         System.out.println("aggregatePS");
