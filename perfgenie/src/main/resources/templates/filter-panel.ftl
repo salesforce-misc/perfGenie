@@ -6154,7 +6154,11 @@
                     rowIndex++;
                     tableRows[rowIndex] = [];
                     if(groupBy == "tid"){
-                        sfContextDataTable.addContextTableRow(tableRows[rowIndex],(dim == undefined ? "NA" : Number(dim)),"hint='"+groupBy+"'");
+                        if(isNaN(dim)) {
+                            sfContextDataTable.addContextTableRow(tableRows[rowIndex], (dim == undefined ? "NA" : dim), "hint='" + groupBy + "'");
+                        }else{
+                            sfContextDataTable.addContextTableRow(tableRows[rowIndex], (dim == undefined ? "NA" : Number(dim)), "hint='" + groupBy + "'");
+                        }
                     }else {
                         sfContextDataTable.addContextTableRow(tableRows[rowIndex],(dim == undefined ? "NA" : dim),"hint='"+groupBy+"'");
                     }
