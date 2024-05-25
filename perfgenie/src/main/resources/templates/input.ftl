@@ -130,7 +130,9 @@
         if(id === undefined){
             id = "spinner";
         }
-        document.getElementById(id).style.display = 'none';
+        if(document.getElementById(id) != undefined) {
+            document.getElementById(id).style.display = 'none';
+        }
     }
 
 </script>
