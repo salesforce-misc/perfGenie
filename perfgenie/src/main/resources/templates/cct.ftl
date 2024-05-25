@@ -858,6 +858,7 @@
             if (!filterToLevel(level)) {
                 let end = performance.now();
                 console.log("filterToLevel time:" + (end - start));
+                $("ul.tree").html("");//reset
                 return;
             }
             let end = performance.now();

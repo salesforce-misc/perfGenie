@@ -138,6 +138,7 @@ In other words, data that's in the second set but not in the first will not be d
             if (!filterToLevel(level)) {
                 let end = performance.now();
                 console.debug("filterToLevel time:" + (end - start));
+                $("#flamegraphdiv").html("");//reset
                 return;
             }
             let end = performance.now();
