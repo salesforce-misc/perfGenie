@@ -200,15 +200,26 @@ public class CustomJfrParser {
                     for (Object key : k.keySet()) {
                         if (((Attribute) key).getContentType().getIdentifier().equals("thread")) {
                             final IMCThread thread = (IMCThread) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i]);
-                            tid = thread.getThreadId().intValue();
-                            if(tid == 0){//zing hack
-                                tid = thread.getThreadName().hashCode();
-                                if(tid > 0){
-                                    tid = 0 - tid; // set it to negitive to avoid clashing with other tids
+                            if(thread != null) {
+                                tid = thread.getThreadId().intValue();
+                                if (tid == 0) {//zing hack
+                                    tid = thread.getThreadName().hashCode();
+                                    if (tid > 0) {
+                                        tid = 0 - tid; // set it to negitive to avoid clashing with other tids
+                                    }
+                                }
+                            }else{
+                                if(errorOnce) {
+                                    errorOnce=false;
+                                    logger.warn("null pointer, mall formed thread " + key.toString());
                                 }
                             }
                             record.add(tid);
-                            record.add(thread.getThreadName());
+                            if(thread != null) {
+                                record.add(thread.getThreadName());
+                            }else{
+                                record.add("null");
+                            }
                             textFound=true;
                             if (addHeader) {
                                 header.get(iterable_element.getType().getIdentifier()).add("tid:text");
