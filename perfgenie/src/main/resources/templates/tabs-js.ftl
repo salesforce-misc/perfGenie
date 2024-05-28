@@ -724,6 +724,9 @@
                 }
             }
         }, function (error) {
+            if(error.status == 401){
+                location.reload();
+            }
             setContextData({"records": {}, "tidlist": [], "header": {}},1);
             fetchOtherEvents(timeRange, tenant, host);
             updateFilterViewStatus("Note: Failed to get Request context.");
@@ -790,6 +793,9 @@
                 setOtherEventData(response, count);
             }
         }, function (error) {
+            if(error.status == 401){
+                location.reload();
+            }
             console.log("Warn: unable to fetch other event" + customEvent);
         });
     }

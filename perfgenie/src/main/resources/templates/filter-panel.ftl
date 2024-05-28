@@ -3043,6 +3043,9 @@
                 $("#diageventval").html(response);
             }
         }, function (error) {
+            if(error.status == 401){
+                location.reload();
+            }
             hideSpinner("spinner2");
             console.log("Warn: unable to fetch diag event" + name);
         });
@@ -3088,6 +3091,9 @@
                 $("#diageventvaln").html(response);
             }
         }, function (error) {
+            if(error.status == 401){
+                location.reload();
+            }
             hideSpinner("spinner3");
             $("#diageventvaln").html("unable to fetch diag event " + name);
             console.log("Warn: unable to fetch diag event" + name);
@@ -5841,6 +5847,9 @@
                     });
                 //hideDSpinner();
             }, function (error) {
+                if(error.status == 401){
+                    location.reload();
+                }
                 //hideDSpinner();
                 console.log("Warn: unable to fetch diag event" + name);
             });
@@ -5862,6 +5871,9 @@
                     $("#diageventval").html(response);
                 }
             }, function (error) {
+                if(error.status == 401){
+                    location.reload();
+                }
                 hideSpinner("spinner2");
                 console.log("Warn: unable to fetch diag event" + name);
             });
