@@ -151,9 +151,13 @@ public class CustomJfrParser {
                             if(thread != null){
                                 tid = thread.getThreadId().intValue();
                                 if(tid == 0){//zing hack
-                                    tid = thread.getThreadName().hashCode();
-                                    if(tid > 0){
-                                        tid = 0 - tid; // set it to negitive to avoid clashing with other tids
+                                    if(!thread.getThreadName().contains("GC")) {
+                                        tid = thread.getThreadName().hashCode();
+                                        if (tid > 0) {
+                                            tid = 0 - tid; // set it to negitive to avoid clashing with other tids
+                                        }
+                                    }else{
+                                        tid = -100;
                                     }
                                 }
                             }else{

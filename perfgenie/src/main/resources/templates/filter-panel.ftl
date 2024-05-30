@@ -892,13 +892,13 @@
                         sortTreeBySize(getcontextTreeInvertedLevel(eventType,selectedLevel,count));
                     }
                 }else{
-                    let selectedLevel = getSelectedLevel(getContextTree(count,eventType));
+                    let selectedLevel = getSelectedLevel(getTree(count,eventType));
                     if(hasFilterChanged) {
                         if (selectedLevel !== FilterLevel.UNDEFINED) {
-                            sortTreeLevelBySizeWrapper(getContextTree(count, eventType), selectedLevel);
-                            updateStackIndex(getContextTree(count, eventType));//should we always do this?
+                            sortTreeLevelBySizeWrapper(getTree(count, eventType), selectedLevel);
+                            updateStackIndex(getTree(count, eventType));//should we always do this?
                         } else {
-                            sortTreeBySize(getContextTree(count, eventType));
+                            sortTreeBySize(getTree(count, eventType));
                         }
                     }
                 }
@@ -1042,6 +1042,9 @@
 
     function sortTreeLevelBySizeWrapper(tree, level){
         //console.log("sortTreeLevelBySize:"+level);
+        if (tree['tree'] !== undefined) {
+            tree = tree['tree'];
+        }
         sortTreeLevelBySize(tree, level);
     }
 
@@ -3061,7 +3064,8 @@
             let firstRow = $("#sfContextDataTableSFDataTable  tr:nth-child(1)");
             if(firstRow != undefined){
                 let lastTd = firstRow.children()[firstRow.children().length - 1];
-                $("<td style='padding: 0px;border: none;align-items:center;' rowspan='10'>" + "<div id='diageventnn' style='width:"+(window.innerWidth - $("#sfContextDataTableSFDataTable").innerWidth() - 70)+";height: "+($("#sfContextDataTableSFDataTable").innerHeight()-$(firstRow).innerHeight()) +"px; overflow: auto; border-style: dotted hidden; padding: 10px;' class='col-lg-12'> </div></td>").insertAfter(lastTd);
+                $("<td  id='checkresize' style='padding: 0px;border: none;align-items:center;' rowspan='10'>" + "<div id='diageventnn' style='width:"+(window.innerWidth - $("#sfContextDataTableSFDataTable").innerWidth() - 70)+";height: "+($("#sfContextDataTableSFDataTable").innerHeight()-$(firstRow).innerHeight()) +"px; overflow: auto; border-style: dotted hidden; padding: 10px;' class='ui-widget-content col-lg-12'> </div></td>").insertAfter(lastTd);
+                $( "#diageventnn" ).resizable();
             }
         }
     }
@@ -5109,6 +5113,9 @@
 
 
     function updateStackIndex(contextTreeMaster){
+        if (contextTreeMaster['tree'] !== undefined) {
+            contextTreeMaster = contextTreeMaster['tree'];
+        }
         contextTreeMaster["treeIndex"] = getSelectedLevel(contextTreeMaster);
         console.log("updateStackIndex:" + contextTreeMaster["treeIndex"]);
         if(contextTreeMaster.sm !== undefined && contextTreeMaster.ch !== undefined && contextTreeMaster.ch !== null) {
