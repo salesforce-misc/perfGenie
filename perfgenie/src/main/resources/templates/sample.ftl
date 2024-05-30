@@ -824,13 +824,6 @@
                 intervalcount++;
             }
 
-
-            /*d3svg.append("text")
-                .text("Note: Top " + top + " threads sorted by number of samples")
-                .attr("x", x)
-                .style("font-size", "12px")
-                .attr("y", 9);*/
-
             for (let [tid, value] of tidSamplesCountMap) {
                 if (count < top) {
                     count++;

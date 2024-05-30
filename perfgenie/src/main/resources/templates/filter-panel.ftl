@@ -1560,6 +1560,7 @@
         const timelinepopupmodalElement = document.getElementById("timelinepopup");
         const timelineElement = document.getElementById("stackncontextview");
         const timelineSamplesElement = document.getElementById("sampletable").getElementsByTagName("svg");
+        const timelineTsviewElement = document.getElementById("tsviewtable").getElementsByTagName("svg");
 
         if(timelineSamplesElement.length != 0){
             console.log("timelineSamplesElement  " + clickC + ":" + evt.keyCode);
@@ -1567,6 +1568,16 @@
                 nextAvailableSampleStack();
             } else if (evt.keyCode == 37) {
                 previousAvailableSampleStack();
+            }
+            clickC++;
+        }
+
+        if(timelineTsviewElement.length != 0){
+            console.log("timelineTsviewElement  " + clickC + ":" + evt.keyCode);
+            if (evt.keyCode == 39) {
+                nextAvailableTsviewStack();
+            } else if (evt.keyCode == 37) {
+                previousAvailableTsviewStack();
             }
             clickC++;
         }
@@ -1592,6 +1603,34 @@
         }
         actViewKeyDown(evt);
     };
+
+    function nextAvailableTsviewStack() {
+        var cur = prevTsviewReqCellObj;
+        while (cur != null && cur.nextSibling != null && (cur.nextSibling.tagName == 'rect' || cur.nextSibling.tagName == 'line')) {
+            cur = cur.nextSibling;
+            if (!cur.hasAttribute('skip') && cur.tagName == 'rect') {
+                prevTsviewReqCellObj.classList.remove('stackCells')
+                cur.dispatchEvent(new Event('click'))
+                break;
+            }else if( cur.tagName == 'line' && !cur.hasAttribute('skip')){
+                break;
+            }
+        }
+    }
+
+    function previousAvailableTsviewStack() {
+        var cur = prevTsviewReqCellObj;
+        while (cur != null && cur.previousSibling != null && (cur.previousSibling.tagName == 'rect' || cur.previousSibling.tagName == 'line') ) {
+            cur = cur.previousSibling;
+            if (!cur.hasAttribute('skip')  && cur.tagName == 'rect') {
+                prevTsviewReqCellObj.classList.remove('stackCells')
+                cur.dispatchEvent(new Event('click'))
+                break;
+            }else if( cur.tagName == 'line' && !cur.hasAttribute('skip')){
+                break;
+            }
+        }
+    }
 
     function nextAvailableSampleStack() {
         var cur = prevSampleReqCellObj;
@@ -1829,7 +1868,7 @@
     function addContextDataJstack(event, count){
         let treeToProcess = getContextTree(count,event);
         let contextTidMap = treeToProcess.context.tidMap;
-        prepData(event);//todo this is not needed once tsview is replaced
+        //prepData(event);//todo this is not needed once tsview is replaced
 
         for(var tid in contextTidMap){
             for (let i = 0; i < contextTidMap[tid].length; i++) {
@@ -1837,7 +1876,7 @@
                     let pair = contextTidMap[tid][i].ctx.split(";");
                     contextTidMap[tid][i].tn = pair[1];
                     contextTidMap[tid][i].ts = getThreadState(pair[0]);
-                    contextTidMap[tid][i].sampleNo = timestampArray.indexOf(contextTidMap[tid][i].time) + 1;
+                   // contextTidMap[tid][i].sampleNo = timestampArray.indexOf(contextTidMap[tid][i].time) + 1;
                 }
             }
         }

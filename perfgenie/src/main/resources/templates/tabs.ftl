@@ -55,7 +55,7 @@
         <#include "surface.ftl">
     </div>
     <div id="tsview">
-        <#include "tsview.ftl">
+        <#include "tsview-new.ftl">
     </div>
 </div>
 <div id="modals-guid" class="col-lg-12">

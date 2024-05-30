@@ -170,6 +170,13 @@
             }));
         }
 
+        if(tsviewtableFormat != undefined && tsviewtableFormat == 1) {
+            $('#event-type-tsview').append($('<option>', {
+                value: "All",
+                text: "All"
+            }));
+        }
+
         validateInputAndcreateContextTree(true);
 
     });

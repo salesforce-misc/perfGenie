@@ -20,18 +20,19 @@
     <select  style="height:30px;text-align: center;" class="filterinput"  name="tsview-format-input" id="tsview-format-input">
         <option value=1>thread sample view</option>
     </select>
-
-
-        <label  title="group by tid will show all samples in a thread, others need a matching context">Group by: </label>
-        <select  style="height:30px;text-align: center;" class="filterinput"  name="tsview-grp-by" id="tsview-grp-by">
-        </select>
+    <label title="group by tid will show all samples in a thread, others need a matching context">Group by: </label>
+    <select style="height:30px;text-align: center;" class="filterinput" name="tsview-grp-by" id="tsview-grp-by">
+    </select>
 </div>
 
 <div class="row">
 <div style="padding: 0px !important;overflow: scroll"  id="tsviewtablecontext" class="ui-widget tsviewtable col-lg-12">
 </div>
 </div>
-
+<div class="row">
+    <div style="padding: 0px !important;overflow: scroll"  id="colorcodes" class="ui-widget colorcodes col-lg-12">
+    </div>
+</div>
 <div class="row">
     <div class="col-lg-7">
         <div style="overflow: auto; padding-left: 0px;padding-right: 2px; width: 100%;" class="cct-customized-scrollbar">
@@ -230,7 +231,7 @@
 
         let str = "";
         document.getElementById("tsviewtable").innerHTML = str;
-       
+
         updateTsviewEventInputOptions('event-input-tsview');
 
         updateTsviewGroupByOptions('tsview-grp-by');
@@ -713,37 +714,59 @@
             let x = 20;
             let y = 10;
 
-            if(isJstack){
+            if(isJstack) {
                 cellh = 8;
                 cellw = 8;
+                d3.select("#colorcodes").append("svg").attr("width", 1000).attr("height", 25);
+                let colorcodesSvg = d3.select('#colorcodes').select("svg");
+                let tmpx = 15;
+                let tmpy = 10;
+                for (var state in jstackcolorsmap) {
+                    colorcodesSvg.append("rect")
+                        .attr("width", 10)
+                        .attr("height", 10)
+                        .attr("x", tmpx)
+                        .attr("y", tmpy)
+                        .attr("fill", getTsviewSampleColor(jstackcolorsmap[state]));
+                    colorcodesSvg.append("text")
+                        .text(state)
+                        .attr("x", tmpx + 11)
+                        .style("font-size", "10px")
+                        .attr("y", tmpy + 10);
+
+                    tmpx += (state.length * 8 + 20);
+                }
+            }else{
+                $("#colorcodes").html("");
             }
+
 
             document.getElementById("tsviewtable").innerHTML = "<div class='row col-lg-12' style='padding: 0px !important;'>"
                 + "<div  style='width: 7%;float: left;'></div>"
                 + "<div style=\"max-height: 50px;overflow: hidden;width: 93%;float: right;\">"
                 + " <div class='row col-lg-12' style='padding: 0px !important;'>"
-                + "   <div class='xaxisidSamples col-lg-12' id='xaxisidSamples' style=\"padding: 0px !important; max-height: 50px;overflow: scroll;overflow-y: hidden;\" onscroll='OnScroll1Samples(this)'>"
+                + "   <div class='xaxisidTsview col-lg-12' id='xaxisidTsview' style=\"padding: 0px !important; max-height: 50px;overflow: scroll;overflow-y: hidden;\" onscroll='OnScroll1Samples(this)'>"
                 + "   </div>"
                 + " </div>"
                 + "</div>"
                 + "</div>"
                 + "<div class='row col-lg-12' style='padding: 0px !important;'>"
-                + " <div  id='yaxisidSamples' style=\"max-height: " + (top + 2) * cellh + "px;overflow: scroll;overflow-x: hidden;width: 7%;float: left;\" class='yaxisidSamples' onscroll='OnScroll0Samples(this)'></div>"
-                + " <div id='requestbarchartSampleswrapper' style=\"max-height: " + (top + 2) * cellh + "px;overflow: hidden;width: 93%;float: right;\">"
+                + " <div  id='yaxisidTsview' style=\"max-height: " + (top + 2) * cellh + "px;overflow: scroll;overflow-x: hidden;width: 7%;float: left;\" class='yaxisidTsview' onscroll='OnScroll0Samples(this)'></div>"
+                + " <div id='requestbarchartTsviewwrapper' style=\"max-height: " + (top + 2) * cellh + "px;overflow: hidden;width: 93%;float: right;\">"
                 + "    <div class='row col-lg-12' style='padding: 0px !important;'>"
-                + "      <div class='requestbarchartSamples col-lg-12' onscroll='OnScroll2Samples(this)' style=\"padding: 0px !important; height: " + (top + 2) * cellh + "px;max-height: " + (top + 2) * cellh + "px;overflow: auto;\" id='requestbarchartSamples'>"
+                + "      <div class='requestbarchartTsview col-lg-12' onscroll='OnScroll2Samples(this)' style=\"padding: 0px !important; height: " + (top + 2) * cellh + "px;max-height: " + (top + 2) * cellh + "px;overflow: auto;\" id='requestbarchartTsview'>"
                 + "      </div>"
                 + "    </div>"
                 + " </div>"
                 + "</div><div>Note: Top " + (top-15) + " threads sorted by number of samples</div>";
 
-            d3.select("#requestbarchartSamples").append("svg").attr("width", (maxTsviewThreadSamples *cellw)+37).attr("height", (top+2)*cellh);
-            d3.select("#yaxisidSamples").append("svg").attr("width", 50).attr("height", (top+2)*cellh);
-            d3.select("#xaxisidSamples").append("svg").attr("width",  (maxTsviewThreadSamples *cellw)+37).attr("height", 10);
+            d3.select("#requestbarchartTsview").append("svg").attr("width", (maxTsviewThreadSamples *cellw)+37).attr("height", (top+2)*cellh);
+            d3.select("#yaxisidTsview").append("svg").attr("width", 50).attr("height", (top+2)*cellh);
+            d3.select("#xaxisidTsview").append("svg").attr("width",  (maxTsviewThreadSamples *cellw)+37).attr("height", 10);
 
-            let d3yaxis = d3.select('#yaxisidSamples').select("svg");
-            let d3xaxis = d3.select('#xaxisidSamples').select("svg");
-            let d3svg = d3.select("#requestbarchartSamples").select("svg");
+            let d3yaxis = d3.select('#yaxisidTsview').select("svg");
+            let d3xaxis = d3.select('#xaxisidTsview').select("svg");
+            let d3svg = d3.select("#requestbarchartTsview").select("svg");
 
             let layer1 = d3svg.append('g');
             let layer2 = d3svg.append('g');
@@ -878,9 +901,9 @@
             if(y > 700){
                 y = 700;
             }
-            $("#yaxisidSamples").css({"max-height":y});
-            $("#requestbarchartSampleswrapper").css({"max-height":y});
-            $("#requestbarchartSamples").css({"max-height":y});
+            $("#yaxisidTsview").css({"max-height":y});
+            $("#requestbarchartTsviewwrapper").css({"max-height":y});
+            $("#requestbarchartTsview").css({"max-height":y});
         } else {
             $('#extraoptions').show();
             $("#tsviewtablecontext").css({"height":''});
@@ -977,18 +1000,18 @@
     }
 
     function OnScroll0Samples(div) {
-        var d2 = document.getElementById("requestbarchartSamples");
+        var d2 = document.getElementById("requestbarchartTsview");
         d2.scrollTop = div.scrollTop;
     }
 
     function OnScroll1Samples(div) {
-        var d2 = document.getElementById("requestbarchartSamples");
+        var d2 = document.getElementById("requestbarchartTsview");
         d2.scrollLeft = div.scrollLeft;
     }
 
     function OnScroll2Samples(div) {
-        var d1 = document.getElementById("xaxisidSamples");
-        var d0 = document.getElementById("yaxisidSamples");
+        var d1 = document.getElementById("xaxisidTsview");
+        var d0 = document.getElementById("yaxisidTsview");
         d0.scrollTop = div.scrollTop;
         d1.scrollLeft = div.scrollLeft;
     }
