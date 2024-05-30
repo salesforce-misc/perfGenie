@@ -717,6 +717,7 @@
             if(isJstack) {
                 cellh = 8;
                 cellw = 8;
+                $("#colorcodes").html("");
                 d3.select("#colorcodes").append("svg").attr("width", 1000).attr("height", 25);
                 let colorcodesSvg = d3.select('#colorcodes').select("svg");
                 let tmpx = 15;
