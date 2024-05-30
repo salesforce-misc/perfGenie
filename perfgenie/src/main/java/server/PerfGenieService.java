@@ -276,7 +276,7 @@ public class PerfGenieService implements IPerfGenieService {
                     result = eventStore.getGenieLargeEvent(tosort.get(i), tosort.get(i), queryMap, dimMap,tenant);
                     aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(result, EventHandler.JfrParserResponse.class));
                 }
-                if(config.isExperimental()) {
+                if(config.isExperimental() || tosort.size() == 1) {
                     SurfaceDataResponse res = genSurfaceData(aggregator.getAggregatedProfileTree(), tenant, queryMap.get("host"));
                     EventHandler.JfrParserResponse apr = (EventHandler.JfrParserResponse) aggregator.getAggregatedProfileTree();
                     apr.addMeta(ImmutableMap.of("data", Utils.toJson(res)));
