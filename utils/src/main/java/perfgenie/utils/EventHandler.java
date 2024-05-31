@@ -393,10 +393,16 @@ public class EventHandler {
         String fullNm = null;
         try {
             fullNm = method.getType().getFullName();
+            if(fullNm == null){
+                fullNm = "unknown";
+            }
         } catch (StringIndexOutOfBoundsException e) {
             fullNm = "unknown";
         }
-        final String methodNm = method.getMethodName();
+        String methodNm = method.getMethodName();
+        if(methodNm == null){
+            methodNm = "unknown";
+        }
         int hash = CustomHash(fullNm.hashCode(), methodNm.hashCode());
         if (!frames.containsKey(hash)) {
             stringBuilder.setLength(0);
