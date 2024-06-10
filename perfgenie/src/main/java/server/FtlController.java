@@ -9,14 +9,14 @@ package server;
 
 import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
+//import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+//import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -29,11 +29,11 @@ public class FtlController {
     private Map<String, LocalDateTime> usersLastAccess = new HashMap<>();
 
     @GetMapping("/")
-    public String getCurrentUser(@AuthenticationPrincipal User user, Model model) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+    public String getCurrentUser(){//@AuthenticationPrincipal User user, Model model) {
+        /*String username = SecurityContextHolder.getContext().getAuthentication().getName();
         model.addAttribute("username", username);
         model.addAttribute("lastAccess", usersLastAccess.get(username));
-        usersLastAccess.put(username, LocalDateTime.now());
+        usersLastAccess.put(username, LocalDateTime.now());*/
         return "index";
     }
 

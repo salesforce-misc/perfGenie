@@ -1,10 +1,4 @@
-/*
- * Copyright (c) 2022, Salesforce.com, Inc.
- * All rights reserved.
- * SPDX-License-Identifier: BSD-3-Clause
- * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
- */
-
+var DateTime = luxon.DateTime;
 let metaData1 = undefined;
 let metaData2 = undefined;
 let tenantData1 = undefined;
@@ -32,16 +26,24 @@ let otherEvents1 = {};
 let otherEvents2 = {};
 let otherEventsFetched = {};
 const urlParams = new URLSearchParams(window.location.search);
-let otherEventsSupported = {"top":true, "ps":true, "pidstat":true};
-let jstackcolors = ["#29b193","#ee5869","#f6ab60","#377bb5"];
-let jstackcolorsmap ={"RUNNABLE":9,"BLOCKED":10,"WAITING":11,"TIMED_WAITING":12};
-let jstackidcolorsmap ={9:"RUNNABLE",10:"BLOCKED",11:"WAITING",12:"TIMED_WAITING"};
-let profilecolors =["lightseagreen","#bbbb0d","deeppink","brown","dodgerblue","slateblue","blue","green","yellow","#29b193","#ee5869","#f6ab60","#377bb5"];
-let knowprofilecolormap = {"jfr_dump.json.gz":0,"jfr_dump_socket.json.gz":1,"jfr_dump_apex.json.gz":2, "jfr_dump_memory.json.gz":3, "json-jstack":4,"Jstack":4};
+let otherEventsSupported = {"top": true, "ps": true, "pidstat": true};
+let jstackcolors = ["#29b193", "#ee5869", "#f6ab60", "#377bb5"];
+let jstackcolorsmap = {"RUNNABLE": 9, "BLOCKED": 10, "WAITING": 11, "TIMED_WAITING": 12};
+let jstackidcolorsmap = {9: "RUNNABLE", 10: "BLOCKED", 11: "WAITING", 12: "TIMED_WAITING"};
+let profilecolors = ["lightseagreen", "#bbbb0d", "deeppink", "brown", "dodgerblue", "slateblue", "blue", "green", "yellow", "#29b193", "#ee5869", "#f6ab60", "#377bb5"];
+let knowprofilecolormap = {
+    "jfr_dump.json.gz": 0,
+    "jfr_dump_socket.json.gz": 1,
+    "jfr_dump_apex.json.gz": 2,
+    "jfr_dump_memory.json.gz": 3,
+    "json-jstack": 4,
+    "Jstack": 4
+};
 let dataSource = "genie";
 let diagEvent = '';
 
 let isZip = true;
+
 function setSubmitDisabled(shouldDisable) {
     $("#submit-input").prop("disabled", shouldDisable);
 }
@@ -51,13 +53,13 @@ function validateDateRange(index) {
     const endTimeE = document.getElementById("endpicker" + index);
     startTimeE.style.borderColor = null;
     endTimeE.style.borderColor = null;
-    addInputNote(false,"");
+    addInputNote(false, "");
 
     let startEpoch = eval("startTime" + index);
     let endEpoch = eval("endTime" + index);
 
     if (startEpoch > endEpoch) {
-        addInputNote(true,"Start time is after end time")
+        addInputNote(true, "Start time is after end time")
         startTimeE.style.borderColor = "red";
         endTimeE.style.borderColor = "red";
         setSubmitDisabled(true);
@@ -65,7 +67,7 @@ function validateDateRange(index) {
     }
 
     if ((endEpoch - startEpoch) > maxTimeRange) {
-        addInputNote(true,"Time ranges are limited to 1 hour. Given " + moment.utc(startEpoch).format('YYYY-MM-DD HH:mm:ss') + " - " + moment.utc(endEpoch).format('YYYY-MM-DD HH:mm:ss'));
+        addInputNote(true, "Time ranges are limited to 1 hour. Given " + moment.utc(startEpoch).format('YYYY-MM-DD HH:mm:ss') + " - " + moment.utc(endEpoch).format('YYYY-MM-DD HH:mm:ss'));
         startTimeE.style.borderColor = "red";
         endTimeE.style.borderColor = "red";
         setSubmitDisabled(true);
@@ -76,14 +78,14 @@ function validateDateRange(index) {
     return true;
 }
 
-function addInputNote(toggle, msg){
-    if(toggle){
-        if($( "#input-info" ).css("display") === "none"){
-            $( "#input-info-text" ).html(msg);
-            $( "#input-info" ).toggle( "slide", { direction: "left" }, 500 );
+function addInputNote(toggle, msg) {
+    if (toggle) {
+        if ($("#input-info").css("display") === "none") {
+            $("#input-info-text").html(msg);
+            $("#input-info").toggle("slide", {direction: "left"}, 500);
         }
-    }else{
-        if($( "#input-info-text" ).html() != "") {
+    } else {
+        if ($("#input-info-text").html() != "") {
             $("#input-info").css("display", "none");
             $("#input-info-text").html("");
         }
@@ -91,12 +93,16 @@ function addInputNote(toggle, msg){
 }
 
 $(document).ready(function () {
-
+    const sfSampleTable = new SFDataTable("test");
     dataSource = urlParams.get('dataSource') || "genie";
-    startTime1 = Number(urlParams.get('startTime1')) || moment.utc(moment.utc().subtract('minute', 10).format('YYYY-MM-DD HH:mm:ss')).valueOf();
-    startTime2 = Number(urlParams.get('startTime2')) || moment.utc(moment.utc().subtract('minute', 24 * 60 + 10).format('YYYY-MM-DD HH:mm:ss')).valueOf();
-    endTime1 = Number(urlParams.get('endTime1')) || moment.utc(moment.utc().format('YYYY-MM-DD HH:mm:ss')).valueOf();
-    endTime2 = Number(urlParams.get('endTime2')) || moment.utc(moment.utc().subtract('minute', 24 * 60).format('YYYY-MM-DD HH:mm:ss')).valueOf();
+    //startTime1 = Number(urlParams.get('startTime1')) || DateTime.utc(DateTime.utc().subtract('minute', 10).format('YYYY-MM-DD HH:mm:ss')).valueOf();
+    startTime1 = Number(urlParams.get('startTime1')) || DateTime.utc().minus({ minutes: 10 }).ts;//.toFormat('yyyy-mm-dd HH:mm:ss');
+    //startTime2 = Number(urlParams.get('startTime2')) || moment.utc(moment.utc().subtract('minute', 24 * 60 + 10).format('YYYY-MM-DD HH:mm:ss')).valueOf();
+    startTime2 = Number(urlParams.get('startTime2')) || DateTime.utc().minus({ minutes:  24 * 60 + 10 }).ts;//.toFormat('yyyy-mm-dd HH:mm:ss');
+    //endTime1 = Number(urlParams.get('endTime1')) || moment.utc(moment.utc().format('YYYY-MM-DD HH:mm:ss')).valueOf();
+    endTime1 = Number(urlParams.get('endTime1')) || DateTime.utc().ts;//.toFormat('yyyy-mm-dd HH:mm:ss');
+    //endTime2 = Number(urlParams.get('endTime2')) || moment.utc(moment.utc().subtract('minute', 24 * 60).format('YYYY-MM-DD HH:mm:ss')).valueOf();
+    endTime2 = Number(urlParams.get('endTime2')) || DateTime.utc().minus({ minutes:  24 * 60 }).ts;//.toFormat('yyyy-mm-dd HH:mm:ss');
     host1 = urlParams.get('host1') || undefined;
     host2 = urlParams.get('host2') || undefined;
     tenant1 = urlParams.get('tenant1') || undefined;
@@ -133,10 +139,14 @@ $(document).ready(function () {
     }
 
 
-    $("#startpicker1").val(moment.utc(startTime1).format('YYYY-MM-DD HH:mm:ss'));
-    $("#endpicker1").val(moment.utc(endTime1).format('YYYY-MM-DD HH:mm:ss'));
-    $("#startpicker2").val(moment.utc(startTime2).format('YYYY-MM-DD HH:mm:ss'));
-    $("#endpicker2").val(moment.utc(endTime2).format('YYYY-MM-DD HH:mm:ss'));
+    //$("#startpicker1").val(moment.utc(startTime1).format('YYYY-MM-DD HH:mm:ss'));
+    $("#startpicker1").val(DateTime.fromMillis(startTime1, {zone: 'UTC'}).toFormat('yyyy-mm-dd HH:mm:ss'));
+    //$("#endpicker1").val(moment.utc(endTime1).format('YYYY-MM-DD HH:mm:ss'));
+    $("#endpicker1").val(DateTime.fromMillis(endTime1, {zone: 'UTC'}).toFormat('yyyy-mm-dd HH:mm:ss'));
+    //$("#startpicker2").val(moment.utc(startTime2).format('YYYY-MM-DD HH:mm:ss'));
+    $("#startpicker2").val(DateTime.fromMillis(startTime2, {zone: 'UTC'}).toFormat('yyyy-mm-dd HH:mm:ss'));
+    //$("#endpicker2").val(moment.utc(endTime2).format('YYYY-MM-DD HH:mm:ss'));
+    $("#endpicker2").val(DateTime.fromMillis(endTime2, {zone: 'UTC'}).toFormat('yyyy-mm-dd HH:mm:ss'));
 
     $("#tenant-input1").val(tenant1);
     $("#tenant-input2").val(tenant2);
@@ -153,7 +163,7 @@ $(document).ready(function () {
     $("#startpicker1").change(function (event) {
         if (moment.utc($("#startpicker1").val()).valueOf() != startTime1) {
             startTime1 = moment.utc($("#startpicker1").val()).valueOf();
-            if(validateDateRange(1)) {
+            if (validateDateRange(1)) {
                 getTenantData1(startTime1, endTime1);
             }
         }
@@ -162,7 +172,7 @@ $(document).ready(function () {
     $("#startpicker2").change(function (event) {
         if (moment.utc($("#startpicker2").val()).valueOf() != startTime2) {
             startTime2 = moment.utc($("#startpicker2").val()).valueOf();
-            if(validateDateRange(2)) {
+            if (validateDateRange(2)) {
                 getTenantData2(startTime2, endTime2);
             }
         }
@@ -171,7 +181,7 @@ $(document).ready(function () {
     $("#endpicker1").change(function (event) {
         if (moment.utc($("#endpicker1").val()).valueOf() != endTime1) {
             endTime1 = moment.utc($("#endpicker1").val()).valueOf();
-            if(validateDateRange(1)) {
+            if (validateDateRange(1)) {
                 getTenantData1(startTime1, endTime1);
             }
         }
@@ -180,7 +190,7 @@ $(document).ready(function () {
     $("#endpicker2").change(function (event) {
         if (moment.utc($("#endpicker2").val()).valueOf() != endTime2) {
             endTime2 = moment.utc($("#endpicker2").val()).valueOf();
-            if(validateDateRange(2)) {
+            if (validateDateRange(2)) {
                 getTenantData2(startTime2, endTime2);
             }
         }
@@ -237,13 +247,14 @@ $(document).ready(function () {
         profile2 = $("#bases2").val();
     });
 
+
     jQuery("#startpicker1").datetimepicker({
         format: 'Y-m-d H:i:s',
         formatDate: 'Y-m-d',
         formatTime: 'H:i',
         step: 5
     });
-
+    /*
     jQuery("#endpicker1").datetimepicker({
         format: 'Y-m-d H:i:s',
         formatDate: 'Y-m-d',
@@ -263,10 +274,10 @@ $(document).ready(function () {
         formatDate: 'Y-m-d',
         formatTime: 'H:i',
         step: 5
-    });
+    });*/
 
     $("#submit-input").click(function () {
-        if(validateDateRange(1) && validateDateRange(2)) {
+        if (validateDateRange(1) && validateDateRange(2)) {
             addInputToURL();
         }
     });
@@ -275,6 +286,7 @@ $(document).ready(function () {
 function submitTo() {
     window.location.reload(true);
 }
+
 function getTenantData1(start, end) {
     let URL = getTenantDataURL(start, end);
     showSpinner();
@@ -312,7 +324,7 @@ function getInstanceData1(start, end, tenant) {
 }
 
 function getInstanceData2(start, end, tenant) {
-    let URL =getInstanceDataURL(start, end, tenant, tenantData2[tenant]);
+    let URL = getInstanceDataURL(start, end, tenant, tenantData2[tenant]);
     showSpinner();
     $.ajax({
         url: URL, success: function (result) {
@@ -335,7 +347,8 @@ function getMetaData1(start, end, tenant, host) {
         }
     });
 }
-function addUploadedContext(csv,name){
+
+function addUploadedContext(csv, name) {
     let records = {};
     let header = {};
     header[name] = [];
@@ -348,41 +361,41 @@ function addUploadedContext(csv,name){
     let checkUntil = 200
     let checkReached = 0;
     let spanIndex = -1;
-    for(let i=0; i<lines.length;i++){
-        if(i==0){
+    for (let i = 0; i < lines.length; i++) {
+        if (i == 0) {
             header[name] = lines[i].split(/\,/);
             header[name][0] = "timestamp:timestamp";
             header[name][1] = "tid:text";
-            for(let k=0; k<header[name].length; k++){
+            for (let k = 0; k < header[name].length; k++) {
                 columnTypes.push(0);
-                if(header[name][k] == "runTime" || header[name][k] == "duration"){
+                if (header[name][k] == "runTime" || header[name][k] == "duration") {
                     spanIndex = k;
                     isContext = true;
                 }
             }
-        }else {
-            if(lines[i].length !=0 ) {
+        } else {
+            if (lines[i].length != 0) {
                 lines[i] = lines[i].replaceAll('\"', '');
                 let record = lines[i].split(/\,/);
-                for(let j=0; j< record.length;j++){
-                    if(record[j] == ''){
+                for (let j = 0; j < record.length; j++) {
+                    if (record[j] == '') {
                         record[j] = "NA";
                     }
                 }
                 record[0] = record[0].replaceAll('.', '');
                 record[0] = Number(record[0]);//todo convert numbers for all measures
-                if(spanIndex != -1){
-                //    record[0] = record[0] - Number(record[spanIndex]); //if we use end timestamp
+                if (spanIndex != -1) {
+                    //    record[0] = record[0] - Number(record[spanIndex]); //if we use end timestamp
                 }
                 //record[1] = Number(record[1]);//tid
-                if(records[name][record[1]] == undefined){
+                if (records[name][record[1]] == undefined) {
                     records[name][record[1]] = [];
                 }
                 records[name][record[1]].push({"record": record});
-                if(i<checkUntil){
+                if (i < checkUntil) {
                     checkReached++;
-                    for(let k=2; k<record.length; k++){
-                        if(isNaN(record[k])){
+                    for (let k = 2; k < record.length; k++) {
+                        if (isNaN(record[k])) {
                             columnTypes[k]++;
                         }
                     }
@@ -390,17 +403,17 @@ function addUploadedContext(csv,name){
             }
         }
     }
-    for(let k=2; k<header[name].length; k++){
-        if( columnTypes[k]/checkReached > 0.5){
+    for (let k = 2; k < header[name].length; k++) {
+        if (columnTypes[k] / checkReached > 0.5) {
             header[name][k] = header[name][k] + ":text";
-        }else{
+        } else {
             header[name][k] = header[name][k] + ":number";
         }
     }
-    for (let tid in  records[name]) {
+    for (let tid in records[name]) {
         for (let k = 0; k < records[name][tid].length; k++) {
             for (let i = 2; i < records[name][tid][k].record.length; i++) {
-                if (columnTypes[i]/checkReached <= 0.5) {
+                if (columnTypes[i] / checkReached <= 0.5) {
                     records[name][tid][k].record[i] = Number(records[name][tid][k].record[i]);
                 }
             }
@@ -409,7 +422,7 @@ function addUploadedContext(csv,name){
     let localContextData = getContextData(1);
     localContextData.header[name] = header[name];
     localContextData.records[name] = records[name];
-    if(isContext) {
+    if (isContext) {
         $('#event-input').append($('<option>', {
             value: name,
             text: name
@@ -419,7 +432,7 @@ function addUploadedContext(csv,name){
             text: name + " context loaded",
             duration: 8000
         }).showToast();
-    }else{
+    } else {
         otherEvents1[name] = true;
 
         $('#other-event-input').append($('<option>', {
@@ -433,10 +446,11 @@ function addUploadedContext(csv,name){
         }).showToast();
     }
 }
-function loadDiagData1(){
+
+function loadDiagData1() {
 
     let localcontextData = getContextData(1);
-    if(localcontextData == undefined || localcontextData.header == undefined){
+    if (localcontextData == undefined || localcontextData.header == undefined) {
         return;
     }
 
@@ -444,11 +458,11 @@ function loadDiagData1(){
     let header = {};
 
     for (let key in metaData1) {
-        if(metaData1[key].metadata.name != undefined) {
-            if(metaData1[key].metadata.name === "jfr"){
+        if (metaData1[key].metadata.name != undefined) {
+            if (metaData1[key].metadata.name === "jfr") {
                 continue;
             }
-            if(!metaData1[key].metadata.name.includes("json") && (metaData1[key].metadata["file-name"] == undefined || !metaData1[key].metadata["file-name"].includes("json")) ) {
+            if (!metaData1[key].metadata.name.includes("json") && (metaData1[key].metadata["file-name"] == undefined || !metaData1[key].metadata["file-name"].includes("json"))) {
                 let diagnostics = []
                 diagnostics.push(metaData1[key].timestampMillis);
                 diagnostics.push(metaData1[key].metadata.name);
@@ -457,8 +471,8 @@ function loadDiagData1(){
                 diagnostics.push(metaData1[key].metadata.guid);
                 diagnostics.push(metaData1[key].dimensions[".maiev-event-payload-size"] == undefined ? 0 : Number(metaData1[key].dimensions[".maiev-event-payload-size"]));
                 if (header["diagnostics(raw)"] == undefined) {
-                   // header["diagnostics(raw)"] = ["timestamp:timestamp", "event:text", "count:number","guid:text","size:number"];
-                    header["diagnostics(raw)"] = ["timestamp:timestamp", "event:text","size:number"];
+                    // header["diagnostics(raw)"] = ["timestamp:timestamp", "event:text", "count:number","guid:text","size:number"];
+                    header["diagnostics(raw)"] = ["timestamp:timestamp", "event:text", "size:number"];
                     records["diagnostics(raw)"] = {};
                     records["diagnostics(raw)"][1] = [];
                 }
@@ -466,9 +480,9 @@ function loadDiagData1(){
             }
 
             let dimExists = false;
-            for(let dim in metaData1[key].dimensions) {
-                if(dim.charAt(0) !== '.' && dim !== 'exit_code') {
-                    dimExists=true;
+            for (let dim in metaData1[key].dimensions) {
+                if (dim.charAt(0) !== '.' && dim !== 'exit_code') {
+                    dimExists = true;
                     break;
                 }
             }
@@ -479,7 +493,7 @@ function loadDiagData1(){
                     header[metaData1[key].metadata.name] = [];
                     header[metaData1[key].metadata.name].push("timestamp:timestamp");
                     header[metaData1[key].metadata.name].push("name:text");
-                    headerExists=false;
+                    headerExists = false;
                 }
                 if (records[metaData1[key].metadata.name] == undefined) {
                     records[metaData1[key].metadata.name] = {};
@@ -491,24 +505,23 @@ function loadDiagData1(){
                 record.push(metaData1[key].timestampMillis);
                 record.push(metaData1[key].metadata.name);
 
-                for(let dim in metaData1[key].dimensions)
-                {
-                    if(dim.charAt(0) !=='.' && dim !== 'exit_code'){
-                        if(!headerExists){
-                            header[metaData1[key].metadata.name].push(dim+":number");
+                for (let dim in metaData1[key].dimensions) {
+                    if (dim.charAt(0) !== '.' && dim !== 'exit_code') {
+                        if (!headerExists) {
+                            header[metaData1[key].metadata.name].push(dim + ":number");
                         }
                         record.push(Number(metaData1[key].dimensions[dim]));
                     }
                 }
-                records[metaData1[key].metadata.name][1].push({"record" : record});
+                records[metaData1[key].metadata.name][1].push({"record": record});
             }
         }
     }
     let isloaded = false;
     for (let key in header) {
-        otherEventsFetched[key]=true;
+        otherEventsFetched[key] = true;
         localcontextData.header[key] = header[key];
-        isloaded=true;
+        isloaded = true;
     }
     for (let key in records) {
         localcontextData.records[key] = records[key];
@@ -517,16 +530,16 @@ function loadDiagData1(){
             text: key
         }));
     }
-    if(isloaded){
+    if (isloaded) {
         Toastify({
             text: "diagnostics(raw) events loaded",
             duration: 8000
         }).showToast();
         $("#cct-panel").css("height", "100%");//expand context table view
 
-        if(diagEvent != ''){
+        if (diagEvent != '') {
             let values = diagEvent.split("_");
-            getDiagEvent(Number(values[0]),values[1],values[2],values[3]);
+            getDiagEvent(Number(values[0]), values[1], values[2], values[3]);
         }
     }
 }
@@ -544,9 +557,9 @@ function getMetaData2(start, end, tenant, host) {
     });
 }
 
-function loadDiagData2(){
+function loadDiagData2() {
     let localcontextData = getContextData(2);
-    if(localcontextData == undefined || localcontextData.header == undefined){
+    if (localcontextData == undefined || localcontextData.header == undefined) {
         return;
     }
 
@@ -554,11 +567,11 @@ function loadDiagData2(){
     let header = {};
 
     for (let key in metaData2) {
-        if(metaData2[key].metadata.name != undefined) {
-            if(metaData2[key].metadata.name === "jfr"){
+        if (metaData2[key].metadata.name != undefined) {
+            if (metaData2[key].metadata.name === "jfr") {
                 continue;
             }
-            if(!metaData2[key].metadata.name.includes("json") && (metaData2[key].metadata["file-name"] == undefined || !metaData2[key].metadata["file-name"].includes("json")) ) {
+            if (!metaData2[key].metadata.name.includes("json") && (metaData2[key].metadata["file-name"] == undefined || !metaData2[key].metadata["file-name"].includes("json"))) {
                 let diagnostics = []
                 diagnostics.push(metaData2[key].timestampMillis);
                 diagnostics.push(metaData2[key].metadata.name);
@@ -567,7 +580,7 @@ function loadDiagData2(){
                 diagnostics.push(metaData2[key].metadata.guid);
                 diagnostics.push(metaData2[key].dimensions[".maiev-event-payload-size"] == undefined ? 0 : Number(metaData2[key].dimensions[".maiev-event-payload-size"]));
                 if (header["diagnostics(raw)"] == undefined) {
-                    header["diagnostics(raw)"] = ["timestamp:timestamp", "event:text", "count:number","guid:text","size:number"];
+                    header["diagnostics(raw)"] = ["timestamp:timestamp", "event:text", "count:number", "guid:text", "size:number"];
                     records["diagnostics(raw)"] = {};
                     records["diagnostics(raw)"][1] = [];
                 }
@@ -575,9 +588,9 @@ function loadDiagData2(){
             }
 
             let dimExists = false;
-            for(let dim in metaData2[key].dimensions) {
-                if(dim.charAt(0) !== '.' && dim !== 'exit_code') {
-                    dimExists=true;
+            for (let dim in metaData2[key].dimensions) {
+                if (dim.charAt(0) !== '.' && dim !== 'exit_code') {
+                    dimExists = true;
                     break;
                 }
             }
@@ -588,7 +601,7 @@ function loadDiagData2(){
                     header[metaData2[key].metadata.name] = [];
                     header[metaData2[key].metadata.name].push("timestamp:timestamp");
                     header[metaData2[key].metadata.name].push("name:text");
-                    headerExists=false;
+                    headerExists = false;
                 }
                 if (records[metaData2[key].metadata.name] == undefined) {
                     records[metaData2[key].metadata.name] = {};
@@ -600,24 +613,23 @@ function loadDiagData2(){
                 record.push(metaData2[key].timestampMillis);
                 record.push(metaData2[key].metadata.name);
 
-                for(let dim in metaData2[key].dimensions)
-                {
-                    if(dim.charAt(0) !=='.' && dim !== 'exit_code'){
-                        if(!headerExists){
-                            header[metaData2[key].metadata.name].push(dim+":number");
+                for (let dim in metaData2[key].dimensions) {
+                    if (dim.charAt(0) !== '.' && dim !== 'exit_code') {
+                        if (!headerExists) {
+                            header[metaData2[key].metadata.name].push(dim + ":number");
                         }
                         record.push(Number(metaData2[key].dimensions[dim]));
                     }
                 }
-                records[metaData2[key].metadata.name][1].push({"record" : record});
+                records[metaData2[key].metadata.name][1].push({"record": record});
             }
         }
     }
     let isloaded = false;
     for (let key in header) {
-        otherEventsFetched[key]=true;
+        otherEventsFetched[key] = true;
         localcontextData.header[key] = header[key];
-        isloaded=true;
+        isloaded = true;
     }
     for (let key in records) {
         localcontextData.records[key] = records[key];
@@ -626,7 +638,7 @@ function loadDiagData2(){
             text: key
         }));
     }
-    if(isloaded){
+    if (isloaded) {
         Toastify({
             text: "diagnostics(raw) events loaded",
             duration: 8000
@@ -735,17 +747,17 @@ function addInputToURL() {
     updateUrl("groupByLength", '200');
     updateUrl("diagEvent", '');
 
-    if(instanceData1[host1] != undefined) {
-        if(instanceData1[host1] != undefined) {
+    if (instanceData1[host1] != undefined) {
+        if (instanceData1[host1] != undefined) {
             updateUrl("dataSource", instanceData1[host1]);//todo, support different data sources for each host
-        }else{
+        } else {
             updateUrl("dataSource", "other");
         }
     }
-    if(instanceData2[host2] != undefined) {
-        if(instanceData1[host1] != undefined) {
+    if (instanceData2[host2] != undefined) {
+        if (instanceData1[host1] != undefined) {
             updateUrl("dataSource", instanceData2[host2]);//todo, support different data sources for each host
-        }else{
+        } else {
             updateUrl("dataSource", "other");
         }
     }
@@ -756,13 +768,13 @@ function updateTenantDropdown1(start, end) {
     const tenantDatalist = $("#tenants1");
     tenantDatalist.empty();
     $("#tenant-input1").val("");
-    if(tenantData1 != undefined) {
+    if (tenantData1 != undefined) {
         for (let val in tenantData1) {
             if (tenant1 == val || tenant1 == "") {
                 tenant1 = val;
                 $("#tenant-input1").val(val);
                 tenantOptionHtml += "<option value=\"" + val + "\"></option>";
-            }else{
+            } else {
                 tenantOptionHtml += "<option value=\"" + val + "\"></option>";
             }
         }
@@ -781,13 +793,13 @@ function updateTenantDropdown2(start, end) {
     tenantDatalist.empty();
     $("#tenant-input2").val("");
 
-    if(tenantData2 != undefined) {
+    if (tenantData2 != undefined) {
         for (let val in tenantData2) {
             if (tenant2 == val || tenant2 == "") {
                 tenant2 = val;
                 $("#tenant-input2").val(val);
                 tenantOptionHtml += "<option value=\"" + val + "\"></option>";
-            }else{
+            } else {
                 tenantOptionHtml += "<option value=\"" + val + "\"></option>";
             }
         }
@@ -810,13 +822,13 @@ function populateHostsSelector1(start, end, tenant) {
     hostDatalist.empty();
     $("#host-input1").val("");
 
-    if(instanceData1 != undefined) {
+    if (instanceData1 != undefined) {
         for (let val in instanceData1) {
             if (host1 == val || host1 == "") {
                 host1 = val;
                 $("#host-input1").val(val);
                 hostOptionHtml += "<option value=\"" + val + "\" selected></option>";
-            }else{
+            } else {
                 hostOptionHtml += "<option value=\"" + val + "\"></option>";
             }
         }
@@ -825,7 +837,7 @@ function populateHostsSelector1(start, end, tenant) {
     const optGroupTemplate = '<optgroup label="">OPTIONS</optgroup>';
     hostDatalist.append(optGroupTemplate.replace("OPTIONS", hostOptionHtml));
     if (tenant != undefined && host1 != undefined) {
-        if(profile1 != undefined){
+        if (profile1 != undefined) {
             $("#bases1").val(profile1);
         }
         getMetaData1(start, end, tenant, host1);
@@ -841,13 +853,13 @@ function populateHostsSelector2(start, end, tenant) {
     hostDatalist.empty();
     $("#host-input2").val("");
 
-    if(instanceData2 != undefined) {
+    if (instanceData2 != undefined) {
         for (let val in instanceData2) {
             if (host2 == val || host2 == "") {
                 host2 = val;
                 $("#host-input2").val(val);
                 hostOptionHtml += "<option value=\"" + val + "\" selected></option>";
-            }else{
+            } else {
                 hostOptionHtml += "<option value=\"" + val + "\"></option>";
             }
         }
@@ -856,32 +868,32 @@ function populateHostsSelector2(start, end, tenant) {
     const optGroupTemplate = '<optgroup label="">OPTIONS</optgroup>';
     hostDatalist.append(optGroupTemplate.replace("OPTIONS", hostOptionHtml));
     if (tenant2 != undefined && host2 != undefined) {
-        if(profile2 != undefined){
+        if (profile2 != undefined) {
             $("#bases2").val(profile2);
         }
         getMetaData2(start, end, tenant, host2);
     }
 }
 
-function updateTypes1(tenant, host){
-    jfrevents1={};
-    jfrprofiles1={};
+function updateTypes1(tenant, host) {
+    jfrevents1 = {};
+    jfrprofiles1 = {};
     let profiles = {};
     try {
         for (var key in metaData1) {
 
-            if(metaData1[key].metadata["file-name"] != undefined && metaData1[key].metadata["file-name"].includes(".jfr.gz")){
+            if (metaData1[key].metadata["file-name"] != undefined && metaData1[key].metadata["file-name"].includes(".jfr.gz")) {
                 continue;
             }
 
-            if(metaData1[key].metadata["file-name"] != undefined && metaData1[key].metadata["file-name"] == "json-jstack"){
+            if (metaData1[key].metadata["file-name"] != undefined && metaData1[key].metadata["file-name"] == "json-jstack") {
                 jfrprofiles1[metaData1[key].metadata["file-name"]] = true;
                 continue;
             }
 
             let guid = metaData1[key].metadata["guid"];
             let name = metaData1[key].metadata["file-name"];
-            if(metaData1[key].metadata["source-file"] != undefined){
+            if (metaData1[key].metadata["source-file"] != undefined) {
                 name = metaData1[key].metadata["source-file"];
             }
 
@@ -889,17 +901,17 @@ function updateTypes1(tenant, host){
                 let val = metaData1[key].timestampMillis + " - " + metaData1[key].metadata.guid;
                 if (profile1 == val || profile1 == "All") {//update only for matching profile
                     if (name != undefined && name.includes("jfr_dump") && jfrprofiles1[name] == undefined) {//sfdc
-                            if (name.includes("dump_log")) {
-                                jfrevents1[name] = true;
-                            } else if(!name.includes("sql")){
-                                jfrprofiles1[name] = true;
-                            }
-                    }else if (metaData1[key].metadata.type == "jfrprofile" && jfrprofiles1[metaData1[key].metadata["file-name"]] == undefined) {
+                        if (name.includes("dump_log")) {
+                            jfrevents1[name] = true;
+                        } else if (!name.includes("sql")) {
+                            jfrprofiles1[name] = true;
+                        }
+                    } else if (metaData1[key].metadata.type == "jfrprofile" && jfrprofiles1[metaData1[key].metadata["file-name"]] == undefined) {
                         jfrprofiles1[metaData1[key].metadata["file-name"]] = true;
                     } else if (metaData1[key].metadata.type == "jfrevent" && jfrprofiles1[metaData1[key].metadata["file-name"]] == undefined) {
                         jfrevents1[metaData1[key].metadata["file-name"]] = true;
                     }
-                }else if(profile1 == "Jstacks"){
+                } else if (profile1 == "Jstacks") {
                     if (name != undefined && name.includes("jfr_dump") && jfrprofiles1[name] == undefined) {//sfdc
                         if (name.includes("dump_log")) {
                             jfrevents1[name] = true;
@@ -910,31 +922,31 @@ function updateTypes1(tenant, host){
                 }
             }
         }
-    }catch(e){
+    } catch (e) {
         console.log(e);
     }
-    console.log("jfrprofiles1:"+jfrprofiles1);
+    console.log("jfrprofiles1:" + jfrprofiles1);
 }
 
-function updateTypes2(tenant, host){
-    jfrevents2={};
-    jfrprofiles2={};
+function updateTypes2(tenant, host) {
+    jfrevents2 = {};
+    jfrprofiles2 = {};
     let profiles = {};
     try {
         for (var key in metaData2) {
 
-            if(metaData2[key].metadata["file-name"] != undefined && metaData2[key].metadata["file-name"].includes(".jfr.gz")){
+            if (metaData2[key].metadata["file-name"] != undefined && metaData2[key].metadata["file-name"].includes(".jfr.gz")) {
                 continue;
             }
 
-            if(metaData2[key].metadata["file-name"] != undefined && metaData2[key].metadata["file-name"] == "json-jstack"){
+            if (metaData2[key].metadata["file-name"] != undefined && metaData2[key].metadata["file-name"] == "json-jstack") {
                 jfrprofiles2[metaData2[key].metadata["file-name"]] = true;
                 continue;
             }
 
             let guid = metaData2[key].metadata["guid"];
             let name = metaData2[key].metadata["file-name"];
-            if(metaData2[key].metadata["source-file"] != undefined){
+            if (metaData2[key].metadata["source-file"] != undefined) {
                 name = metaData2[key].metadata["source-file"];
             }
 
@@ -944,15 +956,15 @@ function updateTypes2(tenant, host){
                     if (name != undefined && name.includes("jfr_dump") && jfrprofiles2[name] == undefined) {//sfdc
                         if (name.includes("dump_log")) {
                             jfrevents2[name] = true;
-                        } else if(!name.includes("sql")){
+                        } else if (!name.includes("sql")) {
                             jfrprofiles2[name] = true;
                         }
-                    }else if (metaData2[key].metadata.type == "jfrprofile" && jfrprofiles2[metaData2[key].metadata["file-name"]] == undefined) {
+                    } else if (metaData2[key].metadata.type == "jfrprofile" && jfrprofiles2[metaData2[key].metadata["file-name"]] == undefined) {
                         jfrprofiles2[metaData2[key].metadata["file-name"]] = true;
                     } else if (metaData2[key].metadata.type == "jfrevent" && jfrprofiles2[metaData2[key].metadata["file-name"]] == undefined) {
                         jfrevents2[metaData2[key].metadata["file-name"]] = true;
                     }
-                }else if(profile2 == "Jstacks"){
+                } else if (profile2 == "Jstacks") {
                     if (name != undefined && name.includes("jfr_dump") && jfrprofiles2[name] == undefined) {//sfdc
                         if (name.includes("dump_log")) {
                             jfrevents2[name] = true;
@@ -963,16 +975,16 @@ function updateTypes2(tenant, host){
                 }
             }
         }
-    }catch(e){
+    } catch (e) {
         console.log(e);
     }
-    console.log("jfrprofiles2:"+jfrprofiles2);
+    console.log("jfrprofiles2:" + jfrprofiles2);
 }
 
 
-let toPArse = {1:[],2:[]};
+let toPArse = {1: [], 2: []};
 
-function addToParse(count, tenant, host, timestamp, eventType, guid){
+function addToParse(count, tenant, host, timestamp, eventType, guid) {
     let endpoint = "/v1/profile/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
         "&metadata_query=" + encodeURIComponent("host=" + host) +
         "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
@@ -981,18 +993,18 @@ function addToParse(count, tenant, host, timestamp, eventType, guid){
     toPArse[count].push(endpoint);
 }
 
-function parsePendingJFRs1(tenant, host){
-    addInputNote(true,(toPArse[1].length + toPArse[2].length) +" full JFR(s) found, sequential download and parsing will take few minutes, please be patient ...")
+function parsePendingJFRs1(tenant, host) {
+    addInputNote(true, (toPArse[1].length + toPArse[2].length) + " full JFR(s) found, sequential download and parsing will take few minutes, please be patient ...")
     showSpinner();
     const requests = [];
-    for(let i=0; i< toPArse[1].length; i++){
+    for (let i = 0; i < toPArse[1].length; i++) {
         requests.push(callTreePerfGenieAjax(tenant, "GET", toPArse[1][i], result => result));
     }
     let queryResults = Promise.all(requests);
     queryResults.then(contextDatas => {
 
         for (var key in contextDatas) {
-            for(let k in contextDatas[key]) {
+            for (let k in contextDatas[key]) {
                 if (contextDatas[key].error == undefined || contextDatas[key].error == "") {
                     let meta = {"dimensions": {}, "metadata": {}, "timestampMillis": 0, "payload": ""};
                     meta.metadata["tenant-id"] = tenant;
@@ -1008,23 +1020,23 @@ function parsePendingJFRs1(tenant, host){
         }
 
         populateIDs1(tenant, host, false, true);
-        addInputNote(false,"");
+        addInputNote(false, "");
         hideSpinner();
     });
 }
 
-function parsePendingJFRs2(tenant, host){
-    addInputNote(true,(toPArse[1].length + toPArse[2].length) +" full JFR(s) found, sequential download and parsing will take few minutes, please be patient ...")
+function parsePendingJFRs2(tenant, host) {
+    addInputNote(true, (toPArse[1].length + toPArse[2].length) + " full JFR(s) found, sequential download and parsing will take few minutes, please be patient ...")
     showSpinner();
     const requests = [];
-    for(let i=0; i< toPArse[2].length; i++){
+    for (let i = 0; i < toPArse[2].length; i++) {
         requests.push(callTreePerfGenieAjax(tenant, "GET", toPArse[2][i], result => result));
     }
     let queryResults = Promise.all(requests);
     queryResults.then(contextDatas => {
 
         for (var key in contextDatas) {
-            for(let k in contextDatas[key]){
+            for (let k in contextDatas[key]) {
                 if (contextDatas[key].error == undefined || contextDatas[key].error == "") {
                     let meta = {"dimensions": {}, "metadata": {}, "timestampMillis": 0, "payload": ""};
                     meta.metadata["tenant-id"] = tenant;
@@ -1040,7 +1052,7 @@ function parsePendingJFRs2(tenant, host){
         }
 
         populateIDs2(tenant, host, false, true);
-        addInputNote(false,"");
+        addInputNote(false, "");
         hideSpinner();
     });
 }
@@ -1049,7 +1061,7 @@ function populateIDs1(tenant, host, clearInput, skipPArsing) {
     if (tenant === undefined || tenant.length === 0 || host === undefined || host.length === 0) {
         return;
     }
-    if(skipPArsing == undefined){
+    if (skipPArsing == undefined) {
         skipPArsing = false;
     }
     let profiles = {};
@@ -1061,8 +1073,8 @@ function populateIDs1(tenant, host, clearInput, skipPArsing) {
     let jstackFound = false;
 
     let needToParse = false;
-    toPArse[1]=[];
-    if(!skipPArsing) {
+    toPArse[1] = [];
+    if (!skipPArsing) {
         for (var key in metaData1) {
 
             let guid = metaData1[key].metadata["guid"];
@@ -1075,7 +1087,7 @@ function populateIDs1(tenant, host, clearInput, skipPArsing) {
             }
         }
     }
-    if(needToParse){//populateIDs1 after parsing
+    if (needToParse) {//populateIDs1 after parsing
         parsePendingJFRs1(tenant, host);
         return;
     }
@@ -1085,11 +1097,11 @@ function populateIDs1(tenant, host, clearInput, skipPArsing) {
         let name = metaData1[key].metadata["name"];
         let filename = metaData1[key].metadata["file-name"];
 
-        if(filename!= undefined && filename.includes(".jfr.gz")){
+        if (filename != undefined && filename.includes(".jfr.gz")) {
             continue;
         }
 
-        if(metaData1[key].metadata["source-file"] != undefined){
+        if (metaData1[key].metadata["source-file"] != undefined) {
             filename = metaData1[key].metadata["source-file"];
         }
 
@@ -1152,7 +1164,7 @@ function populateIDs2(tenant, host, clearInput, skipPArsing) {
     if (tenant === undefined || tenant.length === 0 || host === undefined || host.length === 0) {
         return;
     }
-    if(skipPArsing == undefined){
+    if (skipPArsing == undefined) {
         skipPArsing = false;
     }
     let profiles = {};
@@ -1164,8 +1176,8 @@ function populateIDs2(tenant, host, clearInput, skipPArsing) {
     let jstackFound = false;
 
     let needToParse = false;
-    toPArse[2]=[];
-    if(!skipPArsing) {
+    toPArse[2] = [];
+    if (!skipPArsing) {
         for (var key in metaData2) {
 
             let guid = metaData2[key].metadata["guid"];
@@ -1178,7 +1190,7 @@ function populateIDs2(tenant, host, clearInput, skipPArsing) {
             }
         }
     }
-    if(needToParse){//populateIDs1 after parsing
+    if (needToParse) {//populateIDs1 after parsing
         parsePendingJFRs2(tenant, host);
         return;
     }
@@ -1187,7 +1199,7 @@ function populateIDs2(tenant, host, clearInput, skipPArsing) {
         let guid = metaData2[key].metadata["guid"];
         let name = metaData2[key].metadata["name"];
         let filename = metaData2[key].metadata["file-name"];
-        if(metaData2[key].metadata["source-file"] != undefined){
+        if (metaData2[key].metadata["source-file"] != undefined) {
             filename = metaData2[key].metadata["source-file"];
         }
 

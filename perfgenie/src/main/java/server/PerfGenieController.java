@@ -30,7 +30,13 @@ public class PerfGenieController {
         this.service = service;
     }
 
-    //@CrossOrigin
+    @CrossOrigin
+    @GetMapping(path = {"/v1/demo", "/v1/demo"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String demo()  {
+        return "[1,2,3]";
+    }
+
+    @CrossOrigin
     @GetMapping(path = {"/v1/tenants", "/v1/tenants/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String tenants(@PathVariable(required = false, name = "tenant") String tenant,
                        @RequestParam(required = false, name = "start") final long start,
@@ -42,7 +48,7 @@ public class PerfGenieController {
         return service.getGenieTenants(start, end, queryMap, dimMap);
     }
 
-    //@CrossOrigin
+    @CrossOrigin
     @GetMapping(path = {"/v1/instances", "/v1/instances/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String instances(@PathVariable(required = false, name = "tenant") String tenant,
                           @RequestParam(required = false, name = "start") final long start,
@@ -53,7 +59,7 @@ public class PerfGenieController {
         return service.getGenieInstances(start, end, tenant, queryMap);
     }
 
-    //@CrossOrigin
+    @CrossOrigin
     @GetMapping(path = {"/v1/meta", "/v1/meta/{tenant}/{instance}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String meta(@PathVariable(required = false, name = "tenant") String tenant,
                        @PathVariable(required = false, name = "instance") final String instance,
@@ -66,7 +72,7 @@ public class PerfGenieController {
         return service.getGenieMeta(start, end, queryMap, dimMap, tenant, instance);//, host);
     }
 
-    //@CrossOrigin
+    @CrossOrigin
     @GetMapping(path = {"/v1/jstacks", "/v1/jstacks/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String jstacks(@PathVariable(required = false, name = "tenant") String tenant,
                          @RequestParam(required = false, name = "start") final long start,

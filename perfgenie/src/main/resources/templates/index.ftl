@@ -14,7 +14,7 @@
     <title>Title</title>
 
     <#--    https://momentjs.com-->
-    <script src="/plugins/moment.min.js"></script>
+    <script type="text/javascript" src="/plugins/moment.min.js"></script>
 
     <#--    https://code.jquery.com/jquery-3.6.1.min.js-->
     <script src="/plugins/jquery-3.6.1.min.js"></script>

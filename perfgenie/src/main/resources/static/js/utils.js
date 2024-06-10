@@ -6,7 +6,7 @@
  */
 
 function getMetaDataURL(start,end,tenant='dev', host, source){
-    let URL = "v1/meta/"+tenant+"/"+host+
+    let URL = "http://localhost:8080/v1/meta/"+tenant+"/"+host+
         "/?start=" + start +
         "&end=" + end;
     if(source == "genie"){
@@ -16,7 +16,7 @@ function getMetaDataURL(start,end,tenant='dev', host, source){
 }
 
 function getTenantDataURL(start,end,tenant='dev'){
-    let URL = "v1/tenants/"+tenant+
+    let URL = "http://localhost:8080/v1/tenants/"+tenant+
         "/?start=" + start +
         "&end=" + end;
     return URL;
@@ -24,7 +24,7 @@ function getTenantDataURL(start,end,tenant='dev'){
 
 
 function getInstanceDataURL(start,end,tenant='dev', source){
-    let URL = "v1/instances/"+tenant+
+    let URL = "http://localhost:8080/v1/instances/"+tenant+
         "/?start=" + start +
         "&end=" + end;
     if(source == "genie"){
@@ -50,7 +50,7 @@ function toastr_error(str){
 }
 
 function getEventURL(tenant,start,end,host){
-    const URLUnprocessedIDsOld = "v1/events/" +  tenant +
+    const URLUnprocessedIDsOld = "http://localhost:8080/v1/events/" +  tenant +
         "?start=" + start +
         "&end=" + end +
         "&metadata_query=" + encodeURIComponent("host=" + host) +
