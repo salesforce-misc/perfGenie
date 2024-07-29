@@ -440,7 +440,20 @@ public class EventHandler {
             }
         } catch (Exception e) {
             //first line must be a date
-            return false;
+            try {
+                //zing [Mon Jul 01 10:32:12 PM UTC 2024]
+                String zingDate = jstack.substring(jstack.indexOf("[")+1, jstack.indexOf("]"));
+                System.out.println("Using Zing format timestamp " + zingDate);
+                SimpleDateFormat df = new SimpleDateFormat("E MMM dd HH:mm:ss aa zzz yyyy");
+                Date date = df.parse(zingDate);
+                //take jstack timestamp if event time is too off ( more than 1 min)
+                long diff = Math.abs(time / 1000000 - date.getTime());
+                if (diff > 6000) {
+                    time = date.getTime() * 1000000;
+                }
+            }catch (Exception ex){
+                return false;
+            }
         }
 
         if (startEpoch == 0L || time < startEpoch) {
