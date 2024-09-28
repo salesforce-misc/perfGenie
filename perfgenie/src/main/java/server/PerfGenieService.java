@@ -43,7 +43,19 @@ public class PerfGenieService implements IPerfGenieService {
     //cronjob to parse jfrs placed in a directory
     @Scheduled(cron = "*/10 * * ? * *")
     private void cronJob() throws IOException {
+        createDirectoryIfNotExists(config.getJfrdir());
         runJob();
+    }
+    public static void createDirectoryIfNotExists(String directoryPath) {
+        Path path = Paths.get(directoryPath);
+        if (Files.notExists(path)) {
+            try {
+                Files.createDirectories(path);
+                System.out.println("Directory created: " + directoryPath);
+            } catch (IOException e) {
+                System.err.println("Failed to create directory: " + e.getMessage());
+            }
+        }
     }
 
     public void runJob() throws IOException{
@@ -186,11 +198,19 @@ public class PerfGenieService implements IPerfGenieService {
                     queryMap.put("instance-id", host);
                     queryMap.put("host", host);
                     queryMap.put("source-file", file.getName());
+
                     queryMap.put("file-name", "json-jstack");
                     Object profile = handler.getProfileTree("Jstack");
                     queryMap.put("type", "json-jstack");
                     queryMap.put("name", "jstack");
                     eventStore.addGenieEvent(timestamp, queryMap, dimMap, Utils.toJson(profile),config.getTenant());
+
+                    Object logContext = handler.getLogContext();
+                    queryMap.put("file-name", "monitor-context");//
+                    queryMap.put("type", "monitorevent");
+                    queryMap.put("name", "monitor");
+
+                    eventStore.addGenieEvent(timestamp, queryMap, dimMap, Utils.toJson(logContext), config.getTenant());
                 } catch (Exception e) {
                     System.out.println(e);
                     logger.warn("Exception parsing file 4" + file.getPath() + ":" + e.getStackTrace());
@@ -201,7 +221,6 @@ public class PerfGenieService implements IPerfGenieService {
             }
         }
     }
-
     @Autowired
     public PerfGenieService(final EventStore eventStore, final CustomJfrParser parser, final Config config) throws IOException {
         this.eventStore = eventStore;
@@ -350,6 +369,7 @@ public class PerfGenieService implements IPerfGenieService {
             final EventHandler aggregator = new EventHandler();
             List<Long> keys = new ArrayList<Long>(otherevents.keySet());
             Collections.sort(keys);
+            Long prevKey = -1L;
             for (int i=0; i< keys.size(); i++) {
                 if(queryMap.get("name").contains("=top")) {
                     aggregator.aggregateTop(otherevents.get(keys.get(i)),keys.get(i));
@@ -357,6 +377,12 @@ public class PerfGenieService implements IPerfGenieService {
                     aggregator.aggregatePS(otherevents.get(keys.get(i)),keys.get(i));
                 }else if(queryMap.get("name").contains("=pidstat")){
                     aggregator.aggregatePIDSTAT(otherevents.get(keys.get(i)),keys.get(i));
+                }else if(queryMap.get("name").contains("=monitor")){
+                    if(keys.get(i) == prevKey){
+                        continue;//avoid processing dup events
+                    }
+                    prevKey = keys.get(i);
+                    aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(otherevents.get(keys.get(i)), EventHandler.ContextResponse.class));
                 }
             }
             final EventHandler.ContextResponse res = (EventHandler.ContextResponse) aggregator.getLogContext();

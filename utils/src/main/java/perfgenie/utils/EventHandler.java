@@ -30,7 +30,7 @@ public class EventHandler {
     private static final String ROOT = "root";
     private static final int WRAP_MESSAGE_HASH = "wrapped.single stack in profile".hashCode();
     private static final int FILTER_MESSAGE_HASH = "below threshold ...".hashCode();
-    private static final String patternString = "\"(.*)\" #(\\w+) .*\\n|.*java.lang.Thread.State: (\\w+).*\\n|at (.*)\\(.*\\n";
+    private static final String patternString = "at (.*)\\(.*\\n|.*- waiting to lock <(.*)>\\s+\\(a (.*)\\)\\n|.*- locked <(.*)>\\s+\\(a (.*)\\)\\n|\"(.*)\" #(\\w+) .*\\n|.*java.lang.Thread.State: (\\w+).*\\n|(JNI global references:).*"; //"\"(.*)\" #(\\w+) .*\\n|.*java.lang.Thread.State: (\\w+).*\\n|at (.*)\\(.*\\n";
     private static final Pattern pattern = Pattern.compile(patternString);
 
     private final Map<Integer, String> frames = new ConcurrentHashMap<>();
@@ -452,9 +452,25 @@ public class EventHandler {
                     time = date.getTime() * 1000000;
                 }
             }catch (Exception ex){
-                return false;
+                try {
+                    //zing [Mon Jul 01 10:32:12 PM UTC 2024]
+                    String zingDate = jstack.substring(jstack.indexOf("[")+1, jstack.indexOf("]"));
+                    System.out.println("Using Zing format timestamp " + zingDate);
+                    SimpleDateFormat df = new SimpleDateFormat("E MMM dd HH:mm:ss zzz yyyy");
+                    Date date = df.parse(zingDate);
+                    //take jstack timestamp if event time is too off ( more than 1 min)
+                    long diff = Math.abs(time / 1000000 - date.getTime());
+                    if (diff > 6000) {
+                        time = date.getTime() * 1000000;
+                    }
+                }catch (Exception exx){
+                    return false;
+                }
             }
         }
+
+
+
 
         if (startEpoch == 0L || time < startEpoch) {
             setStartEpoch(time);
@@ -470,12 +486,23 @@ public class EventHandler {
         int tid = 0;
         final StringBuilder normalized = new StringBuilder();
 
+        //"at (.*)\\(.*\\n|.*- waiting to lock \<(.*))\>(.*)\\n|.*- locked \<(.*))\>(.*)\\n|\"(.*)\" #(\\w+) .*\\n|.*java.lang.Thread.State: (\\w+).*\\n";
+        // "Thread-1" #7661 prio=5 os_prio=0 tid=0x62001de00000 nid=0x161e  [ JVM thread_state=_thread_in_vm, locked by VM (w/poll advisory bit) acquiring VM lock 'java.util.concurrent.ConcurrentHashMap', polling bits: safep ]
+        //   java.lang.Thread.State: BLOCKED (on object monitor)
+        //- waiting to lock <0x0000080108a7c220> (a java.util.concurrent.ConcurrentHashMap)
+        //- locked <0x00000800cfa1f330> (a java.lang.Class)
+        // at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:216)
+
+        List<MonitorContext> waits = new ArrayList<>();
+        List<MonitorContext> locks = new ArrayList<>();
+
         while (matcher.find()) {
-            if (tid != -1 && matcher.group(4) != null) {
+            //if (tid != -1 && matcher.group(4) != null) {
+            if (tid != -1 && matcher.group(1) != null) {
                 normalized.setLength(0);
-                Utils.normalizeFrame(matcher.group(4), normalized, 0);
+                Utils.normalizeFrame(matcher.group(1), normalized, 0);
                 stack.add(normalized.toString());
-            } else if (matcher.group(3) != null) {
+            } else if (matcher.group(8) != null) {
                 if (stack.size() != 0 && tid != -1) {
                     sampleCount++;
                     //processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
@@ -484,8 +511,8 @@ public class EventHandler {
                     tname = "";
                     stack.clear();
                 }
-                tstate = getThreadState(matcher.group(3)).ordinal();
-            } else if (matcher.group(1) != null) {
+                tstate = getThreadState(matcher.group(8)).ordinal();
+            } else if (matcher.group(6) != null) {
                 //process previous stack
                 if (stack.size() != 0) {
                     sampleCount++;
@@ -496,8 +523,16 @@ public class EventHandler {
                     tname = "";
                     tstate = -1;
                 }
-                tid = Integer.parseInt(matcher.group(2).toUpperCase());
-                tname = matcher.group(1);
+                tid = Integer.parseInt(matcher.group(7).toUpperCase());
+                tname = matcher.group(6);
+            } else if(matcher.group(2) != null){
+                waits.add(new MonitorContext(tid,tname,matcher.group(2),matcher.group(3),stack.size()));
+                //System.out.println(time + "wait :" + tid + ":" + tname + ":" + matcher.group(2) + ":" + matcher.group(3));
+            }else if(matcher.group(4) != null){
+                locks.add(new MonitorContext(tid,tname,matcher.group(4),matcher.group(5),stack.size()));
+                //System.out.println(time + "lock :" + tid + ":" + tname + ":" + matcher.group(4) + ":" + matcher.group(5) );
+            }else if(matcher.group(9) != null){
+                break;
             }
         }
         //handle left over stack
@@ -505,10 +540,102 @@ public class EventHandler {
             //processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
             processEvent(tid, time, tstate + ";" + tname, stack, "Jstack");
         }
+        final int startIndex = jstack.lastIndexOf("Java stack information for the threads listed above");
+        final int endIndex = jstack.lastIndexOf("Found");
+
+        HashSet<String> deadlocks =  new HashSet<>();
+        if (!(startIndex == -1 || startIndex == jstack.length() || endIndex == -1 || endIndex == jstack.length())) {
+            final String deadlockInfoString = jstack.substring(startIndex, endIndex);
+            final String patternString1 = ".*- locked <(.*)>(.*)\\n";
+            final Pattern pattern1 = Pattern.compile(patternString1);
+            final Matcher matcher1 = pattern1.matcher(deadlockInfoString);
+            while(matcher1.find()){
+                if(matcher1.group(1) != null){
+                    deadlocks.add(matcher1.group(1));
+                }
+            }
+        }
+
         if (sampleCount > 0) {
+            List<String> header = new ArrayList<>();
+            header.add("timestamp:timestamp");
+            header.add("tid:text");
+            header.add("threadname:text");
+            header.add("lock:text");
+            header.add("Object:text");
+            header.add("waittidspos:text");
+            header.add("waitcount:number");
+            header.add("lockcount:number");
+            header.add("deadlock:text");
+            initializeEvent("monitor-context");
+            addHeader("monitor-context", header);
+
+            for(int i = 0; i<locks.size();i++){
+                String lock = locks.get(i).getLock();
+                List<Integer> l = new ArrayList<>();
+                l.add(locks.get(i).getPos());
+                for(int j=0; j<waits.size();j++){
+                    if(lock.equals(waits.get(j).getLock())){
+                        l.add(waits.get(j).getTid());
+                        l.add(waits.get(j).getPos());
+                    }
+                }
+                if(l.size() > 1){//monitor contention
+                    List<Object> record = new ArrayList<>();
+                    record.add(time/1000000);
+                    record.add(locks.get(i).getTid());
+                    record.add(locks.get(i).getTname());
+                    record.add(lock);
+                    record.add(locks.get(i).getCls());
+                    record.add(l.toString());
+                    record.add((l.size()-1)/2);
+                    record.add(1);
+                    if(deadlocks.contains(lock)){
+                        record.add("true");
+                    }else{
+                        record.add("false");
+                    }
+                    processContext(record, locks.get(i).getTid(), "monitor-context");
+                }
+            }
             return true;
         } else {
             return false;
+        }
+    }
+
+    class MonitorContext{
+        public int getTid() {
+            return tid;
+        }
+
+        public String getTname() {
+            return tname;
+        }
+
+        public String getLock() {
+            return lock;
+        }
+
+        public String getCls() {
+            return cls;
+        }
+
+        public int getPos() {
+            return pos;
+        }
+
+        int tid;
+        String tname;
+        String lock;
+        String cls;
+        int pos;
+        MonitorContext(int tid, String tname, String lock, String cls, int pos){
+            this.cls=cls;
+            this.lock=lock;
+            this.tid=tid;
+            this.tname=tname;
+            this.pos=pos;
         }
     }
 
@@ -1189,7 +1316,6 @@ public class EventHandler {
         }
         System.out.println("aggregatePS");
     }
-
     public void aggregatePIDSTAT(final String pidstatOutput, final Long timestamp) throws IOException {
         // Split the input into lines
         String[] lines = pidstatOutput.split("\n");

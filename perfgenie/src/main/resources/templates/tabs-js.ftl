@@ -767,6 +767,10 @@
                     value: customevent,
                     text: customevent
                 }));
+                //if no options exist then reload the table to show this other event. URL sharing may not work when there are many other events
+                if($('#other-event-input')[0].children.length == 1){
+                    genRequestTable();
+                }
                 Toastify({
                     text: customevent + " data loaded",
                     duration: 8000
@@ -894,11 +898,15 @@
     }
 
     function getDiagEventUrl(timestamp, tenant, host, guid, name){
-        return "/v1/event/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
+        let endpoint = "/v1/event/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
             "&metadata_query=" + encodeURIComponent("host=" + host) +
             "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
             "&metadata_query=" + encodeURIComponent("guid=" + guid) +
             "&metadata_query=" + encodeURIComponent("name=" + name);
+        if(dataSource.includes("genie")){
+            endpoint += "&metadata_query=" + encodeURIComponent("source=" + dataSource);
+        }
+        return endpoint;
     }
 
     function getEventUrl(timeRange, tenant, host, customEvent){
@@ -909,6 +917,9 @@
             "&metadata_query=" + encodeURIComponent("host=" + host) +
             "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
             "&metadata_query=" + encodeURIComponent("name=" + customEvent);
+        if(dataSource.includes("genie")){
+            endpoint += "&metadata_query=" + encodeURIComponent("source=" + dataSource);
+        }
         return endpoint;
     }
 

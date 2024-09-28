@@ -32,7 +32,7 @@ let otherEvents1 = {};
 let otherEvents2 = {};
 let otherEventsFetched = {};
 const urlParams = new URLSearchParams(window.location.search);
-let otherEventsSupported = {"top":true, "ps":true, "pidstat":true};
+let otherEventsSupported = {"top":true, "ps":true, "pidstat":true, "monitor":true,};
 let jstackcolors = ["#29b193","#ee5869","#f6ab60","#377bb5"];
 let jstackcolorsmap ={"RUNNABLE":9,"BLOCKED":10,"WAITING":11,"TIMED_WAITING":12};
 let jstackidcolorsmap ={9:"RUNNABLE",10:"BLOCKED",11:"WAITING",12:"TIMED_WAITING"};
@@ -448,7 +448,7 @@ function loadDiagData1(){
             if(metaData1[key].metadata.name === "jfr"){
                 continue;
             }
-            if(!metaData1[key].metadata.name.includes("json") && (metaData1[key].metadata["file-name"] == undefined || !metaData1[key].metadata["file-name"].includes("json")) ) {
+            if(!metaData1[key].metadata.name.includes("json") && (metaData1[key].metadata["file-name"] == undefined || (!metaData1[key].metadata["file-name"].includes("json") && !metaData1[key].metadata["file-name"].includes("monitor"))) ) {
                 let diagnostics = []
                 diagnostics.push(metaData1[key].timestampMillis);
                 diagnostics.push(metaData1[key].metadata.name);
@@ -558,7 +558,7 @@ function loadDiagData2(){
             if(metaData2[key].metadata.name === "jfr"){
                 continue;
             }
-            if(!metaData2[key].metadata.name.includes("json") && (metaData2[key].metadata["file-name"] == undefined || !metaData2[key].metadata["file-name"].includes("json")) ) {
+            if(!metaData2[key].metadata.name.includes("json") && (metaData2[key].metadata["file-name"] == undefined || (!metaData2[key].metadata["file-name"].includes("json") && !metaData2[key].metadata["file-name"].includes("monitor"))) ) {
                 let diagnostics = []
                 diagnostics.push(metaData2[key].timestampMillis);
                 diagnostics.push(metaData2[key].metadata.name);

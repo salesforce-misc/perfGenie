@@ -2889,6 +2889,7 @@
         let showLables = false;
         let enableOnClick = false;
         let subChart = true;
+        let height = 300;
 
         if (customEvent != otherEvent) {
             if (otherEvent === "diagnostics(raw)") {
@@ -2901,8 +2902,16 @@
             }
         }
 
-
         for(let i=0; i<pinCount; i++) {
+            let maxLegCount = charts['pinid' + i].internal.data.targets.length + pinxsCount;
+            if(maxLegCount > 40){
+                maxLegCount = 40;
+            }
+            if(maxLegCount*25 > 375 && customEvent !== "diagnostics(raw)" ){
+                height=maxLegCount*25;
+            }
+            charts['pinid' + i].resize({ 'height': height});
+
             if ($('#pinid' + i).length) {
                 if(enableOnClick) {
                     charts['pinid' + i].load({
@@ -2948,6 +2957,9 @@
             showLables = false;
         }
 
+        if(pinxsCount*25 > 375 && customEvent !== "diagnostics(raw)" ){
+            height=pinxsCount*25;
+        }
 
         pinCount++;
         $('#statetablewrapper').append("<div id='"+closepin+"'style='border-style: dotted hidden hidden hidden;' class='statetable col-lg-12'><div style='float:right;cursor: pointer;' onclick='closePin(\""+closepin+"\")'>Close</div><div>Pinned chart Event:"+otherEvent+", groupBy:"+groupBy+", Len:"+groupByLength+", Match:"+groupByMatch+", sortBy:"+sortBy+", Top:"+seriesCount+"</div><div id='"+pinid+"' class='col-lg-12' style='padding: 0 !important;'></div></div>");
@@ -3145,6 +3157,7 @@
 
     let pincolumns = [];//use this for pinning
     let pinxs = {};
+    let pinxsCount = 0;
     let pincolor = {};
     let charts = {};
 
@@ -3180,6 +3193,7 @@
         //}
         pinxs = {};//clear off while drawing new, this will be the source for next pinning
         pincolumns = [];//clear off while drawing new, this will be the source for next pinning
+        pinxsCount = 0;
         let countMax = seriesCount;
         let curI = 0;
         pincolor = {};//clear off while drawing new, this will be the source for next pinning
@@ -3199,7 +3213,8 @@
             }
             let legend = (groupByCountSum == 0 ? 0 :(100 * value1 / groupByCountSum).toFixed(2)) + "% " + type + ":"+sortBy;
 
-            curI++
+            curI++;
+            pinxsCount++;
             pincolor[type] = tmpColorMap.get(type);
             let series = [];
             let series_x = [];
@@ -3259,7 +3274,9 @@
         if(totalTimeSeriesPoints > 5) {
             showLables = false;
         }
-
+        if(curI*25 > 375 && customEvent !== "diagnostics(raw)" ){
+            height=curI*25;
+        }
         pinYlabel = sortBy;
         if(enableOnClick){
             var chart = c3.generate({
@@ -3400,6 +3417,7 @@
         //}
         pinxs = {};//clear off while drawing new, this will be the source for next pinning
         pincolumns = [];//clear off while drawing new, this will be the source for next pinning
+        pinxsCount = 0;
         let countMax = seriesCount;
         let curI = 0;
         pincolor = {};//clear off while drawing new, this will be the source for next pinning
@@ -3424,7 +3442,8 @@
                 }
                 let legend = (groupByCountSum[contextDataRecordNumber] == 0 ? 0 : (100 * value1 / groupByCountSum[contextDataRecordNumber]).toFixed(2)) + "% " + type + ":" + sortBy;
 
-                curI++
+                curI++;
+                pinxsCount++;
                 pincolor[type] = tmpColorMap.get(type);
                 let series = [];
                 let series_x = [];
@@ -3481,6 +3500,10 @@
                 showPoint = false;
                 showLables = false;
             }
+        }
+
+        if(curI*25 > 375 && customEvent !== "diagnostics(raw)" ){
+            height=curI*25;
         }
 
         pinYlabel = sortBy;

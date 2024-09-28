@@ -317,6 +317,7 @@ public class EventStore {
                                     }
                                 }
                             }
+                            profiles.put("Jstacks",start);
                             return Utils.toJson(profiles);
                         }else {
                             return Utils.toJson(new EventHandler.JfrParserResponse(null, "parsed json not found", queryMap, null));
