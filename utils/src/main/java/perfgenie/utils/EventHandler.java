@@ -567,15 +567,15 @@ public class EventHandler {
         if (sampleCount > 0|| !includeProfileEvents) {
             List<String> header = new ArrayList<>();
             header.add("timestamp:timestamp");
-            header.add("tid:text");
-            header.add("threadname:text");
+            header.add("tidGotLock:text");
+            header.add("threadnameGotLock:text");
             header.add("lock:text");
             header.add("Object:text");
             header.add("frameGotLock:text");
             header.add("waittidspos:text");
             header.add("waitcount:number");
             header.add("lockcount:number");
-            header.add("deadlock:text");
+            header.add("isDeadlock:text");
             initializeEvent("monitor-context");
             addHeader("monitor-context", header);
 
