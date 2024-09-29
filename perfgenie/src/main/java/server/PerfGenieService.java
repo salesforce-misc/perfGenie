@@ -363,10 +363,26 @@ public class PerfGenieService implements IPerfGenieService {
     public String getOtherEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) {
         try {
             Map<Long,String> otherevents = eventStore.getOtherPayLoads(tenant, start, end, queryMap, dimMap, true);
+            boolean parseJstacks = false;
             if (otherevents == null || otherevents.size() < 1) {
-                return Utils.toJson(new EventHandler.JfrParserResponse(null, "no events found for the given time range", queryMap, null));
+                if(queryMap.get("name").contains("=monitor")){
+                    //try to get monitor context from jstacks
+                    parseJstacks = true;
+                    queryMap.put("name","=jstack");
+                    otherevents = eventStore.getOtherPayLoads(tenant, start, end, queryMap, dimMap, true);
+                    if (otherevents == null || otherevents.size() < 1) {
+                        return Utils.toJson(new EventHandler.JfrParserResponse(null, "no monitor events found for the given time range", queryMap, null));
+                    }
+                    queryMap.put("name","=monitor");//reset
+                }else {
+                    return Utils.toJson(new EventHandler.JfrParserResponse(null, "no events found for the given time range", queryMap, null));
+                }
             }
             final EventHandler aggregator = new EventHandler();
+            if(parseJstacks){
+                aggregator.initializeProfile("Jstack");
+                aggregator.initializePid("Jstack");
+            }
             List<Long> keys = new ArrayList<Long>(otherevents.keySet());
             Collections.sort(keys);
             Long prevKey = -1L;
@@ -382,7 +398,11 @@ public class PerfGenieService implements IPerfGenieService {
                         continue;//avoid processing dup events
                     }
                     prevKey = keys.get(i);
-                    aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(otherevents.get(keys.get(i)), EventHandler.ContextResponse.class));
+                    if(parseJstacks){
+                        aggregator.processJstackEvent(keys.get(i),otherevents.get(keys.get(i)),false);
+                    }else {
+                        aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(otherevents.get(keys.get(i)), EventHandler.ContextResponse.class));
+                    }
                 }
             }
             final EventHandler.ContextResponse res = (EventHandler.ContextResponse) aggregator.getLogContext();

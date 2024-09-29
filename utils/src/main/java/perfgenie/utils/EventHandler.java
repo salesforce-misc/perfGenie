@@ -430,6 +430,9 @@ public class EventHandler {
     }
 
     public boolean processJstackEvent(long time, final String jstack) {
+        return processJstackEvent(time,jstack,true);
+    }
+    public boolean processJstackEvent(long time, final String jstack, final boolean includeProfileEvents) {
         try {
             SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss zzz");
             Date date = df.parse(jstack.substring(0, jstack.indexOf("\n")) + " UTC");
@@ -469,9 +472,6 @@ public class EventHandler {
             }
         }
 
-
-
-
         if (startEpoch == 0L || time < startEpoch) {
             setStartEpoch(time);
         }
@@ -499,14 +499,18 @@ public class EventHandler {
         while (matcher.find()) {
             //if (tid != -1 && matcher.group(4) != null) {
             if (tid != -1 && matcher.group(1) != null) {
-                normalized.setLength(0);
-                Utils.normalizeFrame(matcher.group(1), normalized, 0);
-                stack.add(normalized.toString());
+                if(includeProfileEvents) {
+                    normalized.setLength(0);
+                    Utils.normalizeFrame(matcher.group(1), normalized, 0);
+                    stack.add(normalized.toString());
+                }
             } else if (matcher.group(8) != null) {
                 if (stack.size() != 0 && tid != -1) {
                     sampleCount++;
                     //processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
-                    processEvent(tid, time, tstate + ";" + tname, stack, "Jstack");
+                    if(includeProfileEvents) {
+                        processEvent(tid, time, tstate + ";" + tname, stack, "Jstack");
+                    }
                     tid = -1;
                     tname = "";
                     stack.clear();
@@ -516,8 +520,10 @@ public class EventHandler {
                 //process previous stack
                 if (stack.size() != 0) {
                     sampleCount++;
-                    //processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
-                    processEvent(tid, time , tstate + ";" + tname, stack, "Jstack");
+                    if(includeProfileEvents) {
+                        //processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
+                        processEvent(tid, time, tstate + ";" + tname, stack, "Jstack");
+                    }
                     stack.clear();
                     tid = -1;
                     tname = "";
@@ -538,7 +544,9 @@ public class EventHandler {
         //handle left over stack
         if (stack.size() != 0 && tid != -1) {
             //processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
-            processEvent(tid, time, tstate + ";" + tname, stack, "Jstack");
+            if(includeProfileEvents) {
+                processEvent(tid, time, tstate + ";" + tname, stack, "Jstack");
+            }
         }
         final int startIndex = jstack.lastIndexOf("Java stack information for the threads listed above");
         final int endIndex = jstack.lastIndexOf("Found");
@@ -556,7 +564,7 @@ public class EventHandler {
             }
         }
 
-        if (sampleCount > 0) {
+        if (sampleCount > 0|| !includeProfileEvents) {
             List<String> header = new ArrayList<>();
             header.add("timestamp:timestamp");
             header.add("tid:text");

@@ -1095,6 +1095,11 @@ function populateIDs1(tenant, host, clearInput, skipPArsing) {
 
         if ((tenant === metaData1[key].metadata["tenant-id"]) && (host === metaData1[key].metadata.host || host === metaData1[key].metadata["instance-id"])) {
 
+            if(metaData1[key].metadata["name"] != undefined && metaData1[key].metadata["name"] == "jstack"){
+                if (otherEventsSupported["monitor"]) {
+                    otherEvents1["monitor"] = true;
+                }
+            }
             if (metaData1[key].metadata["file-name"] != undefined && metaData1[key].metadata["file-name"] == "json-jstack") {
                 jstackFound = true;
                 continue;
@@ -1192,7 +1197,11 @@ function populateIDs2(tenant, host, clearInput, skipPArsing) {
         }
 
         if ((tenant === metaData2[key].metadata["tenant-id"]) && (host === metaData2[key].metadata.host || host === metaData2[key].metadata["instance-id"])) {
-
+            if(metaData1[key].metadata["name"] != undefined && metaData1[key].metadata["name"] == "jstack"){
+                if (otherEventsSupported["monitor"]) {
+                    otherEvents1["monitor"] = true;
+                }
+            }
             if (metaData2[key].metadata["file-name"] != undefined && metaData2[key].metadata["file-name"] == "json-jstack") {
                 jstackFound = true;
                 continue;
