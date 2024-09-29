@@ -499,11 +499,11 @@ public class EventHandler {
         while (matcher.find()) {
             //if (tid != -1 && matcher.group(4) != null) {
             if (tid != -1 && matcher.group(1) != null) {
-                if(includeProfileEvents) {
+                //if(includeProfileEvents) {
                     normalized.setLength(0);
                     Utils.normalizeFrame(matcher.group(1), normalized, 0);
                     stack.add(normalized.toString());
-                }
+                //}
             } else if (matcher.group(8) != null) {
                 if (stack.size() != 0 && tid != -1) {
                     sampleCount++;
@@ -532,10 +532,10 @@ public class EventHandler {
                 tid = Integer.parseInt(matcher.group(7).toUpperCase());
                 tname = matcher.group(6);
             } else if(matcher.group(2) != null){
-                waits.add(new MonitorContext(tid,tname,matcher.group(2),matcher.group(3),stack.size()));
+                waits.add(new MonitorContext(tid,tname,matcher.group(2),matcher.group(3),stack.size(),stack.get(stack.size()-1)));
                 //System.out.println(time + "wait :" + tid + ":" + tname + ":" + matcher.group(2) + ":" + matcher.group(3));
             }else if(matcher.group(4) != null){
-                locks.add(new MonitorContext(tid,tname,matcher.group(4),matcher.group(5),stack.size()));
+                locks.add(new MonitorContext(tid,tname,matcher.group(4),matcher.group(5),stack.size(),stack.get(stack.size()-1)));
                 //System.out.println(time + "lock :" + tid + ":" + tname + ":" + matcher.group(4) + ":" + matcher.group(5) );
             }else if(matcher.group(9) != null){
                 break;
@@ -571,6 +571,7 @@ public class EventHandler {
             header.add("threadname:text");
             header.add("lock:text");
             header.add("Object:text");
+            header.add("frame:text");
             header.add("waittidspos:text");
             header.add("waitcount:number");
             header.add("lockcount:number");
@@ -595,6 +596,7 @@ public class EventHandler {
                     record.add(locks.get(i).getTname());
                     record.add(lock);
                     record.add(locks.get(i).getCls());
+                    record.add(locks.get(i).getFrame());
                     record.add(l.toString());
                     record.add((l.size()-1)/2);
                     record.add(1);
@@ -638,12 +640,19 @@ public class EventHandler {
         String lock;
         String cls;
         int pos;
-        MonitorContext(int tid, String tname, String lock, String cls, int pos){
+
+        public String getFrame() {
+            return frame;
+        }
+
+        String frame;
+        MonitorContext(int tid, String tname, String lock, String cls, int pos, String frame){
             this.cls=cls;
             this.lock=lock;
             this.tid=tid;
             this.tname=tname;
             this.pos=pos;
+            this.frame=frame;
         }
     }
 
