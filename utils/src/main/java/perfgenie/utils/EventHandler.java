@@ -571,7 +571,7 @@ public class EventHandler {
             header.add("threadname:text");
             header.add("lock:text");
             header.add("Object:text");
-            header.add("frame:text");
+            header.add("frameGotLock:text");
             header.add("waittidspos:text");
             header.add("waitcount:number");
             header.add("lockcount:number");
