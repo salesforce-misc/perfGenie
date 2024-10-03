@@ -3071,39 +3071,7 @@
         }
     }
 
-    function getDiagEvent(timestamp, guid, name, count) {
-        if(count == undefined){
-            count = 1;
-        }
 
-        const callTreeUrl = getDiagEventUrl(timestamp, (count == 1 ? tenant1 : tenant2) , (count == 1 ? host1 : host2), guid, name);
-
-        if($("#diagevent").length == 0) {
-            $('#statetablewrapper').append("<div id='diagevent'style='max-height: 400px; overflow: auto; border-style: dotted hidden; padding: 10px;' class='col-lg-12'><div style='float:right;cursor: pointer;' onclick='closePin(\"diagevent\")'>Close</div><div id='diageventheader'>" + moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event"+count+":" + otherEvent +  ", Name:" + name + "</div><span style='float:right;' class='spinner' id='spinner2'></span>" + "<pre id=\"diageventval\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupdiagview col-lg-12\" >" + "</div>");
-        }else{
-            $("#diageventval").html("");
-            $("#diageventheader").html( moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event"+count+":" + otherEvent +  ", Name:" + name);
-        }
-        showSpinner("spinner2");
-
-        let request = stackDigVizAjax(tenant1, "GET", callTreeUrl, function (response) { // success function
-            hideSpinner("spinner2");
-            console.log("getDiagEvent done");
-            if(response == undefined || response === "") {
-                console.log("Warn: unable to fetch diag event " + name);
-            }else {
-                diagEvent = timestamp + "_" + guid + "_" + name + "_" + count;
-                updateUrl("diagEvent", diagEvent);
-                $("#diageventval").html(response);
-            }
-        }, function (error) {
-            if(error.status == 401){
-                location.reload();
-            }
-            hideSpinner("spinner2");
-            console.log("Warn: unable to fetch diag event" + name);
-        });
-    }
 
 
 
@@ -3119,40 +3087,6 @@
                 $( "#diageventnn" ).resizable();
             }
         }
-    }
-
-    function getDiagEventn(e, timestamp, guid, name, count) {
-
-        if(count == undefined){
-            count = 1;
-        }
-        const callTreeUrl = getDiagEventUrl(timestamp, (count == 1 ? tenant1 : tenant2) , (count == 1 ? host1 : host2), guid, name);
-        addDiagPanel();
-        //$("<a id='diagclose' title='click to close' style='padding-left:10px; cursor: pointer;' class='fa fa-times-circle' onclick='closePin(\"diageventn\", this)'></a>").insertAfter(e);
-        //e.after("<a title='click to close' style='cursor: pointer;' class='fa fa-times-circle' onclick='closePin(\"diageventn\", this)'></a>");
-        $("#diageventnn").html("<div id='diageventn'>" +
-            "<div style='float:right;cursor: pointer;' onclick='closePin(\"diageventn\", this)'>Close</div><div id='diageventheadern'>" + moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event"+count+":" + otherEvent +  ", Name:" + name + "</div>"+
-        "<span style='float:right;' class='spinner' id='spinner3'></span>" + "<pre id=\"diageventvaln\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupdiagview col-lg-12\" >" + "</div>");
-        showSpinner("spinner3");
-        let request = stackDigVizAjax(tenant1, "GET", callTreeUrl, function (response) { // success function
-            hideSpinner("spinner3");
-            console.log("getDiagEvent done");
-            if(response == undefined || response === "") {
-                console.log("Warn: unable to fetch diag event " + name);
-            }else {
-                diagEvent = timestamp + "_" + guid + "_" + name + "_" + count;
-                //$("#diageventn").width(window.innerWidth - $("#"+e.parentNode.getAttribute("id")).prev().innerWidth() - $("#"+e.parentNode.getAttribute("id")).next().innerWidth() - 10);
-                updateUrl("diagEvent", diagEvent);
-                $("#diageventvaln").html(response);
-            }
-        }, function (error) {
-            if(error.status == 401){
-                location.reload();
-            }
-            hideSpinner("spinner3");
-            $("#diageventvaln").html("unable to fetch diag event " + name);
-            console.log("Warn: unable to fetch diag event" + name);
-        });
     }
 
     let pincolumns = [];//use this for pinning
@@ -3980,7 +3914,7 @@
             let selected = false;
             for (let value in localContextData.records) {
                 if(otherEventsFetched[value] != undefined) {
-                    if(!customEventFound){
+                    if(!customEventFound && ( (otherEvent != undefined || otherEvent != '') && (customEvent == '' || customEvent == undefined) )){
                         otherEvent = value;
                         customEventFound=true;
                     }
@@ -5888,41 +5822,119 @@
         document.getElementById("downloadspinner").style.display = 'none';
     }
 
-    function downloadDiagEvent(timestamp, guid, name, download, unzip, mimeType, element) {
-        if(download == undefined){
+
+
+
+    function getDiagEvent(timestamp, guid, name, count) {
+        if(count == undefined){
+            count = 1;
+        }
+
+        const callTreeUrl = getDiagEventUrl(timestamp, (count == 1 ? tenant1 : tenant2) , (count == 1 ? host1 : host2), guid, name);
+
+        if($("#diagevent").length == 0) {
+            $('#statetablewrapper').append("<div id='diagevent'style='max-height: 400px; overflow: auto; border-style: dotted hidden; padding: 10px;' class='col-lg-12'><div style='float:right;cursor: pointer;' onclick='closePin(\"diagevent\")'>Close</div><div id='diageventheader'>" + moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event"+count+":" + otherEvent +  ", Name:" + name + "</div><span style='float:right;' class='spinner' id='spinner2'></span>" + "<pre id=\"diageventval\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupdiagview col-lg-12\" >" + "</div>");
+        }else{
+            $("#diageventval").html("");
+            $("#diageventheader").html( moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event"+count+":" + otherEvent +  ", Name:" + name);
+        }
+        showSpinner("spinner2");
+
+        let request = stackDigVizAjax(tenant1, "GET", callTreeUrl, function (response) { // success function
+            hideSpinner("spinner2");
+            console.log("getDiagEvent done");
+            if(response == undefined || response === "") {
+                console.log("Warn: unable to fetch diag event " + name);
+            }else {
+                diagEvent = timestamp + "_" + guid + "_" + name + "_" + count;
+                updateUrl("diagEvent", diagEvent);
+                $("#diageventval").html(response);
+            }
+        }, function (error) {
+            if(error.status == 401){
+                location.reload();
+            }
+            hideSpinner("spinner2");
+            console.log("Warn: unable to fetch diag event" + name);
+        });
+    }
+
+    function getDiagEventn(e, timestamp, guid, name, count) {
+
+        if (count == undefined) {
+            count = 1;
+        }
+        const callTreeUrl = getDiagEventUrl(timestamp, (count == 1 ? tenant1 : tenant2), (count == 1 ? host1 : host2), guid, name);
+        addDiagPanel();
+        //$("<a id='diagclose' title='click to close' style='padding-left:10px; cursor: pointer;' class='fa fa-times-circle' onclick='closePin(\"diageventn\", this)'></a>").insertAfter(e);
+        //e.after("<a title='click to close' style='cursor: pointer;' class='fa fa-times-circle' onclick='closePin(\"diageventn\", this)'></a>");
+        $("#diageventnn").html("<div id='diageventn'>" +
+            "<div style='float:right;cursor: pointer;' onclick='closePin(\"diageventn\", this)'>Close</div><div id='diageventheadern'>" + moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event" + count + ":" + otherEvent + ", Name:" + name + "</div>" +
+            "<span style='float:right;' class='spinner' id='spinner3'></span>" + "<pre id=\"diageventvaln\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupdiagview col-lg-12\" >" + "</div>");
+        showSpinner("spinner3");
+        let request = stackDigVizAjax(tenant1, "GET", callTreeUrl, function (response) { // success function
+            hideSpinner("spinner3");
+            console.log("getDiagEvent done");
+            if (response == undefined || response === "") {
+                console.log("Warn: unable to fetch diag event " + name);
+            } else {
+                diagEvent = timestamp + "_" + guid + "_" + name + "_" + count;
+                //$("#diageventn").width(window.innerWidth - $("#"+e.parentNode.getAttribute("id")).prev().innerWidth() - $("#"+e.parentNode.getAttribute("id")).next().innerWidth() - 10);
+                updateUrl("diagEvent", diagEvent);
+                $("#diageventvaln").html(response);
+            }
+        }, function (error) {
+            if (error.status == 401) {
+                location.reload();
+            }
+            hideSpinner("spinner3");
+            $("#diageventvaln").html("unable to fetch diag event " + name);
+            console.log("Warn: unable to fetch diag event" + name);
+        });
+    }
+
+    function downloadDiagEvent(count, timestamp, guid, name, download, unzip, mimeType, element) {
+        if (download == undefined) {
             download = false;
         }
-        const callTreeUrl = getDiagEventUrl(timestamp, tenant1, host1, guid, name);
-        if(download){
-            //showDSpinner(element);
-            stackDigVizAjax(tenant1, "GET", callTreeUrl, function (object) {
-                if (object.length === 0) {
-                    Toastify({
-                        text: "Failed to download payload",
-                        duration: 5000
-                    }).showToast();
-                    //hideDSpinner();
-                    return;
-                }
-                const fileUrl = "data:" + mimeType + ";base64," + object;
-                // using this trick to convert a base64 encoded gzip file into a gzip byte array
-                fetch(fileUrl)
-                    .then(response => response.blob())
-                    .then(blob => {
-                        const link = document.createElement("a");
-                        link.href = URL.createObjectURL(blob);
-                        link.download = moment.utc(+timestamp).format('YYYY-MM-DD HH:mm:ss') + "_" + name + ".txt" + (!unzip ? ".gz" : "");
+        const callTreeUrl = getDiagEventUrl(timestamp, (count == 1 ? tenant1 : tenant2), (count == 1 ? host1 : host2), guid, name);
+        if (download) {
+            if (unzip) {
+                //<i class="fa fa-spinner fa-spin" style="font-size:24px"></i>
+                element.style.setProperty("display", "none");
+                let tmp = document.createElement("i");
+                element.parentElement.insertBefore(tmp,element)
+                //element.appendChild(tmp);
+                tmp.classList.add("fa");
+                tmp.classList.add("fa-spinner");
+                tmp.classList.add("fa-spin");
+                tmp.style.setProperty("font-size", "15px");
+
+                let request = stackDigVizAjax(tenant1, "GET", callTreeUrl, function (response) { // success function
+                    tmp.style.setProperty("display", "none");
+                    element.style.setProperty("display", "block");
+                    console.log("getDiagEvent done");
+                    if (response == undefined || response === "") {
+                        console.log("Warn: unable to fetch diag event " + name);
+                    } else {
+                        const link = document.createElement('a');
+                        const blob = new Blob([response], {type: "plain/text"});
+                        link.href = window.URL.createObjectURL(blob);
+                        link.download = moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss') +"_" + name + ".txt";
                         link.click();
-                    });
-                //hideDSpinner();
-            }, function (error) {
-                if(error.status == 401){
-                    location.reload();
-                }
-                //hideDSpinner();
-                console.log("Warn: unable to fetch diag event" + name);
-            });
-        }else {
+                    }
+                }, function (error) {
+                    if (error.status == 401) {
+                        location.reload();
+                    }
+                    tmp.style.setProperty("display", "none");
+                    element.style.setProperty("display", "block");
+                    console.log("Warn: unable to fetch diag event" + name);
+                });
+            } else {
+                alert("to do zip download");
+            }
+        } else {
             if ($("#diagevent").length == 0) {
                 $('#statetablewrapper').append("<div id='diagevent'style='max-height: 400px; overflow: auto; border-style: dotted hidden; padding: 10px;' class='col-lg-12'><div style='float:right;cursor: pointer;' onclick='closePin(\"diagevent\")'>Close</div><div id='diageventheader'>" + moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event:" + otherEvent + ", Name:" + name + "</div><span style='float:right;' class='spinner' id='spinner2'></span>" + "<pre id=\"diageventval\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupdiagview col-lg-12\" >" + "</div>");
             } else {
@@ -5940,13 +5952,66 @@
                     $("#diageventval").html(response);
                 }
             }, function (error) {
-                if(error.status == 401){
+                if (error.status == 401) {
                     location.reload();
                 }
                 hideSpinner("spinner2");
                 console.log("Warn: unable to fetch diag event" + name);
             });
         }
+    }
+
+    //remove this 
+    function generateDownloadButtons(event) {
+        // add download button
+        const timestamp = event['timestampMillis'];
+        const eventName = event['metadata']['name'];
+        const payload = atob(event['payload']);
+
+        let downloadButton = $(`<div id="download-button-wrapper" class="pull-right no-padding" style="width: 50%">
+                <div class="btn-group pull-right">
+                    <button id="download-button" title="Download payload" type="button" class="btn btn-xs btn-info">Download <i class="fa fa-download"></i></button>
+                    <button id="download-zipped-button" type="button" class="btn btn-xs btn-info dropdown-toggle dropdown-toggle-split" style="border-left-color: darkslategray" title='Download zipped payload'>
+                        <i class='fa fa-file-archive-o'></i>
+                    </button>
+                </div>
+            </div>`);
+
+        downloadButton.on("click", "#download-button", () => {
+            if (payload.length === 0) {
+                downloadPayload(true, "plain/text");
+                return;
+            }
+
+            const link = document.createElement('a');
+            const blob = new Blob([payload], {type: "plain/text"});
+            link.href = window.URL.createObjectURL(blob);
+            link.download = moment.utc(timestamp).format(dateTimeFormat) + "_" + eventName + ".txt";
+            link.click();
+        });
+
+        downloadButton.on("click", "#download-zipped-button", () => {
+            downloadPayload(false, "application/zip");
+        });
+
+        function downloadPayload(unzip, mimeType) {
+            spinnerToggle("03f952e4-4733-4f29-8837-b9737a17edb5");
+            maievAjax(context.tenant, "GET", getPayloadUrl(event, event["metadata"]["guid"], unzip), function (object) {
+                const fileUrl = "data:" + mimeType + ";base64," + object[0]['payload'];
+                // using this trick to convert a base64 encoded gzip file into a gzip byte array
+                fetch(fileUrl)
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const link = document.createElement("a");
+                        link.href = URL.createObjectURL(blob);
+                        link.download = moment.utc(timestamp).format(dateTimeFormat) + "_" + eventName + ".txt" + (!unzip ? ".gz" : "");
+                        link.click();
+                    });
+                spinnerToggle("03f952e4-4733-4f29-8837-b9737a17edb5");
+            });
+        }
+
+        return downloadButton;
     }
 
     function genOtherTable() {
@@ -6137,7 +6202,7 @@
                                     if (record[4] > 1048576 * 10) {
                                         sfContextDataTable.addContextTableRow(tableRows[rowIndex], (contextDataRecordNumber + ":" + record[1]) + " <a title='event larger than 10Mb, click to download' style='cursor: pointer;' class='fa fa-download' onclick='alert(\"todo over 10 Mb file\")'></a>", " hint='download'");
                                     } else {
-                                        sfContextDataTable.addContextTableRow(tableRows[rowIndex], (contextDataRecordNumber + ":" + record[1]) + " <a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-eye' onclick='getDiagEventn(this, " + record[0] + ", \"" + record[3] + "\",\"" + record[1] + "\",\"" + contextDataRecordNumber + "\")'></a>", "id='" + record[0] + "'");
+                                        sfContextDataTable.addContextTableRow(tableRows[rowIndex], (contextDataRecordNumber + ":" + record[1]) + " <a title='click to see the event below this table' style='cursor: pointer;float: right' class='fa fa-eye' onclick='getDiagEventn(this, " + record[0] + ", \"" + record[3] + "\",\"" + record[1] + "\",\"" + contextDataRecordNumber + "\")'></a>&nbsp;<a title='click to download event' style='cursor: pointer;float: right' class='fa fa-download' onclick='downloadDiagEvent(\"" + contextDataRecordNumber + "\", " + record[0] + ", \"" + record[3] + "\",\"" + record[1]+ "\"," + true + "," + true + ",\"text\",this)'></a>", "id='" + record[0] + "'");
                                     }
                                     sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[4]);
                                 }else {
@@ -6156,7 +6221,7 @@
                                                         if (record[4] > 1048576 * 10) {
                                                             sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='event larger than 10Mb, click to download' style='cursor: pointer;' class='fa fa-download' onclick='alert(\"todo over 10 Mb file\")'></a>", " hint='download'");
                                                         } else {
-                                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-eye' onclick='getDiagEvent(" + record[0] + ", \"" + record[3] + "\",\"" + record[1] + "\",\"" + contextDataRecordNumber + "\")'></a>", " hint='view'");
+                                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;float: right;' class='fa fa-eye' onclick='getDiagEvent(" + record[0] + ", \"" + record[3] + "\",\"" + record[1] + "\",\"" + contextDataRecordNumber + "\")'></a>&nbsp;<a title='click to download event' style='cursor: pointer;float: right;' class='fa fa-download' onclick='downloadDiagEvent(\"" + contextDataRecordNumber + "\", " + record[0] + ", \"" + record[3] + "\",\"" + record[1]+ "\"," + true + "," + false + ",\"text\",this)'></a>", " hint='view'");
                                                         }
                                                         //sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-download' onclick='downloadDiagEvent(" + record[0] + ", \"" + record[3] + "\",\"" + record[1]+ "\"," + true + "," + false + ",\"text\",this)'></a>", " hint='download'");
                                                     } else {
