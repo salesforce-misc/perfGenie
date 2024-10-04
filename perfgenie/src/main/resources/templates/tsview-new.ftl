@@ -94,6 +94,7 @@
         }*/
 
         //filters are not applied, so we should use only customEvent everywhere
+        samplesCustomEvent = customEvent;
         tsviewCustomEvent = customEvent;
         $('#'+id).append($('<option>', {
             value: tsviewCustomEvent,
