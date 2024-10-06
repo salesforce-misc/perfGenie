@@ -5961,7 +5961,7 @@
         }
     }
 
-    //remove this 
+    //remove this
     function generateDownloadButtons(event) {
         // add download button
         const timestamp = event['timestampMillis'];
@@ -6225,7 +6225,11 @@
                                                         }
                                                         //sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;' class='fa fa-download' onclick='downloadDiagEvent(" + record[0] + ", \"" + record[3] + "\",\"" + record[1]+ "\"," + true + "," + false + ",\"text\",this)'></a>", " hint='download'");
                                                     } else {
-                                                        sfContextDataTable.addContextTableRow(tableRows[rowIndex], contextDataRecordNumber + ":" + record[field], "' hint='" + isDimIndexMap[field] + "'");
+                                                        if (otherEvent === "monitor-context" && field == 9 && record[8] == "true") {
+                                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to view lock details' style='cursor: pointer;float: right;' class='fa fa-eye' onclick='showLockDetail(" + record[0] + ", " + tid + ", \"" + contextDataRecordNumber + "\")'></a>", " hint='view'");
+                                                        }else {
+                                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex], contextDataRecordNumber + ":" + record[field], "' hint='" + isDimIndexMap[field] + "'");
+                                                        }
                                                     }
                                                 }
                                             }
@@ -6330,6 +6334,27 @@
         console.log("genRequestTable 1 time:")
     }
 
+    function showLockDetail(timestamp, tid, count){
+        let localContextData = getContextData(count);
+        let contextDataRecords = undefined;
+        if (localContextData != undefined && localContextData.records != undefined) {
+            contextDataRecords = localContextData.records[otherEvent];
+        }
+
+        contextDataRecords[tid].forEach(function (obj) {
+            let record = obj.record;
+            if(record["0"] == timestamp){
+                if($("#diagevent").length == 0) {
+                    $('#statetablewrapper').append("<div id='diagevent'style='max-height: 400px; overflow: auto; border-style: dotted hidden; padding: 10px;' class='col-lg-12'><div style='float:right;cursor: pointer;' onclick='closePin(\"diagevent\")'>Close</div><div id='diageventheader'>" + moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event"+count+":" + otherEvent + "</div><span style='float:right;' class='spinner' id='spinner2'></span>" + "<pre id=\"diageventval\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupdiagview col-lg-12\" >" + "</div>");
+                }else{
+                    $("#diageventval").html("");
+                    $("#diageventheader").html( moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event"+count+":" + otherEvent );
+                }
+                $("#diageventval").html(record["9"]);
+            }
+        });
+    }
+
     function getContextTableHeadernew(groupBy, row, customEvent, addrightclick) {
         let localContextData = getContextData(1);
 
@@ -6431,6 +6456,7 @@
                 <div id="statetabledrp" class="ui-widget statetabledrop col-lg-12">
                 </div>
                 <div id='timeLineChartNote' class='col-lg-12' style='display: none'></div>
+                <div id='timeLineChartError' class='col-lg-12' style='display: none; color: red'></div>
                 <div id="statetable" class="ui-widget statetable col-lg-12">
                 </div>
             </div>

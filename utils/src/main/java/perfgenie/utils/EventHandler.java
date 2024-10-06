@@ -30,7 +30,7 @@ public class EventHandler {
     private static final String ROOT = "root";
     private static final int WRAP_MESSAGE_HASH = "wrapped.single stack in profile".hashCode();
     private static final int FILTER_MESSAGE_HASH = "below threshold ...".hashCode();
-    private static final String patternString = "at (.*)\\(.*\\n|.*- waiting to lock <(.*)>\\s+\\(a (.*)\\)\\n|.*- locked <(.*)>\\s+\\(a (.*)\\)\\n|\"(.*)\" #(\\w+) .*\\n|.*java.lang.Thread.State: (\\w+).*\\n|(JNI global references:).*"; //"\"(.*)\" #(\\w+) .*\\n|.*java.lang.Thread.State: (\\w+).*\\n|at (.*)\\(.*\\n";
+    private static final String patternString = "at (.*)\\(.*\\n|.*- waiting to lock <(.*)>\\s+\\(a (.*)\\)\\n|.*- locked <(.*)>\\s+\\(a (.*)\\)\\n|\"(.*)\" #(\\w+) .*\\n|.*java.lang.Thread.State: (\\w+).*\\n|(JNI global references:).*|.*- waiting on the Class initialization monitor for (.*)"; //"\"(.*)\" #(\\w+) .*\\n|.*java.lang.Thread.State: (\\w+).*\\n|at (.*)\\(.*\\n";
     private static final Pattern pattern = Pattern.compile(patternString);
 
     private final Map<Integer, String> frames = new ConcurrentHashMap<>();
@@ -429,9 +429,101 @@ public class EventHandler {
         return hash;
     }
 
+    public class DeadlockDetector {
+        private final Map<String, List<String>> resourceGraph = new HashMap<>();
+        private final Set<String> visited = new HashSet<>();
+        private final Set<String> recursionStack = new HashSet<>();
+        private List<String> cycleNodes = new ArrayList<>();
+        private List<List<String>> deadlockCycles = new ArrayList<>();
+        private Set<String> currentCycleSet = new HashSet<>();
+
+        // Add a resource allocation
+        public void addResource(String threadId, String resourceId) {
+            resourceGraph.putIfAbsent(threadId, new ArrayList<>());
+            resourceGraph.get(threadId).add(resourceId);
+        }
+
+        // Add a resource request
+        public void addRequest(String threadId, String resourceId) {
+            resourceGraph.putIfAbsent(resourceId, new ArrayList<>());
+            resourceGraph.get(resourceId).add(threadId);
+        }
+
+        // Detect deadlocks and return all cycle nodes if found
+        public List<List<String>> findDeadlockCycles() {
+            visited.clear();
+            recursionStack.clear();
+            deadlockCycles.clear();
+
+            for (String node : resourceGraph.keySet()) {
+                currentCycleSet.clear(); // Clear current cycle set for new DFS
+                cycleNodes.clear(); // Clear cycle nodes for new search
+
+                if (detectCycle(node)) {
+                    // Only add complete cycles to deadlockCycles
+                    deadlockCycles.add(new ArrayList<>(cycleNodes));
+                }
+            }
+            return deadlockCycles; // Return all deadlock cycles
+        }
+
+        // Helper method to detect cycles using DFS
+        private boolean detectCycle(String node) {
+            if (!visited.contains(node)) {
+                visited.add(node);
+                recursionStack.add(node);
+                currentCycleSet.add(node); // Track nodes in the current cycle
+                cycleNodes.add(node); // Add node to the cycle path
+
+                for (String neighbor : resourceGraph.getOrDefault(node, Collections.emptyList())) {
+                    if (!visited.contains(neighbor)) {
+                        if (detectCycle(neighbor)) {
+                            return true;
+                        }
+                    } else if (recursionStack.contains(neighbor) && currentCycleSet.contains(neighbor)) {
+                        // Cycle detected, include the cycle path up to the neighbor
+                        cycleNodes.add(neighbor); // Add neighbor to complete the cycle
+                        return true;
+                    }
+                }
+            }
+
+            recursionStack.remove(node);
+            currentCycleSet.remove(node); // Remove from current cycle tracking
+            if (cycleNodes.contains(node)) {
+                cycleNodes.remove(cycleNodes.size() - 1); // Remove node from cycle path on backtrack
+            }
+            return false;
+        }
+    }
+
+    private void checkClassLocks(HashSet<String> waits, DeadlockDetector detector, List<String> stacks, int tid, List<MonitorContext> locks, String tname, HashSet<String> classlocks) {
+        for (int i = 0; i < stacks.size(); i++) {
+            for (String ele : waits) {
+                if (stacks.get(i).contains(ele) && i != 0) {
+                    if (stacks.get(i - 1).contains("java.lang.reflect.Constructor.newInstance")) {
+                        detector.addResource(Integer.toString(tid), ele);
+                        locks.add(new MonitorContext(tid,tname,ele,ele,i,stacks.get(i)));
+                        classlocks.add(ele);
+                    }
+                }
+            }
+        }
+    }
+
     public boolean processJstackEvent(long time, final String jstack) {
         return processJstackEvent(time,jstack,true);
     }
+
+    public static boolean isNumeric(String str) {
+        try {
+            Double.parseDouble(str);
+            return true;
+        } catch(NumberFormatException e){
+            return false;
+        }
+    }
+
     public boolean processJstackEvent(long time, final String jstack, final boolean includeProfileEvents) {
         try {
             SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss zzz");
@@ -478,13 +570,38 @@ public class EventHandler {
         if (time > endEpoch) {
             setEndEpoch(time);
         }
+
+        DeadlockDetector detector = new DeadlockDetector();
+        HashSet<String> classwaits = new HashSet<>();
+        HashSet<String> classlocks = new HashSet<>();
+        final String patternString2 = ".*- waiting on the Class initialization monitor for (.*)|\"(.*)\" #(\\w+) .*\\n";
+        final Pattern pattern2 = Pattern.compile(patternString2);
+        final Matcher matcher2 = pattern2.matcher(jstack);
+        Integer tid = -1;
+        String tname = "";
+        List<MonitorContext> waits = new ArrayList<>();
+        List<MonitorContext> locks = new ArrayList<>();
+
+        while (matcher2.find()) {
+            if (matcher2.group(1) != null) {
+                classwaits.add(matcher2.group(1));
+                detector.addRequest(Integer.toString(tid),matcher2.group(1));
+            }else if (matcher2.group(3) != null) {
+                tid = Integer.parseInt(matcher2.group(3).toUpperCase());
+                tname = matcher2.group(2);
+            }
+        }
+
         final Matcher matcher = pattern.matcher(jstack);
         final List<String> stack = new ArrayList<>();
         int sampleCount = 0;
         int tstate = -1;
-        String tname = "";
-        int tid = 0;
+        tname = "";
+        tid = 0;
         final StringBuilder normalized = new StringBuilder();
+
+        final HashSet tmpLocks = new HashSet();
+        final HashSet tmpWaits = new HashSet();
 
         //"at (.*)\\(.*\\n|.*- waiting to lock \<(.*))\>(.*)\\n|.*- locked \<(.*))\>(.*)\\n|\"(.*)\" #(\\w+) .*\\n|.*java.lang.Thread.State: (\\w+).*\\n";
         // "Thread-1" #7661 prio=5 os_prio=0 tid=0x62001de00000 nid=0x161e  [ JVM thread_state=_thread_in_vm, locked by VM (w/poll advisory bit) acquiring VM lock 'java.util.concurrent.ConcurrentHashMap', polling bits: safep ]
@@ -492,9 +609,6 @@ public class EventHandler {
         //- waiting to lock <0x0000080108a7c220> (a java.util.concurrent.ConcurrentHashMap)
         //- locked <0x00000800cfa1f330> (a java.lang.Class)
         // at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:216)
-
-        List<MonitorContext> waits = new ArrayList<>();
-        List<MonitorContext> locks = new ArrayList<>();
 
         while (matcher.find()) {
             //if (tid != -1 && matcher.group(4) != null) {
@@ -509,11 +623,14 @@ public class EventHandler {
                     sampleCount++;
                     //processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
                     if(includeProfileEvents) {
+                        checkClassLocks(classwaits, detector, stack, tid,locks,tname,classlocks);
                         processEvent(tid, time, tstate + ";" + tname, stack, "Jstack");
                     }
                     tid = -1;
                     tname = "";
                     stack.clear();
+                    tmpLocks.clear();
+                    tmpWaits.clear();
                 }
                 tstate = getThreadState(matcher.group(8)).ordinal();
             } else if (matcher.group(6) != null) {
@@ -522,9 +639,12 @@ public class EventHandler {
                     sampleCount++;
                     if(includeProfileEvents) {
                         //processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
+                        checkClassLocks(classwaits, detector, stack, tid,locks,tname,classlocks);
                         processEvent(tid, time, tstate + ";" + tname, stack, "Jstack");
                     }
                     stack.clear();
+                    tmpLocks.clear();
+                    tmpWaits.clear();
                     tid = -1;
                     tname = "";
                     tstate = -1;
@@ -532,36 +652,101 @@ public class EventHandler {
                 tid = Integer.parseInt(matcher.group(7).toUpperCase());
                 tname = matcher.group(6);
             } else if(matcher.group(2) != null){
-                waits.add(new MonitorContext(tid,tname,matcher.group(2),matcher.group(3),stack.size(),stack.get(stack.size()-1)));
+                if(!tmpWaits.contains(matcher.group(2))) {
+                    detector.addRequest(Integer.toString(tid),matcher.group(2));
+                    waits.add(new MonitorContext(tid, tname, matcher.group(2), matcher.group(3), stack.size(), stack.get(stack.size() - 1)));
+                    tmpWaits.add(matcher.group(2));
+                }
                 //System.out.println(time + "wait :" + tid + ":" + tname + ":" + matcher.group(2) + ":" + matcher.group(3));
             }else if(matcher.group(4) != null){
-                locks.add(new MonitorContext(tid,tname,matcher.group(4),matcher.group(5),stack.size(),stack.get(stack.size()-1)));
+                if(!tmpLocks.contains(matcher.group(4))) {
+                    detector.addResource(Integer.toString(tid), matcher.group(4));
+                    locks.add(new MonitorContext(tid, tname, matcher.group(4), matcher.group(5), stack.size(), stack.get(stack.size() - 1)));
+                    tmpLocks.add(matcher.group(4));
+                }
                 //System.out.println(time + "lock :" + tid + ":" + tname + ":" + matcher.group(4) + ":" + matcher.group(5) );
             }else if(matcher.group(9) != null){
                 break;
+            }else if(matcher.group(10) != null){
+                if(!tmpWaits.contains(matcher.group(10))) {
+                    detector.addRequest(Integer.toString(tid),matcher.group(10));
+                    waits.add(new MonitorContext(tid, tname, matcher.group(10), matcher.group(10), stack.size(), "na"));
+                    tmpWaits.add(matcher.group(10));
+                }
+                //System.out.println(time + "wait :" + tid + ":" + tname + ":" + matcher.group(2) + ":" + matcher.group(3));
             }
         }
         //handle left over stack
         if (stack.size() != 0 && tid != -1) {
             //processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
             if(includeProfileEvents) {
+                checkClassLocks(classwaits, detector, stack, tid,locks,tname,classlocks);
                 processEvent(tid, time, tstate + ";" + tname, stack, "Jstack");
             }
         }
         final int startIndex = jstack.lastIndexOf("Java stack information for the threads listed above");
         final int endIndex = jstack.lastIndexOf("Found");
 
+        HashMap<Integer, String> allDeadLocks = new HashMap<>();
         HashSet<String> deadlocks =  new HashSet<>();
-        if (!(startIndex == -1 || startIndex == jstack.length() || endIndex == -1 || endIndex == jstack.length())) {
-            final String deadlockInfoString = jstack.substring(startIndex, endIndex);
-            final String patternString1 = ".*- locked <(.*)>(.*)\\n";
-            final Pattern pattern1 = Pattern.compile(patternString1);
-            final Matcher matcher1 = pattern1.matcher(deadlockInfoString);
-            while(matcher1.find()){
-                if(matcher1.group(1) != null){
-                    deadlocks.add(matcher1.group(1));
+
+        List<List<String>> deadlockCycles = detector.findDeadlockCycles();
+        if (!deadlockCycles.isEmpty()) {
+            System.out.println("Deadlocks detected!");
+
+
+            for (List<String> cycle : deadlockCycles) {
+                String curLock = "";
+                HashSet<Integer> tmpTids = new HashSet<>();
+                for(int i = 0; i<cycle.size()-1;i++){
+                    int tmptid = 0;
+                    String tmplock = "";
+                    if (isNumeric(cycle.get(i))) {
+                        if (i + 1 < cycle.size()) {
+                            tmptid = Integer.parseInt(cycle.get(i));
+                            tmplock = cycle.get(i + 1);
+                        }
+                    } else {
+                        tmptid = Integer.parseInt(cycle.get(i + 1));
+                        tmplock = cycle.get(i);
+                    }
+                    deadlocks.add(tmplock);
+                    for(int j = 0; j<locks.size();j++) {
+                        if(locks.get(j).getLock().equals(tmplock) && locks.get(j).getTid() == tmptid) {
+                            if(classlocks.contains(locks.get(j).getLock())) {
+                                curLock += "class init pending tid:" + locks.get(j).getTid() + " lock:" + locks.get(j).getLock() + " frame:" + locks.get(j).getFrame() + "\n";
+                                System.out.println("class init pending tid:" + locks.get(j).getTid() + " lock:" + locks.get(j).getLock() + " frame:" + locks.get(j).getFrame());
+                            }else{
+                                curLock += "locked tid:" + locks.get(j).getTid() + " lock:" + locks.get(j).getLock() + " frame:" + locks.get(j).getFrame() + "\n";
+                                System.out.println("locked tid:" + locks.get(j).getTid() + " lock:" + locks.get(j).getLock() + " frame:" + locks.get(j).getFrame());
+                            }
+                        }
+                    }
+                    for(int j = 0; j<waits.size();j++) {
+                        if(waits.get(j).getLock().equals(tmplock) && waits.get(j).getTid() == tmptid) {
+                            if(classwaits.contains(waits.get(j).getLock())) {
+                                curLock += "wait on the class tid:" + waits.get(j).getTid() + " lock:" + waits.get(j).getLock() + " frame:" + waits.get(j).getFrame() + "\n";
+                                System.out.println("wait on the class tid:" + waits.get(j).getTid() + " lock:" + waits.get(j).getLock() + " frame:" + waits.get(j).getFrame());
+                            }else{
+                                curLock += "waiting to lock tid:" + waits.get(j).getTid() + " lock:" + waits.get(j).getLock() + " frame:" + waits.get(j).getFrame() + "\n";
+                                System.out.println("waiting to lock tid:" + waits.get(j).getTid() + " lock:" + waits.get(j).getLock() + " frame:" + waits.get(j).getFrame());
+                            }
+                        }
+                    }
+                    tmpTids.add(tmptid);
                 }
+                curLock = "Deadlock:" + cycle.toString() + "\n" + curLock;
+                String stackString = "";
+                for (Integer t : tmpTids) {
+                    stackString += getLockStack(t, jstack) + "\n\n";
+                }
+                for (Integer t : tmpTids) {
+                    allDeadLocks.put(t,curLock+"\n\nThread stask(s):\n"+stackString);
+                }
+                System.out.println(curLock);
             }
+        } else {
+            System.out.println("No deadlock.");
         }
 
         if (sampleCount > 0|| !includeProfileEvents) {
@@ -572,10 +757,10 @@ public class EventHandler {
             header.add("lock:text");
             header.add("Object:text");
             header.add("frameGotLock:text");
-            header.add("waittidspos:text");
             header.add("waitcount:number");
             header.add("lockcount:number");
             header.add("isDeadlock:text");
+            header.add("lockDetails:text");
             initializeEvent("monitor-context");
             addHeader("monitor-context", header);
 
@@ -589,7 +774,7 @@ public class EventHandler {
                         l.add(waits.get(j).getPos());
                     }
                 }
-                if(l.size() > 1){//monitor contention
+                if(l.size() > 1 || deadlocks.contains(lock)){//monitor contention
                     List<Object> record = new ArrayList<>();
                     record.add(time/1000000);
                     record.add(locks.get(i).getTid());
@@ -597,13 +782,17 @@ public class EventHandler {
                     record.add(lock);
                     record.add(locks.get(i).getCls());
                     record.add(locks.get(i).getFrame());
-                    record.add(l.toString());
                     record.add((l.size()-1)/2);
                     record.add(1);
-                    if(deadlocks.contains(lock)){
+                    if(allDeadLocks.containsKey(locks.get(i).getTid())){
                         record.add("true");
                     }else{
                         record.add("false");
+                    }
+                    if(allDeadLocks.containsKey(locks.get(i).getTid())) {
+                        record.add(l.toString() + "\n\n" + allDeadLocks.get(locks.get(i).getTid()));
+                    }else{
+                        record.add(l.toString());
                     }
                     processContext(record, locks.get(i).getTid(), "monitor-context");
                 }
@@ -612,6 +801,20 @@ public class EventHandler {
         } else {
             return false;
         }
+    }
+    private String getLockStack(Integer tid, String jstack){
+        int i = jstack.indexOf("#"+Integer.toString(tid));
+
+        int tmp = i;
+        while(tmp >= 0){
+            tmp--;
+            if(jstack.charAt(tmp) == '\n'){
+                tmp++;
+                break;
+            }
+        }
+        int j = jstack.indexOf("\n\n",i);
+        return jstack.substring(tmp, j);
     }
 
     class MonitorContext{
