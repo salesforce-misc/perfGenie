@@ -6338,7 +6338,7 @@
         let localContextData = getContextData(count);
         let contextDataRecords = undefined;
         if (localContextData != undefined && localContextData.records != undefined) {
-            contextDataRecords = localContextData.records[otherEvent];
+            contextDataRecords = localContextData.records["monitor-context"];
         }
 
         contextDataRecords[tid].forEach(function (obj) {

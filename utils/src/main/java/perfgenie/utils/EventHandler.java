@@ -502,7 +502,7 @@ public class EventHandler {
             for (String ele : waits) {
                 if (stacks.get(i).contains(ele) && i != 0) {
                     if (stacks.get(i - 1).contains("java.lang.reflect.Constructor.newInstance")) {
-                        detector.addResource(Integer.toString(tid), ele);
+                        //detector.addResource(Integer.toString(tid), ele);
                         locks.add(new MonitorContext(tid,tname,ele,ele,i,stacks.get(i)));
                         classlocks.add(ele);
                     }
@@ -653,14 +653,14 @@ public class EventHandler {
                 tname = matcher.group(6);
             } else if(matcher.group(2) != null){
                 if(!tmpWaits.contains(matcher.group(2))) {
-                    detector.addRequest(Integer.toString(tid),matcher.group(2));
+                    //detector.addRequest(Integer.toString(tid),matcher.group(2));
                     waits.add(new MonitorContext(tid, tname, matcher.group(2), matcher.group(3), stack.size(), stack.get(stack.size() - 1)));
                     tmpWaits.add(matcher.group(2));
                 }
                 //System.out.println(time + "wait :" + tid + ":" + tname + ":" + matcher.group(2) + ":" + matcher.group(3));
             }else if(matcher.group(4) != null){
                 if(!tmpLocks.contains(matcher.group(4))) {
-                    detector.addResource(Integer.toString(tid), matcher.group(4));
+                    //detector.addResource(Integer.toString(tid), matcher.group(4));
                     locks.add(new MonitorContext(tid, tname, matcher.group(4), matcher.group(5), stack.size(), stack.get(stack.size() - 1)));
                     tmpLocks.add(matcher.group(4));
                 }
@@ -669,7 +669,7 @@ public class EventHandler {
                 break;
             }else if(matcher.group(10) != null){
                 if(!tmpWaits.contains(matcher.group(10))) {
-                    detector.addRequest(Integer.toString(tid),matcher.group(10));
+                    //detector.addRequest(Integer.toString(tid),matcher.group(10));
                     waits.add(new MonitorContext(tid, tname, matcher.group(10), matcher.group(10), stack.size(), "na"));
                     tmpWaits.add(matcher.group(10));
                 }
@@ -689,11 +689,22 @@ public class EventHandler {
 
         HashMap<Integer, String> allDeadLocks = new HashMap<>();
         HashSet<String> deadlocks =  new HashSet<>();
-
+        for(int i = 0; i<locks.size();i++) {
+            String lock = locks.get(i).getLock();
+            boolean isContention = false;
+            for (int j = 0; j < waits.size(); j++) {
+                if (lock.equals(waits.get(j).getLock())) {
+                    detector.addRequest(Integer.toString(waits.get(j).getTid()),waits.get(j).getLock());
+                    isContention=true;
+                }
+            }
+            if(isContention){
+                detector.addResource(Integer.toString(locks.get(i).getTid()),locks.get(i).getLock());
+            }
+        }
         List<List<String>> deadlockCycles = detector.findDeadlockCycles();
         if (!deadlockCycles.isEmpty()) {
             System.out.println("Deadlocks detected!");
-
 
             for (List<String> cycle : deadlockCycles) {
                 String curLock = "";

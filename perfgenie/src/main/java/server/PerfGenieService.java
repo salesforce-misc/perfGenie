@@ -399,7 +399,7 @@ public class PerfGenieService implements IPerfGenieService {
                     }
                     prevKey = keys.get(i);
                     if(parseJstacks){
-                        aggregator.processJstackEvent(keys.get(i),otherevents.get(keys.get(i)),false);
+                        aggregator.processJstackEvent(keys.get(i),otherevents.get(keys.get(i)),true);
                     }else {
                         aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(otherevents.get(keys.get(i)), EventHandler.ContextResponse.class));
                     }
