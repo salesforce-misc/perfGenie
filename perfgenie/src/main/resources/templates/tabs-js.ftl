@@ -755,10 +755,12 @@
     function setOtherEventData(data, count){
         let localContextData = getContextData(count);
         if(localContextData.records != undefined && data.records != undefined){
+
             for (var customevent in data.records) {
                 if(customevent == "monitor-context"){
                     let note = "";
                     let contextDataRecords = data.records[customevent];
+
                     for (var tid in contextDataRecords) {
                         contextDataRecords[tid].forEach(function (obj) {
                             let record = obj.record;
@@ -768,7 +770,7 @@
                         });
                     }
                     if(note != "") {
-                        $("#timeLineChartError").html("Deadlocks found: " + note);
+                        $("#timeLineChartError").html("Deadlocks detected: " + note);
                         $('#timeLineChartError').show();
                     }
                 }
