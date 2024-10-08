@@ -295,7 +295,13 @@
                     if (uniquecontentionTids[record[1]] == undefined) {
                         uniquecontentionTids[record[1]] = true;
                     }
-                    let list = eval(obj.record["9"]);
+                    let list = [];
+                    if(obj.record["8"] == "true"){
+                        let arr = obj.record["9"].split("\n\nDeadlock");
+                        list = eval(arr[0]);
+                    }else {
+                        list = eval(obj.record["9"]);
+                    }
                     for (let i = 1; i < list.length; i = i + 2) {
                         if (uniquecontentionTids[list[i]] == undefined) {
                             uniquecontentionTids[list[i]] = true;
