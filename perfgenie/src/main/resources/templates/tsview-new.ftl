@@ -23,6 +23,8 @@
     <label title="group by tid will show all samples in a thread, others need a matching context">Group by: </label>
     <select style="height:30px;text-align: center;" class="filterinput" name="tsview-grp-by" id="tsview-grp-by">
     </select>
+    <label for="monitor-context">monitor-contention:</label>
+    <input type="checkbox" id="monitorCheck" onclick="handleMonitorCheck()">
 </div>
 
 <div class="row">
@@ -64,6 +66,17 @@
     let tsviewCustomEvent = '';
     let tsviewgroupByLength = '';
     let tsviewgroupByMatch = '';
+    let monitorCheck = false;
+
+    function handleMonitorCheck() {
+        if(document.getElementById("monitorCheck").checked == true){
+            monitorCheck=true;
+        }else{
+            monitorCheck=false;
+        }
+        updateProfilerViewTsview(getSelectedLevel(getContextTree(1, getEventType())), true);
+    }
+
     function updateTsviewEventInputOptions(id){
         $('#'+id).empty();
 
@@ -140,7 +153,7 @@
                 }
             }
 
-            if(fContext == 'without'){//without context supported only for tid
+            if(fContext == 'without' || groups.length == 0){//without context supported only for tid
                 $('#' + id).append($('<option>', {
                     value: 'tid',
                     text: 'tid',
@@ -265,6 +278,34 @@
         //}
     }
 
+    let uniquecontentionTids = {};
+    function identifyLockWaitTids(){
+        let localContextData = getContextData(1);
+        let contextDataRecords = undefined;
+        if (localContextData != undefined && localContextData.records != undefined) {
+            contextDataRecords = localContextData.records["monitor-context"];
+        }
+        if(contextDataRecords != undefined) {
+            for (var tid in contextDataRecords) {
+                let includeTid = false;
+                let reqArray = [];
+                let recordIndex = -1;
+                contextDataRecords[tid].forEach(function (obj) {
+                    let record = obj.record;
+                    if (uniquecontentionTids[record[1]] == undefined) {
+                        uniquecontentionTids[record[1]] = true;
+                    }
+                    let list = eval(obj.record["9"]);
+                    for (let i = 1; i < list.length; i = i + 2) {
+                        if (uniquecontentionTids[list[i]] == undefined) {
+                            uniquecontentionTids[list[i]] = true;
+                        }
+                    }
+                });
+            }
+        }
+    }
+
     let tsviewtableRows = [];
     let tsviewtableHeader = [];
     let moreTsviews = [];
@@ -274,6 +315,7 @@
 
     let tsviewSortMap = undefined;
     function gentsviewtable(addContext, level) {
+        identifyLockWaitTids();
         if (tsviewtableFormat == 0) {
             tsviewtableFormat = 1;
         }
@@ -452,6 +494,9 @@
             } else if (groupByTsview == "tid" && isFilterEmpty()) {
                 //for (var tid in contextDataRecords) {
                 for (var tid in contextTidMap) {
+                    if(monitorCheck && uniquecontentionTids[tid] == undefined){
+                        continue;
+                    }
                     if (tidDatalistVal == undefined || tidDatalistVal == tid) {
                         for (let i = 0; i < contextTidMap[tid].length; i++) {
                             if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
@@ -1059,6 +1104,9 @@
         let rowIndex = 0;
         tsviewtableHeader = [];
         tsviewtableRows = [];
+        if(customEvent == undefined || customEvent == ""){
+            return; //no context available for this.
+        }
         getContextTableHeadernew("", tsviewtableHeader, customEvent, false);
         tsviewtableRows[rowIndex] = [];
         if(record.length == 0){
@@ -1117,7 +1165,11 @@
 
         updateUrl("tsview_stack_id",stackid,true);
         tsview_stack_id=stackid;
-        $('#stack-tsview-java-label-guid').text("Stack Trace at " + moment.utc(prevTsviewReqCellTime).format('YYYY-MM-DD HH:mm:ss.SSS'));
+        if(contextTree1[eventType].context.tidMap[pid][index].tn != undefined){
+            $('#stack-tsview-java-label-guid').text("Stack Trace at " + moment.utc(prevTsviewReqCellTime).format('YYYY-MM-DD HH:mm:ss.SSS') + " tid:" + pid +" tn:" + contextTree1[eventType].context.tidMap[pid][index].tn);
+        }else {
+            $('#stack-tsview-java-label-guid').text("Stack Trace at " + moment.utc(prevTsviewReqCellTime).format('YYYY-MM-DD HH:mm:ss.SSS'));
+        }
         $('#stack-tsview-guid').text(getStackTrace(stackid, eventType,obj.target.getAttribute("e"), prevTsviewReqCellTime));
     }
 

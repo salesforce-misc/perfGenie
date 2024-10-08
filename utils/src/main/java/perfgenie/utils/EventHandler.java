@@ -538,7 +538,6 @@ public class EventHandler {
             try {
                 //zing [Mon Jul 01 10:32:12 PM UTC 2024]
                 String zingDate = jstack.substring(jstack.indexOf("[")+1, jstack.indexOf("]"));
-                System.out.println("Using Zing format timestamp " + zingDate);
                 SimpleDateFormat df = new SimpleDateFormat("E MMM dd HH:mm:ss aa zzz yyyy");
                 Date date = df.parse(zingDate);
                 //take jstack timestamp if event time is too off ( more than 1 min)
@@ -546,11 +545,12 @@ public class EventHandler {
                 if (diff > 6000) {
                     time = date.getTime() * 1000000;
                 }
+                System.out.println("Using E MMM dd HH:mm:ss aa zzz yyyy format timestamp ");
             }catch (Exception ex){
                 try {
                     //zing [Mon Jul 01 10:32:12 PM UTC 2024]
                     String zingDate = jstack.substring(jstack.indexOf("[")+1, jstack.indexOf("]"));
-                    System.out.println("Using Zing format timestamp " + zingDate);
+
                     SimpleDateFormat df = new SimpleDateFormat("E MMM dd HH:mm:ss zzz yyyy");
                     Date date = df.parse(zingDate);
                     //take jstack timestamp if event time is too off ( more than 1 min)
@@ -558,6 +558,7 @@ public class EventHandler {
                     if (diff > 6000) {
                         time = date.getTime() * 1000000;
                     }
+                    System.out.println("Using E MMM dd HH:mm:ss zzz yyyy format timestamp ");
                 }catch (Exception exx){
                     return false;
                 }
@@ -772,12 +773,16 @@ public class EventHandler {
             header.add("lockcount:number");
             header.add("isDeadlock:text");
             header.add("lockDetails:text");
+            header.add("waitTids:text");
             initializeEvent("monitor-context");
             addHeader("monitor-context", header);
+
+
 
             for(int i = 0; i<locks.size();i++){
                 String lock = locks.get(i).getLock();
                 List<Integer> l = new ArrayList<>();
+                List<Integer> w = new ArrayList<>();
                 l.add(locks.get(i).getPos());
                 for(int j=0; j<waits.size();j++){
                     if(lock.equals(waits.get(j).getLock())){
