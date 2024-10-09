@@ -279,6 +279,7 @@
     }
 
     let uniquecontentionTids = {};
+    let uniquecontentionLockTids = {};
     function identifyLockWaitTids(){
         let localContextData = getContextData(1);
         let contextDataRecords = undefined;
@@ -1192,7 +1193,8 @@
                 contextDataRecords[tid].forEach(function (obj) {
                     let record = obj.record;
                     //TODO need to fix for prod already parsed jstacks, timestamp is not matching
-                    if (record["0"] == timestamp || ((record["0"] + 1000) >= timestamp && (record["0"] - 1000) <= timestamp)) {
+                    let diff = Math.abs(timestamp - record["0"]);
+                    if (record["0"] == timestamp || diff < 5000) { //5 sec diff
                         let list = [];
                         if (obj.record["8"] == "true") {
                             let arr = obj.record["9"].split("\n\nDeadlock");
