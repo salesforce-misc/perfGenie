@@ -287,9 +287,6 @@
         }
         if(contextDataRecords != undefined) {
             for (var tid in contextDataRecords) {
-                let includeTid = false;
-                let reqArray = [];
-                let recordIndex = -1;
                 contextDataRecords[tid].forEach(function (obj) {
                     let record = obj.record;
                     if (uniquecontentionTids[record[1]] == undefined) {
@@ -1176,7 +1173,54 @@
         }else {
             $('#stack-tsview-java-label-guid').text("Stack Trace at " + moment.utc(prevTsviewReqCellTime).format('YYYY-MM-DD HH:mm:ss.SSS'));
         }
-        $('#stack-tsview-guid').text(getStackTrace(stackid, eventType,obj.target.getAttribute("e"), prevTsviewReqCellTime));
+        let blockedStack = "";
+        if(jstackidcolorsmap[obj.target.getAttribute("e")] == "BLOCKED"){
+            blockedStack = getBlockedThreadStack(prevTsviewReqCellTime,eventType, pid);
+        }
+        $('#stack-tsview-guid').text(getStackTrace(stackid, eventType,obj.target.getAttribute("e"), prevTsviewReqCellTime) +"\n\n" + blockedStack);
+    }
+
+    function getBlockedThreadStack(timestamp, eventType, waittid){
+        let localContextData = getContextData(1);
+        let contextDataRecords = undefined;
+        if (localContextData != undefined && localContextData.records != undefined) {
+            contextDataRecords = localContextData.records["monitor-context"];
+        }
+        let blockedTid = "";
+        if(contextDataRecords != undefined) {
+            for (var tid in contextDataRecords) {
+                contextDataRecords[tid].forEach(function (obj) {
+                    let record = obj.record;
+                    //TODO need to fix for prod already parsed jstacks, timestamp is not matching
+                    if (record["0"] == timestamp || ((record["0"] + 1000) >= timestamp && (record["0"] - 1000) <= timestamp)) {
+                        let list = [];
+                        if (obj.record["8"] == "true") {
+                            let arr = obj.record["9"].split("\n\nDeadlock");
+                            list = eval(arr[0]);
+                        } else {
+                            list = eval(obj.record["9"]);
+                        }
+                        for (let i = 1; i < list.length; i = i + 2) {
+                            if (waittid == list[i]) {
+                                blockedTid = tid;//todo break this loop
+                            }
+                        }
+                    }
+                });
+            }
+            let stackTrace = "";
+            if(blockedTid != "") {
+                let contextArr = contextTree1[eventType].context.tidMap[blockedTid];
+                for (let i = 0; i < contextArr.length; i++) {
+                    if (contextArr[i].time + contextTree1[eventType].context.start == timestamp) {
+                        stackTrace = "Blocked by tid: " + blockedTid + " tn: " + contextArr[i].tn + "\n\n" + getStackTrace(contextArr[i].hash, eventType, jstackcolorsmap[contextArr[i].ts], timestamp);
+                        break;
+                    }
+                }
+            }
+            return stackTrace;
+        }
+        return "monitor-context not available to show locked thread";
     }
 
     function getTsviewSampleColor(id){
