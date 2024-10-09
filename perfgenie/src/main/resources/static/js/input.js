@@ -738,13 +738,17 @@ function addInputToURL() {
     if(instanceData1[host1] != undefined) {
         if(instanceData1[host1] != undefined) {
             updateUrl("dataSource", instanceData1[host1]);//todo, support different data sources for each host
+        }else if(tenantData1 != undefined && tenantData1[tenant1] != undefined){
+            updateUrl("dataSource", tenantData1[tenant1]);
         }else{
             updateUrl("dataSource", "other");
         }
     }
     if(instanceData2[host2] != undefined) {
-        if(instanceData1[host1] != undefined) {
+        if(instanceData2[host2] != undefined) {
             updateUrl("dataSource", instanceData2[host2]);//todo, support different data sources for each host
+        }else if(tenantData2 != undefined && tenantData2[tenant2] != undefined){
+            updateUrl("dataSource", tenantData2[tenant2]);
         }else{
             updateUrl("dataSource", "other");
         }
