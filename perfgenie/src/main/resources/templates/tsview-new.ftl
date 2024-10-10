@@ -1213,34 +1213,44 @@
             contextDataRecords = localContextData.records["monitor-context"];
         }
         let blockedTid = "";
+        let lockContext = "";
         if(contextDataRecords != undefined) {
             for (var tid in contextDataRecords) {
-                contextDataRecords[tid].forEach(function (obj) {
-                    let record = obj.record;
+                let found = false;
+                //contextDataRecords[tid].forEach(function (obj) {
+                for(let i =0;i<contextDataRecords[tid].length; i++) {
+                    let record = contextDataRecords[tid][i].record;
                     //TODO need to fix for prod already parsed jstacks, timestamp is not matching
                     let diff = Math.abs(timestamp - record["0"]);
                     if (record["0"] == timestamp || diff < 5000) { //5 sec diff
                         let list = [];
-                        if (obj.record["8"] == "true") {
-                            let arr = obj.record["9"].split("\n\nDeadlock");
+                        if (record["8"] == "true") {
+                            let arr = record["9"].split("\n\nDeadlock");
                             list = eval(arr[0]);
                         } else {
-                            list = eval(obj.record["9"]);
+                            list = eval(record["9"]);
                         }
                         for (let i = 1; i < list.length; i = i + 2) {
                             if (waittid == list[i]) {
                                 blockedTid = tid;//todo break this loop
+                                found=true;
+                                lockContext = lockContext + "lock:" + record["3"] + " object:"+record["4"] + "\nframe:"+record["5"];
+                                break;
                             }
                         }
                     }
-                });
+                }
+                if(found){
+                    break;
+                }
+                //});
             }
             let stackTrace = "";
             if(blockedTid != "") {
                 let contextArr = contextTree1[eventType].context.tidMap[blockedTid];
                 for (let i = 0; i < contextArr.length; i++) {
                     if (contextArr[i].time + contextTree1[eventType].context.start == timestamp) {
-                        stackTrace = "Blocked by tid: " + blockedTid + " tn: " + contextArr[i].tn + "\n\n" + getStackTrace(contextArr[i].hash, eventType, jstackcolorsmap[contextArr[i].ts], timestamp);
+                        stackTrace = "Blocked by tid: " + blockedTid + " tn: " + contextArr[i].tn + "\n" + lockContext + "\n\n" + getStackTrace(contextArr[i].hash, eventType, jstackcolorsmap[contextArr[i].ts], timestamp);
                         break;
                     }
                 }
