@@ -279,6 +279,7 @@
     }
 
     let uniquecontentionTids = {};
+    let uniquecontentionLockTimeStamps = {};
     let uniquecontentionLockTids = {};
     function identifyLockWaitTids(){
         let localContextData = getContextData(1);
@@ -293,6 +294,14 @@
                     if (uniquecontentionTids[record[1]] == undefined) {
                         uniquecontentionTids[record[1]] = true;
                     }
+                    if (uniquecontentionLockTids[record[1]] == undefined) {
+                        uniquecontentionLockTids[record[1]] = true;
+                        uniquecontentionLockTimeStamps[record[1]] = {};
+                    }
+                    if (uniquecontentionLockTimeStamps[record[1]][record[0]] == undefined) {
+                        uniquecontentionLockTimeStamps[record[1]][record[0]] = true;
+                    }
+
                     let list = [];
                     if(obj.record["8"] == "true"){
                         let arr = obj.record["9"].split("\n\nDeadlock");
@@ -841,6 +850,7 @@
             for (let [tid, value] of tidSamplesCountMap) {
                 if (count < top) {
                     count++;
+
                     d3yaxis.append("text")
                         .text(tid)
                         .attr("x", 15)
@@ -877,6 +887,7 @@
                                 //put color rect
                                 //handle duplicates
                                 if(timestamp == tidSamplesTimestamps[tid][i][0]) {
+
                                     layer2.append("rect")
                                         .attr("width", cellw)
                                         .attr("height", cellh)
@@ -888,6 +899,20 @@
                                         .attr("class", " tgl")
                                         .attr("onclick", 'showSVGTsviewStack(evt)')
                                         .attr("fill", getTsviewSampleColor(tidSamplesTimestamps[tid][i][1]));
+
+                                    if(monitorCheck && uniquecontentionLockTids[tid] != undefined && uniquecontentionLockTimeStamps[tid][tidSamplesTimestamps[tid][i][0]] != undefined){
+                                        layer2.append("rect")
+                                            .attr("width", cellw-5)
+                                            .attr("height", cellh-5)
+                                            .attr("x", x+2.5)
+                                            .attr("y", y+2.5)
+                                            .attr("e", tidSamplesTimestamps[tid][i][1])
+                                            .attr("t", tid)
+                                            .attr("in", tidSamplesTimestamps[tid][i][2])
+                                            .attr("class", " tgl")
+                                            .attr("onclick", 'showSVGTsviewStack(evt)')
+                                            .attr("fill", "white");
+                                    }
 
                                     if(prevx == -1){
                                         if (tidSamplesTimestamps[tid][i][3] != undefined) {
