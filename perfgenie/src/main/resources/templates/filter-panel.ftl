@@ -5744,8 +5744,10 @@
             if(eventType == "json-jstack" || eventType == "Jstack"){//find other profile start time
                 for (var profile in jfrprofiles1) {
                     if(profile !== "json-jstack" && profile !== "Jstack") {
-                        minStart = getContextTree(1, profile).context.start;
-                        break;
+                        if(getContextTree(1, profile) != undefined) {
+                            minStart = getContextTree(1, profile).context.start;
+                            break;
+                        }
                     }
                 }
             }
@@ -6267,8 +6269,10 @@
             if(eventType == "json-jstack" || eventType == "Jstack"){//find other profile start time
                 for (var profile in jfrprofiles1) {
                     if(profile !== "json-jstack" && profile !== "Jstack") {
-                        minStart = getContextTree(1, profile).context.start;
-                        break;
+                        if(getContextTree(1, profile) != undefined) {
+                            minStart = getContextTree(1, profile).context.start;
+                            break;
+                        }
                     }
                 }
             }

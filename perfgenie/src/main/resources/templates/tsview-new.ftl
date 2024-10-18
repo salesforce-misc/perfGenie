@@ -1234,7 +1234,7 @@
                             if (waittid == list[i]) {
                                 blockedTid = tid;//todo break this loop
                                 found=true;
-                                lockContext = lockContext + "lock:" + record["3"] + " object:"+record["4"] + "\nframe:"+record["5"];
+                                lockContext = lockContext + "lock:" + record["3"] + " object:"+record["4"] + "\nframe got lock:"+record["5"];
                                 break;
                             }
                         }
