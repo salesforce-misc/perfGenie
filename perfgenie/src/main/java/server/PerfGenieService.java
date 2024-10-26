@@ -172,7 +172,7 @@ public class PerfGenieService implements IPerfGenieService {
                 }
                 new File(file.getPath()).delete();
                 logger.info("successfully parsed " + file.getPath() + " and stored " + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
-            } else if (file.isFile() && file.getName().contains(".jstack")) {
+            } else if (file.isFile() && (file.getName().contains(".jstack") || file.getName().contains(".txt"))) {
                 EventHandler handler = new EventHandler();
                 long timestamp = System.currentTimeMillis();
                 String guid = Utils.generateGuid();
@@ -310,13 +310,44 @@ public class PerfGenieService implements IPerfGenieService {
             }
     }
 
+    private String getJstackProfileFromRaw(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
+        queryMap.put("name","=jstack");
+        //queryMap.put("get_raw_jstack_flag","=true");
+        queryMap.remove("file-name");
+        logger.info("trying getJstackProfileFromRaw");
+        Map<Long,String> jstackRawEvents = eventStore.getOtherPayLoads(tenant, start, end, queryMap, dimMap, true);
+        if (jstackRawEvents == null || jstackRawEvents.size() < 1) {
+            logger.info("get raw jstacks without get_raw_jstack_flag response ");
+            queryMap.remove("get_raw_jstack_flag"); //do not trust this flag
+            jstackRawEvents = eventStore.getOtherPayLoads(tenant, start, end, queryMap, dimMap, true);
+            if (jstackRawEvents == null || jstackRawEvents.size() < 1) {
+                return Utils.toJson(new EventHandler.JfrParserResponse(null, "no jstack / raw jstack events found for the given time range", queryMap, null));
+            }
+        }
+        final EventHandler aggregator = new EventHandler();
+        aggregator.initializeProfile("Jstack");
+        aggregator.initializePid("Jstack"); List<Long> keys = new ArrayList<Long>(jstackRawEvents.keySet());
+        Collections.sort(keys);
+        Long prevKey = -1L;
+        for (int i = 0; i < keys.size(); i++) {
+            if (keys.get(i) == prevKey) {
+                continue;//avoid processing dup events
+            }
+            prevKey = keys.get(i);
+            aggregator.processJstackEvent(keys.get(i), jstackRawEvents.get(keys.get(i)), true);
+        }
+        Object profile =  aggregator.getProfileTree("Jstack");
+        final String response = Utils.toJson(profile);
+        logger.info(queryMap.get("name")+" response length: " + response.length());
+        return response;
+    }
     @Override
     public String getJstackProfile(final String tenant, final long start, final long end, final Map<String, String> queryMap) throws IOException {
         final Map<String, String> dimMap = new HashMap<>();
         try{
             List<String> profiles = eventStore.getGeniePayLoads(tenant, start, end, queryMap, dimMap, true);
             if (profiles == null || profiles.size() < 1) {
-                return Utils.toJson(new EventHandler.JfrParserResponse(null, "Jstack events not found", queryMap, null));
+                return getJstackProfileFromRaw(tenant, start, end, queryMap, dimMap);
             }
             final EventHandler aggregator = new EventHandler();
             for (int i=0; i< profiles.size() ; i++) {
@@ -329,6 +360,7 @@ public class PerfGenieService implements IPerfGenieService {
             final String response = Utils.toJson(res);
             logger.info("getJstack response length: " + response.length());
             return response;
+
             //one by one
             /*
             Map<Long, Map<String, String>> profiles = eventStore.loadProfiles(tenant, start, end, queryMap, dimMap,  false);
@@ -369,9 +401,15 @@ public class PerfGenieService implements IPerfGenieService {
                     //try to get monitor context from jstacks
                     parseJstacks = true;
                     queryMap.put("name","=jstack");
+                    queryMap.put("get_raw_jstack_flag","=true");
                     otherevents = eventStore.getOtherPayLoads(tenant, start, end, queryMap, dimMap, true);
                     if (otherevents == null || otherevents.size() < 1) {
-                        return Utils.toJson(new EventHandler.JfrParserResponse(null, "no monitor events found for the given time range", queryMap, null));
+                        logger.info("get raw jstacks without get_raw_jstack_flag response ");
+                        queryMap.remove("get_raw_jstack_flag"); //do not trust this flag
+                        otherevents = eventStore.getOtherPayLoads(tenant, start, end, queryMap, dimMap, true);
+                        if (otherevents == null || otherevents.size() < 1) {
+                            return Utils.toJson(new EventHandler.JfrParserResponse(null, "no monitor events found for the given time range", queryMap, null));
+                        }
                     }
                     queryMap.put("name","=monitor");//reset
                 }else {

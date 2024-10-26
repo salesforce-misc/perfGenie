@@ -878,8 +878,8 @@ function updateTypes1(tenant, host){
                 continue;
             }
 
-            if(metaData1[key].metadata["file-name"] != undefined && metaData1[key].metadata["file-name"] == "json-jstack"){
-                jfrprofiles1[metaData1[key].metadata["file-name"]] = true;
+            if((metaData1[key].metadata["file-name"] != undefined && metaData1[key].metadata["file-name"] == "json-jstack") || (metaData1[key].metadata["name"] != undefined && metaData1[key].metadata["name"] == "jstack")){
+                jfrprofiles1["json-jstack"] = true; //jstacks or parsed jstacks exist
                 continue;
             }
 
@@ -931,8 +931,8 @@ function updateTypes2(tenant, host){
                 continue;
             }
 
-            if(metaData2[key].metadata["file-name"] != undefined && metaData2[key].metadata["file-name"] == "json-jstack"){
-                jfrprofiles2[metaData2[key].metadata["file-name"]] = true;
+            if((metaData2[key].metadata["name"] != undefined && metaData2[key].metadata["name"] == "jstack") || (metaData2[key].metadata["file-name"] != undefined && metaData2[key].metadata["file-name"] == "json-jstack")){
+                jfrprofiles2["json-jstack"] = true;
                 continue;
             }
 
@@ -1089,6 +1089,10 @@ function populateIDs1(tenant, host, clearInput, skipPArsing) {
         let name = metaData1[key].metadata["name"];
         let filename = metaData1[key].metadata["file-name"];
 
+        if(name.includes("jstack")){
+            console.log(name + ":" + filename);
+        }
+
         if(filename!= undefined && filename.includes(".jfr.gz")){
             continue;
         }
@@ -1104,7 +1108,7 @@ function populateIDs1(tenant, host, clearInput, skipPArsing) {
                     otherEvents1["monitor"] = true;
                 }
             }
-            if (metaData1[key].metadata["file-name"] != undefined && metaData1[key].metadata["file-name"] == "json-jstack") {
+            if ((metaData1[key].metadata["name"] != undefined && metaData1[key].metadata["name"] == "jstack") || (metaData1[key].metadata["file-name"] != undefined && metaData1[key].metadata["file-name"] == "json-jstack")) {
                 jstackFound = true;
                 continue;
             }
@@ -1206,7 +1210,7 @@ function populateIDs2(tenant, host, clearInput, skipPArsing) {
                     otherEvents1["monitor"] = true;
                 }
             }
-            if (metaData2[key].metadata["file-name"] != undefined && metaData2[key].metadata["file-name"] == "json-jstack") {
+            if ((metaData2[key].metadata["name"] != undefined && metaData2[key].metadata["name"] == "jstack") || (metaData2[key].metadata["file-name"] != undefined && metaData2[key].metadata["file-name"] == "json-jstack")) {
                 jstackFound = true;
                 continue;
             }

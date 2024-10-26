@@ -317,7 +317,6 @@ public class EventStore {
                                     }
                                 }
                             }
-                            profiles.put("Jstacks",start);
                             return Utils.toJson(profiles);
                         }else {
                             return Utils.toJson(new EventHandler.JfrParserResponse(null, "parsed json not found", queryMap, null));
@@ -537,15 +536,16 @@ public class EventStore {
 
         File file = new File(filepath);
 
-        if(downloadRequests.containsKey(req)){
-            logger.info("duplicate  download req  {}", metadataQuery);
-            return false;
-        }else if(file.exists()){
+        if(file.exists()){
             logger.info("already download req  {}", metadataQuery);
+            return true;
+        }else if(downloadRequests.containsKey(req)){
+            logger.info("duplicate  download req  {}", metadataQuery);
             return true;
         }
 
         downloadRequests.put(req,true);
+
         logger.info("Started downloading  {}", metadataQuery);
         if(namespace != null){
             try {
@@ -560,9 +560,11 @@ public class EventStore {
                 logger.info("Completed downloading {}", metadataQuery);
                 if(metadataQuery.containsKey(PerfGenieConstants.SOURCE_KEY)) {//genie
                     Files.write(path, outStream.toByteArray());
+                    downloadRequests.remove(req);
                     return true;
                 }else{
                     Files.write(path, Utils.decompress(outStream.toByteArray()));
+                    downloadRequests.remove(req);
                     return true;
                 }
             }catch(Exception e){
@@ -582,7 +584,7 @@ public class EventStore {
         if(metadataQuery.containsKey("file-name")){
              String filepath = config.getJfrdir() +"/"+ Long.toString(startTimestamp) + metadataQuery.get("file-name");
              filepath = filepath.replace("=","");
-            filepath = filepath.replace(".gz","");
+             filepath = filepath.replace(".gz","");
              File f = new File(filepath);
              if(f.exists()){
                  logger.info("using local downloaded  {}", metadataQuery);
