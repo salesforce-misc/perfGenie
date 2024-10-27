@@ -16,9 +16,7 @@ import com.salesforce.cantor.mysql.CantorOnMysql;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
@@ -528,6 +526,32 @@ public class EventStore {
         logger.info("Completed uploading to {} {} as {} cantor events", namespace, metadata, dimensions.get("chunk-total").longValue());
     }
 
+    public synchronized InputStream eventStream(final long timestamp, final Map<String,
+            String> queryMap, final Map<String, String> dimMap, final String tenant) throws IOException {
+
+        String namespace = queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getLargeEventNameSpace(tenant, true) : PerfGenieConstants.getLargeEventNameSpace(tenant, false);
+        final Stopwatch timer = Stopwatch.createStarted();
+        try {
+            final DownloadIterator iterator = new DownloadIterator(namespace, timestamp, timestamp, queryMap, dimMap);
+            ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+            while (iterator.hasNext()) {
+                final Events.Event event = iterator.next();
+                outStream.write(event.getPayload());
+                outStream.flush();
+            }
+            logger.info("Completed downloading {}", queryMap);
+            if (queryMap.containsKey(PerfGenieConstants.SOURCE_KEY)) {//genie
+                return new ByteArrayInputStream(outStream.toByteArray());
+            } else {
+                return new ByteArrayInputStream(Utils.decompress(outStream.toByteArray()));
+            }
+        } catch (IOException e) {
+            logger.error("Failed to download from {}  {}", namespace, queryMap);
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
     public final Map<String, Boolean> downloadRequests = new ConcurrentHashMap<String,Boolean>();
     private synchronized boolean downloadToFile(final long startTimestamp, final long endTimestamp, final Map<String,
             String> metadataQuery, final Map<String, String> dimensionsQuery, final String namespace, final String filepath) throws IOException {
@@ -577,6 +601,8 @@ public class EventStore {
         downloadRequests.remove(req);
         return false;
     }
+
+
 
     private String download(final long startTimestamp, final long endTimestamp, final Map<String,
             String> metadataQuery, final Map<String, String> dimensionsQuery, final String namespace) throws IOException {

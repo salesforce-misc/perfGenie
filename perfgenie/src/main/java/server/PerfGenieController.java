@@ -9,10 +9,15 @@ package server;
 
 import com.google.common.base.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -131,6 +136,27 @@ public class PerfGenieController {
         final Map<String, String> queryMap = queryToMap(metadataQuery);
         final Map<String, String> dimMap = new HashMap<>();
         return service.getOtherEvents(tenant, start, end, queryMap, dimMap);
+    }
+
+    @GetMapping(path = {"/v1/download", "/v1/download/{tenant}"})//, produces = MediaType.APPLICATION_OCTET_STREAM)
+    public ResponseEntity<InputStreamResource> downloadPayload(@PathVariable(required = false, name = "tenant") String tenant,
+                                                       @RequestParam(required = false, name = "timestamp") final long timestamp,
+                                                       @RequestParam("metadata_query") final List<String> metadataQuery)throws IOException {
+
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        final Map<String, String> dimMap = new HashMap<>();
+
+        byte[] fileContent = "Hello, world!".getBytes();
+        InputStream inputStream = service.getGenieEventStream(tenant, timestamp, queryMap, dimMap);
+
+        HttpHeaders headers = new HttpHeaders();
+        String filename = queryMap.get("file-name");
+        filename = Long.toString(timestamp) + "_" + filename.replace("=","");
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename);
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(new InputStreamResource(inputStream));
     }
 
     private static Map<String, String> queryToMap(final List<String> queryList) {

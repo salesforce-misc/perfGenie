@@ -285,6 +285,11 @@ public class PerfGenieService implements IPerfGenieService {
     }
 
     @Override
+    public InputStream getGenieEventStream(final String tenant, long timestamp,final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException{
+        return eventStore.eventStream(timestamp,queryMap,dimMap,tenant);
+    }
+
+    @Override
     public String getGenieProfiles(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
 
         Map<Long, Map<String, String>> profiles = eventStore.loadGenieProfiles(tenant, start, end, queryMap, dimMap, false);
@@ -877,7 +882,6 @@ public class PerfGenieService implements IPerfGenieService {
     private List<timeSeries> getCPUTimeSeries(long start, long end, String tenant, String host) {
         int columnCount = 0;
         try {
-
             List<timeSeries> ts = new ArrayList<>();
             for (int i = 0; i < columnCount; i++) {
                 ts.add(new timeSeries(0L, 0d));
@@ -903,7 +907,6 @@ public class PerfGenieService implements IPerfGenieService {
                             Files.delete(file);
                         }
                     }
-
                     return FileVisitResult.CONTINUE;
                 }
                 @Override
@@ -916,5 +919,4 @@ public class PerfGenieService implements IPerfGenieService {
             System.err.println("Error: walking through directory: " + e.getMessage());
         }
     }
-
 }

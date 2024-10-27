@@ -445,17 +445,36 @@ function loadDiagData1(){
 
     for (let key in metaData1) {
         if(metaData1[key].metadata.name != undefined) {
+
+            /*
             if(metaData1[key].metadata.name === "jfr"){
-                continue;
-            }
+                if(metaData1[key].metadata["file-name"] == undefined) {
+                    continue;
+                }
+                if( !metaData1[key].metadata["file-name"].includes(".jfr.gz")){
+                    continue;
+                }
+            }*/
+
             if(!metaData1[key].metadata.name.includes("json") && (metaData1[key].metadata["file-name"] == undefined || (!metaData1[key].metadata["file-name"].includes("json") && !metaData1[key].metadata["file-name"].includes("monitor"))) ) {
                 let diagnostics = []
                 diagnostics.push(metaData1[key].timestampMillis);
-                diagnostics.push(metaData1[key].metadata.name);
-                diagnostics.push(1);
-                //1_048_576
-                diagnostics.push(metaData1[key].metadata.guid);
-                diagnostics.push(metaData1[key].dimensions[".maiev-event-payload-size"] == undefined ? 0 : Number(metaData1[key].dimensions[".maiev-event-payload-size"]));
+
+                if(metaData1[key].metadata[".is-large-file"] != undefined && metaData1[key].metadata[".is-large-file"] == "true"){
+                    diagnostics.push(metaData1[key].metadata["file-name"]);
+                    diagnostics.push(1);
+                    //1_048_576
+                    diagnostics.push(metaData1[key].metadata.guid);
+                    diagnostics.push(metaData1[key].dimensions["file-length"] == undefined ? 0 : Number(metaData1[key].dimensions["file-length"]));
+                    diagnostics.push(true);
+                }else {
+                    diagnostics.push(metaData1[key].metadata.name);
+                    diagnostics.push(1);
+                    //1_048_576
+                    diagnostics.push(metaData1[key].metadata.guid);
+                    diagnostics.push(metaData1[key].dimensions[".maiev-event-payload-size"] == undefined ? 0 : Number(metaData1[key].dimensions[".maiev-event-payload-size"]));
+                    diagnostics.push(false);
+                }
                 if (header["diagnostics(raw)"] == undefined) {
                    // header["diagnostics(raw)"] = ["timestamp:timestamp", "event:text", "count:number","guid:text","size:number"];
                     header["diagnostics(raw)"] = ["timestamp:timestamp", "event:text","size:number"];
@@ -555,17 +574,32 @@ function loadDiagData2(){
 
     for (let key in metaData2) {
         if(metaData2[key].metadata.name != undefined) {
-            if(metaData2[key].metadata.name === "jfr"){
-                continue;
-            }
+            /*if(metaData2[key].metadata.name === "jfr"){
+                if(metaData2[key].metadata["file-name"] == undefined) {
+                    continue;
+                }
+                if( !metaData2[key].metadata["file-name"].includes(".jfr.gz")){
+                    continue;
+                }
+            }*/
             if(!metaData2[key].metadata.name.includes("json") && (metaData2[key].metadata["file-name"] == undefined || (!metaData2[key].metadata["file-name"].includes("json") && !metaData2[key].metadata["file-name"].includes("monitor"))) ) {
                 let diagnostics = []
                 diagnostics.push(metaData2[key].timestampMillis);
-                diagnostics.push(metaData2[key].metadata.name);
-                diagnostics.push(1);
-                //1_048_576
-                diagnostics.push(metaData2[key].metadata.guid);
-                diagnostics.push(metaData2[key].dimensions[".maiev-event-payload-size"] == undefined ? 0 : Number(metaData2[key].dimensions[".maiev-event-payload-size"]));
+                if(metaData2[key].metadata[".is-large-file"] != undefined && metaData2[key].metadata[".is-large-file"] == "true"){
+                    diagnostics.push(metaData2[key].metadata["file-name"]);
+                    diagnostics.push(1);
+                    //1_048_576
+                    diagnostics.push(metaData2[key].metadata.guid);
+                    diagnostics.push(metaData2[key].dimensions["file-length"] == undefined ? 0 : Number(metaData2[key].dimensions["file-length"]));
+                    diagnostics.push(true);
+                }else {
+                    diagnostics.push(metaData2[key].metadata.name);
+                    diagnostics.push(1);
+                    //1_048_576
+                    diagnostics.push(metaData2[key].metadata.guid);
+                    diagnostics.push(metaData2[key].dimensions[".maiev-event-payload-size"] == undefined ? 0 : Number(metaData2[key].dimensions[".maiev-event-payload-size"]));
+                    diagnostics.push(false);
+                }
                 if (header["diagnostics(raw)"] == undefined) {
                     header["diagnostics(raw)"] = ["timestamp:timestamp", "event:text", "count:number","guid:text","size:number"];
                     records["diagnostics(raw)"] = {};
@@ -1088,10 +1122,6 @@ function populateIDs1(tenant, host, clearInput, skipPArsing) {
         let guid = metaData1[key].metadata["guid"];
         let name = metaData1[key].metadata["name"];
         let filename = metaData1[key].metadata["file-name"];
-
-        if(name.includes("jstack")){
-            console.log(name + ":" + filename);
-        }
 
         if(filename!= undefined && filename.includes(".jfr.gz")){
             continue;

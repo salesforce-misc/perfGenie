@@ -5861,6 +5861,14 @@
         });
     }
 
+    function downloadLargeDiagEvent(e, timestamp, guid, name, count) {
+        window.open(getLargeFileDownloadURL(timestamp, guid, name, count), "_blank");
+    }
+
+    function getLargeFileDownloadURL(timestamp, guid, name, count){
+        return "v1/download/" + (count == 1 ? tenant1 : tenant2) + "?timestamp=" + timestamp + "&metadata_query=" + encodeURIComponent("guid=" + guid) + "&metadata_query=" + encodeURIComponent("file-name=" + name);
+    }
+
     function getDiagEventn(e, timestamp, guid, name, count) {
 
         if (count == undefined) {
@@ -6202,7 +6210,12 @@
                                 if (otherEvent === "diagnostics(raw)") {
                                     sfContextDataTable.addContextTableRow(tableRows[rowIndex], moment.utc(record[0]).format('YYYY-MM-DD HH:mm:ss SSS'));
                                     if (record[4] > 1048576 * 10) {
-                                        sfContextDataTable.addContextTableRow(tableRows[rowIndex], (contextDataRecordNumber + ":" + record[1]) + " <a title='event larger than 10Mb, click to download' style='cursor: pointer;' class='fa fa-download' onclick='alert(\"todo over 10 Mb file\")'></a>", " hint='download'");
+                                        if(record[5] == true){
+                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex], (contextDataRecordNumber + ":" + record[1]) + "<a title='click to download event' style='cursor: pointer;float: right' class='fa fa-download' onclick='downloadLargeDiagEvent(\"" + contextDataRecordNumber + "\", " + record[0] + ", \"" + record[3] + "\",\"" + record[1]+ "\"," + true + "," + true + ",\"text\",this)'></a>", "id='" + record[0] + "'");
+                                        }else {
+                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex], (contextDataRecordNumber + ":" + record[1]) + " <a title='click to see the event below this table' style='cursor: pointer;float: right' class='fa fa-eye' onclick='getDiagEventn(this, " + record[0] + ", \"" + record[3] + "\",\"" + record[1] + "\",\"" + contextDataRecordNumber + "\")'></a>&nbsp;<a title='click to download event' style='cursor: pointer;float: right' class='fa fa-download' onclick='downloadDiagEvent(\"" + contextDataRecordNumber + "\", " + record[0] + ", \"" + record[3] + "\",\"" + record[1]+ "\"," + true + "," + true + ",\"text\",this)'></a>", "id='" + record[0] + "'");
+                                            //sfContextDataTable.addContextTableRow(tableRows[rowIndex], (contextDataRecordNumber + ":" + record[1]) + " <a title='event larger than 10Mb, click to download 1' style='cursor: pointer;' class='fa fa-download' onclick='alert(\"1 todo over 10 Mb file" + record[0] + ":" + record[3] + "\")'></a>", " hint='download'");
+                                        }
                                     } else {
                                         sfContextDataTable.addContextTableRow(tableRows[rowIndex], (contextDataRecordNumber + ":" + record[1]) + " <a title='click to see the event below this table' style='cursor: pointer;float: right' class='fa fa-eye' onclick='getDiagEventn(this, " + record[0] + ", \"" + record[3] + "\",\"" + record[1] + "\",\"" + contextDataRecordNumber + "\")'></a>&nbsp;<a title='click to download event' style='cursor: pointer;float: right' class='fa fa-download' onclick='downloadDiagEvent(\"" + contextDataRecordNumber + "\", " + record[0] + ", \"" + record[3] + "\",\"" + record[1]+ "\"," + true + "," + true + ",\"text\",this)'></a>", "id='" + record[0] + "'");
                                     }
@@ -6221,7 +6234,7 @@
                                                     if (otherEvent === "diagnostics(raw)" && field == 3) {
                                                         //1_048_576
                                                         if (record[4] > 1048576 * 10) {
-                                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='event larger than 10Mb, click to download' style='cursor: pointer;' class='fa fa-download' onclick='alert(\"todo over 10 Mb file\")'></a>", " hint='download'");
+                                                            sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='event larger than 10Mb, click to download 2' style='cursor: pointer;' class='fa fa-download' onclick='alert(\"2 todo over 10 Mb file " + record[0] + ":"+ record[3] +"\")'></a>", " hint='download'");
                                                         } else {
                                                             sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to see the event below this table' style='cursor: pointer;float: right;' class='fa fa-eye' onclick='getDiagEvent(" + record[0] + ", \"" + record[3] + "\",\"" + record[1] + "\",\"" + contextDataRecordNumber + "\")'></a>&nbsp;<a title='click to download event' style='cursor: pointer;float: right;' class='fa fa-download' onclick='downloadDiagEvent(\"" + contextDataRecordNumber + "\", " + record[0] + ", \"" + record[3] + "\",\"" + record[1]+ "\"," + true + "," + false + ",\"text\",this)'></a>", " hint='view'");
                                                         }

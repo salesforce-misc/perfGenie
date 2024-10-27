@@ -8,6 +8,7 @@
 package server;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 
 public interface IPerfGenieService {
@@ -103,4 +104,5 @@ public interface IPerfGenieService {
 
     String getGenieEvent(String tenant, long start, long end, Map<String, String> queryMap, Map<String, String> dimMap) throws IOException;
 
+    InputStream getGenieEventStream(final String tenant, long timestamp, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
 }
