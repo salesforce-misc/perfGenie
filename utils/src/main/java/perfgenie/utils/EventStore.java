@@ -299,7 +299,7 @@ public class EventStore {
                 if(downloadToFile(start, end, queryMap, dimMap, namespace,filepath+".tmp")){
                     File f = new File(filepath+"jfr_dump.json");
                     if(!f.exists()) {
-                        executor.addCommand("java -Xloggc:"+config.getJfrdir()+"/jfrparsergc.log -XX:ErrorFile="+config.getJfrdir()+"/jfrparser_error.log -XX:ParallelGCThreads=8 -XX:+PrintGCDetails -XX:NewSize=400m -XX:MaxNewSize=400m -Xms7G -Xmx7G  -cp "+config.getJfrparser()+" Parser -c -jfr " + filepath + ".tmp  -timeout 90000 -json " + filepath + "jfr_dump.json");
+                        executor.addCommand("java -Xloggc:"+config.getJfrdir()+"/jfrparsergc.log -XX:ErrorFile="+config.getJfrdir()+"/jfrparser_error.log -XX:ParallelGCThreads=8 -XX:+PrintGCDetails -XX:NewSize=400m -XX:MaxNewSize=400m -Xms7G -Xmx7G  -cp "+config.getJfrparser()+" Parser -c -jfr " + filepath + ".tmp  -timeout 90000 -timestamp " + start*1000000 + " -json " + filepath + "jfr_dump.json");
                     }
                     if(waitForFile(filepath+"jfr_dump.json", 2)){
                         logger.info("successfully parsed jfr: " + queryMap + " time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
