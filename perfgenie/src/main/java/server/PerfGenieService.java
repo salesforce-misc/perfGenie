@@ -17,10 +17,14 @@ import perfgenie.utils.*;
 import java.io.*;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -46,6 +50,13 @@ public class PerfGenieService implements IPerfGenieService {
         createDirectoryIfNotExists(config.getJfrdir());
         runJob();
     }
+    @Scheduled(cron = "0 */10 * ? * *")
+    private void cleanupJob() throws IOException {
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        logger.info(now.format(formatter) + " running cleanup job for dir " + config.getJfrdir());
+        deleteOldFiles(config.getJfrdir(), 1);
+    }
     public static void createDirectoryIfNotExists(String directoryPath) {
         Path path = Paths.get(directoryPath);
         if (Files.notExists(path)) {
@@ -59,13 +70,12 @@ public class PerfGenieService implements IPerfGenieService {
     }
 
     public void runJob() throws IOException{
-
         tenant = config.getTenant();
         host = InetAddress.getLocalHost().getHostName();
+
         logger.info("looking for Jfrs at " + config.getJfrdir());
         File folder = new File(config.getJfrdir());
         File[] listOfFiles = folder.listFiles();
-
 
         if (listOfFiles == null)
             return;
@@ -877,6 +887,34 @@ public class PerfGenieService implements IPerfGenieService {
 
         }
         return null;
+    }
+
+    public static void deleteOldFiles(String folderPath, int days) {
+        Path directory = Paths.get(folderPath);
+        Instant oneDayAgo = Instant.now().minus(days, ChronoUnit.DAYS);
+
+        try {
+            Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    if (attrs.creationTime().toInstant().isBefore(oneDayAgo)) {
+                        if(file.toString().contains(".tmp") || file.toString().contains(".json")) {
+                            System.out.println("Deleting old file : " + attrs.creationTime() + ":" + file.toString());
+                            Files.delete(file);
+                        }
+                    }
+
+                    return FileVisitResult.CONTINUE;
+                }
+                @Override
+                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                    System.err.println("Failed to process file: " + file.toString() + " due to " + exc.getMessage());
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            System.err.println("Error: walking through directory: " + e.getMessage());
+        }
     }
 
 }
