@@ -368,13 +368,23 @@ public class PerfGenieService implements IPerfGenieService {
             for (int i=0; i< profiles.size() ; i++) {
                 aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(profiles.get(i), EventHandler.JfrParserResponse.class));
             }
-            final EventHandler.JfrParserResponse res = aggregator.getAggregatedProfileTree();
-            int jstackInterval = (int) (end - start) / (profiles.size() * 1000);
-            jstackInterval = ((jstackInterval + 5) / 10) * 10; // round to nearest 10sec
-            res.addMeta(ImmutableMap.of("jstack-interval", Integer.toString(jstackInterval), "jstack-count", Integer.toString(profiles.size())));
-            final String response = Utils.toJson(res);
-            logger.info("getJstack response length: " + response.length());
-            return response;
+
+            if(config.isExperimental()) {
+                SurfaceDataResponse res = genSurfaceData(aggregator.getAggregatedProfileTree(), tenant, queryMap.get("host"));
+                EventHandler.JfrParserResponse apr = (EventHandler.JfrParserResponse) aggregator.getAggregatedProfileTree();
+                apr.addMeta(ImmutableMap.of("data", Utils.toJson(res)));
+                final String response = Utils.toJson(apr);
+                return response;
+            }else{
+                final EventHandler.JfrParserResponse res = aggregator.getAggregatedProfileTree();
+                int jstackInterval = (int) (end - start) / (profiles.size() * 1000);
+                jstackInterval = ((jstackInterval + 5) / 10) * 10; // round to nearest 10sec
+                res.addMeta(ImmutableMap.of("jstack-interval", Integer.toString(jstackInterval), "jstack-count", Integer.toString(profiles.size())));
+                final String response = Utils.toJson(res);
+                logger.info("getJstack response length: " + response.length());
+                return response;
+            }
+
 
             //one by one
             /*
