@@ -25,21 +25,30 @@ import java.util.Map;
 @Controller
 public class FtlController {
     private final PerfGenieService service;
+    private final boolean enableAuth;
 
     private Map<String, LocalDateTime> usersLastAccess = new HashMap<>();
 
     @GetMapping("/")
     public String getCurrentUser(@AuthenticationPrincipal User user, Model model) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        model.addAttribute("username", username);
-        model.addAttribute("lastAccess", usersLastAccess.get(username));
-        usersLastAccess.put(username, LocalDateTime.now());
+        if(enableAuth) {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            model.addAttribute("username", username);
+            model.addAttribute("lastAccess", usersLastAccess.get(username));
+            usersLastAccess.put(username, LocalDateTime.now());
+        }
         return "index";
     }
 
     @Autowired
     public FtlController(PerfGenieService service) {
         this.service = service;
+        String substrate = System.getenv("SUBSTRATE");
+        if(substrate == null){
+            enableAuth = true;
+        }else{
+            enableAuth=false;
+        }
     }
 
     @RequestMapping(value = "/index", method = RequestMethod.GET)
