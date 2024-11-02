@@ -735,8 +735,13 @@ function addInputToURL() {
     updateUrl("otherEvents", otherEvents);
 
     let types = "";
+    if(jfrprofiles1["jfr_dump.json.gz"]){ //keep this first in list
+        types = "jfr_dump.json.gz:";
+    }
     for (var key in jfrprofiles1) {
-        types = types + key + ":";
+        if(key !==  "jfr_dump.json.gz") {
+            types = types + key + ":";
+        }
     }
     let events = "";
     for (var key in jfrevents1) {

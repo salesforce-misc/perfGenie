@@ -291,10 +291,12 @@ public class PerfGenieService implements IPerfGenieService {
 
     @Override
     public String getGenieProfiles(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
+            logger.info("getGenieProfiles processing " + queryMap);
 
-        Map<Long, Map<String, String>> profiles = eventStore.loadGenieProfiles(tenant, start, end, queryMap, dimMap, false);
+            Map<Long, Map<String, String>> profiles = eventStore.loadGenieProfiles(tenant, start, end, queryMap, dimMap, false);
 
             if (profiles == null || profiles.size() < 1) {
+                logger.info("getGenieProfiles done error " + queryMap);
                 return Utils.toJson(new EventHandler.JfrParserResponse(null, "no profiles found for the given time range", queryMap, null));
             }
             try {
@@ -304,20 +306,22 @@ public class PerfGenieService implements IPerfGenieService {
                     tosort.add(timestamp);
                 }
                 Collections.sort(tosort);
-                for (int i = 0; i< tosort.size(); i++ ) {
+                for (int i = 0; i < tosort.size(); i++) {
                     queryMap.put("guid", profiles.get(tosort.get(i)).get("guid"));
                     String result;
-                    result = eventStore.getGenieLargeEvent(tosort.get(i), tosort.get(i), queryMap, dimMap,tenant);
+                    result = eventStore.getGenieLargeEvent(tosort.get(i), tosort.get(i), queryMap, dimMap, tenant);
                     aggregator.aggregateTree((EventHandler.JfrParserResponse) Utils.readValue(result, EventHandler.JfrParserResponse.class));
                 }
-                if(config.isExperimental() || tosort.size() == 1) {
+                if (config.isExperimental() || tosort.size() == 1) {
                     SurfaceDataResponse res = genSurfaceData(aggregator.getAggregatedProfileTree(), tenant, queryMap.get("host"));
                     EventHandler.JfrParserResponse apr = (EventHandler.JfrParserResponse) aggregator.getAggregatedProfileTree();
                     apr.addMeta(ImmutableMap.of("data", Utils.toJson(res)));
                     final String response = Utils.toJson(apr);
+                    logger.info("getGenieProfiles done with surface " + queryMap);
                     return response;
-                }else{
+                } else {
                     EventHandler.JfrParserResponse apr = (EventHandler.JfrParserResponse) aggregator.getAggregatedProfileTree();
+                    logger.info("getGenieProfiles done" + queryMap);
                     return Utils.toJson(apr);
                 }
             } catch (Exception e) {
@@ -418,63 +422,68 @@ public class PerfGenieService implements IPerfGenieService {
 
     @Override
     public String getOtherEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) {
-        try {
-            Map<Long,String> otherevents = eventStore.getOtherPayLoads(tenant, start, end, queryMap, dimMap, true);
-            boolean parseJstacks = false;
-            if (otherevents == null || otherevents.size() < 1) {
-                if(queryMap.get("name").contains("=monitor")){
-                    //try to get monitor context from jstacks
-                    parseJstacks = true;
-                    queryMap.put("name","=jstack");
-                    queryMap.put("get_raw_jstack_flag","=true");
-                    otherevents = eventStore.getOtherPayLoads(tenant, start, end, queryMap, dimMap, true);
-                    if (otherevents == null || otherevents.size() < 1) {
-                        logger.info("get raw jstacks without get_raw_jstack_flag response ");
-                        queryMap.remove("get_raw_jstack_flag"); //do not trust this flag
+            logger.info("getOtherEvents processing " + queryMap);
+            try {
+                Map<Long, String> otherevents = eventStore.getOtherPayLoads(tenant, start, end, queryMap, dimMap, true);
+                boolean parseJstacks = false;
+                if (otherevents == null || otherevents.size() < 1) {
+                    if (queryMap.get("name").contains("=monitor")) {
+                        //try to get monitor context from jstacks
+                        parseJstacks = true;
+                        queryMap.put("name", "=jstack");
+                        queryMap.put("get_raw_jstack_flag", "=true");
                         otherevents = eventStore.getOtherPayLoads(tenant, start, end, queryMap, dimMap, true);
                         if (otherevents == null || otherevents.size() < 1) {
-                            return Utils.toJson(new EventHandler.JfrParserResponse(null, "no monitor events found for the given time range", queryMap, null));
+                            logger.info("get raw jstacks without get_raw_jstack_flag response ");
+                            queryMap.remove("get_raw_jstack_flag"); //do not trust this flag
+                            otherevents = eventStore.getOtherPayLoads(tenant, start, end, queryMap, dimMap, true);
+                            if (otherevents == null || otherevents.size() < 1) {
+                                logger.info("getOtherEvents done error 1 " + queryMap);
+                                return Utils.toJson(new EventHandler.JfrParserResponse(null, "no monitor events found for the given time range", queryMap, null));
+                            }
+                        }
+                        queryMap.put("name", "=monitor");//reset
+                    } else {
+                        logger.info("getOtherEvents done error 2 " + queryMap);
+                        return Utils.toJson(new EventHandler.JfrParserResponse(null, "no events found for the given time range", queryMap, null));
+                    }
+                }
+                final EventHandler aggregator = new EventHandler();
+                if (parseJstacks) {
+                    aggregator.initializeProfile("Jstack");
+                    aggregator.initializePid("Jstack");
+                }
+                List<Long> keys = new ArrayList<Long>(otherevents.keySet());
+                Collections.sort(keys);
+                Long prevKey = -1L;
+                for (int i = 0; i < keys.size(); i++) {
+                    if (queryMap.get("name").contains("=top")) {
+                        aggregator.aggregateTop(otherevents.get(keys.get(i)), keys.get(i));
+                    } else if (queryMap.get("name").contains("=ps")) {
+                        aggregator.aggregatePS(otherevents.get(keys.get(i)), keys.get(i));
+                    } else if (queryMap.get("name").contains("=pidstat")) {
+                        aggregator.aggregatePIDSTAT(otherevents.get(keys.get(i)), keys.get(i));
+                    } else if (queryMap.get("name").contains("=monitor")) {
+                        if (keys.get(i) == prevKey) {
+                            continue;//avoid processing dup events
+                        }
+                        prevKey = keys.get(i);
+                        if (parseJstacks) {
+                            aggregator.processJstackEvent(keys.get(i), otherevents.get(keys.get(i)), true);
+                        } else {
+                            aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(otherevents.get(keys.get(i)), EventHandler.ContextResponse.class));
                         }
                     }
-                    queryMap.put("name","=monitor");//reset
-                }else {
-                    return Utils.toJson(new EventHandler.JfrParserResponse(null, "no events found for the given time range", queryMap, null));
                 }
+                final EventHandler.ContextResponse res = (EventHandler.ContextResponse) aggregator.getLogContext();
+                final String response = Utils.toJson(res);
+                logger.info(queryMap.get("name") + " response length: " + response.length());
+                logger.info("getOtherEvents done " + queryMap);
+                return response;
+            } catch (Exception e) {
+                logger.info("getOtherEvents done error 3 " + queryMap);
+                return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate events " + e.getMessage(), queryMap, null));
             }
-            final EventHandler aggregator = new EventHandler();
-            if(parseJstacks){
-                aggregator.initializeProfile("Jstack");
-                aggregator.initializePid("Jstack");
-            }
-            List<Long> keys = new ArrayList<Long>(otherevents.keySet());
-            Collections.sort(keys);
-            Long prevKey = -1L;
-            for (int i=0; i< keys.size(); i++) {
-                if(queryMap.get("name").contains("=top")) {
-                    aggregator.aggregateTop(otherevents.get(keys.get(i)),keys.get(i));
-                }else if(queryMap.get("name").contains("=ps")){
-                    aggregator.aggregatePS(otherevents.get(keys.get(i)),keys.get(i));
-                }else if(queryMap.get("name").contains("=pidstat")){
-                    aggregator.aggregatePIDSTAT(otherevents.get(keys.get(i)),keys.get(i));
-                }else if(queryMap.get("name").contains("=monitor")){
-                    if(keys.get(i) == prevKey){
-                        continue;//avoid processing dup events
-                    }
-                    prevKey = keys.get(i);
-                    if(parseJstacks){
-                        aggregator.processJstackEvent(keys.get(i),otherevents.get(keys.get(i)),true);
-                    }else {
-                        aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(otherevents.get(keys.get(i)), EventHandler.ContextResponse.class));
-                    }
-                }
-            }
-            final EventHandler.ContextResponse res = (EventHandler.ContextResponse) aggregator.getLogContext();
-            final String response = Utils.toJson(res);
-            logger.info(queryMap.get("name")+" response length: " + response.length());
-            return response;
-        } catch (Exception e) {
-            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate events " + e.getMessage(), queryMap, null));
-        }
     }
 
     @Override

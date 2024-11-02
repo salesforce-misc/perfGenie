@@ -98,11 +98,17 @@
             }
         }
 
-        if(isSFProfile && !filterEvent.includes("jfr_dump")){
-           // filterEvent = "jfr_dump.json.gz";
+        let order = [];//put method profile on top
+        if(jfrprofiles1["jfr_dump.json.gz"]){
+            order.push("jfr_dump.json.gz");
         }
-
-        for (var key in jfrprofiles1) {
+        for (let key in jfrprofiles1) {
+            if(key !==  "jfr_dump.json.gz"){
+                order.push(key);
+            }
+        }
+        for (let i = 0; i< order.length; i++) {
+            let key = order[i];
             let profileName = getProfileName(key);
             if(filterEvent == key) {
                 $('#event-type').append($('<option>', {
@@ -680,9 +686,10 @@
 
             }).catch(error => {
                 setContextData({"records": {}, "tidlist": [], "header": {}},1);
-                fetchOtherEvents(timeRanges[0], tenants[0], hosts[0], 1);
+                fetchOtherEvents(dateRanges[0], tenants[0], hosts[0], 1);
                 updateFilterViewStatus("Note: Failed to get Request context.");
                 toastr_warning("Failed to get Request context.");
+                refreshTreeAfterContext(customEvent);
                 console.error(error);
             });
     }
