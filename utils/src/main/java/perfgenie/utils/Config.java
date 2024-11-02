@@ -149,7 +149,12 @@ public  class Config {
                 h2dir=prop.getProperty("h2dir");
             }
             if(prop.getProperty("storageType") != null){
-                storageType=prop.getProperty("storageType");
+                String substrate = System.getenv("SUBSTRATE");
+                if (substrate == null) {
+                    storageType=prop.getProperty("storageType");
+                } else {// for aws TODO in config
+                    storageType="grpc";
+                }
             }
             if(prop.getProperty("mySQL.host") != null){
                 mySQL_host=prop.getProperty("mySQL.host");
@@ -161,7 +166,12 @@ public  class Config {
                 mySQL_pwd=prop.getProperty("mySQL.pwd");
             }
             if(prop.getProperty("grpc.target") != null){
-                grpc_target=prop.getProperty("grpc.target");
+                String substrate = System.getenv("SUBSTRATE");
+                if (substrate == null) {
+                    grpc_target=prop.getProperty("grpc.target");
+                } else {//cantor.warden.svc.mesh.sfdc.net:7443 for aws TODO in config
+                    grpc_target="cantor.warden.svc.mesh.sfdc.net:7443";
+                }
             }
             if(prop.getProperty("mySQL.user") != null){
                 mySQL_user=prop.getProperty("mySQL.user");
