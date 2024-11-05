@@ -376,6 +376,8 @@
         if (queryResults === undefined) {
             let end = performance.now();
             console.log("retrievAndcreateContextTree 0 time:" + (end - start) + " event:" + eventType);
+            resetTreeHeader("<div style='padding-right: 10px'>Failed to retrieve profile data of "+eventType+"<span style='float: right;' class='spinner' id='profilespinner'></span></div>");
+            hideSpinner('profilespinner');
             return;
         }
         spinnerToggle('spinnerId');

@@ -71,8 +71,10 @@ function stackDigVizAjax(pod, method, endpoint, successFunc, errorFunc) {
     if (errorFunc === undefined) {
         errorFunc = defaultErrorFunc;
     }
-
-    const headers = {};
+    const headers = { 'x-envoy-upstream-rq-timeout-ms': 600001,
+        'x-envoy-max-retries': 1,
+        'x-envoy-upstream-rq-per-try-timeout-ms': 600000
+    };
     const errorFuncWithRetry = function () {
             return internalPerfGenieAjax(endpoint, method, successFunc, errorFunc, headers);
     };

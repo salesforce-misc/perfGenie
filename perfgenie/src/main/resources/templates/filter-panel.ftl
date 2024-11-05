@@ -4428,9 +4428,15 @@
     }
 
     function callTreePerfGenieAjax(pod, method, endpoint, successFunc) {
-        const headers = {};
-        return internalPerfGenieAjax(endpoint, method, successFunc, () => {
-        }, headers);
+        const headers = { 'x-envoy-upstream-rq-timeout-ms': 600001,
+            'x-envoy-max-retries': 1,
+            'x-envoy-upstream-rq-per-try-timeout-ms': 600000
+        };
+        const errorFunc = function (XMLHttpRequest, textStatus, errorThrown) {
+            console.log("Status: " + textStatus); console.log("Error: " + errorThrown);
+        };
+
+        return internalPerfGenieAjax(endpoint, method, successFunc, errorFunc , headers);
     }
 
     function internalPerfGenieAjax(url, method, successFunc, errorFunc, headers, data, includeCookies = false) {

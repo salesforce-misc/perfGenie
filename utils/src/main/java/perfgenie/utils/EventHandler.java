@@ -452,9 +452,10 @@ public class EventHandler {
         // Detect deadlocks and return all cycle nodes if found
         public List<List<String>> findDeadlockCycles() {
             String substrate = System.getenv("SUBSTRATE");
-            if(substrate != null) {//enable dead lock detection  in local
+            /*if(substrate != null) {//enable dead lock detection  in local
+                logger.info("dead lock detection disabled.");
                 return deadlockCycles; // Return all deadlock cycles
-            }
+            }*/
             visited.clear();
             recursionStack.clear();
             deadlockCycles.clear();
