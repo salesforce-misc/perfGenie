@@ -58,11 +58,25 @@ function getEventURL(tenant,start,end,host){
         "&metadata_query=" + encodeURIComponent("name=jfr");
 }
 
+function updateTabUrl(tab){
+    let newLocation = window.location.href.replace(new RegExp("(#.*)"), tab);
+    if (newLocation.indexOf("#") === -1) {
+        newLocation = newLocation + tab;
+    }
+    window.history.replaceState({}, "", newLocation);
+}
 function updateUrl(key, value) {
-    let newLocation = window.location.href.replace(new RegExp("((\\?|\\&)" + key + "=)[^\\&]*"), '$1' + encodeURIComponent(value));
+    const myArray = window.location.href.split("#");
+    let newLocation = myArray[0];
+    newLocation = newLocation.replace(new RegExp("((\\?|\\&)" + key + "=)[^\\&]*"), '$1' + encodeURIComponent(value));
     if (newLocation.indexOf(key) === -1) {
+        const myArray = newLocation.split("#");
+        newLocation = myArray[0];
         const separator = (newLocation.indexOf("?") === -1) ? "?" : "&";
         newLocation = newLocation + separator + key + "=" + encodeURIComponent(value);
+    }
+    if(myArray[1] != undefined){
+        newLocation = newLocation + "#" + myArray[1];
     }
     window.history.replaceState({}, "", newLocation);
 }

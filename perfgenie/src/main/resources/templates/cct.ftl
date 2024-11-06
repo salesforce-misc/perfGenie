@@ -1287,7 +1287,7 @@
         <option  value="backtrace">Backtrace view</option>
         <option   value="calltree">Call tree view</option>
     </select>
-    <label>Profile: </label>
+    <label id="profileID">Profile: </label>
     <select   style="height:30px;text-align: center;" class="filterinput" name="event-type" id="event-type">
 
     </select>

@@ -49,16 +49,22 @@
         $( "#tabs" ).tabs({
             activate: function (event, ui) {
                 if(ui.newPanel.attr("id") == "cct"){
+                    updateTabUrl("#cct");
                     updateProfilerViewCCT(prevSelectedLevel,true);
                 }else if(ui.newPanel.attr("id") == "flame"){
+                    updateTabUrl("#flame");
                     updateProfilerViewFlame(prevSelectedLevel,true);
                 }else if(ui.newPanel.attr("id") == "samples"){
+                    updateTabUrl("#samples");
                     updateProfilerViewSample(prevSelectedLevel,true);
                 }else if(ui.newPanel.attr("id") == "tsview"){
+                    updateTabUrl("#tsview");
                     updateProfilerViewTsview(prevSelectedLevel,true);
                 }else if(ui.newPanel.attr("id") == "river"){
+                    updateTabUrl("#river");
                     updateProfilerViewRiver(prevSelectedLevel,true);
                 }else if(ui.newPanel.attr("id") == "surface"){
+                    updateTabUrl("#surface");
                     updateProfilerViewSurface(prevSelectedLevel,true);
                 }
             }
@@ -856,16 +862,22 @@
     //create html tree recursively
     function updateProfilerView(level) {
         if($("#tabs .ui-tabs-panel:visible").attr("id") == "flame"){
+            updateTabUrl("#flame");
             updateProfilerViewFlame(level);
         }else if($("#tabs .ui-tabs-panel:visible").attr("id") == "cct"){
+            updateTabUrl("#cct");
             updateProfilerViewCCT(level);
         }else if($("#tabs .ui-tabs-panel:visible").attr("id") == "samples"){
+            updateTabUrl("#samples");
             updateProfilerViewSample(level);
         }else if($("#tabs .ui-tabs-panel:visible").attr("id") == "tsview"){
+            updateTabUrl("#tsview");
             updateProfilerViewTsview(level);
         }else if($("#tabs .ui-tabs-panel:visible").attr("id") == "river"){
+            updateTabUrl("#river");
             updateProfilerViewRiver(level);
         }else if($("#tabs .ui-tabs-panel:visible").attr("id") == "surface"){
+            updateTabUrl("#surface");
             updateProfilerViewSurface(level);
         }
     }

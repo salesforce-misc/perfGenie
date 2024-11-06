@@ -4459,11 +4459,17 @@
 
     // update the url with key/value
     function updateUrl(key, value, replace) {
-        let newLocation = window.location.href.replace(new RegExp("((\\?|\\&)" + key + "=)[^\\&]*"), '$1' + encodeURIComponent(value));
+        const myArray = window.location.href.split("#");
+        let newLocation = myArray[0];
+        newLocation = newLocation.replace(new RegExp("((\\?|\\&)" + key + "=)[^\\&]*"), '$1' + encodeURIComponent(value));
         if (newLocation.indexOf(key) === -1) {
             const separator = (newLocation.indexOf("?") === -1) ? "?" : "&";
             newLocation = newLocation + separator + key + "=" + encodeURIComponent(value);
         }
+        if(myArray[1] != undefined){
+            newLocation = newLocation + "#" + myArray[1];
+        }
+
         if (replace) {
             window.history.replaceState({}, "", newLocation);
         } else {
