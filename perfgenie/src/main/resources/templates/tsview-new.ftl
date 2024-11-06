@@ -6,7 +6,7 @@
 * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
 */
 </script>
-<div class='ui-widget' style="padding-left: 0px;">
+<div tabindex="-1" id="TSprofileID" class='ui-widget' style="padding-left: 0px;">
     <label>Profile: </label>
     <select  style="height:30px;text-align: center;" class="filterinput" name="event-type-tsview" id="event-type-tsview">
 
@@ -978,8 +978,8 @@
                 y = 700;
             }
             $("#yaxisidTsview").css({"max-height":y});
-            $("#requestbarchartTsviewwrapper").css({"max-height":y});
-            $("#requestbarchartTsview").css({"max-height":y});
+            $("#requestbarchartTsviewwrapper").css({"max-height":y+30});
+            $("#requestbarchartTsview").css({"max-height":y+30});
         } else {
             $('#extraoptions').show();
             $("#tsviewtablecontext").css({"height":''});
@@ -1153,6 +1153,7 @@
     }
 
     function showSVGTsviewStack(obj) {
+        document.getElementById('TSprofileID').focus();
         let tempeventTypeArray = [];
         let jevent = "json-jstack";
         for (var tempeventType in jfrprofiles1) {//for all profile event types

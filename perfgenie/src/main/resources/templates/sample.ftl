@@ -6,7 +6,7 @@
 * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
 */
 </script>
-<div class='ui-widget' style="padding-left: 0px;">
+<div tabindex="-1" id="SampleprofileID" class='ui-widget' style="padding-left: 0px;">
     <label>Profile: </label>
     <select  style="height:30px;text-align: center;" class="filterinput" name="event-type-sample" id="event-type-sample">
 
@@ -939,8 +939,8 @@
                 y = 700;
             }
             $("#yaxisidSamples").css({"max-height":y});
-            $("#requestbarchartSampleswrapper").css({"max-height":y});
-            $("#requestbarchartSamples").css({"max-height":y});
+            $("#requestbarchartSampleswrapper").css({"max-height":y+30});
+            $("#requestbarchartSamples").css({"max-height":y+30});
         } else {
             $('#extraoptions').show();
             $("#sampletablecontext").css({"height":''});
@@ -1111,6 +1111,7 @@
     }
 
     function showSVGSampleStack(obj) {
+        document.getElementById('SampleprofileID').focus();
         let tempeventTypeArray = [];
         let jevent = "json-jstack";
         for (var tempeventType in jfrprofiles1) {//for all profile event types
