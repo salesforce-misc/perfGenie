@@ -384,7 +384,7 @@ public class EventStore {
                     }
                     if(waitForFile(filepath+"jfr_dump.json", 2)){
                         logger.info("successfully parsed jfr: " + queryMap + " time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
-                        final HashMap<String, Long> profiles = new HashMap();
+                        final HashMap<String, String> profiles = new HashMap();
                         Thread.sleep(5000);//let parser create all files
                         File folder = new File(config.getJfrdir());
                         File[] listOfFiles = folder.listFiles();
@@ -393,9 +393,9 @@ public class EventStore {
                                 if(file.getName().contains(Long.toString(start))){
                                     String tmpfileName = file.getName();
                                     if(!(tmpfileName.contains("_sql.json") || tmpfileName.contains(".tmp"))) {
-                                        tmpfileName = tmpfileName.replace(Long.toString(start), "");
-                                        profiles.put(tmpfileName+".gz", start);
                                         if(tmpfileName.contains(".json")) {
+                                            tmpfileName = tmpfileName.replace(Long.toString(start), "");
+                                            profiles.put(tmpfileName+".gz", Long.toString(start) + " - " + queryMap.get("guid").replaceAll("^=", ""));
                                             addGenieLargeEventFromFile(start, queryMap, tenant, file.getName());
                                         }
                                     }

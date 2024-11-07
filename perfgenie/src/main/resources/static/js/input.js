@@ -1053,8 +1053,9 @@ function parsePendingJFRs1(tenant, host){
                     meta.metadata["host"] = host;
                     meta.metadata["instance-id"] = host;
                     meta.metadata["file-name"] = k;
-                    meta.metadata["guid"] = contextDatas[key][k] + k; //change guid
-                    meta.timestampMillis = contextDatas[key][k];
+                    let tokens = contextDatas[key][k].split(" - ");
+                    meta.metadata["guid"] = tokens[1] + k; //change guid
+                    meta.timestampMillis = parseInt(tokens[0]);
                     metaData1.push(meta);
                 }
             }
