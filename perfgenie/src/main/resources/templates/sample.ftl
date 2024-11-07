@@ -63,7 +63,7 @@
     let sampleTable = undefined;
     let sampleTablePage = 0;
     let stack_id = undefined;
-    let smplBy = 'tid';
+    let smplBy = '';
     let samplesCustomEvent = '';
     let samplesgroupByLength = '';
     let samplesgroupByMatch = '';
@@ -154,6 +154,16 @@
                     selected: true
                 }));
             }else {
+                if ((smplBy == '' || smplBy == undefined || !groupByFound)) {
+                    for (let i = 0; i < groups.length; i++) {
+                        if (groups[i] == "uri") {//SFDC default
+                            smplBy = groups[i];
+                            groupByFound = true;
+                            break;
+                        }
+                    }
+                }
+
                 for (let i = 0; i < groups.length; i++) {
                     if ((smplBy == '' || smplBy == undefined || !groupByFound)) {
                         smplBy = groups[i];
@@ -227,7 +237,7 @@
 
     $(document).ready(function () {
 
-        smplBy=urlParams.get('smplBy') || 'tid';
+        smplBy=urlParams.get('smplBy');// || 'tid';
         sampleTablePage=urlParams.get('spage') || '0';
         stack_id=urlParams.get('stack_id') || '';
         samplesCustomEvent=urlParams.get('scustomevent') || '';

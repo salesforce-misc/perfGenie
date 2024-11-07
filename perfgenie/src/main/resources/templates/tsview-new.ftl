@@ -23,8 +23,12 @@
     <label title="group by tid will show all samples in a thread, others need a matching context">Group by: </label>
     <select style="height:30px;text-align: center;" class="filterinput" name="tsview-grp-by" id="tsview-grp-by">
     </select>
+    <span id="mcontention" class="hide">
     <label for="monitor-context">monitor-contention:</label>
     <input type="checkbox" id="monitorCheck" onclick="handleMonitorCheck()">
+        <span id="tsviewNote"  style='color:darkorange'>
+        </span>
+    </span>
 </div>
 
 <div class="row">
@@ -74,7 +78,54 @@
         }else{
             monitorCheck=false;
         }
-        updateProfilerViewTsview(getSelectedLevel(getContextTree(1, getEventType())), true);
+
+        //get monitor context startTime1 +" - "+endTime1
+        let localContextData = getContextData(1);
+        let contextDataRecords = undefined;
+        if (localContextData != undefined && localContextData.records != undefined) {
+            contextDataRecords = localContextData.records["monitor-context"];
+        }
+        if(contextDataRecords != undefined) {
+            updateProfilerViewTsview(getSelectedLevel(getContextTree(1, getEventType())), true);
+        }else{
+            getMonitorContext(startTime1 +" - "+endTime1, tenant1, host1, "monitor", 1);
+        }
+    }
+
+    function resettsviewNote(msg) {
+        $("#tsviewNote").html(msg);
+    }
+    function getMonitorContext(timeRange, tenant, host, customEvent, count) {
+        const callTreeUrl = getEventUrl(timeRange, tenant, host, customEvent);
+        if(otherEventsMaxAjaxTris[callTreeUrl] == undefined){
+            otherEventsMaxAjaxTris[callTreeUrl] = 1;
+        }else{
+            otherEventsMaxAjaxTris[callTreeUrl]++;
+        }
+        if(otherEventsMaxAjaxTris[callTreeUrl] > 1){
+            console.log("getOtherEvent already fetched count:" + count);
+            return;
+        }
+        resettsviewNote("Fetching monitor context, this may take few minutes ...  <span style='float: right;' class='spinner' id='contentionspinner'></span>");
+        showSpinner('contentionspinner');
+        let toTenant = tenant;
+        if(isS3 == "true") {
+            toTenant = "";
+        }
+        let request = stackDigVizAjax(toTenant, "GET", callTreeUrl, function (response) { // success function
+            console.log("getOtherEvent done count:" + count);
+            if(response == undefined || response === "" || response.header == undefined) {
+                console.log("Warn: unable to fetch other event" + customEvent);
+                resettsviewNote("Failed to get monitor context.");
+            }else {
+                resettsviewNote("");
+                setOtherEventData(response, count);
+                updateProfilerViewTsview(getSelectedLevel(getContextTree(1, getEventType())), true);
+            }
+        }, function (error) {
+            resettsviewNote("Failed to get monitor context.");
+            console.log("Warn: unable to fetch monitor event " + customEvent);
+        });
     }
 
     function updateTsviewEventInputOptions(id){
@@ -328,6 +379,18 @@
 
     let tsviewSortMap = undefined;
     function gentsviewtable(addContext, level) {
+        if($("#event-type-tsview").val() == "json-jstack") {//process all events
+            $('#mcontention').show();
+            if(document.getElementById("monitorCheck").checked == true){
+                monitorCheck=true;
+            }else{
+                monitorCheck=false;
+            }
+        }else{
+            monitorCheck=false;
+            $('#mcontention').hide();
+        }
+
         identifyLockWaitTids();
         if (tsviewtableFormat == 0) {
             tsviewtableFormat = 1;
