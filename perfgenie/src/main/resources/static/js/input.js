@@ -215,18 +215,22 @@ $(document).ready(function () {
         host1 = $("#host-input1").val();
         profile1 = undefined;
         $("#bases1").empty();
-        startTime1 = moment.utc($("#startpicker1").val()).valueOf();
-        endTime1 = moment.utc($("#endpicker1").val()).valueOf();
-        getMetaData1(startTime1, endTime1, tenant1, host1);
+        if(host1 != "") {
+            startTime1 = moment.utc($("#startpicker1").val()).valueOf();
+            endTime1 = moment.utc($("#endpicker1").val()).valueOf();
+            getMetaData1(startTime1, endTime1, tenant1, host1);
+        }
     });
 
     $("#host-input2").on("change", (event) => {
         host2 = $("#host-input2").val();
         profile2 = undefined;
         $("#bases2").empty();
-        startTime2 = moment.utc($("#startpicker2").val()).valueOf();
-        endTime2 = moment.utc($("#endpicker2").val()).valueOf();
-        getMetaData2(startTime2, endTime2, tenant2, host2);
+        if(host2 != "") {
+            startTime2 = moment.utc($("#startpicker2").val()).valueOf();
+            endTime2 = moment.utc($("#endpicker2").val()).valueOf();
+            getMetaData2(startTime2, endTime2, tenant2, host2);
+        }
     });
 
     $("#bases1").on("change", (event) => {
@@ -855,14 +859,19 @@ function populateHostsSelector1(start, end, tenant) {
     $("#host-input1").val("");
 
     if(instanceData1 != undefined) {
+        let hostSelected = false;
         for (let val in instanceData1) {
             if (host1 == val || host1 == "") {
                 host1 = val;
+                hostSelected = true;
                 $("#host-input1").val(val);
                 hostOptionHtml += "<option value=\"" + val + "\" selected></option>";
             }else{
                 hostOptionHtml += "<option value=\"" + val + "\"></option>";
             }
+        }
+        if(!hostSelected && host1 != undefined && host1 != ""){
+            $("#host-input1").val(host1);
         }
     }
 

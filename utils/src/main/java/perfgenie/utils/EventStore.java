@@ -172,11 +172,11 @@ public class EventStore {
         if(isGenie){
             addGenieEventMetaData(timestamp, queryMap, dimMap,config.getTenant());//metadata event
         }else{
-            addOtherEventMetaData(timestamp, queryMap, dimMap,PerfGenieConstants.getLargeEventNameSpace(tenant, isGenie));//metadata event
+            addOtherEventMetaData(timestamp, queryMap, dimMap,PerfGenieConstants.getEventNameSpace(tenant, isGenie));//metadata event
         }
         upload(timestamp, queryMap, dimMap, payload, PerfGenieConstants.getLargeEventNameSpace(tenant, isGenie));
     }
-    
+
     public String getGenieTenants(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final List<String> namespaces) throws IOException {
         try {
             Long currTime = System.currentTimeMillis();
@@ -309,7 +309,7 @@ public class EventStore {
 
 
     private void addGenieLargeEventFromFile(final long timestamp, final Map<String, String> queryMap, final String tenant, final String file) throws IOException{
-        final String uploaded = config.getJfrdir() + "/" + file + ".done";
+        final String uploaded = config.getJfrdir() + "/" + file.replaceAll(".json" ,".done");
         File check = new File(uploaded);
         if (check.exists()) {
             logger.info("Upload tried once : " + uploaded);
