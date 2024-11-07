@@ -123,6 +123,23 @@ public class EventStore {
         return true;
     }
 
+    private boolean addOtherEventMetaData(final long timestamp, final Map<String, String> queryMap, final Map<String, Double> dimMap, final String namespace) throws IOException { //TODO merge this with addGenieEventMetaData
+        final Stopwatch timer = Stopwatch.createStarted();
+        if(queryMap.containsKey(PerfGenieConstants.TENANT_KEY)) {
+            this.cantor.events().store(
+                    namespace,
+                    timestamp,
+                    queryMap,
+                    dimMap,
+                    null);
+            logger.info("addGenieEventMetaData successfully added event metadata under namespace: " + namespace + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+        }else{
+            logger.error("addEvent missing value of " + PerfGenieConstants.TENANT_KEY);
+            return false;
+        }
+        return true;
+    }
+
     public boolean addGenieEvent(final long timestamp, final Map<String, String> queryMap, final Map<String, Double> dimMap, final String payload, final String tenant) throws IOException {
         final Stopwatch timer = Stopwatch.createStarted();
         if(payload != null) {
@@ -150,11 +167,16 @@ public class EventStore {
         return true;
     }
 
-    public void addGenieLargeEvent(final long timestamp, final Map<String, String> queryMap, final Map<String, Double> dimMap, final String payload, final String tenant) throws IOException {
+    public void addGenieLargeEvent(final long timestamp, final Map<String, String> queryMap, final Map<String, Double> dimMap, final String payload, final String tenant, final boolean isGenie) throws IOException {
         queryMap.put("size", String.valueOf(payload.length()));
-        addGenieEventMetaData(timestamp, queryMap, dimMap,config.getTenant());//metadata event
-        upload(timestamp, queryMap, dimMap, payload, PerfGenieConstants.getLargeEventNameSpace(tenant, true));
+        if(isGenie){
+            addGenieEventMetaData(timestamp, queryMap, dimMap,config.getTenant());//metadata event
+        }else{
+            addOtherEventMetaData(timestamp, queryMap, dimMap,PerfGenieConstants.getLargeEventNameSpace(tenant, isGenie));//metadata event
+        }
+        upload(timestamp, queryMap, dimMap, payload, PerfGenieConstants.getLargeEventNameSpace(tenant, isGenie));
     }
+    
     public String getGenieTenants(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final List<String> namespaces) throws IOException {
         try {
             Long currTime = System.currentTimeMillis();
@@ -285,6 +307,67 @@ public class EventStore {
         return false;
     }
 
+
+    private void addGenieLargeEventFromFile(final long timestamp, final Map<String, String> queryMap, final String tenant, final String file) throws IOException{
+        final String uploaded = config.getJfrdir() + "/" + file + ".done";
+        File check = new File(uploaded);
+        if (check.exists()) {
+            logger.info("Upload tried once : " + uploaded);
+            return;
+        }
+
+        final Map<String, Double> dimMap = new HashMap<>();
+        final Map<String, String> queryMapTmp = new HashMap<>();
+
+        final String filePath = config.getJfrdir() + "/" + file;
+        final String payload = new String(Files.readAllBytes(Paths.get(filePath)));
+        dimMap.put("file-length", (double) payload.length());
+        queryMapTmp.put("host", queryMap.get("host").replaceAll("^=", ""));
+        queryMapTmp.put("instance-id", queryMap.get("host").replaceAll("^=", ""));
+        queryMapTmp.put("guid", queryMap.get("guid").replaceAll("^=", "") + file.replaceAll("^\\d+", "") + ".gz");
+        queryMapTmp.put("tenant-id", queryMap.get("tenant-id").replaceAll("^=", ""));
+        queryMapTmp.put("name", "jfr");
+        queryMapTmp.put("file-name", file.replaceAll("^\\d+", "") + ".gz");
+        queryMapTmp.put(".is-large-file", "true");
+
+        logger.info("Uploading parsed event: " + file + ":" + queryMapTmp + ":" + dimMap);
+        //add an upload flag
+        check.createNewFile();
+        addGenieLargeEvent(timestamp, queryMapTmp, dimMap, payload, tenant, false); //TODO use correct destination
+
+        /*
+        Uploading parsed event: 1730959240745jfr_dump_socket.json:
+        {
+        instance-id=sdb34-casam-app-green-b5f79dcd4-t4hjt,
+        host=sdb34-casam-app-green-b5f79dcd4-t4hjt,
+        name=jfr, guid=434adba3-e7ca-4af7-99aa-a47415379968jfr_dump_socket.json.gz,
+        file-name=jfr_dump_socket.json.gz,
+        tenant-id=falcon-perf1-useast2-core1-sdb34,
+        .is-large-file=true
+        }
+        {file-length=284165.0}
+//needed
+{
+  "timestampMillis": 1730994142867,
+  "metadata": {
+    "instance-id": "ind64-casam-app-blue-59d597f9cd-l8lrq",
+    "host": "ind64-casam-app-blue-59d597f9cd-l8lrq",
+    "name": "jfr",
+    "guid": "94f5fdff-8af6-4741-94d3-9f95bfc82aa0jfr_dump.json.gz",
+    "file-name": "jfr_dump.json.gz",
+    "tenant-id": "falcon-aws-prod2-apsouth1-core1-ind64",
+    ".is-large-file": "true",
+  },
+  "dimensions": {
+    ".maiev-event-payload-size": 0,
+    "file-length": 7830098,
+    "chunk-total": 1
+  },
+  "payload": ""
+}
+         */
+    }
+
     public String getGenieLargeEvent(final long start, final long end, final Map<String,
             String> queryMap, final Map<String, String> dimMap, final String tenant) throws IOException {
 
@@ -312,6 +395,9 @@ public class EventStore {
                                     if(!(tmpfileName.contains("_sql.json") || tmpfileName.contains(".tmp"))) {
                                         tmpfileName = tmpfileName.replace(Long.toString(start), "");
                                         profiles.put(tmpfileName+".gz", start);
+                                        if(tmpfileName.contains(".json")) {
+                                            addGenieLargeEventFromFile(start, queryMap, tenant, file.getName());
+                                        }
                                     }
                                 }
                             }

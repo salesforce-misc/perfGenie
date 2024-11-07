@@ -167,14 +167,14 @@ public class PerfGenieService implements IPerfGenieService {
                         int payloadSize = payload.length();
                         queryMap.put("size", String.valueOf(payloadSize));
                         System.out.println(payloadSize);
-                        eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, payload, config.getTenant());
+                        eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, payload, config.getTenant(), true);
                     }
                     Object logContext = handler.getLogContext();
                     queryMap.put("file-name", "jfr-context");//
                     queryMap.put("type", "jfrevent");
                     queryMap.put("name", "jfr");
 
-                    eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, Utils.toJson(logContext), config.getTenant());
+                    eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, Utils.toJson(logContext), config.getTenant(), true);
                 } catch (Exception e) {
                     System.out.println(e);
                     logger.warn("Exception parsing file 3" + file.getPath() + ":" + e.getStackTrace());
@@ -240,7 +240,7 @@ public class PerfGenieService implements IPerfGenieService {
 
     @Override
     public void addGenieLargeEvent(final String payload, final long timestamp, final Map<String, Double> dimMap, final Map<String, String> queryMap, final String tenant) throws IOException {
-        eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, payload, tenant);
+        eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, payload, tenant, true);
     }
 
     @Override
