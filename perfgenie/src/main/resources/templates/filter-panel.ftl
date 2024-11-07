@@ -3894,14 +3894,15 @@
     }
 
     function setToolBarOptions(id) {
-
         console.log("getToolBarOptions1 otherEvent: " + otherEvent + " customEvent: " + customEvent +" groupBy:" +groupBy+ " tableFormat: "+tableFormat+" sortBy:"+sortBy+" cumulativeLine:"+cumulativeLine+" spanThreshold: "+ spanThreshold + " tableThreshold:"+tableThreshold);
+
         if(compareTree) {
             tableFormat = 0;
         }
         let toolBarOptions = '<span title="selected context filter data, raw diagnostics data and diagnostics data ">Data:</span> <select  style="height:30px;width:200px;text-align: center; " class="filterinput"  name="other-event-input" id="other-event-input">\n';
 
         let localContextData = getContextData(1);
+
         if (localContextData != undefined && localContextData.records != undefined) {
             let customEventFound = false;
             if(!(customEvent == '' || customEvent == undefined)) {
@@ -4045,7 +4046,17 @@
                     }
                 }
             }
+
             if (addDim) {
+                if ((groupBy == '' || groupBy == undefined || !groupByFound)) {
+                    for (let i = 0; i < groups.length; i++) {
+                        if (groups[i] == "orgId") {//SFDC default
+                            groupBy = groups[i];
+                            groupByFound = true;
+                            break;
+                        }
+                    }
+                }
                 for (let i = 0; i < groups.length; i++) {
                     if ((groupBy == '' || groupBy == undefined || !groupByFound)) {
                         groupBy = groups[i];
