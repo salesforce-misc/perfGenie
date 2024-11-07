@@ -279,7 +279,7 @@
             },
             items: {
                 "add": {name: "Add to filter"},
-                "show": {name: "Show thread timeline"}
+                "show": {name: "Show thread timeline all"}
             }
         });
         $.contextMenu({
@@ -605,6 +605,7 @@
     let spanThreshold = 200;
     let tableThreshold = "duration";
     let isFilterOnType = true;
+    let reqquestHeaderIdentifier = "reqId";
 
     let multiSelect = {};
 
@@ -5432,6 +5433,7 @@
         let spanIndex = -1;
         let timestampIndex = -1;
         let tidRowIndex = -1;
+        let requestIdIndex = -1;
         let isContextViewFiltered = true;
 
 
@@ -5466,6 +5468,9 @@
             }
             if ("timestamp" == tokens[0]) { // TODO: take from user
                 timestampIndex = val;
+            }
+            if (reqquestHeaderIdentifier == tokens[0]) { // TODO: take from user
+                requestIdIndex = val;
             }
             if (tokens[1] == "text" || tokens[1] == "timestamp") {
                 dimIndexMap[tokens[0]] = val;
@@ -5602,6 +5607,8 @@
                                             for (let field in record) {
                                                 if (field == timestampIndex) {
                                                     sfContextDataTable.addContextTableRow(tableRows[rowIndex], moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'), "id='" + record[tidRowIndex] + "_" + record[field] + "'");
+                                                }else if (field == requestIdIndex) {
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field], "id='" + record[tidRowIndex] + "_" + record[timestampIndex] + "'");
                                                 } else if (field == tidRowIndex) {
                                                     sfContextDataTable.addContextTableRow(tableRows[rowIndex], Number(record[field]), "id='" + record[tidRowIndex] + "_dummy'" + " hint='tid'");
                                                 } else {
@@ -5713,6 +5720,8 @@
                                             for (let field in record) {
                                                 if (field == timestampIndex) {
                                                     sfContextDataTable.addContextTableRow(tableRows[rowIndex], moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'), "id='" + record[tidRowIndex] + "_" + record[field] + "'");
+                                                }else if (field == requestIdIndex) {
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field], "id='" + record[tidRowIndex] + "_" + record[timestampIndex] + "'");
                                                 } else if (field == tidRowIndex) {
                                                     sfContextDataTable.addContextTableRow(tableRows[rowIndex], Number(record[field]), "id='" + record[tidRowIndex] + "_dummy'" + " hint='tid'");
                                                 } else {
@@ -6413,6 +6422,8 @@
                     if(tokens[1] == "number") {
                         sfContextDataTable.addContextTableHeader(row,tokens[0],1, undefined, localContextData.tooltips[tokens[0]]);
                     }else if(tokens[1] == "timestamp"){
+                        sfContextDataTable.addContextTableHeader(row,tokens[0],-1,addrightclick ? "class='context-menu-one'" : "");
+                    }else if(tokens[0] == reqquestHeaderIdentifier){ //SFDC custom
                         sfContextDataTable.addContextTableHeader(row,tokens[0],-1,addrightclick ? "class='context-menu-one'" : "");
                     }else if(tokens[0] == "tid"){
                         sfContextDataTable.addContextTableHeader(row,tokens[0],1,addrightclick ?  "class='context-menu-three'" : "", localContextData.tooltips[tokens[0]]);
