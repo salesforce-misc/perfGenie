@@ -24,7 +24,7 @@
     <select style="height:30px;text-align: center;" class="filterinput" name="tsview-grp-by" id="tsview-grp-by">
     </select>
     <span id="mcontention" class="hide">
-    <label for="monitor-context">monitor-contention:</label>
+    <label>monitor-contention:</label>
     <input type="checkbox" id="monitorCheck" onclick="handleMonitorCheck()">
         <span id="tsviewNote"  style='color:darkorange'>
         </span>
@@ -48,7 +48,7 @@
     </div>
     <div style="padding-left: 0px !important;" id="quick-tsviewstack-view" class="col-lg-5">
         <a id="detail-tsviewstack-view-link" target="_blank"></a>
-        <label id="stack-tsview-java-label-guid" for="stack-tsview-guid" >Stack Trace</label>
+        <label id="stack-tsview-java-label-guid">Stack Trace</label>
         <pre class="small" style="max-height: 900px; min-height: 900px; overflow-y: scroll;" id="stack-tsview-guid" >
             Click on a sample to see the Java stack here...
         </pre>

@@ -788,7 +788,7 @@ function addInputToURL() {
             updateUrl("dataSource", "other");
         }
     }
-    if(instanceData2[host2] != undefined) {
+    if(instanceData2 != undefined && instanceData2[host2] != undefined) {
         if(instanceData2[host2] != undefined) {
             updateUrl("dataSource", instanceData2[host2]);//todo, support different data sources for each host
         }else if(tenantData2 != undefined && tenantData2[tenant2] != undefined){
@@ -859,18 +859,18 @@ function populateHostsSelector1(start, end, tenant) {
     $("#host-input1").val("");
 
     if(instanceData1 != undefined) {
-        let hostSelected = false;
+        let hostExist = false;
         for (let val in instanceData1) {
             if (host1 == val || host1 == "") {
                 host1 = val;
-                hostSelected = true;
                 $("#host-input1").val(val);
                 hostOptionHtml += "<option value=\"" + val + "\" selected></option>";
             }else{
                 hostOptionHtml += "<option value=\"" + val + "\"></option>";
             }
+            hostExist = true;
         }
-        if(!hostSelected && host1 != undefined && host1 != ""){
+        if(!hostExist && host1 != undefined && host1 != ""){
             $("#host-input1").val(host1);
         }
     }

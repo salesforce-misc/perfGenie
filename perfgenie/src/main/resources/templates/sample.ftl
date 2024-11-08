@@ -46,7 +46,7 @@
     </div>
     <div style="padding-left: 0px !important;" id="quick-stack-view" class="col-lg-5">
         <a id="detail-stack-view-link" target="_blank"></a>
-        <label id="stack-view-java-label-guid" for="stack-view-guid" >Stack Trace</label>
+        <label id="stack-view-java-label-guid">Stack Trace</label>
         <pre class="small" style="max-height: 900px; min-height: 900px; overflow-y: scroll;" id="stack-view-guid" >
             Click on a sample to see the Java stack here...
         </pre>
