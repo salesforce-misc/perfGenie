@@ -1025,7 +1025,29 @@ function updateTypes2(tenant, host){
 
 let toPArse = {1:[],2:[]};
 
+function jfrJsonExists(metaData, timestamp, guid, host){
+    for (var key in metaData) {
+        let filename = metaData1[key].metadata["file-name"];
+        if(metaData[key].timestampMillis == timestamp && metaData[key].metadata["name"] == "jfr" && filename!= undefined && filename.includes(".json.gz")){
+            console.log("No need to parse " + filename + ":" + timestamp + ":"+guid);
+            return true;
+        }
+    }
+    console.log("need to parse " + timestamp+":"+guid);
+    return false;
+}
+
 function addToParse(count, tenant, host, timestamp, eventType, guid){
+    if(count == 1){
+        if(jfrJsonExists(metaData1, timestamp, guid, host)){
+            return;
+        }
+    }else{
+        if(jfrJsonExists(metaData2, timestamp, guid, host)){
+            return;
+        }
+    }
+
     let endpoint = "/v1/profile/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
         "&metadata_query=" + encodeURIComponent("host=" + host) +
         "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
@@ -1035,12 +1057,16 @@ function addToParse(count, tenant, host, timestamp, eventType, guid){
 }
 
 function parsePendingJFRs1(tenant, host){
-    addInputNote(true,(toPArse[1].length + toPArse[2].length) +" full JFR(s) found, sequential download and parsing will take few minutes, please be patient ...")
-    showSpinner();
     const requests = [];
     for(let i=0; i< toPArse[1].length; i++){
         requests.push(callTreePerfGenieAjax(tenant, "GET", toPArse[1][i], result => result));
     }
+    if(requests.length == 0){
+        populateIDs1(tenant, host, false, true);
+        return;
+    }
+    addInputNote(true,(toPArse[1].length + toPArse[2].length) +" full JFR(s) found, sequential download and parsing will take few minutes, please be patient ...")
+    showSpinner();
     let queryResults = Promise.all(requests);
     queryResults.then(contextDatas => {
 
@@ -1068,12 +1094,16 @@ function parsePendingJFRs1(tenant, host){
 }
 
 function parsePendingJFRs2(tenant, host){
-    addInputNote(true,(toPArse[1].length + toPArse[2].length) +" full JFR(s) found, sequential download and parsing will take few minutes, please be patient ...")
-    showSpinner();
     const requests = [];
     for(let i=0; i< toPArse[2].length; i++){
         requests.push(callTreePerfGenieAjax(tenant, "GET", toPArse[2][i], result => result));
     }
+    if(requests.length == 0){
+        populateIDs2(tenant, host, false, true);
+        return;
+    }
+    addInputNote(true,(toPArse[1].length + toPArse[2].length) +" full JFR(s) found, sequential download and parsing will take few minutes, please be patient ...")
+    showSpinner();
     let queryResults = Promise.all(requests);
     queryResults.then(contextDatas => {
 

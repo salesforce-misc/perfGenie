@@ -177,6 +177,16 @@ public class EventStore {
         upload(timestamp, queryMap, dimMap, payload, PerfGenieConstants.getLargeEventNameSpace(tenant, isGenie));
     }
 
+    public void addGenieLargeEvent(final long timestamp, final Map<String, String> queryMap, final Map<String, Double> dimMap, final byte[] payload, final String tenant, final boolean isGenie) throws IOException {
+        queryMap.put("size", String.valueOf(payload.length));
+        if(isGenie){
+            addGenieEventMetaData(timestamp, queryMap, dimMap,config.getTenant());//metadata event
+        }else{
+            addOtherEventMetaData(timestamp, queryMap, dimMap,PerfGenieConstants.getEventNameSpace(tenant, isGenie));//metadata event
+        }
+        uploadBytes(timestamp, queryMap, dimMap, payload, PerfGenieConstants.getLargeEventNameSpace(tenant, isGenie));
+    }
+
     public String getGenieTenants(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final List<String> namespaces) throws IOException {
         try {
             Long currTime = System.currentTimeMillis();
@@ -306,8 +316,7 @@ public class EventStore {
         }
         return false;
     }
-
-
+    
     private void addGenieLargeEventFromFile(final long timestamp, final Map<String, String> queryMap, final String tenant, final String file) throws IOException{
         final String uploaded = config.getJfrdir() + "/" + file.replaceAll(".json" ,".done");
         File check = new File(uploaded);
@@ -320,8 +329,8 @@ public class EventStore {
         final Map<String, String> queryMapTmp = new HashMap<>();
 
         final String filePath = config.getJfrdir() + "/" + file;
-        final String payload = new String(Files.readAllBytes(Paths.get(filePath)));
-        dimMap.put("file-length", (double) payload.length());
+        final byte[] payload = Utils.compress(Files.readAllBytes(Paths.get(filePath)));
+        dimMap.put("file-length", (double) payload.length);
         queryMapTmp.put("host", queryMap.get("host").replaceAll("^=", ""));
         queryMapTmp.put("instance-id", queryMap.get("host").replaceAll("^=", ""));
         queryMapTmp.put("guid", queryMap.get("guid").replaceAll("^=", "") + file.replaceAll("^\\d+", "") + ".gz");
@@ -599,6 +608,18 @@ public class EventStore {
         return null;
     }
 
+    private void uploadBytes(final long timestamp, final Map<String, String> metadata,
+                        final Map<String, Double> dimensions, final byte[] bytes, final String namespace) throws IOException {
+        logger.info("Started uploading bytes {} to {}", metadata, namespace);
+        final UploadIterator iterator = new UploadIterator(metadata, dimensions, bytes);
+        this.cantor.events().store(namespace, timestamp, iterator.metadata, iterator.dimension);
+        while (iterator.hasNext()) {
+            final Events.Event event = iterator.next();
+            this.cantor.events().store(namespace, timestamp, event.getMetadata(), event.getDimensions(), event.getPayload());
+        }
+        logger.info("Completed uploading bytes to {} {} as {} cantor events", namespace, metadata, dimensions.get("chunk-total").longValue());
+    }
+
     //Done
     private void upload(final long timestamp, final Map<String, String> metadata,
                         final Map<String, Double> dimensions, final String rawPayload, final String namespace) throws IOException {
@@ -717,6 +738,7 @@ public class EventStore {
                 if(metadataQuery.containsKey(PerfGenieConstants.SOURCE_KEY)) {//genie
                     return new String(Utils.decompress(outStream.toByteArray()));
                 }else{
+                    //return new String(Utils.decompress(outStream.toByteArray()));
                     return new String(Utils.decompress(Utils.decompress(outStream.toByteArray())));
                 }
             }catch(Exception e){
@@ -740,6 +762,26 @@ public class EventStore {
         private int start;
         private int end;
         private byte[] currentChunk;
+        UploadIterator(final Map<String, String> metadata, final Map<String, Double> dimension, final byte[] bytes) throws IOException {
+            this.metadata = metadata;
+            this.dimension = dimension;
+
+            payload = Utils.compress(bytes);
+            fileLength = payload.length;
+            totalChunkCount = (fileLength / MAX_CHUNK_SIZE) + (fileLength % MAX_CHUNK_SIZE != 0 ? 1 : 0);
+            dimension.put("file-length", (double) fileLength);
+            dimension.put("chunk-total", (double) totalChunkCount);
+
+            chunkIndex = 0;
+            start = 0;
+            end = MAX_CHUNK_SIZE - 1;
+            currentChunk = new byte[MAX_CHUNK_SIZE];
+
+            if (fileLength < MAX_CHUNK_SIZE) {
+                end = this.fileLength - 1;
+                currentChunk = new byte[Long.valueOf(fileLength).intValue()];
+            }
+        }
 
         UploadIterator(final Map<String, String> metadata, final Map<String, Double> dimension, final String rawPayload) throws IOException {
             this.metadata = metadata;
@@ -838,7 +880,7 @@ public class EventStore {
                         true
                 );
 
-                if (result.size() != 1) {
+                if (result.size() < 1) {
                     throw new IllegalArgumentException("Should have exactly one event per query but found: " + result.size());
                 }
 
