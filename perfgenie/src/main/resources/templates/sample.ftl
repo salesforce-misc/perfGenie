@@ -1266,6 +1266,11 @@
             return false;
         }
 
+        if(compareTree){
+            addTabNote(true,"Showing this view for one profile, comparison is not supported");
+        }
+
+
         updateEventInputOptions('event-input-smpl');
         updateGroupByOptions('smpl-grp-by');
         updateSampleFormatOptions('sample-format-input');

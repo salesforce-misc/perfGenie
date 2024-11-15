@@ -2339,7 +2339,7 @@
                 "&nbsp;profiling samples between " + moment.utc(Number(time)).format('YYYY-MM-DD HH:mm:ss.SSS') + " to " + moment.utc(Number(time) + runTime).format('YYYY-MM-DD HH:mm:ss.SSS') + "<span style='cursor: pointer; float: right' onclick='unLoadModal(\"timelinepopup\")'> Close </span>";
         }else{
             timelinetitleIDHTML += "</select>" +
-                "&nbsp;profiling samples of tid " + tid;
+                "&nbsp;profiling samples of tid " + tid + "<span style='cursor: pointer; float: right' onclick='unLoadModal(\"timelinepopup\")'> Close </span>";
         }
 
         document.getElementById(timelinetitleID).innerHTML = timelinetitleIDHTML;

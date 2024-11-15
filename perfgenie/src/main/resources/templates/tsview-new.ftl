@@ -1422,6 +1422,9 @@
             console.log("updateProfilerViewTsview skip:" + level);
             return false;
         }
+        if(compareTree){
+            addTabNote(true,"Showing this view for one profile, comparison is not supported");
+        }
 
         updateTsviewEventInputOptions('event-input-tsview');
         updateTsviewGroupByOptions('tsview-grp-by');
