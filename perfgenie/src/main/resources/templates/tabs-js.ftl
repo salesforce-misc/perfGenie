@@ -371,7 +371,7 @@
     function retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, eventType) {
         let start = performance.now();
         if(getEventType() === eventType) {
-            resetTreeHeader("<div style='padding-right: 10px'>Retrieving profile data ... <span style='float: right;' class='spinner' id='profilespinner'></span></div>");
+            resetTreeHeader("<div style='padding-right: 10px'>Retrieving profile data, <span style='color:darkorange'>this may take few sec ...</span> <span style='float: right;' class='spinner' id='profilespinner'></span></div>");
             showSpinner('profilespinner');
         }
         let isJstackEvent = false;
@@ -618,7 +618,7 @@
         let start = performance.now();
 
         unhideFilterViewStatus();
-        updateFilterViewStatus("<div style='padding-right: 0px'>Retrieving request context of profile, this may take few sec  ... <span style='float: right;' class='spinner' id='contextspinner'></span></div>");
+        updateFilterViewStatus("<div style='padding-right: 0px' >Retrieving request context of profile, <span style='color:darkorange'>this may take few sec  ... </span><span style='float: right;' class='spinner' id='contextspinner'></span></div>");
         showSpinner('contextspinner');
 
         let queryResults = fetchContextData(dateRanges, pods, queries, profilers, tenants, profiles, hosts, uploads, fileIds, uploadTimes, aggregates, customEvent);
@@ -634,7 +634,7 @@
             if (contextDatas.length === 1) {
                 if(contextDatas[0] === "") {
                     console.log("log context not available in JFR");
-                    updateFilterViewStatus("Note: Failed to get Request context.");
+                    updateFilterViewStatus("<span style='color:darkorange'>Warning:</span> Failed to get Request context.");
                     toastr_warning("Failed to get Request context.");
                     setContextData({"records": {}, "tidlist": [], "header": {}},1);
                     fetchOtherEvents(dateRanges[0], tenants[0], hosts[0], 1);
@@ -643,7 +643,7 @@
                     refreshTreeAfterContext(customEvent);
                 }else {
                     if(contextDatas[0].tidlist == undefined && contextDatas[0].error != undefined){
-                        updateFilterViewStatus("Note: Failed to get Request context.");
+                        updateFilterViewStatus("<span style='color:darkorange'>Warning:</span> Failed to get Request context.");
                         toastr_warning("Failed to get Request context.");
                         setContextData({"records": {}, "tidlist": [], "header": {}},1);
                         fetchOtherEvents(dateRanges[0], tenants[0], hosts[0], 1);
@@ -661,7 +661,7 @@
             }else{
                 if(contextDatas[0] === "" || contextDatas[1] === "") {
                     console.log("log context not available in JFR");
-                    updateFilterViewStatus("Note: Failed to get Request context.");
+                    updateFilterViewStatus("<span style='color:darkorange'>Warning:</span> Failed to get Request context.");
                     toastr_warning("Failed to get Request context.");
                     setContextData({"records": {}, "tidlist": [], "header": {}},1);
                     setContextData({"records": {}, "tidlist": [], "header": {}},2);
@@ -672,7 +672,7 @@
                     refreshTreeAfterContext(customEvent);
                 }else {
                     if(contextDatas[0].tidlist == undefined && contextDatas[0].error != undefined){
-                        updateFilterViewStatus("Note: Failed to get Request context.");
+                        updateFilterViewStatus("<span style='color:darkorange'>Warning:</span> Failed to get Request context.");
                         toastr_warning("Failed to get Request context.");
                         setContextData({"records": {}, "tidlist": [], "header": {}},2);
                         fetchOtherEvents(dateRanges[0], tenants[0], hosts[0], 1);
@@ -695,66 +695,11 @@
             }).catch(error => {
                 setContextData({"records": {}, "tidlist": [], "header": {}},1);
                 fetchOtherEvents(dateRanges[0], tenants[0], hosts[0], 1);
-                updateFilterViewStatus("Note: Failed to get Request context.");
+                updateFilterViewStatus("<span style='color:darkorange'>Warning:</span> Failed to get Request context.");
                 toastr_warning("Failed to get Request context.");
                 refreshTreeAfterContext(customEvent);
                 console.error(error);
             });
-    }
-
-    function getLogContextold(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, eventType, start, end, customEvent) {
-        unhideFilterViewStatus();
-        updateFilterViewStatus("<div style='padding-right: 0px'>Retrieving request context of profile, this may take few sec  ... <span style='float: right;' class='spinner' id='contextspinner'></span></div>");
-        showSpinner('contextspinner');
-
-        const callTreeUrl = getCallTreeUrl(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, customEvent);
-        let toTenant = tenant;
-        if(isS3 == "true") {
-            toTenant = "";
-        }
-        let request = stackDigVizAjax(toTenant, "GET", callTreeUrl, function (response) { // success function
-            console.log("getLogContext done");
-            if(response === "") {
-                console.log("log context not available in JFR, will fetch from Splunk");
-                updateFilterViewStatus("Note: Failed to get Request context.");
-                toastr_warning("Failed to get Request context.");
-                setContextData({"records": {}, "tidlist": [], "header": {}},1);
-                fetchOtherEvents(timeRange, tenant, host);
-
-                showContextFilter();
-                hideFilterViewStatus();
-
-                refreshTreeAfterContext(customEvent);
-            }else {
-                if(response.tidlist == undefined && response.error != undefined){
-                    updateFilterViewStatus("Note: Failed to get Request context.");
-                    toastr_warning("Failed to get Request context.");
-                    setContextData({"records": {}, "tidlist": [], "header": {}},1);
-                    fetchOtherEvents(timeRange, tenant, host);
-
-                    showContextFilter();
-                    hideFilterViewStatus();
-                    refreshTreeAfterContext(customEvent);
-                }else {
-                    setContextData(response,1);
-                    fetchOtherEvents(timeRange, tenant, host);
-
-                    showContextFilter();
-                    hideFilterViewStatus();
-
-                    refreshTreeAfterContext(customEvent);
-                }
-            }
-        }, function (error) {
-            if(error.status == 401){
-                location.reload();
-            }
-            setContextData({"records": {}, "tidlist": [], "header": {}},1);
-            fetchOtherEvents(timeRange, tenant, host);
-            updateFilterViewStatus("Note: Failed to get Request context.");
-            toastr_warning("Failed to get Request context.");
-            console.error(error);
-        });
     }
 
     function refreshTreeAfterContext(customEvent){

@@ -1221,6 +1221,9 @@
     }
 
     function unhideFilterViewStatus() {
+        if($("#cct-panel").css("height").split(".")[0] < 25) {
+            $("#cct-panel").css("height", "25px");
+        }
         $("#filter-view-status").removeClass("hide");
     }
 
@@ -2333,7 +2336,7 @@
 
         if(!allSamples) {
             timelinetitleIDHTML += "</select>" +
-                "&nbsp;profiling samples between " + moment.utc(Number(time)).format('YYYY-MM-DD HH:mm:ss.SSS') + " to " + moment.utc(Number(time) + runTime).format('YYYY-MM-DD HH:mm:ss.SSS');
+                "&nbsp;profiling samples between " + moment.utc(Number(time)).format('YYYY-MM-DD HH:mm:ss.SSS') + " to " + moment.utc(Number(time) + runTime).format('YYYY-MM-DD HH:mm:ss.SSS') + "<span style='cursor: pointer; float: right' onclick='unLoadModal(\"timelinepopup\")'> Close </span>";
         }else{
             timelinetitleIDHTML += "</select>" +
                 "&nbsp;profiling samples of tid " + tid;

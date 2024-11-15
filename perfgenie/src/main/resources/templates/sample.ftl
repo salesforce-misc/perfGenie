@@ -443,9 +443,9 @@
                     //set default tid
                     groupBySamples = "tid";
                     if (eventType == "Jstack" || eventType == "json-jstack") {
-                        updateFilterViewStatus("Note: Failed to get Request context, only tid and threadName group by options supported.");
+                        updateFilterViewStatus("<span style='color:darkorange'>Warning:</span> Failed to get Request context, only tid and threadName group by options supported.");
                     } else {
-                        updateFilterViewStatus("Note: Failed to get Request context, only tid group by option supported.");
+                        updateFilterViewStatus("<span style='color:darkorange'>Warning:</span> Failed to get Request context, only tid group by option supported.");
                     }
                 }
             }
@@ -736,9 +736,9 @@
                     }
                 } else {
                     if (eventType == "Jstack" || eventType == "json-jstack") {
-                        updateFilterViewStatus("Note: Failed to get Request context, only tid and threadName group by options supported.");
+                        updateFilterViewStatus("<span style='color:darkorange'>Warning:</span> Failed to get Request context, only tid and threadName group by options supported.");
                     } else {
-                        updateFilterViewStatus("Note: Failed to get Request context, only tid group by option supported.");
+                        updateFilterViewStatus("<span style='color:darkorange'>Warning:</span> Failed to get Request context, only tid group by option supported.");
                     }
                 }
             }

@@ -20,7 +20,7 @@
         handleEventTypeChange($("#event-type-river").val());
     });
 
-    function updateProfilerViewRiver(level) {
+    function updateProfilerViewRiver(level, skipFilter) {
         addTabNote(false,"");
 
         clearPlotData();
@@ -30,6 +30,8 @@
         } else {
             riverPlot();
         }
+        resetTreeHeader("");
+        genRequestTable();
     }
 
     let bucketTotal = [];
@@ -80,8 +82,10 @@
         console.log("riverPlot");
         let baseJsonTree = getContextTree(1, getEventType());
         if (baseJsonTree.meta == undefined || baseJsonTree.meta.data == undefined || baseJsonTree.meta.data.length < 3) {
-            addTabNote(true,"Data not available to show this view, check if isExperimental is enabled in config.properties")
+            addTabNote(true,"Data not available to show this view, check if isExperimental is enabled in config.properties");
             return;
+        }else{
+            addTabNote(true,"Experimental profile timeline view");
         }
         //let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
         let selectedLevel = getSelectedLevel(getTree(1, getEventType()));

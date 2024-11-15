@@ -55,7 +55,7 @@
         $('#' + modalId).modal('hide');
     }
 
-    function updateProfilerViewSurface(level) {
+    function updateProfilerViewSurface(level, skipFilter) {
         addTabNote(false,"");
         clearPlotData();
         $("#areaplot").html("");
@@ -64,6 +64,9 @@
         } else {
             surfacePlot();
         }
+
+        resetTreeHeader("");
+        genRequestTable();
     }
 
     function getTreeStackTmp(tree, stackid, filterTree, size) {
@@ -236,12 +239,16 @@
         if (baseJsonTree.meta == undefined || baseJsonTree.meta.data == undefined || baseJsonTree.meta.data.length < 3) {
             addTabNote(true,"Data not available to show this view, check if isExperimental is enabled in config.properties")
             return;
+        }else{
+            addTabNote(true,"Experimental profile timeline view");
         }
         //let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
         let selectedLevel = getSelectedLevel(getTree(1, getEventType()));//both trees should be at the same level
         if(selectedLevel !== FilterLevel.UNDEFINED){
             addTabNote(true,"Filters not applied on this view.")
         }
+
+
 
         sortPlotData();
         z_data = getplotData();
