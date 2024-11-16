@@ -15,13 +15,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,9 +34,9 @@ public class PerfGenieController {
     //@CrossOrigin
     @GetMapping(path = {"/v1/tenants", "/v1/tenants/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String tenants(@PathVariable(required = false, name = "tenant") String tenant,
-                       @RequestParam(required = false, name = "start") final long start,
-                       @RequestParam(required = false, name = "end") final long end,
-                       @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
+                          @RequestParam(required = false, name = "start") final long start,
+                          @RequestParam(required = false, name = "end") final long end,
+                          @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
 
         final Map<String, String> queryMap = queryToMap(metadataQuery);
         final Map<String, String> dimMap = new HashMap<>();
@@ -50,9 +46,9 @@ public class PerfGenieController {
     //@CrossOrigin
     @GetMapping(path = {"/v1/instances", "/v1/instances/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String instances(@PathVariable(required = false, name = "tenant") String tenant,
-                          @RequestParam(required = false, name = "start") final long start,
-                          @RequestParam(required = false, name = "end") final long end,
-                          @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
+                            @RequestParam(required = false, name = "start") final long start,
+                            @RequestParam(required = false, name = "end") final long end,
+                            @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
 
         final Map<String, String> queryMap = queryToMap(metadataQuery);
         return service.getGenieInstances(start, end, tenant, queryMap);
@@ -74,9 +70,9 @@ public class PerfGenieController {
     //@CrossOrigin
     @GetMapping(path = {"/v1/jstacks", "/v1/jstacks/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String jstacks(@PathVariable(required = false, name = "tenant") String tenant,
-                         @RequestParam(required = false, name = "start") final long start,
-                         @RequestParam(required = false, name = "end") final long end,
-                         @RequestParam("metadata_query") final List<String> metadataQuery) throws IOException {
+                          @RequestParam(required = false, name = "start") final long start,
+                          @RequestParam(required = false, name = "end") final long end,
+                          @RequestParam("metadata_query") final List<String> metadataQuery) throws IOException {
 
         final Map<String, String> queryMap = queryToMap(metadataQuery);
         return service.getJstackProfile(tenant, start, end, queryMap);
@@ -93,6 +89,7 @@ public class PerfGenieController {
 
         return service.getGenieEvent(tenant, start, end, queryMap, dimMap);
     }
+
     @GetMapping(path = {"/v1/profile", "/v1/profile/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String profile(@PathVariable(required = false, name = "tenant") String tenant,
                           @RequestParam(required = false, name = "start") final long start,
@@ -140,8 +137,8 @@ public class PerfGenieController {
 
     @GetMapping(path = {"/v1/download", "/v1/download/{tenant}"})//, produces = MediaType.APPLICATION_OCTET_STREAM)
     public ResponseEntity<InputStreamResource> downloadPayload(@PathVariable(required = false, name = "tenant") String tenant,
-                                                       @RequestParam(required = false, name = "timestamp") final long timestamp,
-                                                       @RequestParam("metadata_query") final List<String> metadataQuery)throws IOException {
+                                                               @RequestParam(required = false, name = "timestamp") final long timestamp,
+                                                               @RequestParam("metadata_query") final List<String> metadataQuery) throws IOException {
 
         final Map<String, String> queryMap = queryToMap(metadataQuery);
         final Map<String, String> dimMap = new HashMap<>();
@@ -151,7 +148,7 @@ public class PerfGenieController {
 
         HttpHeaders headers = new HttpHeaders();
         String filename = queryMap.get("file-name");
-        filename = Long.toString(timestamp) + "_" + filename.replace("=","");
+        filename = Long.toString(timestamp) + "_" + filename.replace("=", "");
         headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename);
         return ResponseEntity.ok()
                 .headers(headers)
@@ -186,5 +183,4 @@ public class PerfGenieController {
         }
         return queryMap;
     }
-
 }

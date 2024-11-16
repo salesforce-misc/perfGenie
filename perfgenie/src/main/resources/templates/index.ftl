@@ -11,7 +11,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>perf-genie</title>
 
     <#--    https://momentjs.com-->
     <script src="/plugins/moment.min.js"></script>
@@ -69,9 +69,7 @@
 
 </head>
 <body>
-<div id="header" style=" background-color: #429CD6">
-    <h3  style="display:table-cell;vertical-align:middle;padding-left: 10px;color: white;">PerfGenie</h3>
-</div>
+<#include "header.ftl">
 <#include "input.ftl">
 <#include "filter-panel.ftl">
 <#include "tabs.ftl">
