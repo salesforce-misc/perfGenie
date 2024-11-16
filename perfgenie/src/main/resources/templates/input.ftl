@@ -34,7 +34,7 @@
 
 
 <div  style="padding: 0px !important;" id="accordion" class="row">
-    <div style="width:100%;padding-top: 2px !important;padding-bottom: 2px !important;">Data source selector</div>
+    <div style="width:100%;padding-top: 2px !important;padding-bottom: 2px !important;">Data source selector&nbsp;&nbsp;&nbsp;<span onclick="onClickNoop(event);" style="cursor: default !important; width:75%; display: inline-block;">&nbsp;</span></div>
     <div  style="padding-bottom: 0px;" class="col-lg-12">
 
         <form  id="compare-context-selector-form" action="javascript:submitTo()" method="get"
@@ -117,6 +117,9 @@
 
 <script>
 
+    function onClickNoop(event){
+        event.stopPropagation();
+    }
 
     function showSpinner(id) {
         if(id === undefined){
