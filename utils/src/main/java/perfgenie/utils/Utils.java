@@ -27,24 +27,25 @@ public class Utils {
     private static char sfdcGeneratedBeginningCharacter = sfdcGeneratedFrameIndicator.charAt(0);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public static boolean trimAfterNthMatchingCharacter(final String str, final StringBuilder builder, final int count, char trimAfter){
-        if(str == null){
+    public static boolean trimAfterNthMatchingCharacter(final String str, final StringBuilder builder, final int count, char trimAfter) {
+        if (str == null) {
             return false;
         }
         int length = str.length();
-        int c=0;
+        int c = 0;
         for (int i = 0; i < length; i++) {
             final char character = str.charAt(i);
-            if(character == trimAfter){
+            if (character == trimAfter) {
                 c++;
             }
-            if(c >= count){
+            if (c >= count) {
                 return true;
             }
             builder.append(character);
         }
         return false;
     }
+
     public static boolean normalizeFrame(final String frame, final StringBuilder builder, final int startIndex) {
         boolean previousCharacterDollarSign = false;
         boolean previousCharacterNormalized = false;
@@ -62,7 +63,7 @@ public class Utils {
                 // if the frame is a lambda, normalize the rest and we're done
                 if (frameIsLambda(frame, i, previousCharacterDollarSign)) {
                     normalizeLambdaFrame(frame, i, builder);
-                    isNormalized=true;
+                    isNormalized = true;
                     return isNormalized;
                 }
                 // can't tell if frame is lambda yet, indicate we've seen a dollar sign and continue to next character
@@ -78,7 +79,7 @@ public class Utils {
                 previousCharacterNormalized = false;
             } else if (!previousCharacterNormalized) {
                 builder.append('?');
-                isNormalized=true;
+                isNormalized = true;
                 previousCharacterNormalized = true;
             }
         }
@@ -160,7 +161,7 @@ public class Utils {
         }
     }
 
-    public static Object readValue(final String json, final Class cls) throws IOException{
+    public static Object readValue(final String json, final Class cls) throws IOException {
         try {
             return objectMapper.readValue(json, cls);
         } catch (final JsonProcessingException e) {

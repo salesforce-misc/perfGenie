@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -116,7 +115,7 @@ public class CustomJfrParser {
         }
     }
 
-    void processJfrEvents(final EventHandler handler, final IItemCollection events){
+    void processJfrEvents(final EventHandler handler, final IItemCollection events) {
         final StringBuilder sb = new StringBuilder();
         final Map<String, List> header = new HashMap<>();
         final Map<String, Integer> unique = new HashMap<>();
@@ -138,31 +137,31 @@ public class CustomJfrParser {
                 for (final IItem item : iterable_element) {
                     final IMCStackTrace stackTrace = accessor.getMember(item);
                     for (Object key : k.keySet()) {
-                        if(((Attribute) key).getName().equals("Allocation Size")){
+                        if (((Attribute) key).getName().equals("Allocation Size")) {
                             ITypedQuantity<LinearUnit> v = (ITypedQuantity<LinearUnit>) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(item);
-                            weight = (int)v.longValue();
+                            weight = (int) v.longValue();
                             memoryEvent = true;
                         }
                         if (((Attribute) key).getContentType().getIdentifier().equals("class")) {
-                            classStr=((IMCType)iterable_element.getType().getAccessor((IAccessorKey) key).getMember(item)).getTypeName();
+                            classStr = ((IMCType) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(item)).getTypeName();
                         }
                         if (((Attribute) key).getContentType().getIdentifier().equals("thread")) {
                             final IMCThread thread = (IMCThread) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(item);
-                            if(thread != null){
+                            if (thread != null) {
                                 tid = thread.getThreadId().intValue();
-                                if(tid == 0){//zing hack
-                                    if(!thread.getThreadName().contains("GC")) {
+                                if (tid == 0) {//zing hack
+                                    if (!thread.getThreadName().contains("GC")) {
                                         tid = thread.getThreadName().hashCode();
                                         if (tid > 0) {
                                             tid = 0 - tid; // set it to negitive to avoid clashing with other tids
                                         }
-                                    }else{
+                                    } else {
                                         tid = -100;
                                     }
                                 }
-                            }else{
-                                if(errorOnce) {
-                                    errorOnce=false;
+                            } else {
+                                if (errorOnce) {
+                                    errorOnce = false;
                                     logger.warn("null pointer, mall formed thread " + item.toString());
                                 }
                             }
@@ -174,14 +173,14 @@ public class CustomJfrParser {
                     }
 
                     try {
-                        if(stackTrace != null) {
-                            if(memoryEvent){//experiment to reduce size
+                        if (stackTrace != null) {
+                            if (memoryEvent) {//experiment to reduce size
                                 handler.processMemoryEvent(sb, stackTrace, iterable_element.getType().getIdentifier(), tid, epoc, weight, classStr);
-                            }else {
+                            } else {
                                 handler.processEvent(sb, stackTrace, iterable_element.getType().getIdentifier(), tid, epoc, weight, classStr);
                             }
                         }
-                    }catch (Exception e){
+                    } catch (Exception e) {
                         throw e;
                     }
                 }
@@ -204,7 +203,7 @@ public class CustomJfrParser {
                     for (Object key : k.keySet()) {
                         if (((Attribute) key).getContentType().getIdentifier().equals("thread")) {
                             final IMCThread thread = (IMCThread) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i]);
-                            if(thread != null) {
+                            if (thread != null) {
                                 tid = thread.getThreadId().intValue();
                                 if (tid == 0) {//zing hack
                                     tid = thread.getThreadName().hashCode();
@@ -212,19 +211,19 @@ public class CustomJfrParser {
                                         tid = 0 - tid; // set it to negitive to avoid clashing with other tids
                                     }
                                 }
-                            }else{
-                                if(errorOnce) {
-                                    errorOnce=false;
+                            } else {
+                                if (errorOnce) {
+                                    errorOnce = false;
                                     logger.warn("null pointer, mall formed thread " + key.toString());
                                 }
                             }
                             record.add(tid);
-                            if(thread != null) {
+                            if (thread != null) {
                                 record.add(thread.getThreadName());
-                            }else{
+                            } else {
                                 record.add("null");
                             }
-                            textFound=true;
+                            textFound = true;
                             if (addHeader) {
                                 header.get(iterable_element.getType().getIdentifier()).add("tid:text");
                                 header.get(iterable_element.getType().getIdentifier()).add("threadname:text");
@@ -243,7 +242,7 @@ public class CustomJfrParser {
                                 header.get(iterable_element.getType().getIdentifier()).add("duration:number");
                             }
                         } else if (((Attribute) key).getContentType().getIdentifier().equals("text")) {
-                            textFound=true;
+                            textFound = true;
                             record.add(iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i]));
                             if (addHeader) {
                                 header.get(iterable_element.getType().getIdentifier()).add(((Attribute) key).getIdentifier() + ":text");
@@ -254,17 +253,17 @@ public class CustomJfrParser {
                                 header.get(iterable_element.getType().getIdentifier()).add(((Attribute) key).getIdentifier() + ":number");
                             }
                         } else if (((Attribute) key).getContentType().getIdentifier().equals("percentage")) {
-                            record.add(((int)(((IQuantity) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i])).doubleValue()*10000))/100.0);
+                            record.add(((int) (((IQuantity) iterable_element.getType().getAccessor((IAccessorKey) key).getMember(r[i])).doubleValue() * 10000)) / 100.0);
                             if (addHeader) {
                                 header.get(iterable_element.getType().getIdentifier()).add(((Attribute) key).getIdentifier() + ":number");
                             }
                         }
                     }
 
-                    if(!textFound){
+                    if (!textFound) {
                         record.add(iterable_element.getType().getIdentifier());
                         if (addHeader) {
-                            header.get(iterable_element.getType().getIdentifier()).add( iterable_element.getType().getIdentifier()+":text");
+                            header.get(iterable_element.getType().getIdentifier()).add(iterable_element.getType().getIdentifier() + ":text");
                         }
                     }
 
@@ -275,11 +274,11 @@ public class CustomJfrParser {
                     }
                     handler.processContext(record, tid, iterable_element.getType().getIdentifier());
                 }
-            }else{
-                if(!unique.containsKey(iterable_element.getType().getIdentifier())){
-                    unique.put(iterable_element.getType().getIdentifier(),1);
-                }else{
-                    unique.put(iterable_element.getType().getIdentifier(),unique.get(iterable_element.getType().getIdentifier()) + 1);
+            } else {
+                if (!unique.containsKey(iterable_element.getType().getIdentifier())) {
+                    unique.put(iterable_element.getType().getIdentifier(), 1);
+                } else {
+                    unique.put(iterable_element.getType().getIdentifier(), unique.get(iterable_element.getType().getIdentifier()) + 1);
                 }
             }
         }
@@ -288,7 +287,6 @@ public class CustomJfrParser {
         }
 
     }
-
 
 
 }

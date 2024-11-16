@@ -26,7 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class EventHandler {
-    private static final org.slf4j.Logger  logger =  LoggerFactory.getLogger(EventHandler.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(EventHandler.class);
     private static final String ROOT = "root";
     private static final int WRAP_MESSAGE_HASH = "wrapped.single stack in profile".hashCode();
     private static final int FILTER_MESSAGE_HASH = "below threshold ...".hashCode();
@@ -73,7 +73,7 @@ public class EventHandler {
         UNKNOWN
     }
 
-    public void processMonitorLog(String logfile){
+    public void processMonitorLog(String logfile) {
         try (BufferedReader reader = new BufferedReader(new FileReader(logfile))) {
             logger.info("processing file: " + logfile);
             String line;
@@ -94,28 +94,28 @@ public class EventHandler {
                 String[] parts = line.split(":");
 
                 if (parts.length >= 4) {
-                    if(span < 2) {
+                    if (span < 2) {
                         List<Object> record = new ArrayList<>();
-                        record.add(Long.parseLong(parts[0])*1000);
+                        record.add(Long.parseLong(parts[0]) * 1000);
                         record.add(parts[1]);
                         record.add(Double.parseDouble(parts[2]));
                         if (parts[3].length() > 232) {
-                            if(parts[3].indexOf("jdk/") != -1){
+                            if (parts[3].indexOf("jdk/") != -1) {
                                 record.add(parts[3].substring(parts[3].indexOf("jdk/"), 200) + ".." + parts[3].substring(parts[3].length() - 30));
-                            }else {
+                            } else {
                                 record.add(parts[3].substring(0, 200) + ".." + parts[3].substring(parts[3].length() - 30));
                             }
-                        }else{
-                            if(parts[3].indexOf("jdk/") != -1){
+                        } else {
+                            if (parts[3].indexOf("jdk/") != -1) {
                                 record.add(parts[3].substring(parts[3].indexOf("jdk/"), parts[3].length()));
-                            }else {
+                            } else {
                                 record.add(parts[3]);
                             }
                         }
                         processContext(record, Integer.parseInt(parts[1]), "processcpu");
                     }
                     //span++;
-                    if(span > 6){
+                    if (span > 6) {
                         span = 1;
                     }
 
@@ -134,8 +134,8 @@ public class EventHandler {
                 records.get(type).put(tid, Collections.synchronizedList(new ArrayList<LogContext>()));
             }
             records.get(type).get(tid).add(new LogContext(l));
-        }catch(Exception e){
-           e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -274,7 +274,7 @@ public class EventHandler {
 
         Map<String, String> meta = new HashMap<>();
         try {
-            if(experimental){
+            if (experimental) {
                 try {
                     SurfaceDataResponse res = genSurfaceData(profiles.get(type), pidDatas.get(type));
                     //get CPU events if exists
@@ -295,18 +295,18 @@ public class EventHandler {
                     }
 
                     meta.put("data", Utils.toJson(res));
-                }catch(Exception e){
+                } catch (Exception e) {
                     meta.put("data", "{}");//Utils.toJson(res));
                 }
 
-            }else {
+            } else {
                 meta.put("data", "{}");//Utils.toJson(res));
             }
         } catch (Exception e) {
             meta.put("exception", Utils.toJson(e));
         }
 
-        frames.put(FILTER_MESSAGE_HASH,"below parsing threshold ...");
+        frames.put(FILTER_MESSAGE_HASH, "below parsing threshold ...");
         frames.put(WRAP_MESSAGE_HASH, "single stack in profile");
         return new JfrParserResponse(profiles.get(type), null, meta, new JfrContext(pidDatas.get(type), frames, startEpoch, endEpoch));
     }
@@ -372,15 +372,15 @@ public class EventHandler {
                     if (child.getSz() == 1) {
                         //truncate if single stack after maxD
                         filterChild(child, totalSz, maxD, true, depth + 1);
-                    } else if( 100.0 *child.getSz()/totalSz < threshold){
-                        if(check){
-                            check=false;
+                    } else if (100.0 * child.getSz() / totalSz < threshold) {
+                        if (check) {
+                            check = false;
                             child.nm = FILTER_MESSAGE_HASH;
                             child.setCh(null);
-                        }else {
+                        } else {
                             chIterator.remove();
                         }
-                    }else {
+                    } else {
                         filterChild(child, totalSz, maxD, false, depth + 1);
                     }
                 }
@@ -393,14 +393,14 @@ public class EventHandler {
         String fullNm = null;
         try {
             fullNm = method.getType().getFullName();
-            if(fullNm == null){
+            if (fullNm == null) {
                 fullNm = "unknown";
             }
         } catch (StringIndexOutOfBoundsException e) {
             fullNm = "unknown";
         }
         String methodNm = method.getMethodName();
-        if(methodNm == null){
+        if (methodNm == null) {
             methodNm = "unknown";
         }
         int hash = CustomHash(fullNm.hashCode(), methodNm.hashCode());
@@ -508,7 +508,7 @@ public class EventHandler {
                 if (stacks.get(i).contains(ele) && i != 0) {
                     if (stacks.get(i - 1).contains("java.lang.reflect.Constructor.newInstance")) {
                         //detector.addResource(Integer.toString(tid), ele);
-                        locks.add(new MonitorContext(tid,tname,ele,ele,i,stacks.get(i)));
+                        locks.add(new MonitorContext(tid, tname, ele, ele, i, stacks.get(i)));
                         classlocks.add(ele);
                     }
                 }
@@ -517,14 +517,14 @@ public class EventHandler {
     }
 
     public boolean processJstackEvent(long time, final String jstack) {
-        return processJstackEvent(time,jstack,true);
+        return processJstackEvent(time, jstack, true);
     }
 
     public static boolean isNumeric(String str) {
         try {
             Double.parseDouble(str);
             return true;
-        } catch(NumberFormatException e){
+        } catch (NumberFormatException e) {
             return false;
         }
     }
@@ -542,7 +542,7 @@ public class EventHandler {
             //first line must be a date
             try {
                 //zing [Mon Jul 01 10:32:12 PM UTC 2024]
-                String zingDate = jstack.substring(jstack.indexOf("[")+1, jstack.indexOf("]"));
+                String zingDate = jstack.substring(jstack.indexOf("[") + 1, jstack.indexOf("]"));
                 SimpleDateFormat df = new SimpleDateFormat("E MMM dd HH:mm:ss aa zzz yyyy");
                 Date date = df.parse(zingDate);
                 //take jstack timestamp if event time is too off ( more than 1 min)
@@ -551,10 +551,10 @@ public class EventHandler {
                     time = date.getTime() * 1000000;
                 }
                 System.out.println("Using E MMM dd HH:mm:ss aa zzz yyyy format timestamp ");
-            }catch (Exception ex){
+            } catch (Exception ex) {
                 try {
                     //zing [Mon Jul 01 10:32:12 PM UTC 2024]
-                    String zingDate = jstack.substring(jstack.indexOf("[")+1, jstack.indexOf("]"));
+                    String zingDate = jstack.substring(jstack.indexOf("[") + 1, jstack.indexOf("]"));
 
                     SimpleDateFormat df = new SimpleDateFormat("E MMM dd HH:mm:ss zzz yyyy");
                     Date date = df.parse(zingDate);
@@ -564,7 +564,7 @@ public class EventHandler {
                         time = date.getTime() * 1000000;
                     }
                     System.out.println("Using E MMM dd HH:mm:ss zzz yyyy format timestamp ");
-                }catch (Exception exx){
+                } catch (Exception exx) {
                     return false;
                 }
             }
@@ -591,8 +591,8 @@ public class EventHandler {
         while (matcher2.find()) {
             if (matcher2.group(1) != null) {
                 classwaits.add(matcher2.group(1));
-                detector.addRequest(Integer.toString(tid),matcher2.group(1));
-            }else if (matcher2.group(3) != null) {
+                detector.addRequest(Integer.toString(tid), matcher2.group(1));
+            } else if (matcher2.group(3) != null) {
                 tid = Integer.parseInt(matcher2.group(3).toUpperCase());
                 tname = matcher2.group(2);
             }
@@ -620,16 +620,16 @@ public class EventHandler {
             //if (tid != -1 && matcher.group(4) != null) {
             if (tid != -1 && matcher.group(1) != null) {
                 //if(includeProfileEvents) {
-                    normalized.setLength(0);
-                    Utils.normalizeFrame(matcher.group(1), normalized, 0);
-                    stack.add(normalized.toString());
+                normalized.setLength(0);
+                Utils.normalizeFrame(matcher.group(1), normalized, 0);
+                stack.add(normalized.toString());
                 //}
             } else if (matcher.group(8) != null) {
                 if (stack.size() != 0 && tid != -1) {
                     sampleCount++;
                     //processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
-                    if(includeProfileEvents) {
-                        checkClassLocks(classwaits, detector, stack, tid,locks,tname,classlocks);
+                    if (includeProfileEvents) {
+                        checkClassLocks(classwaits, detector, stack, tid, locks, tname, classlocks);
                         processEvent(tid, time, tstate + ";" + tname, stack, "Jstack");
                     }
                     tid = -1;
@@ -643,9 +643,9 @@ public class EventHandler {
                 //process previous stack
                 if (stack.size() != 0) {
                     sampleCount++;
-                    if(includeProfileEvents) {
+                    if (includeProfileEvents) {
                         //processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
-                        checkClassLocks(classwaits, detector, stack, tid,locks,tname,classlocks);
+                        checkClassLocks(classwaits, detector, stack, tid, locks, tname, classlocks);
                         processEvent(tid, time, tstate + ";" + tname, stack, "Jstack");
                     }
                     stack.clear();
@@ -657,24 +657,24 @@ public class EventHandler {
                 }
                 tid = Integer.parseInt(matcher.group(7).toUpperCase());
                 tname = matcher.group(6);
-            } else if(matcher.group(2) != null){
-                if(!tmpWaits.contains(matcher.group(2))) {
+            } else if (matcher.group(2) != null) {
+                if (!tmpWaits.contains(matcher.group(2))) {
                     //detector.addRequest(Integer.toString(tid),matcher.group(2));
                     waits.add(new MonitorContext(tid, tname, matcher.group(2), matcher.group(3), stack.size(), stack.get(stack.size() - 1)));
                     tmpWaits.add(matcher.group(2));
                 }
                 //System.out.println(time + "wait :" + tid + ":" + tname + ":" + matcher.group(2) + ":" + matcher.group(3));
-            }else if(matcher.group(4) != null){
-                if(!tmpLocks.contains(matcher.group(4))) {
+            } else if (matcher.group(4) != null) {
+                if (!tmpLocks.contains(matcher.group(4))) {
                     //detector.addResource(Integer.toString(tid), matcher.group(4));
                     locks.add(new MonitorContext(tid, tname, matcher.group(4), matcher.group(5), stack.size(), stack.get(stack.size() - 1)));
                     tmpLocks.add(matcher.group(4));
                 }
                 //System.out.println(time + "lock :" + tid + ":" + tname + ":" + matcher.group(4) + ":" + matcher.group(5) );
-            }else if(matcher.group(9) != null){
+            } else if (matcher.group(9) != null) {
                 break;
-            }else if(matcher.group(10) != null){
-                if(!tmpWaits.contains(matcher.group(10))) {
+            } else if (matcher.group(10) != null) {
+                if (!tmpWaits.contains(matcher.group(10))) {
                     //detector.addRequest(Integer.toString(tid),matcher.group(10));
                     waits.add(new MonitorContext(tid, tname, matcher.group(10), matcher.group(10), stack.size(), "na"));
                     tmpWaits.add(matcher.group(10));
@@ -685,8 +685,8 @@ public class EventHandler {
         //handle left over stack
         if (stack.size() != 0 && tid != -1) {
             //processEvent(tid, (int) ((time - startEpoch) / 1000000), tstate + ";" + tname, stack, "Jstack");
-            if(includeProfileEvents) {
-                checkClassLocks(classwaits, detector, stack, tid,locks,tname,classlocks);
+            if (includeProfileEvents) {
+                checkClassLocks(classwaits, detector, stack, tid, locks, tname, classlocks);
                 processEvent(tid, time, tstate + ";" + tname, stack, "Jstack");
             }
         }
@@ -694,18 +694,18 @@ public class EventHandler {
         final int endIndex = jstack.lastIndexOf("Found");
 
         HashMap<Integer, String> allDeadLocks = new HashMap<>();
-        HashSet<String> deadlocks =  new HashSet<>();
-        for(int i = 0; i<locks.size();i++) {
+        HashSet<String> deadlocks = new HashSet<>();
+        for (int i = 0; i < locks.size(); i++) {
             String lock = locks.get(i).getLock();
             boolean isContention = false;
             for (int j = 0; j < waits.size(); j++) {
                 if (lock.equals(waits.get(j).getLock())) {
-                    detector.addRequest(Integer.toString(waits.get(j).getTid()),waits.get(j).getLock());
-                    isContention=true;
+                    detector.addRequest(Integer.toString(waits.get(j).getTid()), waits.get(j).getLock());
+                    isContention = true;
                 }
             }
-            if(isContention){
-                detector.addResource(Integer.toString(locks.get(i).getTid()),locks.get(i).getLock());
+            if (isContention) {
+                detector.addResource(Integer.toString(locks.get(i).getTid()), locks.get(i).getLock());
             }
         }
         List<List<String>> deadlockCycles = detector.findDeadlockCycles();
@@ -715,7 +715,7 @@ public class EventHandler {
             for (List<String> cycle : deadlockCycles) {
                 String curLock = "";
                 HashSet<Integer> tmpTids = new HashSet<>();
-                for(int i = 0; i<cycle.size()-1;i++){
+                for (int i = 0; i < cycle.size() - 1; i++) {
                     int tmptid = 0;
                     String tmplock = "";
                     if (isNumeric(cycle.get(i))) {
@@ -728,23 +728,23 @@ public class EventHandler {
                         tmplock = cycle.get(i);
                     }
                     deadlocks.add(tmplock);
-                    for(int j = 0; j<locks.size();j++) {
-                        if(locks.get(j).getLock().equals(tmplock) && locks.get(j).getTid() == tmptid) {
-                            if(classlocks.contains(locks.get(j).getLock())) {
+                    for (int j = 0; j < locks.size(); j++) {
+                        if (locks.get(j).getLock().equals(tmplock) && locks.get(j).getTid() == tmptid) {
+                            if (classlocks.contains(locks.get(j).getLock())) {
                                 curLock += "class init pending tid:" + locks.get(j).getTid() + " lock:" + locks.get(j).getLock() + " frame:" + locks.get(j).getFrame() + "\n";
                                 System.out.println("class init pending tid:" + locks.get(j).getTid() + " lock:" + locks.get(j).getLock() + " frame:" + locks.get(j).getFrame());
-                            }else{
+                            } else {
                                 curLock += "locked tid:" + locks.get(j).getTid() + " lock:" + locks.get(j).getLock() + " frame:" + locks.get(j).getFrame() + "\n";
                                 System.out.println("locked tid:" + locks.get(j).getTid() + " lock:" + locks.get(j).getLock() + " frame:" + locks.get(j).getFrame());
                             }
                         }
                     }
-                    for(int j = 0; j<waits.size();j++) {
-                        if(waits.get(j).getLock().equals(tmplock) && waits.get(j).getTid() == tmptid) {
-                            if(classwaits.contains(waits.get(j).getLock())) {
+                    for (int j = 0; j < waits.size(); j++) {
+                        if (waits.get(j).getLock().equals(tmplock) && waits.get(j).getTid() == tmptid) {
+                            if (classwaits.contains(waits.get(j).getLock())) {
                                 curLock += "wait on the class tid:" + waits.get(j).getTid() + " lock:" + waits.get(j).getLock() + " frame:" + waits.get(j).getFrame() + "\n";
                                 System.out.println("wait on the class tid:" + waits.get(j).getTid() + " lock:" + waits.get(j).getLock() + " frame:" + waits.get(j).getFrame());
-                            }else{
+                            } else {
                                 curLock += "waiting to lock tid:" + waits.get(j).getTid() + " lock:" + waits.get(j).getLock() + " frame:" + waits.get(j).getFrame() + "\n";
                                 System.out.println("waiting to lock tid:" + waits.get(j).getTid() + " lock:" + waits.get(j).getLock() + " frame:" + waits.get(j).getFrame());
                             }
@@ -758,7 +758,7 @@ public class EventHandler {
                     stackString += getLockStack(t, jstack) + "\n\n";
                 }
                 for (Integer t : tmpTids) {
-                    allDeadLocks.put(t,curLock+"\n\nThread stask(s):\n"+stackString);
+                    allDeadLocks.put(t, curLock + "\n\nThread stask(s):\n" + stackString);
                 }
                 System.out.println(curLock);
             }
@@ -766,7 +766,7 @@ public class EventHandler {
             System.out.println("No deadlock.");
         }
 
-        if (sampleCount > 0|| !includeProfileEvents) {
+        if (sampleCount > 0 || !includeProfileEvents) {
             List<String> header = new ArrayList<>();
             header.add("timestamp:timestamp");
             header.add("tidGotLock:text");
@@ -782,35 +782,35 @@ public class EventHandler {
             initializeEvent("monitor-context");
             addHeader("monitor-context", header);
 
-            for(int i = 0; i<locks.size();i++){
+            for (int i = 0; i < locks.size(); i++) {
                 String lock = locks.get(i).getLock();
                 List<Integer> l = new ArrayList<>();
                 List<Integer> w = new ArrayList<>();
                 l.add(locks.get(i).getPos());
-                for(int j=0; j<waits.size();j++){
-                    if(lock.equals(waits.get(j).getLock())){
+                for (int j = 0; j < waits.size(); j++) {
+                    if (lock.equals(waits.get(j).getLock())) {
                         l.add(waits.get(j).getTid());
                         l.add(waits.get(j).getPos());
                     }
                 }
-                if(l.size() > 1 || deadlocks.contains(lock)){//monitor contention
+                if (l.size() > 1 || deadlocks.contains(lock)) {//monitor contention
                     List<Object> record = new ArrayList<>();
-                    record.add(time/1000000);
+                    record.add(time / 1000000);
                     record.add(locks.get(i).getTid());
                     record.add(locks.get(i).getTname());
                     record.add(lock);
                     record.add(locks.get(i).getCls());
                     record.add(locks.get(i).getFrame());
-                    record.add((l.size()-1)/2);
+                    record.add((l.size() - 1) / 2);
                     record.add(1);
-                    if(allDeadLocks.containsKey(locks.get(i).getTid())){
+                    if (allDeadLocks.containsKey(locks.get(i).getTid())) {
                         record.add("true");
-                    }else{
+                    } else {
                         record.add("false");
                     }
-                    if(allDeadLocks.containsKey(locks.get(i).getTid())) {
+                    if (allDeadLocks.containsKey(locks.get(i).getTid())) {
                         record.add(l.toString() + "\n\n" + allDeadLocks.get(locks.get(i).getTid()));
-                    }else{
+                    } else {
                         record.add(l.toString());
                     }
                     processContext(record, locks.get(i).getTid(), "monitor-context");
@@ -821,22 +821,23 @@ public class EventHandler {
             return false;
         }
     }
-    private String getLockStack(Integer tid, String jstack){
-        int i = jstack.indexOf("#"+Integer.toString(tid));
+
+    private String getLockStack(Integer tid, String jstack) {
+        int i = jstack.indexOf("#" + Integer.toString(tid));
 
         int tmp = i;
-        while(tmp >= 0){
+        while (tmp >= 0) {
             tmp--;
-            if(jstack.charAt(tmp) == '\n'){
+            if (jstack.charAt(tmp) == '\n') {
                 tmp++;
                 break;
             }
         }
-        int j = jstack.indexOf("\n\n",i);
+        int j = jstack.indexOf("\n\n", i);
         return jstack.substring(tmp, j);
     }
 
-    class MonitorContext{
+    class MonitorContext {
         public int getTid() {
             return tid;
         }
@@ -868,13 +869,14 @@ public class EventHandler {
         }
 
         String frame;
-        MonitorContext(int tid, String tname, String lock, String cls, int pos, String frame){
-            this.cls=cls;
-            this.lock=lock;
-            this.tid=tid;
-            this.tname=tname;
-            this.pos=pos;
-            this.frame=frame;
+
+        MonitorContext(int tid, String tname, String lock, String cls, int pos, String frame) {
+            this.cls = cls;
+            this.lock = lock;
+            this.tid = tid;
+            this.tname = tname;
+            this.pos = pos;
+            this.frame = frame;
         }
     }
 
@@ -885,7 +887,7 @@ public class EventHandler {
                 hash = CustomHash(hash, getFrameNm(stringBuilder, stackTrace.getFrames().get(i)));
             }
             return hash;
-        }catch (Exception e){
+        } catch (Exception e) {
             throw e;
         }
     }
@@ -921,11 +923,11 @@ public class EventHandler {
             frame.sz += sz;
             long sf = 0;
             int count = stackTrace.getFrames().size();
-            if(cls == null) {
+            if (cls == null) {
                 for (int i = 0; i < count; i++) {
 
-                    if(i>=maxStackDepth){
-                        i = count-1; //skip other frames
+                    if (i >= maxStackDepth) {
+                        i = count - 1; //skip other frames
                         frame = frame.addFrame("...".hashCode(), sz, sf, false, 0);
                     }
 
@@ -940,15 +942,15 @@ public class EventHandler {
                         frame = frame.addFrame(fN, sz, sf, false, 0);
                     }
                 }
-            }else{
+            } else {
                 frame = frame.addFrame(cls.hashCode(), sz, sf, true, hash);
-                if(!frames.containsKey(cls.hashCode())) {
+                if (!frames.containsKey(cls.hashCode())) {
                     frames.put(cls.hashCode(), cls);
                 }
                 for (int i = 0; i < count; i++) {
 
-                    if(i>=maxStackDepth){
-                        i = count-1; //skip other frames
+                    if (i >= maxStackDepth) {
+                        i = count - 1; //skip other frames
                         frame = frame.addFrame("...".hashCode(), sz, sf, false, 0);
                     }
 
@@ -998,11 +1000,11 @@ public class EventHandler {
             frame.sz += sz;
             long sf = 0;
             int count = stackTrace.getFrames().size();
-            if(cls == null) {
+            if (cls == null) {
                 for (int i = 0; i < count; i++) {
 
-                    if(i>=maxStackDepth){
-                        i = count-1; //skip other frames
+                    if (i >= maxStackDepth) {
+                        i = count - 1; //skip other frames
                         frame = frame.addFrame("...".hashCode(), sz, sf, false, 0);
                     }
 
@@ -1017,9 +1019,9 @@ public class EventHandler {
                         frame = frame.addFrame(fN, sz, sf, false, 0);
                     }
                 }
-            }else{
+            } else {
                 frame = frame.addFrame(cls.hashCode(), sz, sf, true, hash);
-                if(!frames.containsKey(cls.hashCode())) {
+                if (!frames.containsKey(cls.hashCode())) {
                     frames.put(cls.hashCode(), cls);
                 }
                 int prevFn = -1;
@@ -1030,7 +1032,7 @@ public class EventHandler {
                         if (i == count - 1) {
                             //if (i == count - 1 || sz < threshold) {
                             fN = getPackageNm(stackTrace.getFrames().get(i), sb, occuranceCount);
-                        } else if (i < 8 ) {
+                        } else if (i < 8) {
                             fN = getFrameNm(sb, stackTrace.getFrames().get(i));
                         } else if (i < 48) {
                             fN = getFrameClassNm(stackTrace.getFrames().get(i), sb, occuranceCount);
@@ -1045,11 +1047,11 @@ public class EventHandler {
                         exceptionCount++;
                         continue; //Sometimes package name is null
                     }
-                    if(fN == jetty){
-                        i=count-1;
+                    if (fN == jetty) {
+                        i = count - 1;
                     }
                     //if(sz < threshold || !(i < 8 || i != (count - 1))) {
-                    if( !(i < 8 || i != (count - 1))) {
+                    if (!(i < 8 || i != (count - 1))) {
                         if (occuranceCount.size() > 0 && occuranceCount.containsKey(fN) && occuranceCount.get(fN) > 1) {
                             continue;
                         }
@@ -1073,14 +1075,14 @@ public class EventHandler {
 
     private int getPackageNm(final IMCFrame frame, final StringBuilder stringBuilder, final Map<Integer, Integer> occuranceCount) {
         String name = frame.getMethod().getType().getPackage().getName();
-        if(name == null){
+        if (name == null) {
             name = "NA";
         }
         stringBuilder.setLength(0);
         if (Utils.trimAfterNthMatchingCharacter(name, stringBuilder, 3, '.')) {
             name = stringBuilder.toString();
         }
-        if(name.startsWith("org.eclipse.jetty")){
+        if (name.startsWith("org.eclipse.jetty")) {
             if (!frames.containsKey(jetty)) {
                 frames.put(jetty, "org.eclipse.jetty");
             }
@@ -1100,7 +1102,7 @@ public class EventHandler {
         return hash;
     }
 
-    private int getFrameClassNm(final IMCFrame frame, final StringBuilder stringBuilder,  final Map<Integer, Integer> occuranceCount) {
+    private int getFrameClassNm(final IMCFrame frame, final StringBuilder stringBuilder, final Map<Integer, Integer> occuranceCount) {
         final IMCMethod method = frame.getMethod();
         String fullNm = null;
         try {
@@ -1108,19 +1110,19 @@ public class EventHandler {
         } catch (StringIndexOutOfBoundsException e) {
             fullNm = "unknown";
         }
-        if(fullNm.startsWith("org.eclipse.jetty")){
+        if (fullNm.startsWith("org.eclipse.jetty")) {
             if (!frames.containsKey(jetty)) {
                 frames.put(jetty, "org.eclipse.jetty");
             }
             return jetty;
         }
         final String methodNm = method.getMethodName();
-        int hash = CustomHash(0,fullNm.hashCode());
+        int hash = CustomHash(0, fullNm.hashCode());
         if (!frames.containsKey(hash)) {
             stringBuilder.setLength(0);
             if (Utils.normalizeFrame(fullNm, stringBuilder, 0)) {
                 String nm = stringBuilder.toString();
-                hash = CustomHash(0,nm.hashCode());
+                hash = CustomHash(0, nm.hashCode());
                 if (!frames.containsKey(hash)) {
                     frames.put(hash, nm);
                 }
@@ -1185,7 +1187,7 @@ public class EventHandler {
 
 
     public void addHeader(String type, List l) {
-        if(!header.containsKey(type)) {
+        if (!header.containsKey(type)) {
             header.put(type, l);
         }
     }
@@ -1493,6 +1495,7 @@ public class EventHandler {
 
         //skip merge pidData
     }
+
     //Aggregation with filter end
     public void aggregatePS(final String psOutput, final Long timestamp) throws IOException {
 
@@ -1537,16 +1540,16 @@ public class EventHandler {
                 cmd.trim();
                 int index = cmd.indexOf("jdk/");
                 if (cmd.length() > 232) {
-                    if(index != -1){
+                    if (index != -1) {
                         int index1 = cmd.indexOf("/java");
-                        record.add(cmd.substring(index,index1+5) + "..." + cmd.substring(cmd.length() - 30));
-                    }else {
+                        record.add(cmd.substring(index, index1 + 5) + "..." + cmd.substring(cmd.length() - 30));
+                    } else {
                         record.add(cmd.substring(0, 100) + "..." + cmd.substring(cmd.length() - 30));
                     }
-                }else{
-                    if(index != -1){
+                } else {
+                    if (index != -1) {
                         record.add(cmd.substring(cmd.indexOf("jdk/"), cmd.length()));
-                    }else {
+                    } else {
                         record.add(cmd);
                     }
                 }
@@ -1555,6 +1558,7 @@ public class EventHandler {
         }
         System.out.println("aggregatePS");
     }
+
     public void aggregatePIDSTAT(final String pidstatOutput, final Long timestamp) throws IOException {
         // Split the input into lines
         String[] lines = pidstatOutput.split("\n");
@@ -1579,10 +1583,10 @@ public class EventHandler {
         for (int i = 3; i < lines.length; i++) {
             List<Object> record = new ArrayList<>();
             String[] parts = lines[i].trim().split("\\s+");
-            if(parts.length > 10){
+            if (parts.length > 10) {
                 int tid = Integer.parseInt(parts[3]);
                 try {
-                    record.add(Long.parseLong(parts[0])*1000);
+                    record.add(Long.parseLong(parts[0]) * 1000);
                     record.add(Integer.parseInt(parts[2]));
                     record.add(tid);//tid
                     record.add(Double.parseDouble(parts[4]));
@@ -1592,7 +1596,7 @@ public class EventHandler {
                     record.add(Long.parseLong(parts[12]));
                     record.add(Double.parseDouble(parts[13]));
                     record.add(parts[19]);
-                }catch (Exception e){
+                } catch (Exception e) {
                     System.out.println("check");
                 }
                 processContext(record, tid, "pidstat-extract");
@@ -1615,7 +1619,7 @@ public class EventHandler {
         }
     }
 
-    public void parseTopHostMetrics(final String hostMetrics, final Long timestamp){
+    public void parseTopHostMetrics(final String hostMetrics, final Long timestamp) {
 // Regular expressions to match host-level metrics
         String loadAvgPattern = "load average: ([\\d.]+), ([\\d.]+), ([\\d.]+)";
         String taskInfoPattern = "Tasks: (\\d+) total,\\s{0,}(\\d+) running,\\s{0,}(\\d+) sleeping,\\s{0,}(\\d+) stopped,\\s{0,}(\\d+) zombie";
@@ -1719,7 +1723,8 @@ public class EventHandler {
         processContext(record, "top-hostmetrics".hashCode(), "top-hostmetrics");
         System.out.println("parseTopHostMetrics");
     }
-    public void parseTopProcessDetails(final String processDetails, final Long timestamp){
+
+    public void parseTopProcessDetails(final String processDetails, final Long timestamp) {
         List<String> parsedProcesses = new ArrayList<>();
         int topCount = 11;
         // Split the input into lines
@@ -1752,14 +1757,14 @@ public class EventHandler {
             record.add(tokens[10]);//time
 
             int index = lines[i].indexOf("jdk/");
-            if(index != -1){
-                tokens[11] =  lines[i].substring( index,  lines[i].length());
-                if(tokens[11].length() > 100) {
+            if (index != -1) {
+                tokens[11] = lines[i].substring(index, lines[i].length());
+                if (tokens[11].length() > 100) {
                     record.add(tokens[11].substring(0, 100) + "...");
-                }else{
+                } else {
                     record.add(tokens[11]);
                 }
-            }else{
+            } else {
                 record.add(tokens[11] + " ... " + tokens[tokens.length - 1]);
             }
 
@@ -2795,10 +2800,10 @@ public class EventHandler {
 
     public void getAllPaths(final StackFrame baseJsonTree, final List<Integer> list) {
         if (baseJsonTree.getCh() == null) {
-            if (baseJsonTree.getSz() > 0 ) { //do it for all counts
+            if (baseJsonTree.getSz() > 0) { //do it for all counts
                 try {
                     Map.Entry<Integer, Integer> entry = baseJsonTree.getSm().entrySet().iterator().next();
-                }catch (Exception e){
+                } catch (Exception e) {
                     return;//check this, todo
                     //e.printStackTrace();
                 }
@@ -2915,17 +2920,22 @@ public class EventHandler {
             this.tidlist = tidlist;
         }
     }
+
     public static class SFLogContext {
         public List<Object> getRecord() {
             return record;
         }
+
         public void setRecord(List<Object> record) {
             this.record = record;
         }
+
         List<Object> record = new ArrayList<>();
+
         SFLogContext() {
         }
     }
+
     public void aggregateSFLogContext(final SFContextResponse res) throws IOException {
 
         if (this.sfrecords == null) {
@@ -2943,6 +2953,7 @@ public class EventHandler {
             }
         }
     }
+
     public Object getSFLogContext() {
         final Map<Integer, Long> tidMap = new HashMap<>();
         int cpu = 0;

@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-public  class Config {
+public class Config {
     private static final Logger logger = LoggerFactory.getLogger(CustomJfrParser.class);
 
     public List<String> getProfiles() {
@@ -56,9 +56,9 @@ public  class Config {
         return storageType;
     }
 
-    String mySQL_host="localhost";
-    int mySQL_port=3306;
-    String mySQL_user="root";
+    String mySQL_host = "localhost";
+    int mySQL_port = 3306;
+    String mySQL_user = "root";
 
 
     public double getThreshold() {
@@ -100,7 +100,7 @@ public  class Config {
         return mySQL_pwd;
     }
 
-    String mySQL_pwd="xxxx";
+    String mySQL_pwd = "xxxx";
 
     public String getGrpc_target() {
         return grpc_target;
@@ -109,12 +109,11 @@ public  class Config {
     String grpc_target = "localhost:7443";
 
 
-
     String storageType = "h2";
     List<String> profiles = new ArrayList<>(); //Arrays.asList("ExecutionS", "Socket");
     List<String> customevents = new ArrayList<>(); //rrays.asList("LogContext", "MqFrm", "CPUEvent", "MemoryEvent");
 
-    public Config(){
+    public Config() {
         try (InputStream config = CustomJfrParser.class.getClassLoader().getResourceAsStream("config.properties")) {
             Properties prop = new Properties();
             if (config == null) {
@@ -130,73 +129,72 @@ public  class Config {
                 return;
             }
             prop.load(config);
-            String [] ce = prop.getProperty("customevents").split(";");
-            for(int i = 0; i< ce.length; i++){
+            String[] ce = prop.getProperty("customevents").split(";");
+            for (int i = 0; i < ce.length; i++) {
                 customevents.add(ce[i]);
             }
 
-            String [] pe = prop.getProperty("profiles").split(";");
-            for(int i = 0; i< pe.length; i++){
+            String[] pe = prop.getProperty("profiles").split(";");
+            for (int i = 0; i < pe.length; i++) {
                 profiles.add(pe[i]);
             }
-            if(prop.getProperty("jfrdir") != null){
-                jfrdir=prop.getProperty("jfrdir");
+            if (prop.getProperty("jfrdir") != null) {
+                jfrdir = prop.getProperty("jfrdir");
             }
-            if(prop.getProperty("tenant") != null){
-                tenant=prop.getProperty("tenant");
+            if (prop.getProperty("tenant") != null) {
+                tenant = prop.getProperty("tenant");
             }
-            if(prop.getProperty("h2dir") != null){
-                h2dir=prop.getProperty("h2dir");
+            if (prop.getProperty("h2dir") != null) {
+                h2dir = prop.getProperty("h2dir");
             }
-            if(prop.getProperty("storageType") != null){
+            if (prop.getProperty("storageType") != null) {
                 String substrate = System.getenv("SUBSTRATE");
                 if (substrate == null) {
-                    storageType=prop.getProperty("storageType");
+                    storageType = prop.getProperty("storageType");
                 } else {// for aws TODO in config
-                    storageType="grpc";
+                    storageType = "grpc";
                 }
             }
-            if(prop.getProperty("mySQL.host") != null){
-                mySQL_host=prop.getProperty("mySQL.host");
+            if (prop.getProperty("mySQL.host") != null) {
+                mySQL_host = prop.getProperty("mySQL.host");
             }
-            if(prop.getProperty("mySQL.port") != null){
-                mySQL_port=Integer.parseInt(prop.getProperty("mySQL.port"));
+            if (prop.getProperty("mySQL.port") != null) {
+                mySQL_port = Integer.parseInt(prop.getProperty("mySQL.port"));
             }
-            if(prop.getProperty("mySQL.pwd") != null){
-                mySQL_pwd=prop.getProperty("mySQL.pwd");
+            if (prop.getProperty("mySQL.pwd") != null) {
+                mySQL_pwd = prop.getProperty("mySQL.pwd");
             }
-            if(prop.getProperty("grpc.target") != null){
+            if (prop.getProperty("grpc.target") != null) {
                 String substrate = System.getenv("SUBSTRATE");
                 if (substrate == null) {
-                    grpc_target=prop.getProperty("grpc.target");
+                    grpc_target = prop.getProperty("grpc.target");
                 } else {//cantor.warden.svc.mesh.sfdc.net:7443 for aws TODO in config
-                    grpc_target="cantor.warden.svc.mesh.sfdc.net:7443";
+                    grpc_target = "cantor.warden.svc.mesh.sfdc.net:7443";
                 }
             }
-            if(prop.getProperty("mySQL.user") != null){
-                mySQL_user=prop.getProperty("mySQL.user");
+            if (prop.getProperty("mySQL.user") != null) {
+                mySQL_user = prop.getProperty("mySQL.user");
             }
 
-            if(prop.getProperty("threshold") != null){
-                threshold=Double.parseDouble(prop.getProperty("threshold"));
+            if (prop.getProperty("threshold") != null) {
+                threshold = Double.parseDouble(prop.getProperty("threshold"));
             }
 
-            if(prop.getProperty("filterDepth") != null){
-                filterDepth=Integer.parseInt(prop.getProperty("filterDepth"));
+            if (prop.getProperty("filterDepth") != null) {
+                filterDepth = Integer.parseInt(prop.getProperty("filterDepth"));
             }
 
-            if(prop.getProperty("maxStackDepth") != null){
-                maxStackDepth=Integer.parseInt(prop.getProperty("maxStackDepth"));
+            if (prop.getProperty("maxStackDepth") != null) {
+                maxStackDepth = Integer.parseInt(prop.getProperty("maxStackDepth"));
             }
 
-            if(prop.getProperty("isExperimental") != null){
-                isExperimental= prop.getProperty("isExperimental").equals("true");
+            if (prop.getProperty("isExperimental") != null) {
+                isExperimental = prop.getProperty("isExperimental").equals("true");
             }
 
-            if(prop.getProperty("jfrparser") != null){
-                jfrparser= prop.getProperty("jfrparser");
+            if (prop.getProperty("jfrparser") != null) {
+                jfrparser = prop.getProperty("jfrparser");
             }
-
 
 
             logger.info("profiles being parsed:" + profiles.toString());

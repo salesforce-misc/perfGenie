@@ -22,7 +22,6 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -108,7 +107,7 @@ public class EventStore {
 
     public boolean addGenieEventMetaData(final long timestamp, final Map<String, String> queryMap, final Map<String, Double> dimMap, final String tenant) throws IOException {
         final Stopwatch timer = Stopwatch.createStarted();
-        if(queryMap.containsKey(PerfGenieConstants.TENANT_KEY)) {
+        if (queryMap.containsKey(PerfGenieConstants.TENANT_KEY)) {
             this.cantor.events().store(
                     NAMESPACE_EVENT_META,
                     timestamp,
@@ -116,7 +115,7 @@ public class EventStore {
                     dimMap,
                     null);
             logger.info("addGenieEventMetaData successfully added event metadata under namespace: " + NAMESPACE_EVENT_META + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
-        }else{
+        } else {
             logger.error("addEvent missing value of " + PerfGenieConstants.TENANT_KEY);
             return false;
         }
@@ -125,7 +124,7 @@ public class EventStore {
 
     private boolean addOtherEventMetaData(final long timestamp, final Map<String, String> queryMap, final Map<String, Double> dimMap, final String namespace) throws IOException { //TODO merge this with addGenieEventMetaData
         final Stopwatch timer = Stopwatch.createStarted();
-        if(queryMap.containsKey(PerfGenieConstants.TENANT_KEY)) {
+        if (queryMap.containsKey(PerfGenieConstants.TENANT_KEY)) {
             this.cantor.events().store(
                     namespace,
                     timestamp,
@@ -133,7 +132,7 @@ public class EventStore {
                     dimMap,
                     null);
             logger.info("addGenieEventMetaData successfully added event metadata under namespace: " + namespace + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
-        }else{
+        } else {
             logger.error("addEvent missing value of " + PerfGenieConstants.TENANT_KEY);
             return false;
         }
@@ -142,7 +141,7 @@ public class EventStore {
 
     public boolean addGenieEvent(final long timestamp, final Map<String, String> queryMap, final Map<String, Double> dimMap, final String payload, final String tenant) throws IOException {
         final Stopwatch timer = Stopwatch.createStarted();
-        if(payload != null) {
+        if (payload != null) {
             queryMap.put("size", String.valueOf(payload.length()));
         }
         try {
@@ -160,7 +159,7 @@ public class EventStore {
                 logger.error("addEvent missing value of " + PerfGenieConstants.TENANT_KEY);
                 return false;
             }
-        }catch(Exception e){
+        } catch (Exception e) {
             logger.error("Failed to add event " + PerfGenieConstants.getEventNameSpace(tenant, true) + " " + queryMap.toString());
             return false;
         }
@@ -169,20 +168,20 @@ public class EventStore {
 
     public void addGenieLargeEvent(final long timestamp, final Map<String, String> queryMap, final Map<String, Double> dimMap, final String payload, final String tenant, final boolean isGenie) throws IOException {
         queryMap.put("size", String.valueOf(payload.length()));
-        if(isGenie){
-            addGenieEventMetaData(timestamp, queryMap, dimMap,config.getTenant());//metadata event
-        }else{
-            addOtherEventMetaData(timestamp, queryMap, dimMap,PerfGenieConstants.getEventNameSpace(tenant, isGenie));//metadata event
+        if (isGenie) {
+            addGenieEventMetaData(timestamp, queryMap, dimMap, config.getTenant());//metadata event
+        } else {
+            addOtherEventMetaData(timestamp, queryMap, dimMap, PerfGenieConstants.getEventNameSpace(tenant, isGenie));//metadata event
         }
         upload(timestamp, queryMap, dimMap, payload, PerfGenieConstants.getLargeEventNameSpace(tenant, isGenie));
     }
 
     public void addGenieLargeEvent(final long timestamp, final Map<String, String> queryMap, final Map<String, Double> dimMap, final byte[] payload, final String tenant, final boolean isGenie) throws IOException {
         queryMap.put("size", String.valueOf(payload.length));
-        if(isGenie){
-            addGenieEventMetaData(timestamp, queryMap, dimMap,config.getTenant());//metadata event
-        }else{
-            addOtherEventMetaData(timestamp, queryMap, dimMap,PerfGenieConstants.getEventNameSpace(tenant, isGenie));//metadata event
+        if (isGenie) {
+            addGenieEventMetaData(timestamp, queryMap, dimMap, config.getTenant());//metadata event
+        } else {
+            addOtherEventMetaData(timestamp, queryMap, dimMap, PerfGenieConstants.getEventNameSpace(tenant, isGenie));//metadata event
         }
         uploadBytes(timestamp, queryMap, dimMap, payload, PerfGenieConstants.getLargeEventNameSpace(tenant, isGenie));
     }
@@ -208,7 +207,7 @@ public class EventStore {
                 }
                 cacheLock.unlock();
             }
-        }catch(Exception e){
+        } catch (Exception e) {
             cacheLock.unlock();
             logger.warn("getTenants cantor tenants namespace does not exist");
         }
@@ -225,8 +224,8 @@ public class EventStore {
             );
             if (results.size() > 0) {
                 for (final Events.Event result : results) {
-                    if(result.getMetadata().containsKey("tenant-id")){
-                        tenantsCache.put(result.getMetadata().get("tenant-id"),"genie");
+                    if (result.getMetadata().containsKey("tenant-id")) {
+                        tenantsCache.put(result.getMetadata().get("tenant-id"), "genie");
                     }
                 }
             }
@@ -234,11 +233,11 @@ public class EventStore {
         return Utils.toJson(tenantsCache);
     }
 
-    public String getGenieInstances(final String tenant, long start, long end, final Map<String, String> queryMap) throws IOException{
+    public String getGenieInstances(final String tenant, long start, long end, final Map<String, String> queryMap) throws IOException {
 
         HashMap<String, String> instances = new HashMap();
         if (tenant != null) {
-            if(queryMap.containsKey(PerfGenieConstants.SOURCE_KEY)){
+            if (queryMap.containsKey(PerfGenieConstants.SOURCE_KEY)) {
                 try {
                     final List<Events.Event> results = this.cantor.events().get(
                             NAMESPACE_EVENT_META,
@@ -250,15 +249,15 @@ public class EventStore {
 
                     if (results.size() > 0) {
                         for (final Events.Event result : results) {
-                            if(result.getMetadata().containsKey("host")){
-                                instances.put(result.getMetadata().get("host"),"genie");
+                            if (result.getMetadata().containsKey("host")) {
+                                instances.put(result.getMetadata().get("host"), "genie");
                             }
                         }
                     }
                 } catch (final IOException exception) {
                     logger.warn("exception while getting instances from " + PerfGenieConstants.getLargeEventNameSpace(tenant, true));
                 }
-            }else{
+            } else {
                 try {
                     final Collection<String> instances1 = this.cantor.events().metadata(
                             String.format("maiev-heartbeat-%s", tenant),
@@ -275,7 +274,7 @@ public class EventStore {
                 }
             }
         }
-        return  Utils.toJson(instances);
+        return Utils.toJson(instances);
     }
 
     public String getGenieMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String tenant, final String instance) throws IOException {
@@ -300,7 +299,7 @@ public class EventStore {
     }
 
     public static boolean waitForFile(final String filePath, long timeout) throws IOException, InterruptedException {
-        long maxWaitSec = timeout*60*1000;
+        long maxWaitSec = timeout * 60 * 1000;
         long checkInterval = 1000; // 1 second
         long startTime = System.currentTimeMillis();
         File file = new File(filePath);
@@ -316,9 +315,9 @@ public class EventStore {
         }
         return false;
     }
-    
-    private void addGenieLargeEventFromFile(final long timestamp, final Map<String, String> queryMap, final String tenant, final String file) throws IOException{
-        final String uploaded = config.getJfrdir() + "/" + file.replaceAll(".json" ,".done");
+
+    private void addGenieLargeEventFromFile(final long timestamp, final Map<String, String> queryMap, final String tenant, final String file) throws IOException {
+        final String uploaded = config.getJfrdir() + "/" + file.replaceAll(".json", ".done");
         File check = new File(uploaded);
         if (check.exists()) {
             logger.info("Upload tried once : " + uploaded);
@@ -383,49 +382,49 @@ public class EventStore {
         String namespace = queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getLargeEventNameSpace(tenant, true) : PerfGenieConstants.getLargeEventNameSpace(tenant, false);
         final Stopwatch timer = Stopwatch.createStarted();
         try {
-            if(queryMap.containsKey("file-name") && queryMap.get("file-name").contains(".jfr.gz")){
-                final String filepath = config.getJfrdir() +"/"+ Long.toString(start);
-                queryMap.put("guid",queryMap.get("guid").replace(queryMap.get("file-name").replace("=",""), ""));
-                if(downloadToFile(start, end, queryMap, dimMap, namespace,filepath+".tmp")){
-                    File f = new File(filepath+"jfr_dump.json");
-                    if(!f.exists()) {
-                        executor.addCommand("java -Xloggc:"+config.getJfrdir()+"/jfrparsergc.log -XX:ErrorFile="+config.getJfrdir()+"/jfrparser_error.log -XX:ParallelGCThreads=8 -XX:+PrintGCDetails -XX:NewSize=400m -XX:MaxNewSize=400m -Xms7G -Xmx7G  -cp "+config.getJfrparser()+" Parser -c -jfr " + filepath + ".tmp  -timeout 90000 -timestamp " + start*1000000 + " -json " + filepath + "jfr_dump.json");
+            if (queryMap.containsKey("file-name") && queryMap.get("file-name").contains(".jfr.gz")) {
+                final String filepath = config.getJfrdir() + "/" + Long.toString(start);
+                queryMap.put("guid", queryMap.get("guid").replace(queryMap.get("file-name").replace("=", ""), ""));
+                if (downloadToFile(start, end, queryMap, dimMap, namespace, filepath + ".tmp")) {
+                    File f = new File(filepath + "jfr_dump.json");
+                    if (!f.exists()) {
+                        executor.addCommand("java -Xloggc:" + config.getJfrdir() + "/jfrparsergc.log -XX:ErrorFile=" + config.getJfrdir() + "/jfrparser_error.log -XX:ParallelGCThreads=8 -XX:+PrintGCDetails -XX:NewSize=400m -XX:MaxNewSize=400m -Xms7G -Xmx7G  -cp " + config.getJfrparser() + " Parser -c -jfr " + filepath + ".tmp  -timeout 90000 -timestamp " + start * 1000000 + " -json " + filepath + "jfr_dump.json");
                     }
-                    if(waitForFile(filepath+"jfr_dump.json", 2)){
+                    if (waitForFile(filepath + "jfr_dump.json", 2)) {
                         logger.info("successfully parsed jfr: " + queryMap + " time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
                         final HashMap<String, String> profiles = new HashMap();
                         Thread.sleep(5000);//let parser create all files
                         File folder = new File(config.getJfrdir());
                         File[] listOfFiles = folder.listFiles();
-                        if(listOfFiles != null) {
+                        if (listOfFiles != null) {
                             for (File file : listOfFiles) {
-                                if(file.getName().contains(Long.toString(start))){
+                                if (file.getName().contains(Long.toString(start))) {
                                     String tmpfileName = file.getName();
-                                    if(!(tmpfileName.contains("_sql.json") || tmpfileName.contains(".tmp"))) {
-                                        if(tmpfileName.contains(".json")) {
+                                    if (!(tmpfileName.contains("_sql.json") || tmpfileName.contains(".tmp"))) {
+                                        if (tmpfileName.contains(".json")) {
                                             tmpfileName = tmpfileName.replace(Long.toString(start), "");
-                                            profiles.put(tmpfileName+".gz", Long.toString(start) + " - " + queryMap.get("guid").replaceAll("^=", ""));
+                                            profiles.put(tmpfileName + ".gz", Long.toString(start) + " - " + queryMap.get("guid").replaceAll("^=", ""));
                                             addGenieLargeEventFromFile(start, queryMap, tenant, file.getName());
                                         }
                                     }
                                 }
                             }
                             return Utils.toJson(profiles);
-                        }else {
+                        } else {
                             return Utils.toJson(new EventHandler.JfrParserResponse(null, "parsed json not found", queryMap, null));
                         }
-                    }else{
+                    } else {
                         return Utils.toJson(new EventHandler.JfrParserResponse(null, "Failed to parse jfr", queryMap, null));
                     }
-                }else {
+                } else {
                     return Utils.toJson(new EventHandler.JfrParserResponse(null, "Failed to download jfr", queryMap, null));
                 }
-            }else{
+            } else {
                 String res = download(start, end, queryMap, dimMap, namespace);
                 logger.info("successfully fetched event from namespace: " + namespace + " time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
                 return res;
             }
-        }catch(Exception e){
+        } catch (Exception e) {
             return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Event not found", queryMap, null));
         }
     }
@@ -525,10 +524,10 @@ public class EventStore {
                 payload
         );
         if (results.size() > 0) {
-            Map<Long,String> payloads = new HashMap<>();//timestamp payload map
+            Map<Long, String> payloads = new HashMap<>();//timestamp payload map
             results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
             for (final Events.Event result : results) {
-                payloads.put(result.getTimestampMillis(),new String(Utils.decompress(result.getPayload())));
+                payloads.put(result.getTimestampMillis(), new String(Utils.decompress(result.getPayload())));
             }
             return payloads;
         }
@@ -549,7 +548,8 @@ public class EventStore {
             throw new RuntimeException(String.format("Error retrieving events from database for: tenant=%s instance=%s", tenant, instanceId), exception);
         }
     }
-    public Map<Long,Map<String, String>> loadGenieProfiles(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final boolean payload) throws IOException {
+
+    public Map<Long, Map<String, String>> loadGenieProfiles(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final boolean payload) throws IOException {
         String namespace = queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getLargeEventNameSpace(tenant, true) : PerfGenieConstants.getLargeEventNameSpace(tenant, false);
         final List<Events.Event> results = this.cantor.events().get(
                 namespace,
@@ -569,12 +569,12 @@ public class EventStore {
             //return profiles;
         }
 
-        if(!queryMap.containsKey(PerfGenieConstants.SOURCE_KEY)){//for sfdc check full jfrs too
+        if (!queryMap.containsKey(PerfGenieConstants.SOURCE_KEY)) {//for sfdc check full jfrs too
             //try to look for full jfrs, sfdc fix
             final Map<String, String> tmpqueryMap = new HashMap<>();
-            tmpqueryMap.put("host",queryMap.get("host"));
-            tmpqueryMap.put("tenant-id",queryMap.get("tenant-id"));
-            tmpqueryMap.put("file-name","=jfr_dump_toparse.jfr.gz");
+            tmpqueryMap.put("host", queryMap.get("host"));
+            tmpqueryMap.put("tenant-id", queryMap.get("tenant-id"));
+            tmpqueryMap.put("file-name", "=jfr_dump_toparse.jfr.gz");
 
             final List<Events.Event> results1 = this.cantor.events().get(
                     namespace,
@@ -589,19 +589,19 @@ public class EventStore {
                 results1.sort(Comparator.comparing(Events.Event::getTimestampMillis));
                 final HashMap<Long, Boolean> check = new HashMap<>();
                 for (final Events.Event result : results1) {
-                    if(!check.containsKey(result.getTimestampMillis())) {
+                    if (!check.containsKey(result.getTimestampMillis())) {
                         final Map<String, String> meta = new HashMap<>();
-                        meta.put("host",queryMap.get("host").replace("=",""));
-                        meta.put("tenant-id",queryMap.get("tenant-id").replace("=",""));
-                        meta.put("file-name",queryMap.get("file-name").replace("=",""));
-                        meta.put("guid",result.getMetadata().get("guid") + queryMap.get("file-name").replace("=",""));
+                        meta.put("host", queryMap.get("host").replace("=", ""));
+                        meta.put("tenant-id", queryMap.get("tenant-id").replace("=", ""));
+                        meta.put("file-name", queryMap.get("file-name").replace("=", ""));
+                        meta.put("guid", result.getMetadata().get("guid") + queryMap.get("file-name").replace("=", ""));
                         profiles.put(result.getTimestampMillis(), meta);
                         check.put(result.getTimestampMillis(), true);
                     }
                 }
             }
         }
-        if(profiles.size() > 0){
+        if (profiles.size() > 0) {
             return profiles;
         }
 
@@ -609,7 +609,7 @@ public class EventStore {
     }
 
     private void uploadBytes(final long timestamp, final Map<String, String> metadata,
-                        final Map<String, Double> dimensions, final byte[] bytes, final String namespace) throws IOException {
+                             final Map<String, Double> dimensions, final byte[] bytes, final String namespace) throws IOException {
         logger.info("Started uploading bytes {} to {}", metadata, namespace);
         final UploadIterator iterator = new UploadIterator(metadata, dimensions, bytes);
         this.cantor.events().store(namespace, timestamp, iterator.metadata, iterator.dimension);
@@ -659,7 +659,8 @@ public class EventStore {
         }
     }
 
-    public final Map<String, Boolean> downloadRequests = new ConcurrentHashMap<String,Boolean>();
+    public final Map<String, Boolean> downloadRequests = new ConcurrentHashMap<String, Boolean>();
+
     private synchronized boolean downloadToFile(final long startTimestamp, final long endTimestamp, final Map<String,
             String> metadataQuery, final Map<String, String> dimensionsQuery, final String namespace, final String filepath) throws IOException {
 
@@ -667,18 +668,18 @@ public class EventStore {
 
         File file = new File(filepath);
 
-        if(file.exists()){
+        if (file.exists()) {
             logger.info("already download req  {}", metadataQuery);
             return true;
-        }else if(downloadRequests.containsKey(req)){
+        } else if (downloadRequests.containsKey(req)) {
             logger.info("duplicate  download req  {}", metadataQuery);
             return true;
         }
 
-        downloadRequests.put(req,true);
+        downloadRequests.put(req, true);
 
         logger.info("Started downloading  {}", metadataQuery);
-        if(namespace != null){
+        if (namespace != null) {
             try {
                 final DownloadIterator iterator = new DownloadIterator(namespace, startTimestamp, endTimestamp, metadataQuery, dimensionsQuery);
                 ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -689,16 +690,16 @@ public class EventStore {
                     outStream.flush();
                 }
                 logger.info("Completed downloading {}", metadataQuery);
-                if(metadataQuery.containsKey(PerfGenieConstants.SOURCE_KEY)) {//genie
+                if (metadataQuery.containsKey(PerfGenieConstants.SOURCE_KEY)) {//genie
                     Files.write(path, outStream.toByteArray());
                     downloadRequests.remove(req);
                     return true;
-                }else{
+                } else {
                     Files.write(path, Utils.decompress(outStream.toByteArray()));
                     downloadRequests.remove(req);
                     return true;
                 }
-            }catch(Exception e){
+            } catch (Exception e) {
                 logger.error("Failed to download from {}  {}", namespace, metadataQuery);
                 e.printStackTrace();
                 downloadRequests.remove(req);
@@ -710,22 +711,21 @@ public class EventStore {
     }
 
 
-
     private String download(final long startTimestamp, final long endTimestamp, final Map<String,
             String> metadataQuery, final Map<String, String> dimensionsQuery, final String namespace) throws IOException {
 
-        if(metadataQuery.containsKey("file-name")){
-             String filepath = config.getJfrdir() +"/"+ Long.toString(startTimestamp) + metadataQuery.get("file-name");
-             filepath = filepath.replace("=","");
-             filepath = filepath.replace(".gz","");
-             File f = new File(filepath);
-             if(f.exists()){
-                 logger.info("using local downloaded  {}", metadataQuery);
-                  return new String(Files.readAllBytes(Paths.get(filepath)));
-             }
+        if (metadataQuery.containsKey("file-name")) {
+            String filepath = config.getJfrdir() + "/" + Long.toString(startTimestamp) + metadataQuery.get("file-name");
+            filepath = filepath.replace("=", "");
+            filepath = filepath.replace(".gz", "");
+            File f = new File(filepath);
+            if (f.exists()) {
+                logger.info("using local downloaded  {}", metadataQuery);
+                return new String(Files.readAllBytes(Paths.get(filepath)));
+            }
         }
         logger.info("Started downloading  {}", metadataQuery);
-        if(namespace != null){
+        if (namespace != null) {
             try {
                 final DownloadIterator iterator = new DownloadIterator(namespace, startTimestamp, endTimestamp, metadataQuery, dimensionsQuery);
                 ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -735,13 +735,13 @@ public class EventStore {
                     outStream.flush();
                 }
                 logger.info("Completed downloading {}", metadataQuery);
-                if(metadataQuery.containsKey(PerfGenieConstants.SOURCE_KEY)) {//genie
+                if (metadataQuery.containsKey(PerfGenieConstants.SOURCE_KEY)) {//genie
                     return new String(Utils.decompress(outStream.toByteArray()));
-                }else{
+                } else {
                     //return new String(Utils.decompress(outStream.toByteArray()));
                     return new String(Utils.decompress(Utils.decompress(outStream.toByteArray())));
                 }
-            }catch(Exception e){
+            } catch (Exception e) {
                 logger.error("Failed to download from {}  {}", namespace, metadataQuery);
                 e.printStackTrace();
                 return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to download 1 ", metadataQuery, null));
@@ -762,6 +762,7 @@ public class EventStore {
         private int start;
         private int end;
         private byte[] currentChunk;
+
         UploadIterator(final Map<String, String> metadata, final Map<String, Double> dimension, final byte[] bytes) throws IOException {
             this.metadata = metadata;
             this.dimension = dimension;
