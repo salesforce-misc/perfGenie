@@ -268,6 +268,20 @@
             }
         });
         $.contextMenu({
+            selector: '.context-menu-four',
+            callback: function (key, options) {
+                if (key == "add") {
+                    addToFilter($(this).attr("hint") + "=" + $(this).text());
+                } else if (key == "show") {
+                    showRequestContextPopup($(this).attr("id"),false);
+                }
+            },
+            items: {
+                "add": {name: "Add to filter"},
+                "show": {name: "Show request timeline"}
+            }
+        });
+        $.contextMenu({
             selector: '.context-menu-three',
             callback: function (key, options) {
                 if (key == "add") {
@@ -2131,12 +2145,14 @@
         let isWith = (fContext === 'with');
 
         if(!allSamples) {
+            let found = false;
             contextDataRecords[tid].forEach(function (obj) {
                 let record = obj.record;
-                if (record[timestampIndex] == time) {
+                if (record[timestampIndex] == time && !found) {
                     reqId = record[timestampIndex] + ":" + record[dimIndexMap["tid"]]; //make a unique key
                     runTime = record[spanIndex];
                     str = getContextView(record, dimIndexMap, metricsIndexMap);
+                    found=true;
                     return false;
                 }
             });
@@ -5622,7 +5638,7 @@
                                                 if (field == timestampIndex) {
                                                     sfContextDataTable.addContextTableRow(tableRows[rowIndex], moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'), "id='" + record[tidRowIndex] + "_" + record[field] + "'");
                                                 }else if (field == requestIdIndex) {
-                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field], "id='" + record[tidRowIndex] + "_" + record[timestampIndex] + "'");
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[field], "id='" + record[tidRowIndex] + "_" + record[timestampIndex] + "'"+ " hint='" + isDimIndexMap[field] + "'");
                                                 } else if (field == tidRowIndex) {
                                                     sfContextDataTable.addContextTableRow(tableRows[rowIndex], Number(record[field]), "id='" + record[tidRowIndex] + "_dummy'" + " hint='tid'");
                                                 } else {
@@ -5735,7 +5751,7 @@
                                                 if (field == timestampIndex) {
                                                     sfContextDataTable.addContextTableRow(tableRows[rowIndex], moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'), "id='" + record[tidRowIndex] + "_" + record[field] + "'");
                                                 }else if (field == requestIdIndex) {
-                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field], "id='" + record[tidRowIndex] + "_" + record[timestampIndex] + "'");
+                                                    sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field], "id='" + record[tidRowIndex] + "_" + record[timestampIndex] + "'"+ " hint='" + isDimIndexMap[field] + "'");
                                                 } else if (field == tidRowIndex) {
                                                     sfContextDataTable.addContextTableRow(tableRows[rowIndex], Number(record[field]), "id='" + record[tidRowIndex] + "_dummy'" + " hint='tid'");
                                                 } else {
@@ -6438,7 +6454,7 @@
                     }else if(tokens[1] == "timestamp"){
                         sfContextDataTable.addContextTableHeader(row,tokens[0],-1,addrightclick ? "class='context-menu-one'" : "");
                     }else if(tokens[0] == reqquestHeaderIdentifier){ //SFDC custom
-                        sfContextDataTable.addContextTableHeader(row,tokens[0],-1,addrightclick ? "class='context-menu-one'" : "");
+                        sfContextDataTable.addContextTableHeader(row,tokens[0],-1,addrightclick ? "class='context-menu-four'" : "");
                     }else if(tokens[0] == "tid"){
                         sfContextDataTable.addContextTableHeader(row,tokens[0],1,addrightclick ?  "class='context-menu-three'" : "", localContextData.tooltips[tokens[0]]);
                     }else{
