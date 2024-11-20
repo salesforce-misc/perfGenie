@@ -1838,7 +1838,7 @@
                                 }
                                 requestArr[curIndex][samplesCustomEvent].obj = record;
                                 if(curIndex < minIndex){
-                                    curIndex = curIndex;
+                                    minIndex = curIndex;
                                 }
                                 scount++;
                                 curIndex--;

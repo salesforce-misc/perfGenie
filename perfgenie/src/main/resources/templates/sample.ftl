@@ -315,16 +315,15 @@
     function getSamplesTableHeader(groupBySamples, row, event) {
 
         let localContextData = getContextData(1);
-        /*if(event === EventType.MEMORY) {
-            totalSampleCount = totalSampleCount * 1024 * 1024;
+        if(event.includes("emory")) { // TODO make proper fix
             if(groupBySamples == "tid") {
-                sfContextDataTable.addContextTableHeader(row,groupBySamples,1,"class='context-menu-two'");
+                sfSampleTable.addContextTableHeader(row,groupBySamples,1,"class='context-menu-three'",localContextData.tooltips[groupBySamples]);
             }else{
-                sfContextDataTable.addContextTableHeader(row,groupBySamples,-1,"class='context-menu-two'");
+                sfSampleTable.addContextTableHeader(row,groupBySamples,-1,"class='context-menu-two'",localContextData.tooltips[groupBySamples]);
             }
             sfContextDataTable.addContextTableHeader(row,"Memory Mb",1);
             sfContextDataTable.addContextTableHeader(row,"Samples",1);
-        }else{*/
+        }else{
             if(groupBySamples == "tid") {
                 sfSampleTable.addContextTableHeader(row,groupBySamples,1,"class='context-menu-three'",localContextData.tooltips[groupBySamples]);
             }else{
@@ -332,7 +331,7 @@
             }
             sfSampleTable.addContextTableHeader(row,"Sample Count",1);
             sfSampleTable.addContextTableHeader(row,"Samples",1);
-        //}
+        }
     }
 
     let sampleTableRows = [];
@@ -346,6 +345,10 @@
     function genSampleTable(addContext, level) {
 
         let eventType = getEventType();
+        let isMemoryEvent = false;
+        if (eventType.includes("emory")) {//TODO proper identification
+            isMemoryEvent = true;
+        }
         let jfrprofilestart = 0;
 
         let tempeventTypeArray = [];
@@ -388,6 +391,10 @@
         }
         getSamplesTableHeader(groupBySamples, sampleTableHeader, eventType);
         let totalSampleCount = getContextTree(1, eventType).tree.sz;
+        if(isMemoryEvent) {
+            totalSampleCount = totalSampleCount * 1024 * 1024;
+        }
+
         let samplerowIndex = -1;
 
         if(addContext) {
@@ -481,9 +488,13 @@
                                         if (tidSamplesTimestamps[tid] == undefined) {
                                             tidSamplesTimestamps[tid] = [];
                                         }
+                                        let weight=1;
                                         if (isJstack) {
                                             tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time + jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                         } else {
+                                            if(isMemoryEvent && contextTidMap[tid][i].ctx != undefined && contextTidMap[tid][i].ctx != ""){
+                                                weight = Number(contextTidMap[tid][i].ctx);
+                                            }
                                             tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                         }
                                         eventSampleCount++;
@@ -492,21 +503,21 @@
                                             let key = contextTidMap[tid][i].tn;
                                             //consider
                                             if (sampleSortMap.has(key)) {
-                                                sampleSortMap.set(key, sampleSortMap.get(key) + 1);
+                                                sampleSortMap.set(key, sampleSortMap.get(key) + weight);
                                             } else {
-                                                sampleSortMap.set(key, 1);
+                                                sampleSortMap.set(key, weight);
                                             }
 
                                             if (sampleCountMap.has(key)) {
                                                 let tmpMap = sampleCountMap.get(key);
                                                 if (tmpMap.has(stack)) {
-                                                    tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                                    tmpMap.set(stack, tmpMap.get(stack) + weight);
                                                 } else {
-                                                    tmpMap.set(stack, 1);
+                                                    tmpMap.set(stack, weight);
                                                 }
                                             } else {
                                                 let tmpMap = new Map();
-                                                tmpMap.set(stack, 1);
+                                                tmpMap.set(stack, weight);
                                                 sampleCountMap.set(key, tmpMap);
                                             }
                                         }
@@ -530,29 +541,33 @@
                                         if (tidSamplesTimestamps[tid] == undefined) {
                                             tidSamplesTimestamps[tid] = [];
                                         }
+                                        let weight=1;
                                         if (isJstack) {
                                             tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time + jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                         } else {
+                                            if(isMemoryEvent && contextTidMap[tid][i].ctx != undefined && contextTidMap[tid][i].ctx != ""){
+                                                weight = Number(contextTidMap[tid][i].ctx);
+                                            }
                                             tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                         }
                                         eventSampleCount++;
                                         if (sampletableFormat == 0) {
                                             let key = tid;
                                             if (sampleSortMap.has(key)) {
-                                                sampleSortMap.set(key, sampleSortMap.get(key) + 1);
+                                                sampleSortMap.set(key, sampleSortMap.get(key) + weight);
                                             } else {
-                                                sampleSortMap.set(key, 1);
+                                                sampleSortMap.set(key, weight);
                                             }
                                             if (sampleCountMap.has(key)) {
                                                 let tmpMap = sampleCountMap.get(key);
                                                 if (tmpMap.has(stack)) {
-                                                    tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                                    tmpMap.set(stack, tmpMap.get(stack) + weight);
                                                 } else {
-                                                    tmpMap.set(stack, 1);
+                                                    tmpMap.set(stack, weight);
                                                 }
                                             } else {
                                                 let tmpMap = new Map();
-                                                tmpMap.set(stack, 1);
+                                                tmpMap.set(stack, weight);
                                                 sampleCountMap.set(key, tmpMap);
                                             }
                                         }
@@ -576,9 +591,13 @@
                                         if (tidSamplesTimestamps[tid] == undefined) {
                                             tidSamplesTimestamps[tid] = [];
                                         }
+                                        let weight=1;
                                         if (isJstack) {
                                             tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time + jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                         } else {
+                                            if(isMemoryEvent && contextTidMap[tid][i].ctx != undefined && contextTidMap[tid][i].ctx != ""){
+                                                weight = Number(contextTidMap[tid][i].ctx);
+                                            }
                                             tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                         }
                                         eventSampleCount++;
@@ -594,20 +613,20 @@
                                             }
                                             //consider
                                             if (sampleSortMap.has(key)) {
-                                                sampleSortMap.set(key, sampleSortMap.get(key) + 1);
+                                                sampleSortMap.set(key, sampleSortMap.get(key) + weight);
                                             } else {
-                                                sampleSortMap.set(key, 1);
+                                                sampleSortMap.set(key, weight);
                                             }
                                             if (sampleCountMap.has(key)) {
                                                 let tmpMap = sampleCountMap.get(key);
                                                 if (tmpMap.has(stack)) {
-                                                    tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                                    tmpMap.set(stack, tmpMap.get(stack) + weight);
                                                 } else {
-                                                    tmpMap.set(stack, 1);
+                                                    tmpMap.set(stack, weight);
                                                 }
                                             } else {
                                                 let tmpMap = new Map();
-                                                tmpMap.set(stack, 1);
+                                                tmpMap.set(stack, weight);
                                                 sampleCountMap.set(key, tmpMap);
                                             }
                                         }
@@ -648,26 +667,30 @@
                                                             if (tidSamplesTimestamps[tid] == undefined) {
                                                                 tidSamplesTimestamps[tid] = [];
                                                             }
+                                                            let weight = 1;
                                                             if (isJstack) {
                                                                 tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time + jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                                             } else {
+                                                                if(isMemoryEvent && contextTidMap[tid][i].ctx != undefined && contextTidMap[tid][i].ctx != ""){
+                                                                    weight = Number(contextTidMap[tid][i].ctx);
+                                                                }
                                                                 tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                                             }
-                                                            eventSampleCount++;
+                                                            eventSampleCount += weight;
 
-                                                            cursampleCount++;
+                                                            cursampleCount += weight;
 
                                                             if (sampletableFormat == 0) {
                                                                 if (sampleCountMap.has(key)) {
                                                                     let tmpMap = sampleCountMap.get(key);
                                                                     if (tmpMap.has(stack)) {
-                                                                        tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                                                        tmpMap.set(stack, tmpMap.get(stack) + weight);
                                                                     } else {
-                                                                        tmpMap.set(stack, 1);
+                                                                        tmpMap.set(stack, weight);
                                                                     }
                                                                 } else {
                                                                     let tmpMap = new Map();
-                                                                    tmpMap.set(stack, 1);
+                                                                    tmpMap.set(stack, weight);
                                                                     sampleCountMap.set(key, tmpMap);
                                                                 }
                                                             }
@@ -701,29 +724,33 @@
                                                 if (tidSamplesTimestamps[tid] == undefined) {
                                                     tidSamplesTimestamps[tid] = [];
                                                 }
+                                                let weight = 1
                                                 if (isJstack) {
                                                     tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time + jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                                 } else {
+                                                    if(isMemoryEvent && contextTidMap[tid][i].ctx != undefined && contextTidMap[tid][i].ctx != ""){
+                                                        weight = Number(contextTidMap[tid][i].ctx);
+                                                    }
                                                     tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                                 }
-                                                eventSampleCount++;
+                                                eventSampleCount += weight;
                                                 if (sampletableFormat == 0) {
                                                     let key = tid;
                                                     if (sampleSortMap.has(key)) {
-                                                        sampleSortMap.set(key, sampleSortMap.get(key) + 1);
+                                                        sampleSortMap.set(key, sampleSortMap.get(key) + weight);
                                                     } else {
-                                                        sampleSortMap.set(key, 1);
+                                                        sampleSortMap.set(key, weight);
                                                     }
                                                     if (sampleCountMap.has(key)) {
                                                         let tmpMap = sampleCountMap.get(key);
                                                         if (tmpMap.has(stack)) {
-                                                            tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                                            tmpMap.set(stack, tmpMap.get(stack) + weight);
                                                         } else {
-                                                            tmpMap.set(stack, 1);
+                                                            tmpMap.set(stack, weight);
                                                         }
                                                     } else {
                                                         let tmpMap = new Map();
-                                                        tmpMap.set(stack, 1);
+                                                        tmpMap.set(stack, weight);
                                                         sampleCountMap.set(key, tmpMap);
                                                     }
                                                 }
@@ -987,11 +1014,19 @@
                         if (order == 0) {
                             order = value1;
                         }
-                        str = str + "<div style=\" cursor: pointer;\" data-ga-category=\"samples-table\" data-ga-action=\"show-stack\" id=\"+ key1 + \" class=\"send-ga stack-badge badge badge-secondary  stack" + key1 + "\" onclick=\"showSampleStack('" + key1 + "');\">" + (100 * value1 / value).toFixed(2) + "%, " + value1 + "</div> &nbsp;";
+                        if(isMemoryEvent) {
+                            str = str + "<div style=\" cursor: pointer;\" data-ga-category=\"samples-table\" data-ga-action=\"show-stack\" id=\"+ key1 + \" class=\"send-ga stack-badge badge badge-secondary  stack" + key1 + "\" onclick=\"showSampleStack('" + key1 + "');\">" + (100 * value1 / value).toFixed(2) + "%, " + (value1/(1024*1024)).toFixed(3) + "</div> &nbsp;";
+                        }else{
+                            str = str + "<div style=\" cursor: pointer;\" data-ga-category=\"samples-table\" data-ga-action=\"show-stack\" id=\"+ key1 + \" class=\"send-ga stack-badge badge badge-secondary  stack" + key1 + "\" onclick=\"showSampleStack('" + key1 + "');\">" + (100 * value1 / value).toFixed(2) + "%, " + value1 + "</div> &nbsp;";
+                        }
                     } else {
                         if (morec < 25) {
                             morec++;
-                            more = more + "<div style=\"display: none; cursor: pointer; \"   class=\"stack-badge badge badge-secondary  stack" + key1 + " hidden-stacks-" + hashCode(key) + "\" onclick=\"showSampleStack('" + key1 + "');\">" + (100 * value1 / value).toFixed(2) + "%, " + value1 + "</div>&nbsp;";
+                            if(isMemoryEvent) {
+                                more = more + "<div style=\"display: none; cursor: pointer; \"   class=\"stack-badge badge badge-secondary  stack" + key1 + " hidden-stacks-" + hashCode(key) + "\" onclick=\"showSampleStack('" + key1 + "');\">" + (100 * value1 / value).toFixed(2) + "%, " + (value1/(1024*1024)).toFixed(3) + "</div>&nbsp;";
+                            }else{
+                                more = more + "<div style=\"display: none; cursor: pointer; \"   class=\"stack-badge badge badge-secondary  stack" + key1 + " hidden-stacks-" + hashCode(key) + "\" onclick=\"showSampleStack('" + key1 + "');\">" + (100 * value1 / value).toFixed(2) + "%, " + value1 + "</div>&nbsp;";
+                            }
                         } else {
                             skipc++;
                         }
@@ -1009,22 +1044,28 @@
                     }
                 }
                 sampleTableRows[samplerowIndex] = [];
-                /*if(eventType == EventType.MEMORY) {
-                    addContextTableRow(sampleTableRows[samplerowIndex], ("<label style=\"word-wrap: break-word; width: 300px\" >" + (key == undefined ? "NA" : key) + "</label>"), "hint='"+groupBySamples+"'");
-                    addContextTableOrderRow(sampleTableRows[samplerowIndex], ("<b>" + (value / (1024 * 1024)).toFixed(3) + "</b>&nbsp;<div class=\"badge badge-info\"> " + (100 * value / totalSampleCount).toFixed(3) + "</div>"), value);
-                    addContextTableOrderRow(sampleTableRows[samplerowIndex], str, order);
-                }else{*/
+                if(isMemoryEvent) {
+                    //addContextTableRow(sampleTableRows[samplerowIndex], ("<label style=\"word-wrap: break-word; width: 300px\" >" + (key == undefined ? "NA" : key) + "</label>"), "hint='"+groupBySamples+"'");
+                    //addContextTableOrderRow(sampleTableRows[samplerowIndex], ("<b>" + (value / (1024 * 1024)).toFixed(3) + "</b>&nbsp;<div class=\"badge badge-info\"> " + (100 * value / totalSampleCount).toFixed(3) + "</div>"), value);
+                    //addContextTableOrderRow(sampleTableRows[samplerowIndex], str, order);
 
-                //"id='"+Number(dim) + "_dummy'"
-                if (groupBySamples == "tid") {
-                    sfSampleTable.addContextTableRow(sampleTableRows[samplerowIndex], ("<div style=\"cursor: pointer; word-wrap: break-word;\" >" + (key == undefined ? "NA" : key) + "</div>"), "id='" + key + "_dummy'" + " hint='" + groupBySamples + "'");
-                } else {
-                    sfSampleTable.addContextTableRow(sampleTableRows[samplerowIndex], ("<div style=\"cursor: pointer; word-wrap: break-word;\" >" + (key == undefined ? "NA" : key) + "</div>"), "hint='" + groupBySamples + "'");
+                    if (groupBySamples == "tid") {
+                        sfSampleTable.addContextTableRow(sampleTableRows[samplerowIndex], ("<div style=\"cursor: pointer; word-wrap: break-word;\" >" + (key == undefined ? "NA" : key) + "</div>"), "id='" + key + "_dummy'" + " hint='" + groupBySamples + "'");
+                    } else {
+                        sfSampleTable.addContextTableRow(sampleTableRows[samplerowIndex], ("<div style=\"cursor: pointer; word-wrap: break-word;\" >" + (key == undefined ? "NA" : key) + "</div>"), "hint='" + groupBySamples + "'");
+                    }
+                    sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], ("<div class=\"badge badge-info\"><span style='font-size: 12px; color:black'>" + (value / (1024 * 1024)).toFixed(3) + "</span> " + (100 * value / totalSampleCount).toFixed(3) + "%</div>"), value);
+                    sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], str, order);
+
+                }else{
+                    if (groupBySamples == "tid") {
+                        sfSampleTable.addContextTableRow(sampleTableRows[samplerowIndex], ("<div style=\"cursor: pointer; word-wrap: break-word;\" >" + (key == undefined ? "NA" : key) + "</div>"), "id='" + key + "_dummy'" + " hint='" + groupBySamples + "'");
+                    } else {
+                        sfSampleTable.addContextTableRow(sampleTableRows[samplerowIndex], ("<div style=\"cursor: pointer; word-wrap: break-word;\" >" + (key == undefined ? "NA" : key) + "</div>"), "hint='" + groupBySamples + "'");
+                    }
+                    sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], ("<div class=\"badge badge-info\"><span style='font-size: 12px; color:black'>" + value + "</span> " + (100 * value / totalSampleCount).toFixed(3) + "%</div>"), value);
+                    sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], str, order);
                 }
-                sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], ("<div class=\"badge badge-info\"><span style='font-size: 12px; color:black'>" + value + "</span> " + (100 * value / totalSampleCount).toFixed(3) + "%</div>"), value);
-                sfSampleTable.addContextTableOrderRow(sampleTableRows[samplerowIndex], str, order);
-
-                // }
                 //table = table + "<tr><td  hint=" + groupBySamples + " class=\"context-menu-two\"><label style=\"word-wrap: break-word; width: 300px\" >" + (key == undefined ? "NA" : key) + "</label></td><td data-order="+value+"><b>" +value+"</b>&nbsp;<div class=\"badge badge-info\"> "+ (100*value/totalSampleCount).toFixed(3) + "</div></td><td data-order="+order+">" + str + "</td></tr>";
             }
 
