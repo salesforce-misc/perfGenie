@@ -2279,7 +2279,7 @@
                     .attr("cx", cellC*cellWidth+cellWidth/2)
                     .attr("cy", cellWidth/2)
                     .attr("fill", colors[pair[1]])
-                    .attr("class",  " tgl")
+                    .attr("class",  "stackCell"+pair[1])
                     .attr("onclick", 'showStackNew(evt)')
                     .attr("id", pair[0] + "-" + epoch);
             } else {
@@ -2309,7 +2309,7 @@
                     .attr("cx", cellC*cellWidth+cellWidth/2)
                     .attr("cy", cellWidth/2)
                     .attr("fill", colors[pair[1]])
-                    .attr("class",  " tgl")
+                    .attr("class",  "stackCell"+pair[1])
                     .attr("onclick", 'showpopStackNew(evt)')
                     .attr("id", pair[0] + "-" + epoch+"_pop");
 
@@ -2423,12 +2423,18 @@
         let eventTypeCount = 0;
         for (var eventType in jfrprofiles1) {//for all profile event types
             if (multiSelect[eventTypeCount] != undefined) {
+                d3.select("#requestbarchartsvg").select("svg").selectAll(".stackCell"+eventTypeCount).classed("hide",false);
                 $('.stackCell' + eventTypeCount).removeClass('hide');
             } else {
+                d3.select("#requestbarchartsvg").select("svg").selectAll(".stackCell"+eventTypeCount).classed("hide",true);
                 $('.stackCell' + eventTypeCount).addClass('hide');
             }
             eventTypeCount++;
         }
+        if(!d3.select("#requestbarchartsvg").select("svg").select("*:not(.hide)").classed("stackCells")) {
+            d3.select("#requestbarchartsvg").select("svg").select("*:not(.hide)").dispatch('click');
+        }
+
 
         let element = undefined;
         if ($("#popupthreadstate").length != 0) {
