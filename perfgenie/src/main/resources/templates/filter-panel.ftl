@@ -1235,8 +1235,9 @@
     }
 
     function unhideFilterViewStatus() {
-        if($("#cct-panel").css("height").split(".")[0] < 25) {
-            $("#cct-panel").css("height", "25px");
+
+        if($("#cct-panel").css("height") != null) {
+            $("#cct-panel").css("height", "");
         }
         $("#filter-view-status").removeClass("hide");
     }
@@ -3605,7 +3606,7 @@
         }
         let localContextData = getContextData(1);
         let eventToUse = $("#event-input").val();
-        let table = "<table  class='ui-widget' style='border-spacing: 2px; border-collapse: separate;border: hidden'><tr><td style='border: hidden'  id='filter-heading'>Context hints:</td>";
+        let table = "<table  class='ui-widget' style='padding: 0px; border-spacing: 2px; border-collapse: separate;border: hidden'><tr><td style='padding:0px; border: hidden'  id='filter-heading'>Context hints:</td>";
         table += "<td style='border: hidden' class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('context=with');\" title='context=with, filter samples that match context. default is all samples' tabindex='-1'>with-context</a></td>";
         table += "<td style='border: hidden' class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('context=without');\" title='context=without, filter samples that do not match context. default is all samples' tabindex='-1'>without-context</a></td>";
         /*if(eventToUse.includes(".Async")){//todo choose default all using config
@@ -5924,7 +5925,7 @@
             }
         }
 
-        $("#cct-panel").css("height", "100%");
+        //$("#cct-panel").css("height", "100%");
 
         let end = performance.now();
         console.log("genRequestTable end time:" + (end - start1));
@@ -6465,7 +6466,7 @@
 
         setToolBarOptions("statetabledrp");
 
-        $("#cct-panel").css("height", "100%");
+        //$("#cct-panel").css("height", "100%");
 
         let end = performance.now();
         console.log("genRequestTable 1 time:")
@@ -6543,15 +6544,15 @@
 
 </script>
 
-<div style="padding: 0px" id="contextfilter" class="row">
+<div style="" id="contextfilter">
     <h3 style="width:100%;padding-top: 2px !important;padding-bottom: 2px !important;">Context filter</h3>
-    <div style="padding-top: 0px;" id="cct-panel" class="col-lg-12">
+    <div style="padding-left: 23px;padding-top: 0px;" id="cct-panel" class="col-lg-12">
         <span id="filter-view-status" style="" class="hide"></span>
         <div id="contextpanel" class="hide">
-            <div id="contexthints" class="row col-lg-12">
-                <table style="border-spacing: 0px; border-collapse: separate;">
+            <div id="contexthints" style="padding: 0px !important;" class="col-lg-12">
+                <table style="padding:0px; border-spacing: 0px; border-collapse: separate;">
                     <tr>
-                        <td id="filter-heading">Context hints:</td>
+                        <td style="padding:0px;" id="filter-heading">Context hints:</td>
                     </tr>
                 </table>
             </div>

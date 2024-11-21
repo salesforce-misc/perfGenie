@@ -545,7 +545,7 @@ function loadDiagData1(){
             text: "diagnostics(raw) events loaded",
             duration: 8000
         }).showToast();
-        $("#cct-panel").css("height", "100%");//expand context table view
+        //$("#cct-panel").css("height", "100%");//expand context table view
 
         if(diagEvent != ''){
             let values = diagEvent.split("_");
@@ -669,7 +669,7 @@ function loadDiagData2(){
             text: "diagnostics(raw) events loaded",
             duration: 8000
         }).showToast();
-        $("#cct-panel").css("height", "100%");//expand context table view
+        //$("#cct-panel").css("height", "100%");//expand context table view
     }
 }
 

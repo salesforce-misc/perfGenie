@@ -371,7 +371,7 @@
     function retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, eventType) {
         let start = performance.now();
         if(getEventType() === eventType) {
-            resetTreeHeader("<div style='padding-right: 10px'>Retrieving profile data, <span style='color:darkorange'>this may take few sec ...</span> <span style='float: right;' class='spinner' id='profilespinner'></span></div>");
+            resetTreeHeader("<div style='padding-left: 10px; padding-right: 10px'>Retrieving profile data, <span style='color:darkorange'>this may take few sec ...</span> <span style='float: right;' class='spinner' id='profilespinner'></span></div>");
             showSpinner('profilespinner');
         }
         let isJstackEvent = false;
@@ -498,7 +498,7 @@
                     //updateFilterViewStatus("Note: Context filter is disabled when compare option selected.");
                     //unhideFilterViewStatus();
 
-                    $("#cct-panel").css("height","100%");
+                    //$("#cct-panel").css("height","100%");
 
                     if ( (getEventType() == eventType)){//} && !(eventType == "json-jstack" && eventType.contains("dump_"))) || eventType == "jfr_dump.json.gz") { //todo check this, dirty fix for sfdc
 
@@ -758,7 +758,7 @@
                     text: customevent + " data loaded",
                     duration: 8000
                 }).showToast();
-                $("#cct-panel").css("height", "100%");//expand context table view
+                //$("#cct-panel").css("height", "100%");//expand context table view
             }
         }
         console.log("setOtherEventData done count:" + count);
