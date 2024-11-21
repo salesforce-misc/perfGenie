@@ -454,6 +454,9 @@
                     } else {
                         setContextTree(contextTrees[0], 1, eventType);
                     }
+                    if(eventType.includes("emory")){//TODO: identify mempry profile
+                        extractandCreateMemoryAllocationTrendData(1);
+                    }
                     contextTrees[0].context.start = Math.round(contextTrees[0].context.start / 1000000);
                     contextTrees[0].context.end = Math.round(contextTrees[0].context.end / 1000000);
                     if ( (getEventType() == eventType)){//} && !(eventType == "json-jstack" && eventType.contains("dump_"))) || eventType == "jfr_dump.json.gz") { //todo check this, dirty fix for sfdc
@@ -653,6 +656,7 @@
                     }else {
                         setContextData(contextDatas[0],1);
                         fetchOtherEvents(dateRanges[0], tenants[0], hosts[0], 1);
+                        extractandCreateMemoryAllocationTrendData(1);
                         //showContextFilter();
                         //hideFilterViewStatus();
                         refreshTreeAfterContext(customEvent);
@@ -674,6 +678,7 @@
                     if(contextDatas[0].tidlist == undefined && contextDatas[0].error != undefined){
                         updateFilterViewStatus("<span style='color:darkorange'>Warning:</span> Failed to get Request context.");
                         toastr_warning("Failed to get Request context.");
+                        setContextData({"records": {}, "tidlist": [], "header": {}},1);
                         setContextData({"records": {}, "tidlist": [], "header": {}},2);
                         fetchOtherEvents(dateRanges[0], tenants[0], hosts[0], 1);
                         fetchOtherEvents(dateRanges[1], tenants[1], hosts[1], 2);

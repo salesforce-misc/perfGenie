@@ -4897,6 +4897,65 @@
         }
     }
 
+    function extractandCreateMemoryAllocationTrendData(count) {
+
+        console.log("extractandCreateMemoryAllocationTrendData");
+        let localContextData = getContextData(count);
+        let treeToProcess = getContextTree(count, "jfr_dump_memory.json.gz");
+
+        if(localContextData == undefined || treeToProcess == undefined){
+            console.log("nodata extractandCreateMemoryAllocationTrendData");
+            return;
+        }
+
+        let alloccontext = "memory-profile-alloc";
+        let records = localContextData.records;
+        let header = localContextData.header;
+        let tooltips = localContextData.tooltips;
+        let contextStart = treeToProcess.context.start;
+
+        if(header[alloccontext] != undefined){
+            console.log("skip extractandCreateMemoryAllocationTrendData");
+            return;
+        }
+        header[alloccontext] = ["timestamp:timestamp:allocation time", "tid:text:tid", "allocation:number:bytes"];
+
+        if (header[alloccontext] != undefined) {
+            for (let val in header[alloccontext]) {
+                const tokens = header[alloccontext][val].split(":");
+                tooltips[tokens[0]] = tokens[2];
+            }
+        }
+        records[alloccontext] = {};
+
+        let contextTidMap = treeToProcess.context.tidMap;
+
+        if(contextTidMap != undefined) {
+            for (var tid in contextTidMap) {
+                if (records[alloccontext][tid] == undefined) {
+                    records[alloccontext][tid] = [];
+                }
+                for (let i = 0; i < contextTidMap[tid].length; i++) {
+                    if (contextTidMap[tid][i].ctx != undefined) {
+                        records[alloccontext][tid].push({"record": [contextStart+contextTidMap[tid][i].time, tid, Number(contextTidMap[tid][i].ctx)]});
+                    }
+                }
+                records[alloccontext][tid].sort(function (a, b) {
+                    return a.record[0] - b.record[0];
+                });//descending
+            }
+            otherEventsFetched[alloccontext]=true;
+            $('#other-event-input').append($('<option>', {
+                value: alloccontext,
+                text: alloccontext
+            }));
+            Toastify({
+                text: alloccontext + " data loaded",
+                duration: 8000
+            }).showToast();
+        }
+    }
+
     function getContextName(type){
         if(type == 2){
             return "Sync";
