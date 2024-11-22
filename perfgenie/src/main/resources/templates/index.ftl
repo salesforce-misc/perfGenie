@@ -74,6 +74,7 @@
 <#include "header.ftl">
 <#include "input.ftl">
 <#include "filter-panel.ftl">
+<#include "context-view.ftl">
 <#include "tabs.ftl">
 </body>
 </html>
