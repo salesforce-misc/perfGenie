@@ -307,6 +307,24 @@
                 "add": {name: "Add to filter"}
             }
         });
+        $.contextMenu({
+            selector: '.context-menu-five',
+            callback: function (key, options) {
+                if (key == "add") {
+                    let text = this[0].__data__;
+                    const regex = /\%\s+(.*)\:/;
+                    const matches = text.match(regex);
+                    if (matches) {
+                        text = matches[1];
+                    }
+                    let hint = $("#filter-input").val();
+                    addToFilter(hint + "=" + text);
+                }
+            },
+            items: {
+                "add": {name: "Add to filter"}
+            }
+        });
     });
 
     function setApplyDisabled(shouldDisable) {
@@ -3341,6 +3359,9 @@
                     r: function (d) {
                         return 5;
                     }
+                },
+                onrendered: function () {
+                    d3.select("#timeLineChart").selectAll(".c3-legend-item-event").classed("context-menu-five", true);
                 }
             });
             $("#timeLineChart").data('c3-chart', chart);
