@@ -3591,6 +3591,11 @@
                     r: function (d) {
                         return 5;
                     }
+                },
+                onrendered: function () {
+                    if($("#filter-input").val() == "tid") {//only tid might help
+                        d3.select("#timeLineChart").selectAll(".c3-legend-item-event").classed("context-menu-five", true);
+                    }
                 }
             });
             $("#timeLineChart").data('c3-chart', chart);
