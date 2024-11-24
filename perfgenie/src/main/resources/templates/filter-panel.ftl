@@ -6009,10 +6009,6 @@
         window.open(getLargeFileDownloadURL(timestamp, guid, name, count), "_blank");
     }
 
-    function getLargeFileDownloadURL(timestamp, guid, name, count){
-        return "v1/download/" + (count == 1 ? tenant1 : tenant2) + "?timestamp=" + timestamp + "&metadata_query=" + encodeURIComponent("guid=" + guid) + "&metadata_query=" + encodeURIComponent("file-name=" + name);
-    }
-
     function getDiagEventn(e, timestamp, guid, name, count) {
 
         if (count == undefined) {

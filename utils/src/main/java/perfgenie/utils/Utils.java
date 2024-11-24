@@ -14,6 +14,10 @@ import com.google.common.io.ByteStreams;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -26,6 +30,8 @@ public class Utils {
     private static String sfdcGeneratedFrameIndicator = "EnhancerBySpringCGLIB$$";
     private static char sfdcGeneratedBeginningCharacter = sfdcGeneratedFrameIndicator.charAt(0);
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static boolean trimAfterNthMatchingCharacter(final String str, final StringBuilder builder, final int count, char trimAfter) {
         if (str == null) {
@@ -175,4 +181,9 @@ public class Utils {
         return UUID.randomUUID().toString();
     }
 
+    public static String getDateTimeString(final long epochMillis){
+        Instant instant = Instant.ofEpochMilli(epochMillis);
+        LocalDateTime dateTime = LocalDateTime.ofInstant(instant, ZoneId.of("UTC"));
+        return dateTime.format(formatter);
+    }
 }

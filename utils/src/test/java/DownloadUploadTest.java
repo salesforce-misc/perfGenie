@@ -38,7 +38,7 @@ public class DownloadUploadTest {
         final String original = Resources.toString(Resources.getResource("test.jfr"), StandardCharsets.UTF_8);
         final Map<String, String> dimMap = new HashMap<>();
         dimMap.put("source","genie");
-        eventStore.addGenieLargeEvent(timestamp, dimMap, new HashMap<>(), original, "dev", true);
+        eventStore.addGenieLargeEvent(timestamp, dimMap, new HashMap<>(), original, "dev", "genie");
         final String downloaded = eventStore.getGenieLargeEvent(timestamp, timestamp, dimMap, new HashMap<>(),"dev");
         assertEquals(original, downloaded);
     }

@@ -15,6 +15,13 @@ function getMetaDataURL(start,end,tenant='dev', host, source){
     return URL;
 }
 
+function getGoldDataURL(start,end){
+    let URL = "v1/gold/meta/?start=" + start +
+        "&end=" + end;
+        //URL += "&metadata_query=" + encodeURIComponent("source=gold");
+    return URL;
+}
+
 function getTenantDataURL(start,end,tenant='dev'){
     let URL = "v1/tenants/"+tenant+
         "/?start=" + start +
@@ -22,6 +29,15 @@ function getTenantDataURL(start,end,tenant='dev'){
     return URL;
 }
 
+function getBackupDataURL(start,end,tenant='dev', host, source){
+    let URL = "v1/backup/"+tenant+"/"+host+
+        "/?start=" + start +
+        "&end=" + end;
+    if(source == "genie"){
+        URL += "&metadata_query=" + encodeURIComponent("source=" + source);
+    }
+    return URL;
+}
 
 function getInstanceDataURL(start,end,tenant='dev', source){
     let URL = "v1/instances/"+tenant+
@@ -31,6 +47,100 @@ function getInstanceDataURL(start,end,tenant='dev', source){
         URL += "&metadata_query=" + encodeURIComponent("source=" + source);
     }
     return URL;
+}
+
+function getEventUrl(timeRange, tenant, host, customEvent){
+    let endpoint = "";
+    const start = parseInt(timeRange.split(" - ")[0]);
+    const end = parseInt(timeRange.split(" - ")[1]);
+    endpoint = "/v1/otherevents/" + tenant + "/?start=" + start + "&end=" + end +
+        "&metadata_query=" + encodeURIComponent("host=" + host) +
+        "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+        "&metadata_query=" + encodeURIComponent("name=" + customEvent);
+    if(dataSource.includes("genie")){
+        endpoint += "&metadata_query=" + encodeURIComponent("source=" + dataSource);
+    }
+    return endpoint;
+}
+
+// the url to get calling context trees
+function getCallTreeUrl(timeRange, pod, query, profiler, tenant, profile, host, upload, fileId, uploadTime, aggregate, eventType) {
+    // for debug console.log("getCallTreeUrl timeRange:" + timeRange + " pod:" + pod + " query:"+query + " profiler:" + profiler + " tenant:"+tenant + " profile:" + profile + " host:" + host + " upload:" + upload + " fileId:" + fileId + " uploadTime:" + uploadTime + " aggregate:" + aggregate)
+    let endpoint = "";
+    {
+        //for any type of profile selection jstacks are handled in the same way
+        if (eventType == "Jstack" || eventType == "json-jstack") {
+            const start = parseInt(timeRange.split(" - ")[0]);
+            const end = parseInt(timeRange.split(" - ")[1]);
+            endpoint = "/v1/jstacks/" + tenant + "/?start=" + start + "&end=" + end +
+                "&metadata_query=" + encodeURIComponent("host=" + host) +
+                "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+                "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
+            if(dataSource.includes("genie")){
+                endpoint += "&metadata_query=" + encodeURIComponent("source=" + dataSource);
+            }
+            return endpoint;
+        }
+
+        if (profile === "All") {
+            const start = parseInt(timeRange.split(" - ")[0]);
+            const end = parseInt(timeRange.split(" - ")[1]);
+            if (eventType == "jfr-context" || eventType.includes("jfr_dump_log")) {
+                endpoint = getCustomEventsURL(start, end, tenant, host, eventType);
+            } else {
+                endpoint = "/v1/profiles/" + tenant + "/?start=" + start + "&end=" + end +
+                    "&metadata_query=" + encodeURIComponent("host=" + host) +
+                    "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+                    "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
+            }
+        } else if(profile === "Jstacks"){
+            const start = parseInt(timeRange.split(" - ")[0]);
+            const end = parseInt(timeRange.split(" - ")[1]);
+            if (eventType == "jfr-context" || eventType.includes("jfr_dump_log")) {
+                endpoint = getCustomEventsURL(start, end, tenant, host, eventType);
+            }
+        }else{
+            let array = profile.split(" - ");
+            const timestamp = array[0];
+            let guid = eventType.includes("jfr_dump") ? array[1] + eventType : array[1];
+            endpoint = getProfileURL(timestamp, tenant, host, guid, eventType);
+        }
+    }
+    if(dataSource.includes("genie")){
+        endpoint += "&metadata_query=" + encodeURIComponent("source=" + dataSource);
+    }
+    return endpoint;
+}
+
+function getCustomEventsURL(start, end, tenant, host, eventType){
+    let URL = "/v1/customevents/" + tenant + "/?start=" + start + "&end=" + end +
+        "&metadata_query=" + encodeURIComponent("host=" + host) +
+        "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+        "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
+    return URL;
+}
+function getProfileURL(timestamp, tenant, host, guid, eventType){
+    let URL = "/v1/profile/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
+        "&metadata_query=" + encodeURIComponent("host=" + host) +
+        "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+        "&metadata_query=" + encodeURIComponent("guid=" + guid) +
+        "&metadata_query=" + encodeURIComponent("file-name=" + eventType);
+    return URL;
+}
+
+function getDiagEventUrl(timestamp, tenant, host, guid, name){
+    let endpoint = "/v1/event/" + tenant + "/?start=" + timestamp + "&end=" + timestamp +
+        "&metadata_query=" + encodeURIComponent("host=" + host) +
+        "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
+        "&metadata_query=" + encodeURIComponent("guid=" + guid) +
+        "&metadata_query=" + encodeURIComponent("name=" + name);
+    if(dataSource.includes("genie")){
+        endpoint += "&metadata_query=" + encodeURIComponent("source=" + dataSource);
+    }
+    return endpoint;
+}
+function getLargeFileDownloadURL(timestamp, guid, name, count){
+    return "v1/download/" + (count == 1 ? tenant1 : tenant2) + "?timestamp=" + timestamp + "&metadata_query=" + encodeURIComponent("guid=" + guid) + "&metadata_query=" + encodeURIComponent("file-name=" + name);
 }
 
 function spinnerToggle(id){
@@ -47,15 +157,6 @@ function toastr_warning(str){
 
 function toastr_error(str){
     console.log(str);
-}
-
-function getEventURL(tenant,start,end,host){
-    const URLUnprocessedIDsOld = "v1/events/" +  tenant +
-        "?start=" + start +
-        "&end=" + end +
-        "&metadata_query=" + encodeURIComponent("host=" + host) +
-        "&metadata_query=" + encodeURIComponent("tenant-id=" + tenant) +
-        "&metadata_query=" + encodeURIComponent("name=jfr");
 }
 
 function updateTabUrl(tab){

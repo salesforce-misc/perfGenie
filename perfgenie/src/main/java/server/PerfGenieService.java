@@ -165,14 +165,14 @@ public class PerfGenieService implements IPerfGenieService {
                         int payloadSize = payload.length();
                         queryMap.put("size", String.valueOf(payloadSize));
                         System.out.println(payloadSize);
-                        eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, payload, config.getTenant(), true);
+                        eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, payload, config.getTenant(), "genie");
                     }
                     Object logContext = handler.getLogContext();
                     queryMap.put("file-name", "jfr-context");//
                     queryMap.put("type", "jfrevent");
                     queryMap.put("name", "jfr");
 
-                    eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, Utils.toJson(logContext), config.getTenant(), true);
+                    eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, Utils.toJson(logContext), config.getTenant(), "genie");
                 } catch (Exception e) {
                     System.out.println(e);
                     logger.warn("Exception parsing file 3" + file.getPath() + ":" + e.getStackTrace());
@@ -239,7 +239,7 @@ public class PerfGenieService implements IPerfGenieService {
 
     @Override
     public void addGenieLargeEvent(final String payload, final long timestamp, final Map<String, Double> dimMap, final Map<String, String> queryMap, final String tenant) throws IOException {
-        eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, payload, tenant, true);
+        eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, payload, tenant, "genie");
     }
 
     @Override
@@ -263,6 +263,16 @@ public class PerfGenieService implements IPerfGenieService {
     @Override
     public String getGenieMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String tenant, final String instance) throws IOException {
         return eventStore.getGenieMeta(start, end, queryMap, dimMap, tenant, instance);
+    }
+
+    @Override
+    public String getGenieGoldMeta(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
+        return eventStore.getGenieGoldMeta(start, end, queryMap, dimMap);
+    }
+
+    @Override
+    public String backupEvents(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String tenant, final String instance) throws IOException {
+        return eventStore.backupEvents(start, end, queryMap, dimMap, tenant, instance);
     }
 
     @Override

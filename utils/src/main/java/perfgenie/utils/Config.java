@@ -5,9 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 public class Config {
     private static final Logger logger = LoggerFactory.getLogger(CustomJfrParser.class);
@@ -108,6 +106,18 @@ public class Config {
 
     String grpc_target = "localhost:7443";
 
+    public String getBackup_namespace() {
+        return backup_namespace;
+    }
+
+    String backup_namespace = null;
+
+    public HashSet getBackupEvents() {
+        return backupEvents;
+    }
+
+    HashSet backupEvents = new HashSet<>();
+
 
     String storageType = "h2";
     List<String> profiles = new ArrayList<>(); //Arrays.asList("ExecutionS", "Socket");
@@ -194,6 +204,13 @@ public class Config {
 
             if (prop.getProperty("jfrparser") != null) {
                 jfrparser = prop.getProperty("jfrparser");
+            }
+            if (prop.getProperty("backup.namespace") != null) {
+                backup_namespace = prop.getProperty("backup.namespace");
+            }
+            if (prop.getProperty("backup.events") != null) {
+                String[] values = prop.getProperty("backup.events").split(",");
+                backupEvents = new HashSet<>(Arrays.asList(values));
             }
 
 

@@ -93,14 +93,14 @@ public class AgentApplication {
                         int payloadSize = payload.length();
                         queryMap.put("size", String.valueOf(payloadSize));
                         System.out.println(payloadSize);
-                        eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, payload, config.getTenant(), true);
+                        eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, payload, config.getTenant(), "genie");
                     }
                     Object logContext = handler.getLogContext();
                     queryMap.put("file-name", "jfr-context");//
                     queryMap.put("type", "jfrevent");
                     queryMap.put("name", "jfr");
 
-                    eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, Utils.toJson(logContext), config.getTenant(), true);
+                    eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, Utils.toJson(logContext), config.getTenant(), "genie");
                 } catch (Exception e) {
                     System.out.println(e);
                     logger.warn("Exception parsing file 3" + file.getPath() + ":" + e.getStackTrace());

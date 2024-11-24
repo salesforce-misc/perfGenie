@@ -67,6 +67,28 @@ public class PerfGenieController {
         return service.getGenieMeta(start, end, queryMap, dimMap, tenant, instance);//, host);
     }
 
+    @GetMapping(path = {"/v1/gold/meta"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String goldMeta(@RequestParam(required = false, name = "start") final long start,
+                       @RequestParam(required = false, name = "end") final long end,
+                       @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
+
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        final Map<String, String> dimMap = new HashMap<>();
+        return service.getGenieGoldMeta(start, end, queryMap, dimMap);//, host);
+    }
+
+    @GetMapping(path = {"/v1/backup", "/v1/backup/{tenant}/{instance}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String bsckup(@PathVariable(required = false, name = "tenant") String tenant,
+                       @PathVariable(required = false, name = "instance") final String instance,
+                       @RequestParam(required = false, name = "start") final long start,
+                         @RequestParam(required = false, name = "end") final long end,
+                         @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
+
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        final Map<String, String> dimMap = new HashMap<>();
+        return service.backupEvents(start, end, queryMap, dimMap, tenant, instance);
+    }
+
     //@CrossOrigin
     @GetMapping(path = {"/v1/jstacks", "/v1/jstacks/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String jstacks(@PathVariable(required = false, name = "tenant") String tenant,
