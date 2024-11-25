@@ -298,7 +298,7 @@ function backupAsGold() {
     }
     if(backupStarted){
         addInputNote(false,"");
-        addInputNote(true,"Backup in progress, please be patient, this may take few min...");
+        addInputNote(true,"Backup to GOLD namespace in progress, please be patient, this may take few min...");
         return;
     }
     if (tenant1 == undefined || tenant1 == "" || host1 == undefined || host1 == "") {
@@ -311,7 +311,7 @@ function backupAsGold() {
         let URL = getBackupDataURL(startTime1, endTime1, tenant1, host1);
         showSpinner();
         backupStarted = true;
-        addInputNote(true,"Backup initiated, please be patient, this may take few min...");
+        addInputNote(true,"Backup initiated to GOLD namespace, please be patient, this may take few min...");
         let result1 = undefined;
         $.ajax({
             url: URL, success: function (result) {
@@ -326,6 +326,7 @@ function backupAsGold() {
                             addInputNote(false,"");
                             backupStarted = false;
                             let html = "<table style='width:100%'>";
+                            html += "<tr><td><b>Note: use GOLD backup data source checkbox to access the saved events</b></td></tr>";
                             for (let i = 0; i < result1.length; i++) {
                                 html += "<tr><td>1: " + result1[i] + "</td></tr>";
                             }
@@ -346,6 +347,7 @@ function backupAsGold() {
                     addInputNote(false,"");
                     backupStarted = false;
                     let html = "<table style='width:100%'>";
+                    html += "<tr><td><b>Note: use GOLD backup data source checkbox to access the saved events</b></td></tr>";
                     for (let i = 0; i < result.length; i++) {
                         html += "<tr><td>" + result[i] + "</td></tr>";
                     }
@@ -1096,13 +1098,17 @@ function populateHostsSelector1(start, end, tenant) {
 
     if (instanceData1 != undefined) {
         let hostExist = false;
+        let goldTag = "";
+        if(dataSource == "gold"){
+            goldTag = "gold";
+        }
         for (let val in instanceData1) {
             if (host1 == val || host1 == "") {
                 host1 = val;
                 $("#host-input1").val(val);
-                hostOptionHtml += "<option value=\"" + val + "\" selected></option>";
+                hostOptionHtml += "<option value=\"" + val + "\" selected>"+goldTag+"</option>";
             } else {
-                hostOptionHtml += "<option value=\"" + val + "\"></option>";
+                hostOptionHtml += "<option value=\"" + val + "\">"+goldTag+"</option>";
             }
             hostExist = true;
         }
@@ -1129,16 +1135,24 @@ function populateHostsSelector2(start, end, tenant) {
     const hostDatalist = $("#hosts2");
     hostDatalist.empty();
     $("#host-input2").val("");
-
     if (instanceData2 != undefined) {
+        let hostExist = false;
+        let goldTag = "";
+        if(dataSource == "gold"){
+            goldTag = "gold";
+        }
         for (let val in instanceData2) {
             if (host2 == val || host2 == "") {
                 host2 = val;
                 $("#host-input2").val(val);
-                hostOptionHtml += "<option value=\"" + val + "\" selected></option>";
+                hostOptionHtml += "<option value=\"" + val + "\" selected>"+goldTag+"</option>";
             } else {
-                hostOptionHtml += "<option value=\"" + val + "\"></option>";
+                hostOptionHtml += "<option value=\"" + val + "\">"+goldTag+"</option>";
             }
+            hostExist = true;
+        }
+        if (!hostExist && host2 != undefined && host2 != "") {
+            $("#host-input2").val(host2);
         }
     }
 

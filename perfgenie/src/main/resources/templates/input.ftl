@@ -75,7 +75,7 @@
                 <td style="padding: 0px;border: none;align-items:center;" rowspan="2">
                     <button id="submit-input" style="alignment:center;height:70px" class="ui-button ui-widget ui-corner-all">Submit</button>
                 </td>
-                <td style="border: none;"><i id="backup-gold" title="backup as GOLD data which has higher TTL" style="font-size:20px; cursor: pointer;" class="fa fa-cloud-upload"  onclick="backupAsGold()"></i></td>
+                <td style="border: none;"><i id="backup-gold" title="backup as GOLD data which has higher TTL" style="font-size:20px; cursor: pointer;" class="fa fa-floppy-o"  onclick="backupAsGold()"></i></td>
             </tr>
             <tr style="border: none;">
                 <td style="border: none;"><label >Compare with (Optional): </label></td>
