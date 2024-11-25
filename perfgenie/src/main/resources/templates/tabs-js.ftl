@@ -754,10 +754,7 @@
                 if($('#other-event-input')[0].children.length == 1){
                     genRequestTable();
                 }
-                Toastify({
-                    text: customevent + " data loaded",
-                    duration: 8000
-                }).showToast();
+                toastMessage(toastType.INFO, customevent + " data loaded");
                 //$("#cct-panel").css("height", "100%");//expand context table view
             }
         }

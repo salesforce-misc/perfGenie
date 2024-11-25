@@ -326,7 +326,7 @@ function backupAsGold() {
                             addInputNote(false,"");
                             backupStarted = false;
                             let html = "<table style='width:100%'>";
-                            html += "<tr><td><b>Note: use GOLD backup data source checkbox to access the saved events</b></td></tr>";
+                            html += "<tr><td><b>Note: use GOLD namespace backup data source checkbox to access the saved events</b></td></tr>";
                             for (let i = 0; i < result1.length; i++) {
                                 html += "<tr><td>1: " + result1[i] + "</td></tr>";
                             }
@@ -340,14 +340,14 @@ function backupAsGold() {
                             hideSpinner();
                             addInputNote(false,"");
                             backupStarted = false;
-                            showBackupStatus("","Error: " + status + ":" +error);
+                            toastMessage(toastType.ERROR,"backup failed " + status + ":" + error);
                         }
                     });
                 }else {
                     addInputNote(false,"");
                     backupStarted = false;
                     let html = "<table style='width:100%'>";
-                    html += "<tr><td><b>Note: use GOLD backup data source checkbox to access the saved events</b></td></tr>";
+                    html += "<tr><td><b>Note: use GOLD namespace backup data source checkbox to access the saved events</b></td></tr>";
                     for (let i = 0; i < result.length; i++) {
                         html += "<tr><td>" + result[i] + "</td></tr>";
                     }
@@ -359,7 +359,7 @@ function backupAsGold() {
                 hideSpinner();
                 addInputNote(false,"");
                 backupStarted = false;
-                showBackupStatus("","Error: " + status + ":" +error);
+                toastMessage(toastType.ERROR,"backup failed " + status + ":" + error);
             }
         });
     }
@@ -421,11 +421,7 @@ function getTenantData1(start, end) {
                 updateTenantDropdown1(start, end);
             },
             error: function(xhr, status, error) {
-                Toastify({
-                    text: "Failed to get tenant data",
-                    backgroundColor: "#fa7878",
-                    duration: 8000
-                }).showToast();
+                toastMessage(toastType.ERROR,"Failed to get tenant data 1");
                 hideSpinner();
             }
         });
@@ -442,11 +438,7 @@ function getTenantData2(start, end) {
             updateTenantDropdown2(start, end);
         },
         error: function(xhr, status, error) {
-            Toastify({
-                text: "Failed to get tenant data",
-                backgroundColor: "#fa7878",
-                duration: 8000
-            }).showToast();
+            toastMessage(toastType.ERROR,"Failed to get tenant data 2");
             hideSpinner();
         }
     });
@@ -465,11 +457,7 @@ function getInstanceData1(start, end, tenant) {
                 populateHostsSelector1(start, end, tenant);
             },
             error: function(xhr, status, error) {
-                Toastify({
-                    text: "Failed to get instance data",
-                    backgroundColor: "#fa7878",
-                    duration: 8000
-                }).showToast();
+                toastMessage(toastType.ERROR,"Failed to get instance data 1");
                 hideSpinner();
             }
         });
@@ -489,11 +477,7 @@ function getInstanceData2(start, end, tenant) {
                 populateHostsSelector2(start, end, tenant);
             },
             error: function(xhr, status, error) {
-                Toastify({
-                    text: "Failed to get instance data",
-                    backgroundColor: "#fa7878",
-                    duration: 8000
-                }).showToast();
+                toastMessage(toastType.ERROR,"Failed to get instance data 2");
                 hideSpinner();
             }
         });
@@ -509,10 +493,12 @@ function getGoldData1(start, end) {
             let tmpTenantData = {};
             let tmpInstanceData = {};
             metaData1 = result;
+            let tenandDataFound = false;
             for (var key in metaData1) {
                 let guid = metaData1[key].metadata["guid"];
                 if(tmpTenantData[metaData1[key].metadata["tenant-id"]] == undefined){
                     tmpTenantData[metaData1[key].metadata["tenant-id"]] = "gold";
+                    tenandDataFound=true;
                 }
                 if(tmpInstanceData[metaData1[key].metadata["instance-id"]] == undefined){
                     tmpInstanceData[metaData1[key].metadata["instance-id"]] = "gold";
@@ -520,6 +506,12 @@ function getGoldData1(start, end) {
             }
             tenantData1 = tmpTenantData;
             instanceData1 = tmpInstanceData;
+
+            if(!tenandDataFound){
+                toastMessage(toastType.WARNING,"No GOLD tenants found for the given time range 1");
+            }else{
+                toastMessage(toastType.INFO,"GOLD tenants loaded for time range 1");
+            }
 
             const tenantDatalist = $("#tenants1");
             tenantDatalist.empty();
@@ -535,11 +527,7 @@ function getGoldData1(start, end) {
             updateTenantDropdown1(start, end);
         },
         error: function(xhr, status, error) {
-            Toastify({
-                text: "Failed to get GOLD data",
-                backgroundColor: "#fa7878",
-                duration: 8000
-            }).showToast();
+            toastMessage(toastType.ERROR,"Failed to get GOLD data");
             hideSpinner();
         }
     });
@@ -554,10 +542,12 @@ function getGoldData2(start, end) {
             let tmpTenantData = {};
             let tmpInstanceData = {};
             metaData2 = result;
+            let tenandDataFound = false;
             for (var key in metaData2) {
                 let guid = metaData2[key].metadata["guid"];
                 if(tmpTenantData[metaData2[key].metadata["tenant-id"]] == undefined){
                     tmpTenantData[metaData2[key].metadata["tenant-id"]] = "gold";
+                    tenandDataFound = true;
                 }
                 if(tmpInstanceData[metaData2[key].metadata["instance-id"]] == undefined){
                     tmpInstanceData[metaData2[key].metadata["instance-id"]] = "gold";
@@ -565,6 +555,11 @@ function getGoldData2(start, end) {
             }
             tenantData2 = tmpTenantData;
             instanceData2 = tmpInstanceData;
+            if(!tenandDataFound){
+                toastMessage(toastType.WARNING,"No GOLD tenants found for the given time range 2");
+            }else{
+                toastMessage(toastType.INFO,"GOLD tenants loaded for time range 2");
+            }
 
             const tenantDatalist = $("#tenants2");
             tenantDatalist.empty();
@@ -580,11 +575,7 @@ function getGoldData2(start, end) {
             updateTenantDropdown2(start, end);
         },
         error: function(xhr, status, error) {
-            Toastify({
-                text: "Failed to get GOLD data",
-                backgroundColor: "#fa7878",
-                duration: 8000
-            }).showToast();
+            toastMessage(toastType.ERROR,"Failed to get GOLD data");
             hideSpinner();
         }
     });
@@ -605,11 +596,7 @@ function getMetaData1(start, end, tenant, host) {
                 loadDiagData1();
             },
             error: function(xhr, status, error) {
-                Toastify({
-                    text: "Failed to get metadata data",
-                    backgroundColor: "#fa7878",
-                    duration: 8000
-                }).showToast();
+                toastMessage(toastType.ERROR,"Failed to get metadata data 1");
                 hideSpinner();
             }
         });
@@ -695,11 +682,7 @@ function addUploadedContext(csv, name) {
             value: name,
             text: name
         }));
-
-        Toastify({
-            text: name + " context loaded",
-            duration: 8000
-        }).showToast();
+        toastMessage(toastType.INFO,name + " context loaded");
     } else {
         otherEvents1[name] = true;
 
@@ -707,11 +690,7 @@ function addUploadedContext(csv, name) {
             value: name,
             text: name
         }));
-
-        Toastify({
-            text: name + " data loaded",
-            duration: 8000
-        }).showToast();
+        toastMessage(toastType.INFO,name + " context loaded");
     }
 }
 
@@ -818,10 +797,7 @@ function loadDiagData1() {
         }));
     }
     if (isloaded) {
-        Toastify({
-            text: "diagnostics(raw) events loaded",
-            duration: 8000
-        }).showToast();
+        toastMessage(toastType.INFO,"diagnostics(raw) events loaded 1");
         //$("#cct-panel").css("height", "100%");//expand context table view
 
         if (diagEvent != '') {
@@ -846,11 +822,7 @@ function getMetaData2(start, end, tenant, host) {
                 loadDiagData2();
             },
             error: function(xhr, status, error) {
-                Toastify({
-                    text: "Failed to get metadata data",
-                    backgroundColor: "#fa7878",
-                    duration: 8000
-                }).showToast();
+                toastMessage(toastType.ERROR,"Failed to get metadata data 2");
                 hideSpinner();
             }
         });
@@ -954,10 +926,7 @@ function loadDiagData2() {
         }));
     }
     if (isloaded) {
-        Toastify({
-            text: "diagnostics(raw) events loaded",
-            duration: 8000
-        }).showToast();
+        toastMessage(toastType.INFO,"diagnostics(raw) events loaded 2");
         //$("#cct-panel").css("height", "100%");//expand context table view
     }
 }

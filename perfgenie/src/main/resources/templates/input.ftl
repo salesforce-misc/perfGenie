@@ -75,7 +75,7 @@
                 <td style="padding: 0px;border: none;align-items:center;" rowspan="2">
                     <button id="submit-input" style="alignment:center;height:70px" class="ui-button ui-widget ui-corner-all">Submit</button>
                 </td>
-                <td style="border: none;"><i id="backup-gold" title="backup as GOLD data which has higher TTL" style="font-size:20px; cursor: pointer;" class="fa fa-floppy-o"  onclick="backupAsGold()"></i></td>
+                <td style="border: none;"><i id="backup-gold" title="backup data to GOLD namespace which has higher TTL" style="font-size:20px; cursor: pointer;" class="fa fa-floppy-o"  onclick="backupAsGold()"></i></td>
             </tr>
             <tr style="border: none;">
                 <td style="border: none;"><label >Compare with (Optional): </label></td>
@@ -107,7 +107,7 @@
                     <select  style="height:30px;text-align: center;width: 200px" class="filterinput" id="bases2" name="base2" value="" placeholder="Choose a profile...">
                     </select>
                 </td>
-                <td style="border: none;"><input title="use GOLD backup data source" style="width:17px; height:17px; cursor: pointer;" type="checkbox" id="usegold" onclick="handleGoldCheck()"></td>
+                <td style="border: none;"><input title="use GOLD namespace backup data source" style="width:17px; height:17px; cursor: pointer;" type="checkbox" id="usegold" onclick="handleGoldCheck()"></td>
             </tr>
         </table>
             <div id="input-info" class="ui-state-highlight ui-widget-header ui-corner-all" style="float: left !important;display:none">

@@ -4977,10 +4977,7 @@
                 value: alloccontext,
                 text: alloccontext
             }));
-            Toastify({
-                text: alloccontext + " data loaded",
-                duration: 8000
-            }).showToast();
+            toastMessage(toastType.INFO, alloccontext + " data loaded");
         }
     }
 

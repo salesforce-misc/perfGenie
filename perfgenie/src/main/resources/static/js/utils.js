@@ -196,3 +196,35 @@ function stackDigVizAjax(pod, method, endpoint, successFunc, errorFunc) {
 
     return internalPerfGenieAjax(endpoint, method, successFunc, errorFuncWithRetry, headers);
 }
+
+const toastType = {
+    INFO: 1,
+    WARNING: 2,
+    ERROR: 3
+};
+Object.freeze(toastType);
+
+function toastMessage(type, msg, d = 8000){
+    if(type == toastType.INFO) {
+        Toastify({
+            text: msg,
+            backgroundColor: "linear-gradient(135deg, #73a5ff, #5477f5)",
+            duration: d,
+            close: true
+        }).showToast();
+    }else if(type == toastType.WARNING){
+        Toastify({
+            text: msg,
+            backgroundColor: "linear-gradient(135deg, #FAC898, orange)",
+            duration: d,
+            close: true
+        }).showToast();
+    }else if(type == toastType.ERROR){
+        Toastify({
+            text: msg,
+            backgroundColor: "linear-gradient(135deg, #FFAB91, #FF7043)",
+            duration: d,
+            close: true
+        }).showToast();
+    }
+}
