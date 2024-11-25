@@ -419,6 +419,14 @@ function getTenantData1(start, end) {
                 hideSpinner();
                 tenantData1 = result;
                 updateTenantDropdown1(start, end);
+            },
+            error: function(xhr, status, error) {
+                Toastify({
+                    text: "Failed to get tenant data",
+                    backgroundColor: "#fa7878",
+                    duration: 8000
+                }).showToast();
+                hideSpinner();
             }
         });
     }
@@ -432,6 +440,14 @@ function getTenantData2(start, end) {
             hideSpinner();
             tenantData2 = result;
             updateTenantDropdown2(start, end);
+        },
+        error: function(xhr, status, error) {
+            Toastify({
+                text: "Failed to get tenant data",
+                backgroundColor: "#fa7878",
+                duration: 8000
+            }).showToast();
+            hideSpinner();
         }
     });
 }
@@ -447,6 +463,14 @@ function getInstanceData1(start, end, tenant) {
                 hideSpinner();
                 instanceData1 = result;
                 populateHostsSelector1(start, end, tenant);
+            },
+            error: function(xhr, status, error) {
+                Toastify({
+                    text: "Failed to get instance data",
+                    backgroundColor: "#fa7878",
+                    duration: 8000
+                }).showToast();
+                hideSpinner();
             }
         });
     }
@@ -463,6 +487,14 @@ function getInstanceData2(start, end, tenant) {
                 hideSpinner();
                 instanceData2 = result;
                 populateHostsSelector2(start, end, tenant);
+            },
+            error: function(xhr, status, error) {
+                Toastify({
+                    text: "Failed to get instance data",
+                    backgroundColor: "#fa7878",
+                    duration: 8000
+                }).showToast();
+                hideSpinner();
             }
         });
     }
@@ -501,6 +533,14 @@ function getGoldData1(start, end) {
             baseDatalist.empty();
 
             updateTenantDropdown1(start, end);
+        },
+        error: function(xhr, status, error) {
+            Toastify({
+                text: "Failed to get GOLD data",
+                backgroundColor: "#fa7878",
+                duration: 8000
+            }).showToast();
+            hideSpinner();
         }
     });
 }
@@ -538,6 +578,14 @@ function getGoldData2(start, end) {
             baseDatalist.empty();
 
             updateTenantDropdown2(start, end);
+        },
+        error: function(xhr, status, error) {
+            Toastify({
+                text: "Failed to get GOLD data",
+                backgroundColor: "#fa7878",
+                duration: 8000
+            }).showToast();
+            hideSpinner();
         }
     });
 }
@@ -555,6 +603,14 @@ function getMetaData1(start, end, tenant, host) {
                 metaData1 = result;
                 populateIDs1(tenant, host);
                 loadDiagData1();
+            },
+            error: function(xhr, status, error) {
+                Toastify({
+                    text: "Failed to get metadata data",
+                    backgroundColor: "#fa7878",
+                    duration: 8000
+                }).showToast();
+                hideSpinner();
             }
         });
     }
@@ -788,6 +844,14 @@ function getMetaData2(start, end, tenant, host) {
                 metaData2 = result;
                 populateIDs2(tenant, host);
                 loadDiagData2();
+            },
+            error: function(xhr, status, error) {
+                Toastify({
+                    text: "Failed to get metadata data",
+                    backgroundColor: "#fa7878",
+                    duration: 8000
+                }).showToast();
+                hideSpinner();
             }
         });
     }
