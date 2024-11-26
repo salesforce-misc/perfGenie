@@ -351,8 +351,8 @@
       bottom: 15,
     };
     var topRightOffsetSize = {
-      top: 15,
-      bottom: 15,
+      top: 5,
+      bottom: 5,
     };
     var offsetSize = {
       top: 15,
@@ -376,7 +376,7 @@
       var height = allToasts[i].offsetHeight;
       classUsed = classUsed.substr(9, classUsed.length-1)
       // Spacing between toasts
-      var offset = 15;
+      var offset = 5;
 
       var width = window.innerWidth > 0 ? window.innerWidth : screen.width;
 
