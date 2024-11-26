@@ -811,10 +811,12 @@
 
     function search() {
         $("#search-flame").val(document.getElementById("search").value);
-
-        handleSearch(document.getElementById("search").value);
-
-        $("span.cct-search-guid").html("<strong> Search found " + searchCount + " matching frame(s)</strong>");
+        if (document.getElementById("search").value != "") {
+            handleSearch(document.getElementById("search").value);
+            $("span.cct-search-guid").html("<strong> Search found " + searchCount + " matching frame(s)</strong>");
+        } else {
+            refreshTree();
+        }
     }
 
     function openUL(n) {
