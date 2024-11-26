@@ -204,7 +204,7 @@ const toastType = {
 };
 Object.freeze(toastType);
 
-function toastMessage(type, msg, d = 8000){
+function toastMessage(type, msg, d = 5000){
     if(type == toastType.INFO) {
         Toastify({
             text: msg,

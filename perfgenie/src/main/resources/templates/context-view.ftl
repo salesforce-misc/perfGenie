@@ -7,7 +7,7 @@
     });
 </script>
 <div style="" id="contextdataview">
-    <h3 style="width:100%;padding-top: 2px !important;padding-bottom: 2px !important;">Context / Dagnostics data explorer</h3>
+    <h3 style="width:100%;padding-top: 2px !important;padding-bottom: 2px !important;">Context / Diagnostics data explorer</h3>
     <div style="padding-left: 23px;padding-top: 10px;padding-bottom: 0px;" id="context-view-panel" class="col-lg-12">
         <span id="filter-view-status" style="" class="hide"></span>
         <div id="contextviewpanel" class="hide">
