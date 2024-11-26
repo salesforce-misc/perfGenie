@@ -4789,7 +4789,7 @@
                         logContext = getContextName(obj.record[0]);
                         if (logContext != undefined) {
                             if (header[logContext] == undefined) {
-                                header[logContext] = getContextHeader(obj.record[0]);
+                                header[logContext] = getContextHeader(obj.record[0],obj.record.length);
                                 if (header[logContext] != undefined) {
                                     for (let val in header[logContext]) {
                                         const tokens = header[logContext][val].split(":");
@@ -5006,7 +5006,7 @@
         return undefined;
     }
 
-    function getContextHeader(type){
+    function getContextHeader(type, l){
         if(type == 2){
             return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","uri:text:log name of the request","logType:text:log record type associated with the request","orgId:text:organization Id","userId:text:user Id","cpuTime:number:the amount of cpu time in ms this request took","runTime:number:the wall time in ms this request took (APT)","dbTime:number:time spent in database","reqId:text:request Id","racNode:text:rac node","gcTime:number:GC duraiton in ms that impacted this request","safepointTime:number:time spent waiting for and including a safepoint","waitTime:number:approximate accumulated time ms that the thread waited for notification","blockedTime:number:approximate accumulated time ms that the thread blocked to enter/reenter a monitor","trust:text:is this a trust request","apexTime:number:wall clock time ms spent in apex code","apexCalloutTime:number:wall clock time ms spent in apex call out","cacheTime:number:wall clock time ms spent in apex call out","oraDbTime:number:time spent ms in db","dbCpu:number:cpu time ms in db","physRead:number:number of physical reads in db","physWrite:number:number of physical writes in db","dbConChkOut:number:time ms for which the connection was checkedout from the pool","dbGetCon:number:time ms taken to acquire a db connection or hit the timout","gets:number:number of buffer gets in db","threadname:text","bytes:number"];
         }else if(type == 6){
@@ -5020,6 +5020,9 @@
         }else if( type == 10){//todo test
             return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","threadname:text","duration:number","orgId:text:organization Id","userId:text:user Id","reqId:text:request Id","backendPid:text","backendStartUpperBound:number","sid:text","serialNumber:text","connPoolType:text:the connection pool type id","racNode:text:rac node"];
         }else if(type == 12){//todo test
+            if(l == 14){//search parser is returning 12 but we should use 13
+                return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","threadname:text","duration:number","orgId:text:organization Id","ThreadName:text","reqId:text:request Id","RequestType:text","CoreName:text","PartitionId:text","RevisionId:text","ConsumerName:text","KeyPrefix:text"];
+            }
             return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","threadname:text","duration:number","gackId:text","spOid:text","spUrn:text","spRTime:number","spAppcpuTime:number","spAppMemoryAllocation:number","spDbcpuTime:number","spdblockedTime:number","spDbBufferGets:number","spDbDiskReads:number","spDbUndoBlocks:number","spTid:text","spKind:text","spStatusCode:text","spDbNodes","reqId:text:request Id"];
         }else if(type == 13){//todo test
             return ["type:text","timestamp:timestamp:start time of the request","tid:text:tid","threadname:text","duration:number","orgId:text:organization Id","ThreadName:text","reqId:text:request Id","RequestType:text","CoreName:text","PartitionId:text","RevisionId:text","ConsumerName:text","KeyPrefix:text"];
