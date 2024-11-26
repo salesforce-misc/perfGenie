@@ -50,7 +50,7 @@ class SFDataTable {
             }
             this.#SFDataTableSearchStr = undefined;
             //sort data
-            if(rows.length != 0) {
+            if(rows.length != 0 && header.length != 0) {
                 this.SFDataTableSort(1);
             }
         }
@@ -165,7 +165,8 @@ class SFDataTable {
                 if (rowsAdded < this.#SFDataTablePageSize) {
                     rows += "<tr>"
                     for (let j = 0; j < this.#SFDataTableRows[i].length; j++) {
-                        rows += "<td " + (this.#SFDataTableHeader[j].p == undefined ? "" : this.#SFDataTableHeader[j].p) + " " + (this.#SFDataTableRows[i][j].p == undefined ? "" : this.#SFDataTableRows[i][j].p) + " >" + this.#SFDataTableRows[i][j].v + "</td>";
+
+                        rows += "<td " + ((this.#SFDataTableHeader[j] == undefined || this.#SFDataTableHeader[j].p == undefined)? "" : this.#SFDataTableHeader[j].p) + " " + (this.#SFDataTableRows[i][j].p == undefined ? "" : this.#SFDataTableRows[i][j].p) + " >" + this.#SFDataTableRows[i][j].v + "</td>";
                     }
                     rows += "</tr>\n"
                     rowsAdded++;
