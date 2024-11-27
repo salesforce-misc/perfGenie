@@ -1130,7 +1130,6 @@ function populateHostsSelector1(start, end, tenant) {
     $("#host-input1").val("");
 
     if (instanceData1 != undefined) {
-        let hostExist = false;
         let goldTag = "";
         if(dataSource == "gold"){
             goldTag = "gold";
@@ -1143,10 +1142,6 @@ function populateHostsSelector1(start, end, tenant) {
             } else {
                 hostOptionHtml += "<option value=\"" + val + "\">"+goldTag+"</option>";
             }
-            hostExist = true;
-        }
-        if (!hostExist && host1 != undefined && host1 != "") {
-            $("#host-input1").val(host1);
         }
     }
 
@@ -1169,7 +1164,6 @@ function populateHostsSelector2(start, end, tenant) {
     hostDatalist.empty();
     $("#host-input2").val("");
     if (instanceData2 != undefined) {
-        let hostExist = false;
         let goldTag = "";
         if(dataSource == "gold"){
             goldTag = "gold";
@@ -1182,10 +1176,6 @@ function populateHostsSelector2(start, end, tenant) {
             } else {
                 hostOptionHtml += "<option value=\"" + val + "\">"+goldTag+"</option>";
             }
-            hostExist = true;
-        }
-        if (!hostExist && host2 != undefined && host2 != "") {
-            $("#host-input2").val(host2);
         }
     }
 
@@ -1445,6 +1435,10 @@ function populateIDs1(tenant, host, clearInput, skipPArsing) {
     }
     for (var key in metaData1) {
 
+        if (instanceData1[metaData1[key].metadata.host] == undefined && tenantData1[tenant1] != undefined){
+            instanceData1[metaData1[key].metadata.host] = tenantData1[tenant1];
+        }
+
         let guid = metaData1[key].metadata["guid"];
         let name = metaData1[key].metadata["name"];
         let filename = metaData1[key].metadata["file-name"];
@@ -1515,6 +1509,10 @@ function populateIDs1(tenant, host, clearInput, skipPArsing) {
     }
     const optGroupTemplate = '<optgroup label="">OPTIONS</optgroup>';
     baseDatalist.append(optGroupTemplate.replace("OPTIONS", profileOptionHtml));
+
+    if($("#host-input1").val() == "" && host1 != undefined && host1 != "" && instanceData1[host1] != undefined) {
+        $("#host-input1").val(host1); //user can enter host manually if not found, use host if available from metadata
+    }
 }
 
 function populateIDs2(tenant, host, clearInput, skipPArsing) {
@@ -1553,6 +1551,11 @@ function populateIDs2(tenant, host, clearInput, skipPArsing) {
     }
 
     for (var key in metaData2) {
+
+        if (instanceData2[metaData2[key].metadata.host] == undefined && tenantData2[tenant2] != undefined){
+            instanceData2[metaData2[key].metadata.host] = tenantData2[tenant2];
+        }
+
         let guid = metaData2[key].metadata["guid"];
         let name = metaData2[key].metadata["name"];
         let filename = metaData2[key].metadata["file-name"];
@@ -1617,6 +1620,10 @@ function populateIDs2(tenant, host, clearInput, skipPArsing) {
     }
     const optGroupTemplate = '<optgroup label="">OPTIONS</optgroup>';
     baseDatalist.append(optGroupTemplate.replace("OPTIONS", profileOptionHtml));
+
+    if($("#host-input2").val() == "" && host2 != undefined && host2 != "" && instanceData2[host2] != undefined) {
+        $("#host-input2").val(host2); //user can enter host manually if not found, use host if available from metadata
+    }
 }
 
 function getStart1() {
