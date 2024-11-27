@@ -34,7 +34,7 @@
 
 
 <div  id="accordion">
-    <div style="border:0px;width:100%;padding-top: 2px !important;padding-bottom: 0px !important;">Data source selector&nbsp;&nbsp;&nbsp;<span onclick="onClickNoop(event);" style="padding-bottom:2px;cursor: default !important; width:75%; display: inline-block;">&nbsp;</span></div>
+    <div style="border:0px;width:100%;padding-top: 0px !important;padding-bottom: 0px !important;">Data source selector&nbsp;&nbsp;&nbsp;<span onclick="onClickNoop(event);" style="padding-bottom:2px;padding-top:2px;cursor: default !important; width:75%; display: inline-block;">&nbsp;</span></div>
     <div  style="padding-left:20px; padding-bottom: 0px; " class="col-lg-12">
 
         <form  id="compare-context-selector-form" action="javascript:submitTo()" method="get"
