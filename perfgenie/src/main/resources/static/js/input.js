@@ -508,7 +508,7 @@ function getGoldData1(start, end) {
             instanceData1 = tmpInstanceData;
 
             if(!tenandDataFound){
-                toastMessage(toastType.WARNING,"No GOLD tenants found for the given time range 1");
+                toastMessage(toastType.WARNING,"No GOLD tenants found for time range 1");
             }else{
                 toastMessage(toastType.INFO,"GOLD tenants loaded for time range 1");
             }
@@ -556,7 +556,7 @@ function getGoldData2(start, end) {
             tenantData2 = tmpTenantData;
             instanceData2 = tmpInstanceData;
             if(!tenandDataFound){
-                toastMessage(toastType.WARNING,"No GOLD tenants found for the given time range 2");
+                toastMessage(toastType.WARNING,"No GOLD tenants found for time range 2");
             }else{
                 toastMessage(toastType.INFO,"GOLD tenants loaded for time range 2");
             }
