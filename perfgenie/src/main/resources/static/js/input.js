@@ -100,7 +100,7 @@ function addInputNote(toggle, msg) {
 
 $(document).ready(function () {
 
-    dataSource = urlParams.get('dataSource') || "other";
+    dataSource = urlParams.get('dataSource') || "genie";
     startTime1 = Number(urlParams.get('startTime1')) || moment.utc(moment.utc().subtract('minute', 10).format('YYYY-MM-DD HH:mm:ss')).valueOf();
     startTime2 = Number(urlParams.get('startTime2')) || moment.utc(moment.utc().subtract('minute', 24 * 60 + 10).format('YYYY-MM-DD HH:mm:ss')).valueOf();
     endTime1 = Number(urlParams.get('endTime1')) || moment.utc(moment.utc().format('YYYY-MM-DD HH:mm:ss')).valueOf();
