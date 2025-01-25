@@ -57,7 +57,7 @@ threshold=0.05
 filterDepth=4
 maxStackDepth=10
 
-#experimental to enable river view and surface views
+#experimental option to enable river view and surface views
 isExperimental=false
 
 
