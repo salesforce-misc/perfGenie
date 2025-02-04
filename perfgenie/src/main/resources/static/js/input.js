@@ -1036,6 +1036,7 @@ function addInputToURL() {
     updateUrl("groupByMatch", '');
     updateUrl("groupByLength", '200');
     updateUrl("diagEvent", '');
+    updateUrl("search", '');
 
     if (instanceData1[host1] != undefined) {
         if (instanceData1[host1] != undefined) {

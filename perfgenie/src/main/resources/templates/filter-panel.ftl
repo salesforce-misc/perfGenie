@@ -1439,6 +1439,7 @@
 
     let frameFilterStackMap = {1:undefined,2:undefined,3:undefined,4:undefined};
 
+
     function filterFramesV1Level(baseJsonTree, include, level, eventType) {
         if (baseJsonTree == null) {//safety check
             return 0;
@@ -1452,6 +1453,7 @@
         let event = eventType;
         if (!include) {
             //check if current frame contains filter string
+
             if (baseJsonTree !== null && getFrameName(baseJsonTree['nm']) !== undefined && getFrameName(baseJsonTree['nm']).includes(frameFilterString)) {
                 if (level != FilterLevel.UNDEFINED) {
                     count = baseJsonTree[level];
@@ -1477,7 +1479,7 @@
         }
 
         let chCount = 0;
-        if (baseJsonTree['ch'] != null) {
+        if (baseJsonTree['ch'] != null && baseJsonTree['ch'].length != 0) {
             //search filter string in all sub nodes
             for (let treeIndex = 0; treeIndex < baseJsonTree['ch'].length; treeIndex++) {
                 if (level != FilterLevel.UNDEFINED && baseJsonTree['ch'][treeIndex][level] === undefined) {
