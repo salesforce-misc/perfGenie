@@ -40,6 +40,9 @@
         overflow: auto;
         color: black;
     }
+    .fieldlable {
+        color: #4a77b4;
+    }
     .strippedTable tr:nth-child(even){
         background-color : #ededed;
     }
@@ -3639,7 +3642,7 @@
         }
         let localContextData = getContextData(1);
         let eventToUse = $("#event-input").val();
-        let table = "<table  class='ui-widget' style='padding: 0px; border-spacing: 2px; border-collapse: separate;border: hidden'><tr><td style='padding:0px; border: hidden'  id='filter-heading'>Context hints:</td>";
+        let table = "<table  class='ui-widget' style='padding: 0px; border-spacing: 2px; border-collapse: separate;border: hidden'><tr><td style='padding:0px; border: hidden'  id='filter-heading'><span class='fieldlable'>Context hints:</span></td>";
         table += "<td style='border: hidden' class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('context=with');\" title='context=with, filter samples that match context. default is all samples' tabindex='-1'>with-context</a></td>";
         table += "<td style='border: hidden' class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('context=without');\" title='context=without, filter samples that do not match context. default is all samples' tabindex='-1'>without-context</a></td>";
         /*if(eventToUse.includes(".Async")){//todo choose default all using config
@@ -3662,8 +3665,8 @@
                 }
             }
             if(!compareTree) {
-                table += "<td style='border: hidden' class='all-hints'>Start:<input  style='height:30px;text-align: center;' class='filterinput' id='filtertimepickerstart' type='text'></td>";
-                table += "<td style='border: hidden' class='all-hints'>End:<input  style='height:30px;text-align: center;' class='filterinput' id='filtertimepickerend' type='text'></td>";
+                table += "<td style='border: hidden' class='all-hints fieldlable' >Start:<input  style='height:30px;text-align: center;' class='filterinput' id='filtertimepickerstart' type='text'></td>";
+                table += "<td style='border: hidden' class='all-hints fieldlable'>End:<input  style='height:30px;text-align: center;' class='filterinput' id='filtertimepickerend' type='text'></td>";
             }
         }
         table += "</tr></table>";
@@ -3958,7 +3961,7 @@
         if(compareTree) {
             tableFormat = 0;
         }
-        let toolBarOptions = '<span title="selected context filter data, raw diagnostics data and diagnostics data ">Data:</span> <select  style="height:30px;width:200px;text-align: center; " class="filterinput"  name="other-event-input" id="other-event-input">\n';
+        let toolBarOptions = '<span title="selected context filter data, raw diagnostics data and diagnostics data " class="fieldlable">Data:</span> <select  style="height:30px;width:200px;text-align: center; " class="filterinput"  name="other-event-input" id="other-event-input">\n';
 
         let localContextData = getContextData(1);
 
@@ -4001,7 +4004,7 @@
         toolBarOptions += '             </select>';
 
 
-        toolBarOptions += '&nbsp;&nbsp;<span title="Context view format [table view, thread request view and metric timeline view]">Format:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="format-input" id="format-input">\n' +
+        toolBarOptions += '&nbsp;&nbsp;<span title="Context view format [table view, thread request view and metric timeline view]" class="fieldlable">Format:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="format-input" id="format-input">\n' +
             '                            <option ' + (tableFormat == 0 ? "selected" : "") + ' value=0>table</option>\n';
             //'                          <option ' + (tableFormat == 1 ? "selected" : "") + ' value=1>percent</option>\n' +
         if(!compareTree) {
@@ -4045,7 +4048,7 @@
 
         if (tableFormat == 2 || tableFormat == 3) {
             toolBarOptions += '                        </select>' +
-                '&nbsp;&nbsp;<span title="Sort context view by event metric">'+ ((tableFormat == 2)? "Sort by": "Series") +':</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="sort-input" id="sort-input">\n';
+                '&nbsp;&nbsp;<span title="Sort context view by event metric" class="fieldlable">'+ ((tableFormat == 2)? "Sort by": "Series") +':</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="sort-input" id="sort-input">\n';
 
             if (localContextData != undefined && localContextData.header != undefined) {
                 let sortByFound = false;
@@ -4073,7 +4076,7 @@
             toolBarOptions += '       </select> ';
         }
 
-        toolBarOptions += '&nbsp;&nbsp;<span title="Group by event dimension">Group by:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="filter-input" id="filter-input">\n';
+        toolBarOptions += '&nbsp;&nbsp;<span title="Group by event dimension" class="fieldlable">Group by:</span> <select  style="height:30px;width:120px;text-align: center; " class="filterinput"  name="filter-input" id="filter-input">\n';
 
         if (localContextData != undefined && localContextData.header != undefined) {
             let groupByFound = false;
@@ -4130,13 +4133,13 @@
         toolBarOptions += "&nbsp;<i title='click to see additional view/filter options' style='font-size:20px; cursor: pointer;' onclick='toggleToolbarFilters();' class='fa fa-filter'></i><span id ='toolbarfilters' style='display:"+toggleToolbarFiltersdisplay+"'>";
 
         if(groupBy != "All records") {
-            toolBarOptions += '&nbsp;&nbsp;<span title="Consider first N characters of group by option values">Len:</span> <input  style="height:30px;width:35px;text-align: left;" class="filterinput" id="groupby-length" type="text" value="' + groupByLength + '">\n';
+            toolBarOptions += '&nbsp;&nbsp;<span title="Consider first N characters of group by option values" class="fieldlable">Len:</span> <input  style="height:30px;width:35px;text-align: left;" class="filterinput" id="groupby-length" type="text" value="' + groupByLength + '">\n';
         }else if(groupByLength < 200){
             //groupByLength = 200;//todo check set to default
         }
 
         if(tableFormat != 0) {//use table search
-            toolBarOptions += '&nbsp;&nbsp;<span title="Sub string match with group by option values">Match:</span><input  style="height:30px;width:120px;text-align: left;" class="filterinput" id="groupby-match" type="text" value="' + groupByMatch + '">\n';
+            toolBarOptions += '&nbsp;&nbsp;<span title="Sub string match with group by option values" class="fieldlable">Match:</span><input  style="height:30px;width:120px;text-align: left;" class="filterinput" id="groupby-match" type="text" value="' + groupByMatch + '">\n';
         }
 
         if (tableFormat == 3) {
@@ -4144,13 +4147,13 @@
                 seriesCount = 5;
             }
             toolBarOptions += '                        </select>' +
-                '&nbsp;&nbsp;<span title="Show time series by cumulative/abolute diff">Value:</span> <select  style="height:30px;text-align: center; " class="filterinput"  name="line-type" id="line-type">\n' +
+                '&nbsp;&nbsp;<span title="Show time series by cumulative/abolute diff" class="fieldlable">Value:</span> <select  style="height:30px;text-align: center; " class="filterinput"  name="line-type" id="line-type">\n' +
                 '                            <option ' + (cumulativeLine == 0 ? "selected" : "") + ' value=0>cumulative</option>\n' +
                 '                            <option ' + (cumulativeLine == 1 ? "selected" : "") + ' value=1>absolute diff</option>\n' +
                 '                            </select> ';
 
             toolBarOptions += '                        </select>' +
-                '&nbsp;&nbsp;<span title="Show top N series">Top:</span> <select  style="height:30px;text-align: center; " class="filterinput"  name="line-count" id="line-count">\n' +
+                '&nbsp;&nbsp;<span title="Show top N series" class="fieldlable">Top:</span> <select  style="height:30px;text-align: center; " class="filterinput"  name="line-count" id="line-count">\n' +
                 '                            <option ' + (seriesCount == 5 ? "selected" : "") + ' value=5>5</option>\n' +
                 '                            <option ' + (seriesCount == 10 ? "selected" : "") + ' value=10>10</option>\n' +
                 '                            <option ' + (seriesCount == 15 ? "selected" : "") + ' value=15>15</option>\n' +
@@ -4167,7 +4170,7 @@
                 seriesCount = 100;
             }
             toolBarOptions += '                        </select>' +
-                '&nbsp;&nbsp;<span title="Show top N threads">Top:</span> <select  style="height:30px;text-align: center; " class="filterinput"  name="line-count" id="line-count">\n' +
+                '&nbsp;&nbsp;<span title="Show top N threads" class="fieldlable">Top:</span> <select  style="height:30px;text-align: center; " class="filterinput"  name="line-count" id="line-count">\n' +
                 '                            <option ' + (seriesCount == 100 ? "selected" : "") + ' value=100>100</option>\n' +
                 '                            <option ' + (seriesCount == 50 ? "selected" : "") + ' value=50>50</option>\n' +
                 '                            <option ' + (seriesCount == 200 ? "selected" : "") + ' value=200>200</option>\n' +
@@ -4180,7 +4183,7 @@
 
         if(tableFormat == 0 && groupBy == "All records") {
             toolBarOptions += '                        </select>' +
-                '&nbsp;&nbsp;<span title="Show events above selected metric value">Threshold:</span> <select  style="height:30px;text-align: center; " class="spanMetric"  name="table-threshold" id="table-threshold">\n';
+                '&nbsp;&nbsp;<span title="Show events above selected metric value" class="fieldlable">Threshold:</span> <select  style="height:30px;text-align: center; " class="spanMetric"  name="table-threshold" id="table-threshold">\n';
             if (localContextData != undefined && localContextData.header != undefined) {
                 let tableThresholdFound = false;
                 if (!(tableThreshold == '' || tableThreshold == undefined)) {
@@ -6580,7 +6583,7 @@
             <div id="contexthints" style="padding: 0px !important;" class="col-lg-12">
                 <table style="padding:0px; border-spacing: 0px; border-collapse: separate;">
                     <tr>
-                        <td style="padding:0px;" id="filter-heading">Context hints:</td>
+                        <td style="padding:0px;" id="filter-heading"><span class='fieldlable'>Context hints:</span></td>
                     </tr>
                 </table>
             </div>

@@ -24,7 +24,7 @@
     <input  style="height:30px;text-align: center;" class="filterinput" type='text' id='search-flame' value='${(search??)?then(search?first, '')}' size='35'
            onkeydown="if(event.keyCode === 13) searchFlame(event.target.value, event);">
     <a title='Search' id="searchtree-flame" href='javascript:searchFlame(document.getElementById("search-flame").value, event)'><i style="font-size:18px" class="fa fa-search" aria-hidden="true"></i></a>&nbsp;&nbsp;
-    <span title="Exclude samples below threshold %">Threshold</span>: <input  style="height:30px;text-align: center;" class="filterinput" type='text' id='threshold-flame' value='0.01' size='5'
+    <span title="Exclude samples below threshold %" class="fieldlable">Threshold:</span> <input  style="height:30px;text-align: center;" class="filterinput" type='text' id='threshold-flame' value='0.01' size='5'
                                                                              onkeypress="if(event.keyCode === 13) javascript:refreshTreeFlame()">
     <a title='Redo' href='javascript:refreshTreeFlame()'><i style="font-size:18px" class="fa fa-repeat" aria-hidden="true"></i></a>
 </div>
@@ -182,17 +182,17 @@ In other words, data that's in the second set but not in the first will not be d
 
                 $profile1 = $("#bases1 :selected").text();
                 $profile2 = $("#bases2 :selected").text();
-                timeRange = ", Profile(s): <span class=\"bclr\">" + $profile1 + "</span> <span class=\"tclr\">" + $profile2 + "</span>";
+                timeRange = ", <span class=\"fieldlable\">Profile(s):</span> <span class=\"bclr\">" + $profile1 + "</span> <span class=\"tclr\">" + $profile2 + "</span>";
             } else {
-                timeRange = ", Profile: <span>" + $("#bases1 :selected").text() + "</span>";
+                timeRange = ", <span class=\"fieldlable\">Profile:</span> <span>" + $("#bases1 :selected").text() + "</span>";
             }
 
             if (isJfrContext && !compareTree) {
-                resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + " Total samples: "
-                    + treeToProcess.sz + ", <span title=\"Exclude samples below threshold %\">Threshold</span>: " + threshold + timeRange + (isAggregation() ? getTextForAggregationInput(contextTree1["1"]) : ""));
+                resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + " <span class=\"fieldlable\">Total samples:</span> "
+                    + treeToProcess.sz + ", <span title=\"Exclude samples below threshold %\" class=\"fieldlable\">Threshold:</span> " + threshold + timeRange + (isAggregation() ? getTextForAggregationInput(contextTree1["1"]) : ""));
             } else {
-                resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + " Total samples: "
-                    + (((treeToProcess.bsize !== undefined) ? treeToProcess.bsize : treeToProcess.bsz) + ((treeToProcess.csize !== undefined) ? treeToProcess.csize : treeToProcess.csz)) + ", <span title=\"Exclude samples below threshold %\">Threshold</span>: "
+                resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + "<span class=\"fieldlable\">Total samples:</span>"
+                    + (((treeToProcess.bsize !== undefined) ? treeToProcess.bsize : treeToProcess.bsz) + ((treeToProcess.csize !== undefined) ? treeToProcess.csize : treeToProcess.csz)) + ", <span title=\"Exclude samples below threshold %\" class=\"fieldlable\">Threshold:</span> "
                     + threshold + timeRange);
             }
 

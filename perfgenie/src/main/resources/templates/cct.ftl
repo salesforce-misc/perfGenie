@@ -905,17 +905,17 @@
                 let $profile2 = "";
                 $profile1 = $("#bases1 :selected").text();
                 $profile2 = $("#bases2 :selected").text();
-                timeRange = ", Profile(s): <span class=\"bclr\">" + $profile1 + "</span> <span class=\"tclr\">" + $profile2 + "</span>";
+                timeRange = ", <span class=\"fieldlable\">Profile(s):</span> <span class=\"bclr\">" + $profile1 + "</span> <span class=\"tclr\">" + $profile2 + "</span>";
             } else {
-                timeRange = ", Profile: <span>" + $("#bases1 :selected").text() + "</span>";
+                timeRange = ", <span class=\"fieldlable\">Profile:</span> <span>" + $("#bases1 :selected").text() + "</span>";
             }
 
             if (isJfrContext && !compareTree) {
-                resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + " Total samples: "
-                    + treeToProcess.sz + ", <span title=\"Exclude samples below threshold %\">Threshold</span>: " + threshold + timeRange + (isAggregation() ? getTextForAggregationInput(contextTree1["1"]) : ""));
+                resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + " <span class=\"fieldlable\">Total samples:</span> "
+                    + treeToProcess.sz + ", <span title=\"Exclude samples below threshold %\" class=\"fieldlable\">Threshold:</span> " + threshold + timeRange + (isAggregation() ? getTextForAggregationInput(contextTree1["1"]) : ""));
             } else {
                 resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + " Total samples: "
-                    + (((treeToProcess.bsize !== undefined) ? treeToProcess.bsize : treeToProcess.bsz) + ((treeToProcess.csize !== undefined) ? treeToProcess.csize : treeToProcess.csz)) + ", <span title=\"Exclude samples below threshold %\">Threshold</span>: "
+                    + (((treeToProcess.bsize !== undefined) ? treeToProcess.bsize : treeToProcess.bsz) + ((treeToProcess.csize !== undefined) ? treeToProcess.csize : treeToProcess.csz)) + ", <span title=\"Exclude samples below threshold %\" class=\"fieldlable\">Threshold:</span> "
                     + threshold + timeRange);
             }
 
@@ -949,18 +949,18 @@
                 let $profile2 = "";
                 $profile1 = $("#bases1 :selected").text();
                 $profile2 = $("#bases2 :selected").text();
-                timeRange = ", Profile(s): <span class=\"bclr\">" + $profile1 + "</span> <span class=\"tclr\">" + $profile2 + "</span>";
+                timeRange = ", <span class=\"fieldlable\">Profile(s):</span> <span class=\"bclr\">" + $profile1 + "</span> <span class=\"tclr\">" + $profile2 + "</span>";
             } else {
-                timeRange = ", Profile: <span>" + $("#bases1 :selected").text() + "</span>";
+                timeRange = ", <span class=\"fieldlable\">Profile:</span> <span>" + $("#bases1 :selected").text() + "</span>";
             }
 
             let graphType = isCalltree ? "Call tree view" : "Backtrace view";
             if (isJfrContext && !compareTree) {
-                resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + " Total samples: "
-                    + treeToProcess.sz + ", <span title=\"Exclude samples below threshold %\">Threshold</span>: " + threshold + timeRange + (isAggregation() ? getTextForAggregationInput(contextTree1["1"]) : ""));
+                resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + " <span class=\"fieldlable\">Total samples:</span> "
+                    + treeToProcess.sz + ", <span title=\"Exclude samples below threshold %\" class=\"fieldlable\">Threshold:</span> " + threshold + timeRange + (isAggregation() ? getTextForAggregationInput(contextTree1["1"]) : ""));
             } else {
                 resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + " Total samples: "
-                    + (((treeToProcess.bsize !== undefined) ? treeToProcess.bsize : treeToProcess.bsz) + ((treeToProcess.csize !== undefined) ? treeToProcess.csize : treeToProcess.csz)) + ", <span title=\"Exclude samples below threshold %\">Threshold</span>: "
+                    + (((treeToProcess.bsize !== undefined) ? treeToProcess.bsize : treeToProcess.bsz) + ((treeToProcess.csize !== undefined) ? treeToProcess.csize : treeToProcess.csz)) + ", <span title=\"Exclude samples below threshold %\" class=\"fieldlable\">Threshold:</span> "
                     + threshold + timeRange);
             }
 
@@ -1289,14 +1289,14 @@
         <option  value="backtrace">Backtrace view</option>
         <option   value="calltree">Call tree view</option>
     </select>
-    <label id="profileID">Profile: </label>
+    <label id="profileID" class="fieldlable">Profile: </label>
     <select   style="height:30px;text-align: center;" class="filterinput" name="event-type" id="event-type">
 
     </select>
     <input  style="height:30px;text-align: center;" class="filterinput" type='text' id='search' value='' size='35'
            onkeypress="if(event.keyCode == 13) document.getElementById('searchtree').click()">
     <a title='Search' id="searchtree" href='javascript:search()'><i style="font-size:18px" class="fa fa-search" aria-hidden="true"></i></a>&nbsp;&nbsp;
-    <span title="Exclude samples below threshold %">Threshold</span>: <input  style="height:30px;text-align: center;" class="filterinput" type='text' id='threshold' value='0.01' size='5'
+    <span title="Exclude samples below threshold %" class="fieldlable">Threshold:</span> <input  style="height:30px;text-align: center;" class="filterinput" type='text' id='threshold' value='0.01' size='5'
                                                                              onkeypress="if(event.keyCode == 13) javascript:refreshTree()">
     <a title='Redo' href='javascript:refreshTree()'><i style="font-size:18px" class="fa fa-repeat" aria-hidden="true"></i></a>
     <span class="hide" id="framefilterId" title="filter">Filter: <input  style="height:30px;text-align: center;" class="filterinput" type='text' id='framefilter' value='' size='10'

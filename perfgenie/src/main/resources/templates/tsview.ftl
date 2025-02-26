@@ -84,7 +84,7 @@
 </style>
 
 <div class="row" id="tsview-header">
-    <label>Profile: </label>
+    <label class="fieldlable">Profile: </label>
     <select style="height:30px;text-align: center;" class="filterinput" name="event-type-tsview" id="event-type-tsview">
     </select>
     <div class="col-lg-12" padding="0">

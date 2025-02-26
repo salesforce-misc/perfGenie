@@ -8,7 +8,7 @@
 </script>
 
 <div  class='ui-widget' style="padding-left: 25px;">
-    <label>Profile: </label>
+    <label class="fieldlable">Profile: </label>
     <select style="height:30px;text-align: center;" class="filterinput" name="event-type-surface"
             id="event-type-surface">
     </select>

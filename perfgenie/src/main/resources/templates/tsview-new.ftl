@@ -7,7 +7,7 @@
 */
 </script>
 <div tabindex="-1" id="TSprofileID" class='ui-widget' style="padding-left: 0px;">
-    <label>Profile: </label>
+    <label class="fieldlable">Profile: </label>
     <select  style="height:30px;text-align: center;" class="filterinput" name="event-type-tsview" id="event-type-tsview">
 
     </select>
@@ -16,15 +16,15 @@
 
     </select>
 
-    <label >Format: </label>
+    <label class="fieldlable">Format: </label>
     <select  style="height:30px;text-align: center;" class="filterinput"  name="tsview-format-input" id="tsview-format-input">
         <option value=1>thread sample view</option>
     </select>
-    <label title="group by tid will show all samples in a thread, others need a matching context">Group by: </label>
+    <label title="group by tid will show all samples in a thread, others need a matching context" class="fieldlable">Group by: </label>
     <select style="height:30px;text-align: center;" class="filterinput" name="tsview-grp-by" id="tsview-grp-by">
     </select>
     <span id="mcontention" class="hide">
-    <label>monitor-contention:</label>
+    <label class="fieldlable">monitor-contention:</label>
     <input type="checkbox" id="monitorCheck" onclick="handleMonitorCheck()">
         <span id="tsviewNote"  style='color:darkorange'>
         </span>
