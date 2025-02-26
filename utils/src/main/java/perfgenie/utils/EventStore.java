@@ -19,6 +19,9 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -414,7 +417,14 @@ public class EventStore {
     }
 
     public boolean downlaodAllEvents(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String tenant, final String instance, final String fileName) throws IOException {
-        String filePath = System.getProperty("java.io.tmpdir") + "/" +  start + "-" + end + "-" + tenant + "-" + instance;
+
+        Instant instantS = Instant.ofEpochMilli(start);
+        Instant instantE = Instant.ofEpochMilli(end);
+        // Format the Instant to a human-readable string in UTC (using ZoneOffset.UTC)
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss").withZone(ZoneOffset.UTC);
+        formatter.format(instantS);
+
+        String filePath = System.getProperty("java.io.tmpdir") + "/" +  formatter.format(instantS) + "_to_" + formatter.format(instantE) + "-" + tenant + "-" + instance;
         Utils.createDirectoryIfNotExists(filePath);
         //downloadToFile
         List<String>  list = new ArrayList<>();

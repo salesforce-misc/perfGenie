@@ -598,19 +598,27 @@ public class PerfGenieService implements IPerfGenieService {
                 tosort.add(timestamp);
             }
             Collections.sort(tosort);
+            boolean useSFContext = false;
             for (int i = 0; i < tosort.size(); i++) {
                 queryMap.put("guid", profiles.get(tosort.get(i)).get("guid"));
                 String result = eventStore.getGenieLargeEvent(tosort.get(i), tosort.get(i), queryMap, dimMap, tenant);
                 if (queryMap.containsKey(PerfGenieConstants.SOURCE_KEY)) {
-                    aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(result, EventHandler.ContextResponse.class));
+                    try {
+                        aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(result, EventHandler.ContextResponse.class));
+                    }catch (Exception e){
+                        //try SF context, could be an upload
+                        aggregator.aggregateSFLogContext((EventHandler.SFContextResponse) Utils.readValue(result, EventHandler.SFContextResponse.class));
+                        useSFContext=true;
+                    }
                 } else {
+                    useSFContext=true;
                     aggregator.aggregateSFLogContext((EventHandler.SFContextResponse) Utils.readValue(result, EventHandler.SFContextResponse.class));
                 }
             }
-            if (queryMap.containsKey(PerfGenieConstants.SOURCE_KEY)) {
-                return Utils.toJson(aggregator.getLogContext());
-            } else {
+            if (useSFContext) {
                 return Utils.toJson(aggregator.getSFLogContext());
+            } else {
+                return Utils.toJson(aggregator.getLogContext());
             }
         } catch (Exception e) {
             return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate" + e.getMessage(), queryMap, null));
