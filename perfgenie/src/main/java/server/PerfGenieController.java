@@ -9,17 +9,23 @@ package server;
 
 import com.google.common.base.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpRange;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @RestController
 public class PerfGenieController {
@@ -78,7 +84,7 @@ public class PerfGenieController {
     }
 
     @GetMapping(path = {"/v1/backup", "/v1/backup/{tenant}/{instance}"}, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String bsckup(@PathVariable(required = false, name = "tenant") String tenant,
+    public String backup(@PathVariable(required = false, name = "tenant") String tenant,
                        @PathVariable(required = false, name = "instance") final String instance,
                        @RequestParam(required = false, name = "start") final long start,
                          @RequestParam(required = false, name = "end") final long end,
@@ -88,6 +94,102 @@ public class PerfGenieController {
         final Map<String, String> dimMap = new HashMap<>();
         return service.backupEvents(start, end, queryMap, dimMap, tenant, instance);
     }
+
+    @GetMapping(path = {"/v1/downloadall", "/v1/downloadall/{tenant}/{instance}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> downloadAll(@PathVariable(required = false, name = "tenant") String tenant,
+                              @PathVariable(required = false, name = "instance") final String instance,
+                              @RequestParam(required = false, name = "start") final long start,
+                              @RequestParam(required = false, name = "end") final long end,
+                              @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery,
+                              @RequestHeader(value = HttpHeaders.RANGE, required = false) String range) throws IOException {
+
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        final Map<String, String> dimMap = new HashMap<>();
+
+        String fileName = tenant + instance + start + end;
+        Path path = Paths.get("/tmp/", fileName);
+        File file = path.toFile();
+
+        if (!file.exists()) {
+            service.downlaodAllEvents(start, end, queryMap, dimMap, tenant, instance, fileName);
+        }
+
+        if (!file.exists()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        long fileSize = file.length();
+        try {
+
+            if (range != null) {
+                // Parse the range header, e.g., "bytes=100-199,300-399"
+                List<HttpRange> ranges = HttpRange.parseRanges(range);
+                if (ranges.isEmpty()) {
+                    return ResponseEntity.badRequest().build();
+                }
+
+                long totalLength = 0;
+                StringBuilder contentRange = new StringBuilder();
+                StringBuilder contentDisposition = new StringBuilder();
+                byte[] boundary = ("--boundary" + System.currentTimeMillis()).getBytes();
+
+                // Prepare the response as a multipart message with each part representing a byte range
+                StringBuilder body = new StringBuilder();
+
+                // Iterate through each range, handle multiple ranges
+                for (HttpRange httpRange : ranges) {
+                    long rangeStart = httpRange.getRangeStart(fileSize);
+                    long rangeEnd = httpRange.getRangeEnd(fileSize);
+                    long rangeLength = rangeEnd - rangeStart + 1;
+
+                    // Append each part's headers
+                    body.append("--boundary\n")
+                            .append("Content-Type: application/octet-stream\n")
+                            .append("Content-Range: bytes ").append(rangeStart).append("-").append(rangeEnd)
+                            .append("/").append(fileSize).append("\n")
+                            .append("Content-Length: ").append(rangeLength).append("\n\n");
+
+                    // Read the file content for this range and append to the response body
+                    byte[] fileBytes = new byte[(int) rangeLength];
+                    try (InputStream inputStream = Files.newInputStream(path)) {
+                        inputStream.skip(rangeStart); // Skip to the start of the range
+                        inputStream.read(fileBytes);
+                    }
+
+                    // Add the actual file content to the body
+                    body.append(new String(fileBytes));
+                    totalLength += rangeLength;
+                }
+
+                // End of multipart message
+                body.append("\n--boundary--\n");
+
+                // Set headers for multipart response
+                HttpHeaders headers = new HttpHeaders();
+                headers.set("Content-Type", "multipart/byteranges; boundary=boundary");
+                headers.set("Content-Length", String.valueOf(totalLength));
+
+                return ResponseEntity.ok()
+                        .headers(headers)
+                        .body(body.toString());
+
+            } else {
+                // If no range header, return the full file
+                FileSystemResource fileResource = new FileSystemResource(file);
+                String contentType = Files.probeContentType(path);
+
+                return ResponseEntity.ok()
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"")
+                        .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
+                        .body(fileResource);
+            }
+
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+
 
     //@CrossOrigin
     @GetMapping(path = {"/v1/jstacks", "/v1/jstacks/{tenant}"}, produces = MediaType.APPLICATION_JSON_VALUE)

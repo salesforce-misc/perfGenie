@@ -16,13 +16,15 @@ public class PerfGenieConstants {
     public static final String NAMESPACE_EVENT_META = "event-meta-data";
 
     public static String getMetatNameSpace(final String tenant, final String source, final String goldNamespace){
-        if (source == null) {
+        return getEventNameSpace(tenant, source, goldNamespace);
+        /*if (source == null) {
             return SFDC + PERFGENIE_EVENT_TAG + tenant;
         }
         if(source.replace("=", "").equals(PERFGENIE_GOLD_TAG)){//return gold name space
             return goldNamespace;
         }
         return source.replace("=", "").equals(PERFGENIE) ? NAMESPACE_EVENT_META : SFDC+PERFGENIE_EVENT_TAG+tenant;
+        */
     }
     public static String getEventNameSpace(final String tenant, final String source, final String goldNamespace){
 

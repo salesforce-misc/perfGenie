@@ -14,6 +14,9 @@ import com.google.common.io.ByteStreams;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -185,5 +188,57 @@ public class Utils {
         Instant instant = Instant.ofEpochMilli(epochMillis);
         LocalDateTime dateTime = LocalDateTime.ofInstant(instant, ZoneId.of("UTC"));
         return dateTime.format(formatter);
+    }
+
+    public static void extractTarGzToFolder(String tarGzFilePath, String destinationDirPath) throws IOException {
+        // Build the tar command for extracting
+        String command = String.format("tar -xzf %s -C %s", tarGzFilePath, destinationDirPath);
+
+        // Execute the command
+        Process process = Runtime.getRuntime().exec(command);
+
+        try {
+            // Wait for the command to complete
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                System.out.println("Tar.gz file extracted successfully!");
+            } else {
+                System.err.println("Error occurred while extracting the tar.gz file. Exit code: " + exitCode);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void createTarGzFromFolder(String sourceDirPath, String tarGzFilePath) throws IOException {
+        // Build the tar command
+        String command = String.format("tar -czf %s -C %s .", tarGzFilePath, sourceDirPath);
+
+        // Execute the command
+        Process process = Runtime.getRuntime().exec(command);
+
+        try {
+            // Wait for the command to complete
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                System.out.println(tarGzFilePath +" file created successfully!");
+            } else {
+                System.err.println("Error occurred while creating the "+ tarGzFilePath +" file. Exit code: " + exitCode);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void createDirectoryIfNotExists(String directoryPath) {
+        Path path = Paths.get(directoryPath);
+        if (Files.notExists(path)) {
+            try {
+                Files.createDirectories(path);
+                System.out.println("Directory created: " + directoryPath);
+            } catch (IOException e) {
+                System.err.println("Failed to create directory: " + e.getMessage());
+            }
+        }
     }
 }

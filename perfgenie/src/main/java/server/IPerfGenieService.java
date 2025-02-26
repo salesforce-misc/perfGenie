@@ -108,4 +108,5 @@ public interface IPerfGenieService {
 
     InputStream getGenieEventStream(final String tenant, long timestamp, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
     String backupEvents(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String tenant, final String instance) throws IOException;
+    boolean downlaodAllEvents(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String tenant, final String instance, final String fileName) throws IOException;
 }

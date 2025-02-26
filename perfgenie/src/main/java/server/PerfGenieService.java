@@ -27,6 +27,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +45,7 @@ public class PerfGenieService implements IPerfGenieService {
     //cronjob to parse jfrs placed in a directory
     @Scheduled(cron = "*/10 * * ? * *")
     private void cronJob() throws IOException {
-        createDirectoryIfNotExists(config.getJfrdir());
+        Utils.createDirectoryIfNotExists(config.getJfrdir());
         runJob();
     }
 
@@ -53,18 +55,6 @@ public class PerfGenieService implements IPerfGenieService {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         logger.info(now.format(formatter) + " running cleanup job for dir " + config.getJfrdir());
         deleteOldFiles(config.getJfrdir(), 1);
-    }
-
-    public static void createDirectoryIfNotExists(String directoryPath) {
-        Path path = Paths.get(directoryPath);
-        if (Files.notExists(path)) {
-            try {
-                Files.createDirectories(path);
-                System.out.println("Directory created: " + directoryPath);
-            } catch (IOException e) {
-                System.err.println("Failed to create directory: " + e.getMessage());
-            }
-        }
     }
 
     public void runJob() throws IOException {
@@ -226,6 +216,94 @@ public class PerfGenieService implements IPerfGenieService {
                 }
                 new File(file.getPath()).delete();
                 logger.info("successfully parsed " + file.getPath() + " and stored event " + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+            }else if(file.isFile() && file.getName().contains(".tar.gz")){
+                String tmpDir = file.getAbsolutePath().replace(".tar.gz", "");
+                Utils.createDirectoryIfNotExists(tmpDir);
+                Utils.extractTarGzToFolder(file.getAbsolutePath(),tmpDir);
+                Files.delete(Paths.get(file.getAbsolutePath()));
+                uploadEvents(tmpDir);
+                //tmpDir remove directory and files
+            }
+        }
+    }
+
+    private void uploadEvents(final String path){
+        logger.info("uploadEvents from " + path);
+        File folder = new File(path);
+        File[] listOfFiles = folder.listFiles();
+
+        if (listOfFiles == null)
+            return;
+        for (File file : listOfFiles) {
+            if(file.getName().contains(".meta") || file.getName().contains(".dimension")) {
+                logger.info("Skipping event upload for " + file.getName());
+            }else if (file.isFile() && file.getName().contains(".json.gz")) {
+                //upload large envent
+                try {
+                    logger.info("uploading large event " + file.getName());
+                    String meta = file.getAbsolutePath() + ".meta";
+                    byte[] bytes = Files.readAllBytes(Paths.get(meta));
+                    String str = new String(bytes);
+                    HashMap metaD =  (HashMap) Utils.readValue(str,HashMap.class);
+
+                    String dim = file.getAbsolutePath() + ".dimension";
+                    byte[] bytes1 = Files.readAllBytes(Paths.get(dim));
+                    String str1 = new String(bytes1);
+                    final Map<String, Double> dimMap = (HashMap) Utils.readValue(str1, HashMap.class);
+
+                    Pattern pattern = Pattern.compile("(\\d{13})-");
+                    Matcher matcher = pattern.matcher(file.getName());
+                    if (matcher.find()) {
+                        // Extract the first timestamp from the match (the first 13-digit number)
+                        String timestampStr = matcher.group(1);
+                        long timestampMillis = Long.parseLong(timestampStr);
+                        metaD.put("tenant-id",config.getTenant());
+                        metaD.put("source","genie");
+                        eventStore.addGenieLargeEvent(timestampMillis, metaD, dimMap, new String(Utils.decompress(Files.readAllBytes(Paths.get(file.getAbsolutePath())))), config.getTenant(), "genie");
+                        new File(file.getAbsolutePath()).delete();
+                        new File(meta).delete();
+                        new File(dim).delete();
+                    }
+                }catch (IOException e){
+                    logger.warn("uploadEvents exception " + file.getName());
+                }
+            }else if(file.isFile() && file.getName().contains(".jfr.gz")){
+                logger.warn("Skipping event upload for " + file.getName());
+            }else{
+                //upload diag event
+                try {
+                    logger.info("uploading event " + file.getName());
+                    String meta = file.getAbsolutePath() + ".meta";
+                    byte[] bytes = Files.readAllBytes(Paths.get(meta));
+                    String str = new String(bytes);
+                    HashMap metaD = (HashMap) Utils.readValue(str, HashMap.class);
+
+                    String dim = file.getAbsolutePath() + ".dimension";
+                    byte[] bytes1 = Files.readAllBytes(Paths.get(dim));
+                    String str1 = new String(bytes1);
+                    final Map<String, Double> dimMap = (HashMap) Utils.readValue(str1, HashMap.class);
+
+
+
+                    Pattern pattern = Pattern.compile("(\\d{13})-");
+
+
+                    Matcher matcher = pattern.matcher(file.getName());
+                    if (matcher.find()) {
+                        // Extract the first timestamp from the match (the first 13-digit number)
+                        String timestampStr = matcher.group(1);
+                        long timestampMillis = Long.parseLong(timestampStr);
+                        metaD.put("tenant-id",config.getTenant());
+                        metaD.put("source","genie");
+                        eventStore.addGenieEvent(timestampMillis, metaD, dimMap,new String(Utils.decompress(Files.readAllBytes(Paths.get(file.getAbsolutePath())))), config.getTenant());
+                        new File(file.getAbsolutePath()).delete();
+                        new File(meta).delete();
+                        new File(dim).delete();
+                    }
+                } catch (IOException e) {
+                    logger.warn("uploadEvents exception " + file.getName());
+                    new File(file.getPath()).delete();
+                }
             }
         }
     }
@@ -273,6 +351,11 @@ public class PerfGenieService implements IPerfGenieService {
     @Override
     public String backupEvents(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String tenant, final String instance) throws IOException {
         return eventStore.backupEvents(start, end, queryMap, dimMap, tenant, instance);
+    }
+
+    @Override
+    public boolean downlaodAllEvents(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String tenant, final String instance, final String fileName) throws IOException {
+        return eventStore.downlaodAllEvents(start, end, queryMap, dimMap, tenant, instance, fileName);
     }
 
     @Override

@@ -173,7 +173,7 @@ public class EventStore {
         }
         try {
             if (queryMap.containsKey(PerfGenieConstants.TENANT_KEY)) {
-                addGenieEventMetaData(timestamp, queryMap, dimMap, config.getTenant());
+                //addGenieEventMetaData(timestamp, queryMap, dimMap, config.getTenant()); // ? removed, using event name space for getting metadata
 
                 this.cantor.events().store(
                         PerfGenieConstants.getEventNameSpace(tenant, PerfGenieConstants.PERFGENIE, config.getBackup_namespace()),
@@ -247,20 +247,24 @@ public class EventStore {
 
         namespaces.add(PerfGenieConstants.getMetatNameSpace(config.getTenant(), PerfGenieConstants.PERFGENIE, config.getBackup_namespace()));//1715561760005
         for (final String namespace : namespaces) {
-            final List<Events.Event> results = this.cantor.events().get(
-                    namespace,
-                    start,
-                    end,
-                    queryMap,
-                    dimMap,
-                    false
-            );
-            if (results.size() > 0) {
-                for (final Events.Event result : results) {
-                    if (result.getMetadata().containsKey("tenant-id")) {
-                        tenantsCache.put(result.getMetadata().get("tenant-id"), PerfGenieConstants.PERFGENIE);
+            try {
+                final List<Events.Event> results = this.cantor.events().get(
+                        namespace,
+                        start,
+                        end,
+                        queryMap,
+                        dimMap,
+                        false
+                );
+                if (results.size() > 0) {
+                    for (final Events.Event result : results) {
+                        if (result.getMetadata().containsKey("tenant-id")) {
+                            tenantsCache.put(result.getMetadata().get("tenant-id"), PerfGenieConstants.PERFGENIE);
+                        }
                     }
                 }
+            }catch (Exception e){
+                logger.warn("getTenants cantor tenants exception " + e.getMessage());
             }
         }
         return Utils.toJson(tenantsCache);
@@ -310,6 +314,33 @@ public class EventStore {
         return Utils.toJson(instances);
     }
 
+    private boolean writeEventToFile(final Events.Event event, final Map<String, String> dimMap, final String from_namespace, final String filePath){
+        try {
+            final List<Events.Event> results1 = this.cantor.events().get(
+                    from_namespace,
+                    event.getTimestampMillis() - 1,
+                    event.getTimestampMillis() + 1,
+                    event.getMetadata(),
+                    dimMap,
+                    true
+            );
+            if (results1.size() > 0) {
+                logger.info("backup event : " + results1.get(0).getMetadata().toString());
+                Path path = Paths.get(filePath);
+                Files.write(path, results1.get(0).getPayload());
+                Path path1 = Paths.get(filePath+".meta");
+                Files.write(path1, Utils.toJson(results1.get(0).getMetadata()).getBytes());
+                Path path2 = Paths.get(filePath+".dimension");
+                Files.write(path2, Utils.toJson(results1.get(0).getDimensions()).getBytes());
+                return true;
+            }else{
+                logger.info("backup source event not found : " + event.getMetadata().toString());
+            }
+        }catch(IOException e){
+            return false;
+        }
+        return false;
+    }
     private boolean backupEvent(final Events.Event event, final Map<String, String> dimMap, final String from_namespace, final String to_namespace){
         try {
             final List<Events.Event> results1 = this.cantor.events().get(
@@ -380,6 +411,78 @@ public class EventStore {
             }
         }
         return null;
+    }
+
+    public boolean downlaodAllEvents(long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final String tenant, final String instance, final String fileName) throws IOException {
+        String filePath = System.getProperty("java.io.tmpdir") + "/" +  start + "-" + end + "-" + tenant + "-" + instance;
+        Utils.createDirectoryIfNotExists(filePath);
+        //downloadToFile
+        List<String>  list = new ArrayList<>();
+        if (tenant != null && instance != null) {
+            String namespace = PerfGenieConstants.getEventNameSpace(tenant, queryMap.get(PerfGenieConstants.SOURCE_KEY), config.getBackup_namespace());//queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? NAMESPACE_EVENT_META : PerfGenieConstants.getEventNameSpace(tenant, false, config.getBackup_namespace());
+            String largenamespace = PerfGenieConstants.getLargeEventNameSpace(tenant, queryMap.get(PerfGenieConstants.SOURCE_KEY), config.getBackup_namespace());//queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? NAMESPACE_EVENT_META : PerfGenieConstants.getLargeEventNameSpace(tenant, false, config.getBackup_namespace());
+            queryMap.put("tenant-id", tenant);
+            queryMap.put("instance-id", instance);
+            final List<Events.Event> results = this.cantor.events().get(
+                    namespace,
+                    start,
+                    end,
+                    queryMap,
+                    dimMap,
+                    false
+            );
+            if (results.size() != 0) {
+                HashSet <String> skipEvents = new HashSet<>();
+                HashSet backupEvents = config.getBackupEvents();
+                for (final Events.Event result : results) {
+                    //TODO: support heap dumps and other large files
+                    if(((result.getMetadata().containsKey("name") && backupEvents.contains(result.getMetadata().get("name"))) || (result.getMetadata().containsKey("file-name") && backupEvents.contains(result.getMetadata().get("file-name")))) && (!result.getMetadata().containsKey("file-name") || (result.getMetadata().get("file-name").contains("json")) || result.getMetadata().get("file-name").contains("jfr.gz"))) {
+                        String fileNameToWrite = filePath + "/" + result.getTimestampMillis() + "-" + (result.getMetadata().containsKey("name") ? result.getMetadata().get("name") : "NA") + "-" + (result.getMetadata().containsKey("file-name") ? result.getMetadata().get("file-name") : "NA");
+                        File file = new File(fileNameToWrite);
+                        if(file.exists()) {
+                            list.add("download exists for event:"  + Utils.getDateTimeString(result.getTimestampMillis()) + ":"+  result.getMetadata().get("name"));
+                            logger.info("download exists for event " + Utils.getDateTimeString(result.getTimestampMillis()) + ":"+ result.getMetadata().toString());
+                        }else{
+                            if (result.getMetadata().containsKey(".is-large-file") && result.getMetadata().get(".is-large-file").equals("true")) {
+                                final Map<String, String> metadata = new HashMap<>();
+                                metadata.put("host","=" + result.getMetadata().get("host"));
+                                metadata.put("file-name","=" + result.getMetadata().get("file-name"));
+                                metadata.put("guid","=" + result.getMetadata().get("guid"));
+                                metadata.put("tenant-id","=" + result.getMetadata().get("tenant-id"));
+                                downloadToFile(result.getTimestampMillis(), result.getTimestampMillis(), metadata, dimMap, largenamespace, fileNameToWrite);
+                                Path path1 = Paths.get(fileNameToWrite+".meta");
+                                Files.write(path1, Utils.toJson(result.getMetadata()).getBytes());
+                                Path path2 = Paths.get(fileNameToWrite+".dimension");
+                                Files.write(path2, Utils.toJson(result.getDimensions()).getBytes());
+                            } else {
+                                if (writeEventToFile(result, dimMap, namespace, fileNameToWrite)) {
+                                    list.add("download success for event:"  + Utils.getDateTimeString(result.getTimestampMillis()) + ":"+ result.getMetadata().get("name"));
+                                } else {
+                                    list.add("download failed for event:"  + Utils.getDateTimeString(result.getTimestampMillis()) + ":" + result.getMetadata().get("name"));
+                                }
+                            }
+                        }
+                    }else{
+                        list.add("skip download for event:"  + Utils.getDateTimeString(result.getTimestampMillis()) + ":"+ result.getMetadata().get("name"));
+                    }
+                }
+                list.add("successfully downloaded");
+
+                logger.info("successfully downloaded");
+            }
+            String resultFile = filePath + "/result.txt";
+            Path resPath = Paths.get(resultFile);
+            Files.write(resPath, list);
+            Utils.createTarGzFromFolder(filePath, filePath+".tar.gz");
+            return true;
+        }else{
+            list.add("Error: need tenant and host as input");
+            String resultFile = filePath + "/result.txt";
+            Path resPath = Paths.get(resultFile);
+            Files.write(resPath, list);
+            logger.error("Error: need tenant and host as input");
+        }
+        return true;
     }
 
     //TODO this will not work for Genie, metadata namespace need to be fixed
@@ -848,6 +951,7 @@ public class EventStore {
 
     private synchronized boolean downloadToFile(final long startTimestamp, final long endTimestamp, final Map<String,
             String> metadataQuery, final Map<String, String> dimensionsQuery, final String namespace, final String filepath) throws IOException {
+
 
         String req = metadataQuery.toString() + Long.toString(startTimestamp);
 
