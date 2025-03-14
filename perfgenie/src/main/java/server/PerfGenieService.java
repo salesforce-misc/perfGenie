@@ -18,8 +18,10 @@ import java.net.InetAddress;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -55,6 +57,17 @@ public class PerfGenieService implements IPerfGenieService {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         logger.info(now.format(formatter) + " running cleanup job for dir " + config.getJfrdir());
         deleteOldFiles(config.getJfrdir(), 1);
+    }
+
+    @Scheduled(cron = "0 0 * * * *")
+    private void canaryJob() throws IOException {
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String substrate = System.getenv("SUBSTRATE");
+        if(substrate != null){
+            logger.info(now.format(formatter) + " running canaryJob");
+            canaryTask(0, 0);
+        }
     }
 
     public void runJob() throws IOException {
@@ -216,10 +229,10 @@ public class PerfGenieService implements IPerfGenieService {
                 }
                 new File(file.getPath()).delete();
                 logger.info("successfully parsed " + file.getPath() + " and stored event " + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
-            }else if(file.isFile() && file.getName().contains(".tar.gz")){
+            } else if (file.isFile() && file.getName().contains(".tar.gz")) {
                 String tmpDir = file.getAbsolutePath().replace(".tar.gz", "");
                 Utils.createDirectoryIfNotExists(tmpDir);
-                Utils.extractTarGzToFolder(file.getAbsolutePath(),tmpDir);
+                Utils.extractTarGzToFolder(file.getAbsolutePath(), tmpDir);
                 Files.delete(Paths.get(file.getAbsolutePath()));
                 uploadEvents(tmpDir);
                 //tmpDir remove directory and files
@@ -227,7 +240,7 @@ public class PerfGenieService implements IPerfGenieService {
         }
     }
 
-    private void uploadEvents(final String path){
+    private void uploadEvents(final String path) {
         logger.info("uploadEvents from " + path);
         File folder = new File(path);
         File[] listOfFiles = folder.listFiles();
@@ -235,16 +248,16 @@ public class PerfGenieService implements IPerfGenieService {
         if (listOfFiles == null)
             return;
         for (File file : listOfFiles) {
-            if(file.getName().contains(".meta") || file.getName().contains(".dimension")) {
+            if (file.getName().contains(".meta") || file.getName().contains(".dimension")) {
                 logger.info("Skipping event upload for " + file.getName());
-            }else if (file.isFile() && file.getName().contains(".json.gz")) {
+            } else if (file.isFile() && file.getName().contains(".json.gz")) {
                 //upload large envent
                 try {
                     logger.info("uploading large event " + file.getName());
                     String meta = file.getAbsolutePath() + ".meta";
                     byte[] bytes = Files.readAllBytes(Paths.get(meta));
                     String str = new String(bytes);
-                    HashMap metaD =  (HashMap) Utils.readValue(str,HashMap.class);
+                    HashMap metaD = (HashMap) Utils.readValue(str, HashMap.class);
 
                     String dim = file.getAbsolutePath() + ".dimension";
                     byte[] bytes1 = Files.readAllBytes(Paths.get(dim));
@@ -257,19 +270,19 @@ public class PerfGenieService implements IPerfGenieService {
                         // Extract the first timestamp from the match (the first 13-digit number)
                         String timestampStr = matcher.group(1);
                         long timestampMillis = Long.parseLong(timestampStr);
-                        metaD.put("tenant-id",config.getTenant());
-                        metaD.put("source","genie");
+                        metaD.put("tenant-id", config.getTenant());
+                        metaD.put("source", "genie");
                         eventStore.addGenieLargeEvent(timestampMillis, metaD, dimMap, new String(Utils.decompress(Files.readAllBytes(Paths.get(file.getAbsolutePath())))), config.getTenant(), "genie");
                         new File(file.getAbsolutePath()).delete();
                         new File(meta).delete();
                         new File(dim).delete();
                     }
-                }catch (IOException e){
+                } catch (IOException e) {
                     logger.warn("uploadEvents exception " + file.getName());
                 }
-            }else if(file.isFile() && file.getName().contains(".jfr.gz")){
+            } else if (file.isFile() && file.getName().contains(".jfr.gz")) {
                 logger.warn("Skipping event upload for " + file.getName());
-            }else{
+            } else {
                 //upload diag event
                 try {
                     logger.info("uploading event " + file.getName());
@@ -284,7 +297,6 @@ public class PerfGenieService implements IPerfGenieService {
                     final Map<String, Double> dimMap = (HashMap) Utils.readValue(str1, HashMap.class);
 
 
-
                     Pattern pattern = Pattern.compile("(\\d{13})-");
 
 
@@ -293,9 +305,9 @@ public class PerfGenieService implements IPerfGenieService {
                         // Extract the first timestamp from the match (the first 13-digit number)
                         String timestampStr = matcher.group(1);
                         long timestampMillis = Long.parseLong(timestampStr);
-                        metaD.put("tenant-id",config.getTenant());
-                        metaD.put("source","genie");
-                        eventStore.addGenieEvent(timestampMillis, metaD, dimMap,new String(Utils.decompress(Files.readAllBytes(Paths.get(file.getAbsolutePath())))), config.getTenant());
+                        metaD.put("tenant-id", config.getTenant());
+                        metaD.put("source", "genie");
+                        eventStore.addGenieEvent(timestampMillis, metaD, dimMap, new String(Utils.decompress(Files.readAllBytes(Paths.get(file.getAbsolutePath())))), config.getTenant());
                         new File(file.getAbsolutePath()).delete();
                         new File(meta).delete();
                         new File(dim).delete();
@@ -605,13 +617,13 @@ public class PerfGenieService implements IPerfGenieService {
                 if (queryMap.containsKey(PerfGenieConstants.SOURCE_KEY)) {
                     try {
                         aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(result, EventHandler.ContextResponse.class));
-                    }catch (Exception e){
+                    } catch (Exception e) {
                         //try SF context, could be an upload
                         aggregator.aggregateSFLogContext((EventHandler.SFContextResponse) Utils.readValue(result, EventHandler.SFContextResponse.class));
-                        useSFContext=true;
+                        useSFContext = true;
                     }
                 } else {
-                    useSFContext=true;
+                    useSFContext = true;
                     aggregator.aggregateSFLogContext((EventHandler.SFContextResponse) Utils.readValue(result, EventHandler.SFContextResponse.class));
                 }
             }
@@ -625,7 +637,7 @@ public class PerfGenieService implements IPerfGenieService {
         }
     }
 
-    ///////////////////////////////
+    /// ////////////////////////////
     //experimental, patents
     private int chunkCount = 0;
     private List<Integer> chunkSamplesTotalList = new ArrayList();
@@ -1039,6 +1051,160 @@ public class PerfGenieService implements IPerfGenieService {
             });
         } catch (IOException e) {
             System.err.println("Error: walking through directory: " + e.getMessage());
+        }
+    }
+
+    public void addCanaryEvent(List<Object> record, long timestamp, String cell, String host) throws IOException {
+        List<String> header = new ArrayList<>();
+        header.add("timestamp:timestamp");
+        header.add("tid:text");
+        header.add("CELL:text");
+        header.add("APT:number");
+        header.add("JVMCPU:number");
+        header.add("ContainerCPU:number");
+        header.add("URL:text");
+        header.add("zingCount:number");
+        header.add("zuluCount:number");
+        final Map<String, Double> dimMap = new HashMap<>();
+        final Map<String, String> queryMap = new HashMap<>();
+        queryMap.put("source", "genie");
+        queryMap.put("tenant-id", "canary");
+        queryMap.put("instance-id", host);
+        queryMap.put("host", host);
+        queryMap.put("source-file", "canary");
+        queryMap.put("file-name", "canary-context");//
+        queryMap.put("type", "canaryevent");
+        queryMap.put("name", "canary");
+        final EventHandler aggregator = new EventHandler();
+        aggregator.initializeEvent("canary");
+        aggregator.addHeader("canary", header);
+        aggregator.processContext(record, 1, "canary");
+        String guid = Utils.generateGuid();
+        queryMap.put("guid", guid);
+        queryMap.put("cell", cell);
+        Object logContext = aggregator.getLogContext();
+        //if (!eventEsists(timestamp, host, record.get(2).toString())) {
+        eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, Utils.toJson(logContext), config.getTenant(), "genie");
+        //}
+    }
+
+    public synchronized String canaryTask(long start, long end) throws IOException{
+        int hr = Canary.getCurrentHourUTC();
+        String host = InetAddress.getLocalHost().getHostName();
+        String substrate = System.getenv("SUBSTRATE");
+        if(substrate != null){
+            host = "perf-genie-zingcanary";
+        }
+        List<List<Object>> response = new ArrayList<>();
+        for (int lastndays = (int) end; lastndays <= start; lastndays++) {
+            for (Map.Entry<String, Integer[]> entry : Canary.podsList.entrySet()) {
+                String cell = entry.getKey();
+                Integer[] arr = entry.getValue();
+                if (hr > arr[1]) {
+                    long tmp1 = Canary.getUtcEpochForHour(arr[0]);
+                    long tmp2 = Canary.getUtcEpochForHour(arr[1]);
+                    tmp1 = tmp1 - lastndays * 24 * 60 * 60 * 1000;
+                    tmp2 = tmp2 - lastndays * 24 * 60 * 60 * 1000;
+                    //check if event exists
+                    if (!eventEsists(tmp1, host, cell)) {
+                        System.out.println("process ------->:" + cell + " : " + arr[1] + " : " + hr);
+                        List<Object> record = Canary.processCellCanary(tmp1, tmp2, cell);
+                        if(record != null && record.size() > 0 ){
+                            if(record.size() > 0 ){
+                                addCanaryEvent(record,tmp1,cell,host);
+                                response.add(record);
+                            }
+                        }
+                    }else{
+                        System.out.println("skip event exists:" + cell + " : " + arr[1] + " : " + hr);
+                    }
+                }else {
+                    System.out.println("skip:" + cell + " : " + arr[1] + " : " + hr);
+                }
+            }
+        }
+        return Utils.toJson(response);
+    }
+
+    public boolean eventEsists(long timestamp, String host, String cell) {
+        Map<Long, Map<String, String>> profiles;
+        final Map<String, String> dimMap = new HashMap<>();
+        final Map<String, String> queryMap = new HashMap<>();
+        queryMap.put("source", "=genie");
+        queryMap.put("name", "=canary");
+        queryMap.put("tenant-id", "=canary");
+        queryMap.put("cell", "=" + cell);
+        queryMap.put("instance-id", "="+host);
+        queryMap.put("host", "="+host);
+
+        try {
+            profiles = eventStore.loadGenieProfiles(config.getTenant(), timestamp, timestamp, queryMap, dimMap, false);
+        } catch (Exception e) {
+            return false;
+        }
+        if (profiles == null || profiles.size() < 1) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    public static String convertEpochToDateString(long epochMilli, String pattern, String timezone) {
+        Instant instant = Instant.ofEpochMilli(epochMilli);
+        LocalDateTime localDateTime = instant.atZone(ZoneId.of(timezone)).toLocalDateTime();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
+        return localDateTime.format(formatter);
+    }
+
+    public String getCanaryEvent(long start, long end) throws IOException {
+        Map<Long, Map<String, String>> profiles;
+        String host = InetAddress.getLocalHost().getHostName();
+        String substrate = System.getenv("SUBSTRATE");
+        if(substrate != null){
+            host = "perf-genie-zingcanary";
+        }
+        final Map<String, String> dimMap = new HashMap<>();
+        final Map<String, String> queryMap = new HashMap<>();
+        queryMap.put("source", "=genie");
+        queryMap.put("name", "=canary");
+        queryMap.put("tenant-id", "=canary");
+        queryMap.put("instance-id", "="+host);
+        queryMap.put("host", "="+host);
+        try {
+            final EventHandler aggregator = new EventHandler();
+            end =  Instant.now().toEpochMilli() + 60 * 60 * 1000;
+            for(int j=5; j<=40; j+=5) {
+                start = end - 5 * 24 * 60 * 60 * 1000;
+                String pattern = "yyyy-MM-dd HH:mm:ss";
+                String timezone = "UTC";
+
+                String dateString1 = convertEpochToDateString(start, pattern, timezone);
+                String dateString2 = convertEpochToDateString(end, pattern, timezone);
+                System.out.println(dateString1 + ":" + dateString2);
+                queryMap.remove("guid");
+                profiles = eventStore.loadGenieProfiles(config.getTenant(), start, end, queryMap, dimMap, false);
+                if (profiles == null || profiles.size() < 1) {
+                    //System.out.println("Skip");
+                    end=start;
+                    continue;
+                    //return Utils.toJson(new EventHandler.JfrParserResponse(null, "no profiles found for the given time range", queryMap, null));
+                }
+                List<Long> tosort = new ArrayList<>();
+                for (Long timestamp : profiles.keySet()) {
+                    tosort.add(timestamp);
+                }
+                Collections.sort(tosort);
+                for (int i = 0; i < tosort.size(); i++) {
+                    queryMap.put("guid", profiles.get(tosort.get(i)).get("guid"));
+                    String result = eventStore.getGenieLargeEvent(tosort.get(i), tosort.get(i), queryMap, dimMap, config.getTenant());
+                    aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(result, EventHandler.ContextResponse.class));
+                }
+                end=start;
+
+            }
+            return Utils.toJson(aggregator.getLogContext());
+        } catch (Exception e) {
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate" + e.getMessage(), queryMap, null));
         }
     }
 }

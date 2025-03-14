@@ -227,4 +227,23 @@ function toastMessage(type, msg, d = 5000){
             close: true
         }).showToast();
     }
+
+
+}
+
+function showSpinner(id) {
+    if(id === undefined){
+        id = "spinner";
+    }
+    document.getElementById(id).style.display = 'block';
+}
+
+// Function to hide the spinner
+function hideSpinner(id) {
+    if(id === undefined){
+        id = "spinner";
+    }
+    if(document.getElementById(id) != undefined) {
+        document.getElementById(id).style.display = 'none';
+    }
 }

@@ -16,6 +16,7 @@ import org.springframework.http.HttpRange;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import perfgenie.utils.Canary;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +36,24 @@ public class PerfGenieController {
     @Autowired
     public PerfGenieController(PerfGenieService service) {
         this.service = service;
+    }
+
+    @GetMapping(path = {"/component/casp/v1/canary"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String canary(
+                          @RequestParam(required = false, name = "start") final long start,
+                          @RequestParam(required = false, name = "end") final long end,
+                          @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
+        //final Map<String, String> queryMap = queryToMap(metadataQuery);
+        return service.canaryTask(start,end);
+    }
+    @GetMapping(path = {"/component/casp/v1/canaryview"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String canaryview(
+            @RequestParam(required = false, name = "start") final long start,
+            @RequestParam(required = false, name = "end") final long end,
+            @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        String res = service.getCanaryEvent(start,end);
+        return res;
     }
 
     //@CrossOrigin

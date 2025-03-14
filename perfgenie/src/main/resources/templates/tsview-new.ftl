@@ -379,6 +379,7 @@
 
     let tsviewSortMap = undefined;
     function gentsviewtable(addContext, level) {
+        console.log("gentsviewtable");
         if($("#event-type-tsview").val() == "json-jstack") {//process all events
             $('#mcontention').show();
             if(document.getElementById("monitorCheck").checked == true){
@@ -434,7 +435,7 @@
         moreTsviews = [];
 
         if(fContext == 'without'){//context without supported only for tid, todo support thread name for jstacks
-            groupByTsview = 'tid';
+            groupByTsview = 'tid'; //default
         }
         getTsviewTableHeader(groupByTsview, tsviewtableHeader, eventType);
         let totalSampleCount = getContextTree(1, eventType).tree.sz;
@@ -456,7 +457,7 @@
             let isJstack = false;
             if($("#event-type-tsview").val() == "All"){//process all events
                 eventType = tempeventTypeArray[tempeventTypeCount];
-                applyContextFilters(eventType,level);
+                applyContextFilters(level,eventType,1);
                 addContext=true;
             }else if(tempeventTypeArray[tempeventTypeCount] != eventType){
                 continue;
@@ -518,7 +519,7 @@
             }
             //every sample of jstack has a tn
             let combinedEventKey = eventType + tsviewCustomEvent;
-            if ((eventType == "Jstack" || eventType == "json-jstack") && groupByTsview == "threadname" && isFilterEmpty(dimIndexMap)) {
+            /*if (isJstack && groupByTsview == "threadname" && isFilterEmpty(dimIndexMap, isJstack)) {
                 //for (var tid in contextDataRecords) {
                 for (var tid in contextTidMap) {
                     if (tidDatalistVal == undefined || tidDatalistVal == tid) {
@@ -567,8 +568,14 @@
                     }
                 }
                 //every sample will have a tid, so include all
-            } else if (groupByTsview == "tid" && isFilterEmpty()) {
+            } else */if ((groupByTsview == "tid" || (isJstack && groupByTsview == "threadname")) && isFilterEmpty(dimIndexMap, isJstack)) {
                 //for (var tid in contextDataRecords) {
+                let threadNameCheck = false;
+                let threadNameFilter = "";
+                if(isJstack && groupByTsview == "threadname" && filterMap["threadname"] != undefined ){
+                    threadNameCheck = true;
+                    threadNameFilter = filterMap["threadname"];
+                }
                 for (var tid in contextTidMap) {
                     if(monitorCheck && uniquecontentionTids[tid] == undefined){
                         continue;
@@ -578,35 +585,37 @@
                             if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
                                 if (isAll || (isWith && contextTidMap[tid][i][customEvent]?.obj != undefined) || (!isWith && contextTidMap[tid][i][customEvent]?.obj == undefined)) {
                                     let stack = contextTidMap[tid][i].hash;
-                                    if (frameFilterString == "" || (frameFilterStackMap[combinedEventKey] != undefined && frameFilterStackMap[combinedEventKey][stack] !== undefined)) {
+                                    if(!threadNameCheck || (contextTidMap[tid][i].tn != undefined && contextTidMap[tid][i].tn.includes(threadNameFilter))) {//check for jstack thread name match
+                                        if (frameFilterString == "" || (frameFilterStackMap[combinedEventKey] != undefined && frameFilterStackMap[combinedEventKey][stack] !== undefined)) {
 
-                                        if (tidSamplesTimestamps[tid] == undefined) {
-                                            tidSamplesTimestamps[tid] = [];
-                                        }
-                                        if (isJstack) {
-                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time + jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
-                                        } else {
-                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
-                                        }
-                                        eventSampleCount++;
-                                        if (tsviewtableFormat == 0) {
-                                            let key = tid;
-                                            if (tsviewSortMap.has(key)) {
-                                                tsviewSortMap.set(key, tsviewSortMap.get(key) + 1);
-                                            } else {
-                                                tsviewSortMap.set(key, 1);
+                                            if (tidSamplesTimestamps[tid] == undefined) {
+                                                tidSamplesTimestamps[tid] = [];
                                             }
-                                            if (sampleCountMap.has(key)) {
-                                                let tmpMap = sampleCountMap.get(key);
-                                                if (tmpMap.has(stack)) {
-                                                    tmpMap.set(stack, tmpMap.get(stack) + 1);
-                                                } else {
-                                                    tmpMap.set(stack, 1);
-                                                }
+                                            if (isJstack) {
+                                                tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time + jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                             } else {
-                                                let tmpMap = new Map();
-                                                tmpMap.set(stack, 1);
-                                                sampleCountMap.set(key, tmpMap);
+                                                tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
+                                            }
+                                            eventSampleCount++;
+                                            if (tsviewtableFormat == 0) {
+                                                let key = tid;
+                                                if (tsviewSortMap.has(key)) {
+                                                    tsviewSortMap.set(key, tsviewSortMap.get(key) + 1);
+                                                } else {
+                                                    tsviewSortMap.set(key, 1);
+                                                }
+                                                if (sampleCountMap.has(key)) {
+                                                    let tmpMap = sampleCountMap.get(key);
+                                                    if (tmpMap.has(stack)) {
+                                                        tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                                    } else {
+                                                        tmpMap.set(stack, 1);
+                                                    }
+                                                } else {
+                                                    let tmpMap = new Map();
+                                                    tmpMap.set(stack, 1);
+                                                    sampleCountMap.set(key, tmpMap);
+                                                }
                                             }
                                         }
                                     }
@@ -616,52 +625,61 @@
                     }
                 }
                 //if only frame filter is selected then we need to include stacks that are any stack sample and containing frame filter string
-            } else if (frameFilterString !== "" && isFilterEmpty()) {
+            } else if (frameFilterString !== "" && isFilterEmpty(dimIndexMap, isJstack)) { //we never come into this block?
                 //for (var tid in contextDataRecords) {
+                let threadNameCheck = false;
+                let threadNameFilter = "";
+                if(isJstack && groupByTsview == "threadname" && filterMap["threadname"] != undefined ){
+                    threadNameCheck = true;
+                    threadNameFilter = filterMap["threadname"];
+                }
+
                 for (var tid in contextTidMap) {
                     if (tidDatalistVal == undefined || tidDatalistVal == tid) {
                         for (let i = 0; i < contextTidMap[tid].length; i++) {
                             if ((pStart == '' || pEnd == '') || (contextTidMap[tid][i].time + contextStart) >= pStart && (contextTidMap[tid][i].time + contextStart) <= pEnd) {//apply time range filter
                                 if (isAll || (isWith && contextTidMap[tid][i][customEvent]?.obj != undefined) || (!isWith && contextTidMap[tid][i][customEvent]?.obj == undefined)) {
                                     let stack = contextTidMap[tid][i].hash;
-                                    if ((frameFilterStackMap[combinedEventKey] != undefined && frameFilterStackMap[combinedEventKey][stack] !== undefined)) {
+                                    if(!threadNameCheck || (contextTidMap[tid][i].tn != undefined && contextTidMap[tid][i].tn.includes(threadNameFilter))) {//check for jstack thread name match
+                                        if ((frameFilterStackMap[combinedEventKey] != undefined && frameFilterStackMap[combinedEventKey][stack] !== undefined)) {
 
-                                        if (tidSamplesTimestamps[tid] == undefined) {
-                                            tidSamplesTimestamps[tid] = [];
-                                        }
-                                        if (isJstack) {
-                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time + jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
-                                        } else {
-                                            tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
-                                        }
-                                        eventSampleCount++;
-                                        if (tsviewtableFormat == 0) {
-                                            let key = "";
-                                            if (contextTidMap[tid][i][tsviewCustomEvent]?.obj != undefined) {
-                                                key = contextTidMap[tid][i][tsviewCustomEvent].obj[dimIndexMap[groupByTsview]];
+                                            if (tidSamplesTimestamps[tid] == undefined) {
+                                                tidSamplesTimestamps[tid] = [];
+                                            }
+                                            if (isJstack) {
+                                                tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time + jstackdiff, jstackcolorsmap[contextTidMap[tid][i].ts], i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                             } else {
-                                                key = "stacks matched frame but no context match";
+                                                tidSamplesTimestamps[tid].push([contextTidMap[tid][i].time, tempeventTypeCount, i, contextTidMap[tid][i][customEvent]?.obj[timestampIndex]]);
                                             }
-                                            if (key != undefined && key.slice != undefined) {
-                                                key = key.slice(0, tsviewgroupByLength);
-                                            }
-                                            //consider
-                                            if (tsviewSortMap.has(key)) {
-                                                tsviewSortMap.set(key, tsviewSortMap.get(key) + 1);
-                                            } else {
-                                                tsviewSortMap.set(key, 1);
-                                            }
-                                            if (sampleCountMap.has(key)) {
-                                                let tmpMap = sampleCountMap.get(key);
-                                                if (tmpMap.has(stack)) {
-                                                    tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                            eventSampleCount++;
+                                            if (tsviewtableFormat == 0) {
+                                                let key = "";
+                                                if (contextTidMap[tid][i][tsviewCustomEvent]?.obj != undefined) {
+                                                    key = contextTidMap[tid][i][tsviewCustomEvent].obj[dimIndexMap[groupByTsview]];
                                                 } else {
-                                                    tmpMap.set(stack, 1);
+                                                    key = "stacks matched frame but no context match";
                                                 }
-                                            } else {
-                                                let tmpMap = new Map();
-                                                tmpMap.set(stack, 1);
-                                                sampleCountMap.set(key, tmpMap);
+                                                if (key != undefined && key.slice != undefined) {
+                                                    key = key.slice(0, tsviewgroupByLength);
+                                                }
+                                                //consider
+                                                if (tsviewSortMap.has(key)) {
+                                                    tsviewSortMap.set(key, tsviewSortMap.get(key) + 1);
+                                                } else {
+                                                    tsviewSortMap.set(key, 1);
+                                                }
+                                                if (sampleCountMap.has(key)) {
+                                                    let tmpMap = sampleCountMap.get(key);
+                                                    if (tmpMap.has(stack)) {
+                                                        tmpMap.set(stack, tmpMap.get(stack) + 1);
+                                                    } else {
+                                                        tmpMap.set(stack, 1);
+                                                    }
+                                                } else {
+                                                    let tmpMap = new Map();
+                                                    tmpMap.set(stack, 1);
+                                                    sampleCountMap.set(key, tmpMap);
+                                                }
                                             }
                                         }
                                     }

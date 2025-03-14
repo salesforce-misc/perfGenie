@@ -130,21 +130,6 @@
         event.stopPropagation();
     }
 
-    function showSpinner(id) {
-        if(id === undefined){
-            id = "spinner";
-        }
-        document.getElementById(id).style.display = 'block';
-    }
 
-    // Function to hide the spinner
-    function hideSpinner(id) {
-        if(id === undefined){
-            id = "spinner";
-        }
-        if(document.getElementById(id) != undefined) {
-            document.getElementById(id).style.display = 'none';
-        }
-    }
 
 </script>

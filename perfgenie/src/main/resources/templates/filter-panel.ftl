@@ -2485,7 +2485,8 @@
         }
     }
 
-    function isFilterEmpty(dimIndexMap) {
+    function isFilterEmpty(dimIndexMap, jstack = false) {
+        //frame filter, tid filter and jstack threadname filter not handled here
         let localContextData = getContextData(1);
         if (dimIndexMap == undefined) {
             dimIndexMap = {};
@@ -2498,7 +2499,7 @@
         }
         let isEmpty = true;
         for (dim in dimIndexMap) {
-            if (filterMap[dim] != undefined && dim != "tid") { //handle tid separately
+            if (filterMap[dim] != undefined && !(dim == "tid" || (jstack && dim == "threadname"))) { //handle tid and jstack threadname separately
                 isEmpty = false;
             }
         }

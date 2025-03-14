@@ -413,7 +413,7 @@
             let isJstack = false;
             if($("#event-type-sample").val() == "All"){//process all events
                 eventType = tempeventTypeArray[tempeventTypeCount];
-                applyContextFilters(eventType,level);
+                applyContextFilters(level,eventType,1);
                 addContext=true;
             }else if(tempeventTypeArray[tempeventTypeCount] != eventType){
                 continue;

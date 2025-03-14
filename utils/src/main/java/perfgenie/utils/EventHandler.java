@@ -1602,7 +1602,7 @@ public class EventHandler {
                 processContext(record, tid, "pidstat-extract");
             }
         }
-        System.out.println("aggregatePS");
+        System.out.println("aggregatePIDSTAT");
     }
 
     public void aggregateTop(final String topOutput, final Long timestamp) throws IOException {

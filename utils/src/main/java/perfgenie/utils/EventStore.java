@@ -424,7 +424,7 @@ public class EventStore {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss").withZone(ZoneOffset.UTC);
         formatter.format(instantS);
 
-        String filePath = System.getProperty("java.io.tmpdir") + "/" +  formatter.format(instantS) + "_to_" + formatter.format(instantE) + "-" + tenant + "-" + instance;
+        String filePath = System.getProperty("java.io.tmpdir") + "/" +  formatter.format(instantS) + "_to_" + formatter.format(instantE) + "-" + instance;
         Utils.createDirectoryIfNotExists(filePath);
         //downloadToFile
         List<String>  list = new ArrayList<>();

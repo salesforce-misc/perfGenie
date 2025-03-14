@@ -33,6 +33,10 @@ class SFDataTable {
         }
     }
 
+    SFDataTableSetPageSize(size){
+        this.#SFDataTablePageSize = size;
+    }
+
     //First time data table loading, entry point
     SFDataTable(rows, header, id, sortColIndex, showToolBar) {
         if (rows !== undefined) {
