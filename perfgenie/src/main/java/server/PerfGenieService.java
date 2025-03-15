@@ -1196,7 +1196,12 @@ public class PerfGenieService implements IPerfGenieService {
                 Collections.sort(tosort);
                 for (int i = 0; i < tosort.size(); i++) {
                     queryMap.put("guid", profiles.get(tosort.get(i)).get("guid"));
-                    String result = eventStore.getGenieLargeEvent(tosort.get(i), tosort.get(i), queryMap, dimMap, config.getTenant());
+                    String result = checkLocal(queryMap.get("guid"));
+                    if(result == null){
+                        result = eventStore.getGenieLargeEvent(tosort.get(i), tosort.get(i), queryMap, dimMap, config.getTenant());
+                        Path path1 = Paths.get(config.getJfrdir() + "/" + queryMap.get("guid") + ".tmp");
+                        Files.write(path1, result.getBytes());
+                    }
                     aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(result, EventHandler.ContextResponse.class));
                 }
                 end=start;
@@ -1206,5 +1211,18 @@ public class PerfGenieService implements IPerfGenieService {
         } catch (Exception e) {
             return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate" + e.getMessage(), queryMap, null));
         }
+    }
+
+    private String checkLocal(String guid){
+        try {
+            String filepath = config.getJfrdir() + "/" + guid + ".tmp";
+            File f = new File(filepath);
+            if (f.exists()) {
+                return new String(Files.readAllBytes(Paths.get(filepath)));
+            }
+        }catch (Exception e){
+            System.out.println("checkLocal:"+e.getMessage());
+        }
+        return null;
     }
 }
