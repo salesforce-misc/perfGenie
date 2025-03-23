@@ -26,8 +26,8 @@
 </div>
 <div id="tabs">
     <ul>
-        <li><a href="#zing">Side by side canary</a></li>
-        <li><a href="#perfswat">Week over week canary</a></li>
+        <li><a href="#zing">Side by side</a></li>
+        <li><a href="#perfswat">Week over week</a></li>
     </ul>
     <div id="zing" style="min-height: 900px; paddingt-left: 0px" class="row no-padding">
         <#include "content.ftl">

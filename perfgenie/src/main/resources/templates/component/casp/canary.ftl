@@ -31,7 +31,93 @@ border-collapse: collapse;
     to { transform: rotate(360deg); }
 }
 
+.ui-tabs .ui-tabs-nav li {
+    height: 25px; /* Adjust to desired height */
+}
+.ui-tabs .ui-tabs-nav li a {
+    padding-top: 1px; /* Adjust top padding */
+    padding-bottom: 1px; /* Adjust bottom padding */
+}
+#tabs ul li a {
+    height: 24px; /* Adjust to your desired height */
+    line-height: 24px; /* If you want the text vertically centered */
+    padding-top: 0px; /* Remove padding if it affects height */
+    padding-bottom: 1px; /* Remove padding if it affects height */
+    display: block; /* Ensure the height property is respected */
+}
+
+.overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+/* Popup window style with reduced outer spacing */
+#commentPopup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 15px; /* Reduced padding */
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    min-width: 800px; /* Increased window width */
+    min-height: 300px; /* Increased window height */
+    width: 60%; /* Adjusted width */
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* Input area */
+#commentText {
+    width: 100%;
+    height: 200px; /* Increased height */
+    margin-bottom: 0px; /* Reduced space between textarea and buttons */
+    resize: none; /* Prevent resizing */
+    padding:  0px;
+    box-sizing: border-box;
+}
+
+/* Button styling */
+.button-container button {
+    padding: 5px 5px;
+    margin-left: 10px; /* Space between buttons */
+    cursor: pointer;
+}
+
+/* Right-aligned button container */
+.button-container {
+    display: flex;
+    justify-content: flex-end; /* Align buttons to the right */
+    margin-top: 5px; /* Reduced space above the buttons */
+    margin-bottom: 0; /* Reduced bottom spacing below buttons */
+}
+
+/* Color radio buttons styling */
+.color-options {
+    margin-bottom: 5px;
+}
+
+.color-option {
+    margin-right: 15px;
+}
+
+/* Radio button labels with color */
+.color-option input[type="radio"] {
+    margin-right: 5px;
+}
 </style>
+
+
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -62,8 +148,15 @@ border-collapse: collapse;
     <link rel="stylesheet" href="/plugins/toastify/toastify.css">
     <link href="/plugins/font-awesome-4.7.0/css/font-awesome.min.css" rel="stylesheet">
 
+    <script src="/plugins/jquery.contextMenu.min.js"></script>
+    <script src="/plugins/jquery.ui.position.js"></script>
+    <link rel="stylesheet" href="/plugins/jquery.contextMenu.min.css">
+
+
 </head>
 <body>
+
+
 <#include "../../header.ftl">
 <#include "tabs.ftl">
 </html>

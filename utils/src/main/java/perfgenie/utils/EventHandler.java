@@ -690,6 +690,7 @@ public class EventHandler {
                 processEvent(tid, time, tstate + ";" + tname, stack, "Jstack");
             }
         }
+        //TODO: we might see multiple start and ends of the below
         final int startIndex = jstack.lastIndexOf("Java stack information for the threads listed above");
         final int endIndex = jstack.lastIndexOf("Found");
 

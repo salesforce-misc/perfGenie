@@ -17,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import perfgenie.utils.Canary;
+import perfgenie.utils.Utils;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,6 +34,13 @@ public class PerfGenieController {
     private final PerfGenieService service;
     private static final Pattern queryPatterns = Pattern.compile("(?<key>.*?)(?<value>(>|<|=|!=|~|!~|<=|>=).*)");
 
+    @PostMapping(path = {"/component/casp/v1/comment"})
+    public ResponseEntity<String> postComment(@RequestBody Comment comment) throws IOException{
+        comment.setCommentTime(System.currentTimeMillis());
+        service.addCanaryComment(Utils.toJson(comment),comment.getTimestamp(),comment.getCell());
+        return ResponseEntity.ok("Comment posted successfully!");
+    }
+
     @Autowired
     public PerfGenieController(PerfGenieService service) {
         this.service = service;
@@ -46,6 +54,15 @@ public class PerfGenieController {
         //final Map<String, String> queryMap = queryToMap(metadataQuery);
         return service.canaryTask(start,end);
     }
+    @GetMapping(path = {"/component/casp/v1/release"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String release(
+            @RequestParam(required = false, name = "start") final long start,
+            @RequestParam(required = false, name = "end") final long end,
+            @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
+        //final Map<String, String> queryMap = queryToMap(metadataQuery);
+        return service.releaseTask(start,end);
+    }
+
     @GetMapping(path = {"/component/casp/v1/canaryview"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String canaryview(
             @RequestParam(required = false, name = "start") final long start,
@@ -53,6 +70,16 @@ public class PerfGenieController {
             @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
         final Map<String, String> queryMap = queryToMap(metadataQuery);
         String res = service.getCanaryEvent(start,end);
+        return res;
+    }
+
+    @GetMapping(path = {"/component/casp/v1/canarycomments"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String canarycomments(
+            @RequestParam(required = false, name = "start") final long start,
+            @RequestParam(required = false, name = "end") final long end,
+            @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        String res = service.getCanaryComments(start,end, queryMap);
         return res;
     }
 
@@ -325,5 +352,57 @@ public class PerfGenieController {
             }
         }
         return queryMap;
+    }
+
+
+    public static class Comment {
+        private String comment;
+        private String color;
+
+        public String getCell() {
+            return cell;
+        }
+
+        public void setCell(String cell) {
+            this.cell = cell;
+        }
+
+        private String cell;
+
+        public Long getTimestamp() {
+            return timestamp;
+        }
+
+        public void setTimestamp(Long timestamp) {
+            this.timestamp = timestamp;
+        }
+
+        public Long getCommentTime() {
+            return commentTime;
+        }
+
+        public void setCommentTime(Long commentTime) {
+            this.commentTime = commentTime;
+        }
+
+        private Long commentTime;
+
+        private Long timestamp;
+        // Getters and Setters
+        public String getComment() {
+            return comment;
+        }
+
+        public void setComment(String comment) {
+            this.comment = comment;
+        }
+
+        public String getColor() {
+            return color;
+        }
+
+        public void setColor(String color) {
+            this.color = color;
+        }
     }
 }

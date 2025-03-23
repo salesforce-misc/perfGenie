@@ -8,6 +8,7 @@ package perfgenie.utils;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
+import com.mysql.cj.jdbc.SuspendableXAConnection;
 import com.salesforce.cantor.Cantor;
 import com.salesforce.cantor.Events;
 import com.salesforce.cantor.grpc.CantorOnGrpc;
@@ -811,6 +812,27 @@ public class EventStore {
         return null;
     }
 
+    public List getCanaryComments(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final boolean payload) throws IOException {
+        String namespace = PerfGenieConstants.getEventNameSpace(tenant, queryMap.get(PerfGenieConstants.SOURCE_KEY), config.getBackup_namespace());//queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getEventNameSpace(tenant, true, config.getBackup_namespace()) : PerfGenieConstants.getEventNameSpace(tenant, false, config.getBackup_namespace());
+        final List<Events.Event> results = this.cantor.events().get(
+                namespace,
+                start,
+                end,
+                queryMap,
+                dimMap,
+                payload
+        );
+        if (results.size() > 0) {
+            List<String> comments = new ArrayList<>();//timestamp payload map
+            results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
+            for (final Events.Event result : results) {
+                comments.add( new String(Utils.decompress(result.getPayload())));
+            }
+            return comments;
+        }
+        return null;
+    }
+
     public Map getOtherPayLoads(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final boolean payload) throws IOException {
         String namespace = PerfGenieConstants.getEventNameSpace(tenant, queryMap.get(PerfGenieConstants.SOURCE_KEY), config.getBackup_namespace());//queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getEventNameSpace(tenant, true, config.getBackup_namespace()) : PerfGenieConstants.getEventNameSpace(tenant, false, config.getBackup_namespace());
         final List<Events.Event> results = this.cantor.events().get(
@@ -845,6 +867,84 @@ public class EventStore {
                     tenant, instanceId, startTimestamp, endTimestamp, exception);
             throw new RuntimeException(String.format("Error retrieving events from database for: tenant=%s instance=%s", tenant, instanceId), exception);
         }
+    }
+
+    public List<String> loadGenieEventPayloads(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final boolean payload) throws IOException {
+        String namespace = PerfGenieConstants.getEventNameSpace(tenant, queryMap.get(PerfGenieConstants.SOURCE_KEY), config.getBackup_namespace());//queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getLargeEventNameSpace(tenant, true, config.getBackup_namespace()) : PerfGenieConstants.getLargeEventNameSpace(tenant, false, config.getBackup_namespace());
+        final List<Events.Event> results = this.cantor.events().get(
+                namespace,
+                start,
+                end,
+                queryMap,
+                dimMap,
+                payload
+        );
+
+        List<String> payloads = new ArrayList<>();
+        Map<String,Long> processedMap = new HashMap<>();
+
+        if (results.size() > 0) {
+            for (final Events.Event result : results) {
+                if(result.getMetadata().get("cell") != null) {
+                    if(result.getPayload() != null) {
+                        String key = result.getTimestampMillis() + result.getMetadata().get("cell");
+                        if (processedMap.containsKey(key) && result.getTimestampMillis() > processedMap.get(key)) { //consider latest
+                            payloads.add(new String(Utils.decompress(result.getPayload())));
+                            processedMap.put(key,result.getTimestampMillis());
+                        } else if(!processedMap.containsKey(key)){
+                            payloads.add(new String(Utils.decompress(result.getPayload())));
+                            processedMap.put(key,result.getTimestampMillis());
+                        }
+                    }
+                }
+            }
+        }
+
+        if (payloads.size() > 0) {
+            return payloads;
+        }
+        return null;
+    }
+
+    public int isEventExist(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException {
+        String namespace = PerfGenieConstants.getEventNameSpace(tenant, queryMap.get(PerfGenieConstants.SOURCE_KEY), config.getBackup_namespace());//queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getLargeEventNameSpace(tenant, true, config.getBackup_namespace()) : PerfGenieConstants.getLargeEventNameSpace(tenant, false, config.getBackup_namespace());
+        //System.out.println("0--->"+namespace);
+        final List<Events.Event> results = this.cantor.events().get(
+                namespace,
+                start,
+                end,
+                queryMap,
+                dimMap,
+                false
+        );
+        return results.size();
+    }
+
+    public Map<String, Map<String, String>> loadGenieProfilesAll(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final boolean payload) throws IOException {
+        String namespace = PerfGenieConstants.getLargeEventNameSpace(tenant, queryMap.get(PerfGenieConstants.SOURCE_KEY), config.getBackup_namespace());//queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getLargeEventNameSpace(tenant, true, config.getBackup_namespace()) : PerfGenieConstants.getLargeEventNameSpace(tenant, false, config.getBackup_namespace());
+        final List<Events.Event> results = this.cantor.events().get(
+                namespace,
+                start,
+                end,
+                queryMap,
+                dimMap,
+                payload
+        );
+
+        Map<String, Map<String, String>> profiles = new HashMap<>();
+
+        if (results.size() > 0) {
+            results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
+            for (final Events.Event result : results) {
+                profiles.put(result.getTimestampMillis() + "::" + result.getMetadata().get("guid"), result.getMetadata());
+            }
+            //return profiles;
+        }
+
+        if (profiles.size() > 0) {
+            return profiles;
+        }
+        return null;
     }
 
     public Map<Long, Map<String, String>> loadGenieProfiles(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final boolean payload) throws IOException {

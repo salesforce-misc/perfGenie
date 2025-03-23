@@ -9,6 +9,10 @@ package server;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
+import com.salesforce.cantor.Cantor;
+import com.salesforce.cantor.grpc.CantorOnGrpc;
+import com.salesforce.cantor.h2.CantorOnH2;
+import com.salesforce.cantor.mysql.CantorOnMysql;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import perfgenie.utils.*;
@@ -64,7 +68,7 @@ public class PerfGenieService implements IPerfGenieService {
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String substrate = System.getenv("SUBSTRATE");
-        if(substrate != null){
+        if (substrate != null) {
             logger.info(now.format(formatter) + " running canaryJob");
             canaryTask(0, 0);
         }
@@ -1054,6 +1058,28 @@ public class PerfGenieService implements IPerfGenieService {
         }
     }
 
+    public void addCanaryComment(String comment, Long timestamp, String cell) throws IOException {
+        String host = InetAddress.getLocalHost().getHostName();
+        String substrate = System.getenv("SUBSTRATE");
+        if (substrate != null || config.getStorageType().equals("grpc")) {
+            host = "perf-genie-tracker";
+        }
+        final Map<String, Double> dimMap = new HashMap<>();
+        final Map<String, String> queryMap = new HashMap<>();
+        queryMap.put("source", "genie");
+        queryMap.put("tenant-id", "canary");
+        queryMap.put("instance-id", host);//TODO this shold be input
+        queryMap.put("host", host);
+        queryMap.put("source-file", "canary");
+        queryMap.put("file-name", "canary-comment");//
+        queryMap.put("type", "canaryevent");
+        queryMap.put("name", "canary");
+        queryMap.put("guid", timestamp + cell);
+        queryMap.put("cell", cell);
+        System.out.println(timestamp + " 4--->" + Utils.toJson(queryMap));
+        eventStore.addGenieEvent(timestamp, queryMap, dimMap, comment, config.getTenant());
+    }
+
     public void addCanaryEvent(List<Object> record, long timestamp, String cell, String host) throws IOException {
         List<String> header = new ArrayList<>();
         header.add("timestamp:timestamp");
@@ -1084,16 +1110,55 @@ public class PerfGenieService implements IPerfGenieService {
         queryMap.put("cell", cell);
         Object logContext = aggregator.getLogContext();
         //if (!eventEsists(timestamp, host, record.get(2).toString())) {
-        eventStore.addGenieLargeEvent(timestamp, queryMap, dimMap, Utils.toJson(logContext), config.getTenant(), "genie");
+        System.out.println(timestamp + " 2--->" + Utils.toJson(queryMap));
+        eventStore.addGenieEvent(timestamp, queryMap, dimMap, Utils.toJson(logContext), config.getTenant());
         //}
     }
 
-    public synchronized String canaryTask(long start, long end) throws IOException{
+    public synchronized String releaseTask(long start, long end) throws IOException {
         int hr = Canary.getCurrentHourUTC();
         String host = InetAddress.getLocalHost().getHostName();
         String substrate = System.getenv("SUBSTRATE");
-        if(substrate != null){
-            host = "perf-genie-zingcanary";
+        boolean local = false;
+        if (substrate != null) {
+            host = "perf-genie-releasemonitor";
+        } else {
+            local = true;
+        }
+        List<List<Object>> response = new ArrayList<>();
+        for (int lastndays = (int) end; lastndays <= start; lastndays++) {
+            for (Map.Entry<String, Integer[]> entry : Canary.podsList.entrySet()) {
+                String cell = entry.getKey();
+                //Integer[] arr = entry.getValue();
+                long curTimeMillis = System.currentTimeMillis();
+                curTimeMillis = curTimeMillis - lastndays * 24 * 60 * 60 * 1000;
+                List<Object> record = Canary.processCellRelease(curTimeMillis, cell);
+
+                if (record != null && record.size() > 0) {
+                    if (record.size() > 0) {
+                        long eventTimestamp = Utils.roundEpochToMidnightUTC(curTimeMillis) + 24 * 60 * 60 * 1000;
+                        if (!eventEsists(eventTimestamp, host, cell) && (!local || cell.equals("ind86"))) {
+                            addCanaryEvent(record, eventTimestamp, cell, host);
+                            response.add(record);
+                        } else {
+                            System.out.println("skip release event exists:" + cell + " : " + eventTimestamp);
+                        }
+                    }
+                }
+            }
+        }
+        return Utils.toJson(response);
+    }
+
+    public synchronized String canaryTask(long start, long end) throws IOException {
+        int hr = Canary.getCurrentHourUTC();
+        String host = InetAddress.getLocalHost().getHostName();
+        String substrate = System.getenv("SUBSTRATE");
+        boolean local = false;
+        if (substrate != null) {
+            host = "perf-genie-tracker";
+        } else {
+            local = true;
         }
         List<List<Object>> response = new ArrayList<>();
         for (int lastndays = (int) end; lastndays <= start; lastndays++) {
@@ -1106,19 +1171,21 @@ public class PerfGenieService implements IPerfGenieService {
                     tmp1 = tmp1 - lastndays * 24 * 60 * 60 * 1000;
                     tmp2 = tmp2 - lastndays * 24 * 60 * 60 * 1000;
                     //check if event exists
-                    if (!eventEsists(tmp1, host, cell)) {
+                    if (!eventEsists(tmp2, host, cell) && (!local || cell.equals("ind86"))) {
                         System.out.println("process ------->:" + cell + " : " + arr[1] + " : " + hr);
                         List<Object> record = Canary.processCellCanary(tmp1, tmp2, cell);
-                        if(record != null && record.size() > 0 ){
-                            if(record.size() > 0 ){
-                                addCanaryEvent(record,tmp1,cell,host);
+                        if (record != null && record.size() > 0) {
+                            if (record.size() > 0) {
+                                addCanaryEvent(record, tmp2, cell, host);
                                 response.add(record);
                             }
+                        } else {
+                            System.out.println("skip record count:" + record.size() + " : " + cell + " : " + arr[1] + " : " + hr);
                         }
-                    }else{
+                    } else {
                         System.out.println("skip event exists:" + cell + " : " + arr[1] + " : " + hr);
                     }
-                }else {
+                } else {
                     System.out.println("skip:" + cell + " : " + arr[1] + " : " + hr);
                 }
             }
@@ -1134,19 +1201,18 @@ public class PerfGenieService implements IPerfGenieService {
         queryMap.put("name", "=canary");
         queryMap.put("tenant-id", "=canary");
         queryMap.put("cell", "=" + cell);
-        queryMap.put("instance-id", "="+host);
-        queryMap.put("host", "="+host);
-
+        queryMap.put("instance-id", "=" + host);
+        queryMap.put("host", "=" + host);
         try {
-            profiles = eventStore.loadGenieProfiles(config.getTenant(), timestamp, timestamp, queryMap, dimMap, false);
+            int count = eventStore.isEventExist(config.getTenant(), timestamp - 1, timestamp + 1, queryMap, dimMap);
+            System.out.println(timestamp + " 1--->" + count + ":" + Utils.toJson(queryMap));
+            if (count > 0) {
+                return true;
+            }
         } catch (Exception e) {
             return false;
         }
-        if (profiles == null || profiles.size() < 1) {
-            return false;
-        } else {
-            return true;
-        }
+        return false;
     }
 
     public static String convertEpochToDateString(long epochMilli, String pattern, String timezone) {
@@ -1157,23 +1223,26 @@ public class PerfGenieService implements IPerfGenieService {
     }
 
     public String getCanaryEvent(long start, long end) throws IOException {
-        Map<Long, Map<String, String>> profiles;
+        List<String> events;
         String host = InetAddress.getLocalHost().getHostName();
         String substrate = System.getenv("SUBSTRATE");
-        if(substrate != null){
-            host = "perf-genie-zingcanary";
+        if (substrate != null || config.getStorageType().equals("grpc")) {
+            host = "perf-genie-tracker";
         }
         final Map<String, String> dimMap = new HashMap<>();
         final Map<String, String> queryMap = new HashMap<>();
         queryMap.put("source", "=genie");
         queryMap.put("name", "=canary");
         queryMap.put("tenant-id", "=canary");
-        queryMap.put("instance-id", "="+host);
-        queryMap.put("host", "="+host);
+        queryMap.put("instance-id", "=" + host);
+        queryMap.put("host", "=" + host);
+        queryMap.put("file-name", "=canary-context");//
+        queryMap.put("type", "=canaryevent");
+        queryMap.put("guid", "=" + start + queryMap.get("cell"));
         try {
             final EventHandler aggregator = new EventHandler();
-            end =  Instant.now().toEpochMilli() + 60 * 60 * 1000;
-            for(int j=5; j<=40; j+=5) {
+            end = Instant.now().toEpochMilli() + 60 * 60 * 1000;
+            for (int j = 5; j <= 5; j += 5) {
                 start = end - 5 * 24 * 60 * 60 * 1000;
                 String pattern = "yyyy-MM-dd HH:mm:ss";
                 String timezone = "UTC";
@@ -1182,29 +1251,114 @@ public class PerfGenieService implements IPerfGenieService {
                 String dateString2 = convertEpochToDateString(end, pattern, timezone);
                 System.out.println(dateString1 + ":" + dateString2);
                 queryMap.remove("guid");
-                profiles = eventStore.loadGenieProfiles(config.getTenant(), start, end, queryMap, dimMap, false);
-                if (profiles == null || profiles.size() < 1) {
+                events = eventStore.loadGenieEventPayloads(config.getTenant(), start, end, queryMap, dimMap, true);
+                if (events == null || events.size() < 1) {
                     //System.out.println("Skip");
-                    end=start;
+                    end = start;
                     continue;
                     //return Utils.toJson(new EventHandler.JfrParserResponse(null, "no profiles found for the given time range", queryMap, null));
                 }
-                List<Long> tosort = new ArrayList<>();
-                for (Long timestamp : profiles.keySet()) {
-                    tosort.add(timestamp);
+                for (int i = 0; i < events.size(); i++) {
+                    String payload = events.get(i);
+                    aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(payload, EventHandler.ContextResponse.class));
+                }
+                end = start;
+            }
+            return Utils.toJson(aggregator.getLogContext());
+        } catch (Exception e) {
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate" + e.getMessage(), queryMap, null));
+        }
+    }
+
+    public String getCanaryComments(long start, long end, final Map<String, String> queryMap) throws IOException {
+        Map<Long, PerfGenieController.Comment> comments = new HashMap<>();
+        String host = InetAddress.getLocalHost().getHostName();
+        String substrate = System.getenv("SUBSTRATE");
+        if (substrate != null || config.getStorageType().equals("grpc")) {
+            host = "perf-genie-tracker";
+        }
+
+        final Map<String, String> dimMap = new HashMap<>();
+        queryMap.put("source", "=genie");
+        queryMap.put("name", "=canary");
+        queryMap.put("tenant-id", "=canary");
+        queryMap.put("instance-id", "=" + host);
+        queryMap.put("host", "=" + host);
+        queryMap.put("type", "=canaryevent");
+        queryMap.put("file-name", "=canary-comment");
+
+        try {
+            String pattern = "yyyy-MM-dd HH:mm:ss";
+            String timezone = "UTC";
+            List<String> events = eventStore.getCanaryComments(config.getTenant(), start, end, queryMap, dimMap, true);
+            List<Long> tosort = new ArrayList<>();
+            for (int i = 0; i < events.size(); i++) {
+                PerfGenieController.Comment comment = (PerfGenieController.Comment) Utils.readValue(events.get(i), PerfGenieController.Comment.class);
+                comments.put(comment.getCommentTime(), comment);
+                tosort.add(comment.getCommentTime());
+            }
+            Collections.sort(tosort);
+            Map<Long, PerfGenieController.Comment> commentsRes = new HashMap<>();
+            for (int i = 0; i < tosort.size(); i++) {
+                commentsRes.put(tosort.get(i),comments.get(tosort.get(i)));
+                System.out.println(convertEpochToDateString(tosort.get(i), pattern, timezone));
+            }
+            return Utils.toJson(commentsRes);
+        } catch (Exception e) {
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to get comments" + e.getMessage(), queryMap, null));
+        }
+    }
+
+    public String getCanaryEventold(long start, long end) throws IOException {
+        Map<String, Map<String, String>> profiles;
+        String host = InetAddress.getLocalHost().getHostName();
+        String substrate = System.getenv("SUBSTRATE");
+        if (substrate != null || config.getStorageType().equals("grpc")) {
+            host = "perf-genie-zingcanary";
+        }
+        final Map<String, String> dimMap = new HashMap<>();
+        final Map<String, String> queryMap = new HashMap<>();
+        queryMap.put("source", "=genie");
+        queryMap.put("name", "=canary");
+        queryMap.put("tenant-id", "=canary");
+        queryMap.put("instance-id", "=" + host);
+        queryMap.put("host", "=" + host);
+        try {
+            final EventHandler aggregator = new EventHandler();
+            end = Instant.now().toEpochMilli() + 60 * 60 * 1000;
+            for (int j = 5; j <= 40; j += 5) {
+                start = end - 5 * 24 * 60 * 60 * 1000;
+                String pattern = "yyyy-MM-dd HH:mm:ss";
+                String timezone = "UTC";
+
+                String dateString1 = convertEpochToDateString(start, pattern, timezone);
+                String dateString2 = convertEpochToDateString(end, pattern, timezone);
+                System.out.println(dateString1 + ":" + dateString2);
+                queryMap.remove("guid");
+                profiles = eventStore.loadGenieProfilesAll(config.getTenant(), start, end, queryMap, dimMap, true);
+                if (profiles == null || profiles.size() < 1) {
+                    //System.out.println("Skip");
+                    end = start;
+                    continue;
+                    //return Utils.toJson(new EventHandler.JfrParserResponse(null, "no profiles found for the given time range", queryMap, null));
+                }
+                List<String> tosort = new ArrayList<>();
+                for (String key : profiles.keySet()) {
+                    tosort.add(key);
                 }
                 Collections.sort(tosort);
                 for (int i = 0; i < tosort.size(); i++) {
-                    queryMap.put("guid", profiles.get(tosort.get(i)).get("guid"));
+                    String[] array = tosort.get(i).split("::");
+                    queryMap.put("guid", array[1]);
                     String result = checkLocal(queryMap.get("guid"));
-                    if(result == null){
-                        result = eventStore.getGenieLargeEvent(tosort.get(i), tosort.get(i), queryMap, dimMap, config.getTenant());
+                    if (result == null) {
+                        result = eventStore.getGenieLargeEvent(Long.parseLong(array[0]), Long.parseLong(array[0]), queryMap, dimMap, config.getTenant());
                         Path path1 = Paths.get(config.getJfrdir() + "/" + queryMap.get("guid") + ".tmp");
                         Files.write(path1, result.getBytes());
                     }
                     aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(result, EventHandler.ContextResponse.class));
                 }
-                end=start;
+                end = start;
 
             }
             return Utils.toJson(aggregator.getLogContext());
@@ -1213,16 +1367,155 @@ public class PerfGenieService implements IPerfGenieService {
         }
     }
 
-    private String checkLocal(String guid){
+    private String checkLocal(String guid) {
         try {
             String filepath = config.getJfrdir() + "/" + guid + ".tmp";
             File f = new File(filepath);
             if (f.exists()) {
                 return new String(Files.readAllBytes(Paths.get(filepath)));
             }
-        }catch (Exception e){
-            System.out.println("checkLocal:"+e.getMessage());
+        } catch (Exception e) {
+            System.out.println("checkLocal:" + e.getMessage());
         }
         return null;
+    }
+
+    public static void main(String[] args) {
+        try {
+            long start = 0;
+            long end = 0;
+            String cell = "ind86";
+
+            Config config = new Config();
+            Cantor cantor = null;
+            if (config.getStorageType().equals("mySQL")) {
+                cantor = new CantorOnMysql(config.getMySQL_host(), config.getMySQL_port(), config.getMySQL_user(), config.getMySQL_pwd());
+            } else if (config.getStorageType().equals("grpc")) {
+                cantor = new CantorOnGrpc(config.getGrpc_target());
+            } else {
+                cantor = new CantorOnH2(config.getH2dir());//default
+            }
+            CustomJfrParser parser = new CustomJfrParser(2);
+            EventStore eventStore = new EventStore(cantor, config);
+            PerfGenieService service = new PerfGenieService(eventStore, parser, config);
+            String substrate = System.getenv("SUBSTRATE");
+            String host = InetAddress.getLocalHost().getHostName();
+            if (args.length == 3 || args.length == 4 || args.length == 5) {
+                if (substrate != null) {
+                    host = "perf-genie-tracker";
+                }
+                cell = args[0];
+                start = Long.parseLong(args[1]);
+                end = Long.parseLong(args[2]);
+                int numDays = 1;
+                int numDaysSt = 0;
+                if (args.length == 4 || args.length == 5) {
+                    numDays = Integer.parseInt(args[3]);
+                }
+                if (args.length == 5) {
+                    numDaysSt = Integer.parseInt(args[4]);
+                }
+                for (int i = numDaysSt; i < numDays; i++) {
+                    long curstart = start - i * 24 * 60 * 60 * 1000;
+                    long curend = end - i * 24 * 60 * 60 * 1000;
+                    try {
+                        if (!service.eventEsists(curend, host, cell)) {
+                            List<Object> record = test1(curstart, curend, cell);
+                            if (record.size() > 0) {
+                                service.addCanaryEvent(record, curend, cell, host);
+                                System.out.println(cell + ":" + i + "----> record count " + record.size());
+                            } else {
+                                System.out.println(cell + ":" + i + "----> skip record count " + record.size());
+                            }
+                        } else {
+                            System.out.println(cell + ":" + i + "---> Event exists");
+                        }
+                    } catch (Exception e) {
+                        System.out.println(cell + "----> Exception " + i + ":" + cell);
+                    }
+                }
+            } else if (args.length == 2) {
+                if (substrate != null) {
+                    host = "perf-genie-releasemonitor";
+                }
+                cell = args[0];
+                start = Long.parseLong(args[1]);
+                long eventTimestamp = Utils.roundEpochToMidnightUTC(start);
+                if (!service.eventEsists(eventTimestamp, host, cell)) {
+                    List<Object> record = test2(start, cell);
+                    if (record.size() > 0) {
+                        service.addCanaryEvent(record, eventTimestamp, cell, host);
+                    } else {
+                        System.out.println(cell + "----> skip record count " + record.size());
+                    }
+                } else {
+                    System.out.println(cell + "----> Event exists");
+                }
+            } else {
+                System.out.println("invalid arg count");
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public static List<Object> test1(long start, long end, String cell) {
+        System.out.println("test1 start");
+        try {
+            List<Object> record = Canary.processCellCanary(start, end, cell);
+            System.out.println(record.size());
+            return record;
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+        System.out.println("test1 end");
+        return new ArrayList<Object>();
+    }
+
+    public static List<Object> test2(long start, String cell) {
+        System.out.println("test2 start");
+        try {
+            List<Object> record = Canary.processCellRelease(start, cell);
+            System.out.println(record.size());
+            return record;
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+        System.out.println("test2 end");
+        return new ArrayList<Object>();
+    }
+
+    public synchronized String releaseUploadTask(long start, long end) throws IOException {
+        int hr = Canary.getCurrentHourUTC();
+        String host = InetAddress.getLocalHost().getHostName();
+        String substrate = System.getenv("SUBSTRATE");
+        if (substrate != null) {
+            host = "perf-genie-releasemonitor";
+        }
+        List<List<Object>> response = new ArrayList<>();
+        for (int lastndays = (int) end; lastndays <= start; lastndays++) {
+            for (Map.Entry<String, Integer[]> entry : Canary.podsList.entrySet()) {
+                String cell = entry.getKey();
+                if (!cell.equals("ind86")) {
+                    continue;
+                }
+                long curTimeMillis = System.currentTimeMillis() - 4 * 60 * 60 * 1000;
+                curTimeMillis = curTimeMillis - lastndays * 24 * 60 * 60 * 1000;
+                List<Object> record = Canary.processCellRelease(curTimeMillis, cell);
+
+                if (record != null && record.size() > 0) {
+                    if (record.size() > 0) {
+                        long eventTimestamp = Utils.roundEpochToMidnightUTC(curTimeMillis);
+                        if (!eventEsists(eventTimestamp, host, cell)) {
+                            addCanaryEvent(record, eventTimestamp, cell, host);
+                            response.add(record);
+                        } else {
+                            System.out.println("skip release event exists:" + cell + " : " + eventTimestamp);
+                        }
+                    }
+                }
+            }
+        }
+        return Utils.toJson(response);
     }
 }

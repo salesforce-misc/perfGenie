@@ -20,6 +20,7 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
@@ -240,5 +241,17 @@ public class Utils {
                 System.err.println("Failed to create directory: " + e.getMessage());
             }
         }
+    }
+
+    public static long roundEpochToMidnightUTC(long epochMillis) {
+        // Convert epoch millis to ZonedDateTime in UTC
+        ZonedDateTime dateTime = Instant.ofEpochMilli(epochMillis)
+                .atZone(ZoneId.of("UTC"));
+
+        // Get the start of the day (12 AM) in UTC
+        ZonedDateTime midnight = dateTime.toLocalDate().atStartOfDay(ZoneId.of("UTC"));
+
+        // Return the epoch milliseconds of the midnight time
+        return midnight.toInstant().toEpochMilli();
     }
 }
