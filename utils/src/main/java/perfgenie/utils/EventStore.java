@@ -180,12 +180,12 @@ public class EventStore {
                 //addGenieEventMetaData(timestamp, queryMap, dimMap, config.getTenant()); // ? removed, using event name space for getting metadata
 
                 this.cantor.events().store(
-                        PerfGenieConstants.getEventNameSpace(tenant, PerfGenieConstants.PERFGENIE, config.getBackup_namespace()),
+                        PerfGenieConstants.getEventNameSpace(tenant, queryMap.get("source"), config.getBackup_namespace()),
                         timestamp,
                         queryMap,
                         dimMap,
                         payload != null ? Utils.compress(payload.getBytes(StandardCharsets.UTF_8)) : null);
-                logger.info("addEvent successfully stored even in database under namespace: " + PerfGenieConstants.getEventNameSpace(tenant, PerfGenieConstants.PERFGENIE, config.getBackup_namespace()) + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
+                logger.info("addEvent successfully stored even in database under namespace: " + PerfGenieConstants.getEventNameSpace(tenant, queryMap.get("source"), config.getBackup_namespace()) + "time ms: " + timer.stop().elapsed(TimeUnit.MILLISECONDS));
             } else {
                 logger.error("addEvent missing value of " + PerfGenieConstants.TENANT_KEY);
                 return false;
@@ -869,6 +869,140 @@ public class EventStore {
         }
     }
 
+    public boolean backupGenieEventAndComments(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final boolean payload) throws IOException {
+        String namespace = PerfGenieConstants.getEventNameSpace(tenant, queryMap.get(PerfGenieConstants.SOURCE_KEY), config.getBackup_namespace());
+        final List<Events.Event> results = this.cantor.events().get(
+                namespace,
+                start,
+                end,
+                queryMap,
+                dimMap,
+                payload
+        );
+        if (results.size() > 0) {
+            for (final Events.Event result : results) {
+                Map<String,String> copy = new HashMap<>();
+                Map<String,String> map =  result.getMetadata();
+                for (String key : map.keySet()) {
+                    copy.put(key,map.get(key));
+                }
+                copy.put("source","gold");
+                final List<Events.Event> results1 = this.cantor.events().get(
+                        config.getBackup_namespace(),
+                        result.getTimestampMillis(),
+                        result.getTimestampMillis(),
+                        copy,
+                        dimMap,
+                        payload
+                );
+                if(results1.size() < 1) {
+                    logger.info("backup canary event : " +  ":" + copy.toString());
+                    this.cantor.events().store(
+                            config.getBackup_namespace(),
+                            result.getTimestampMillis(),
+                            copy,
+                            result.getDimensions(),
+                            result.getPayload());
+                }else{
+                    logger.info("skip backup, event exist: " + result.getTimestampMillis() + ":" + copy.toString());
+                }
+            }
+            return true;
+        }else{
+            logger.info("backup source events not found : " + queryMap.toString());
+            return false;
+        }
+    }
+
+
+    public CanaryEvents loadGenieEventAndCommentPayloads(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final boolean payload) throws IOException {
+        String namespace = PerfGenieConstants.getEventNameSpace(tenant, queryMap.get(PerfGenieConstants.SOURCE_KEY), config.getBackup_namespace());//queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getLargeEventNameSpace(tenant, true, config.getBackup_namespace()) : PerfGenieConstants.getLargeEventNameSpace(tenant, false, config.getBackup_namespace());
+        final List<Events.Event> results = this.cantor.events().get(
+                namespace,
+                start,
+                end,
+                queryMap,
+                dimMap,
+                payload
+        );
+
+        List<String> list = new ArrayList<>();
+        Map<String,String> payloads = new HashMap<>();
+        Map<String,Long> processedMap = new HashMap<>();
+        Map<String,Integer> commentCount = new HashMap<>();
+        Map<String,String> commentColor = new HashMap<>();
+        Map<String,Long> commentOrder = new HashMap<>();
+        if (results.size() > 0) {
+            for (final Events.Event result : results) {
+                if(result.getMetadata().get("cell") != null) {
+                    if(result.getPayload() != null) {
+                        String key = result.getTimestampMillis() + result.getMetadata().get("cell");
+                        if(result.getMetadata().get("file-name").equals("canary-context")) {
+                            if (processedMap.containsKey(key) && result.getTimestampMillis() > processedMap.get(key)) { //consider latest
+                                payloads.put(key,new String(Utils.decompress(result.getPayload())));
+                                processedMap.put(key, result.getTimestampMillis());
+                            } else if (!processedMap.containsKey(key)) {
+                                payloads.put(key,new String(Utils.decompress(result.getPayload())));
+                                processedMap.put(key, result.getTimestampMillis());
+                            }
+                        }else{
+                            if(commentColor.containsKey(key)) {
+                                Long ctime = Long.parseLong(result.getMetadata().get("ctime"));
+                                if(ctime > commentOrder.get(key)){
+                                    commentColor.put(key,result.getMetadata().get("color"));
+                                    commentOrder.put(key,ctime);
+                                }
+                            }else{
+                                commentColor.put(key,result.getMetadata().get("color"));
+                                commentOrder.put(key,Long.parseLong(result.getMetadata().get("ctime")));
+                            }
+
+                            if(commentCount.containsKey(key)){
+                                commentCount.put(key,(commentCount.get(key)+ 1));
+                            }else {
+                                commentCount.put(key, 1);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        payloads.forEach((key, value) -> {
+            list.add(value);
+        });
+        commentCount.forEach((key, value) -> {
+            commentColor.put(key,value +":"+ commentColor.get(key));
+        });
+        if (list.size() > 0) {
+            CanaryEvents response = new CanaryEvents();
+            response.setCounts(commentColor);
+            response.setEvents(list);
+            return response;
+        }
+        return null;
+    }
+    public static class CanaryEvents{
+        public List<String> getEvents() {
+            return events;
+        }
+
+        public void setEvents(List<String> events) {
+            this.events = events;
+        }
+
+        List<String> events;
+
+        public Map<String, String> getCounts() {
+            return counts;
+        }
+
+        public void setCounts(Map<String, String> counts) {
+            this.counts = counts;
+        }
+
+        Map<String,String> counts;
+
+    }
     public List<String> loadGenieEventPayloads(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final boolean payload) throws IOException {
         String namespace = PerfGenieConstants.getEventNameSpace(tenant, queryMap.get(PerfGenieConstants.SOURCE_KEY), config.getBackup_namespace());//queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getLargeEventNameSpace(tenant, true, config.getBackup_namespace()) : PerfGenieConstants.getLargeEventNameSpace(tenant, false, config.getBackup_namespace());
         final List<Events.Event> results = this.cantor.events().get(

@@ -37,7 +37,7 @@ public class PerfGenieController {
     @PostMapping(path = {"/component/casp/v1/comment"})
     public ResponseEntity<String> postComment(@RequestBody Comment comment) throws IOException{
         comment.setCommentTime(System.currentTimeMillis());
-        service.addCanaryComment(Utils.toJson(comment),comment.getTimestamp(),comment.getCell());
+        service.addCanaryComment(Utils.toJson(comment),comment.getTimestamp(),comment.getCell(),comment.getColor(),comment.getCommentTime());
         return ResponseEntity.ok("Comment posted successfully!");
     }
 
@@ -70,6 +70,16 @@ public class PerfGenieController {
             @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
         final Map<String, String> queryMap = queryToMap(metadataQuery);
         String res = service.getCanaryEvent(start,end);
+        return res;
+    }
+
+    @GetMapping(path = {"/component/casp/v1/canarybackup"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String canarybackup(
+            @RequestParam(required = false, name = "start") final long start,
+            @RequestParam(required = false, name = "end") final long end,
+            @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        String res = service.backupCanaryEvent(start,end);
         return res;
     }
 

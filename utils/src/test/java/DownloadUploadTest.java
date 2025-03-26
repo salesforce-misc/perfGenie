@@ -43,6 +43,16 @@ public class DownloadUploadTest {
         assertEquals(original, downloaded);
     }
 
+    @Test
+    public void testJstackParsing() throws IOException {
+        final String original = Resources.toString(Resources.getResource("jstack.txt"), StandardCharsets.UTF_8);
+        final Map<String, String> dimMap = new HashMap<>();
+        dimMap.put("source","genie");
+        eventStore.addGenieLargeEvent(timestamp, dimMap, new HashMap<>(), original, "dev", "genie");
+        final String downloaded = eventStore.getGenieLargeEvent(timestamp, timestamp, dimMap, new HashMap<>(),"dev");
+        assertEquals(original, downloaded);
+    }
+
     @AfterSuite
     public void cleanup() throws IOException {
     }

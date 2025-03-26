@@ -1058,7 +1058,8 @@ public class PerfGenieService implements IPerfGenieService {
         }
     }
 
-    public void addCanaryComment(String comment, Long timestamp, String cell) throws IOException {
+    public static String canarySource = "gold";
+    public void addCanaryComment(String comment, Long timestamp, String cell, String color, Long ctime) throws IOException {
         String host = InetAddress.getLocalHost().getHostName();
         String substrate = System.getenv("SUBSTRATE");
         if (substrate != null || config.getStorageType().equals("grpc")) {
@@ -1066,7 +1067,7 @@ public class PerfGenieService implements IPerfGenieService {
         }
         final Map<String, Double> dimMap = new HashMap<>();
         final Map<String, String> queryMap = new HashMap<>();
-        queryMap.put("source", "genie");
+        queryMap.put("source", canarySource);
         queryMap.put("tenant-id", "canary");
         queryMap.put("instance-id", host);//TODO this shold be input
         queryMap.put("host", host);
@@ -1076,6 +1077,9 @@ public class PerfGenieService implements IPerfGenieService {
         queryMap.put("name", "canary");
         queryMap.put("guid", timestamp + cell);
         queryMap.put("cell", cell);
+        queryMap.put("color", color);
+        queryMap.put("ctime", String.valueOf(ctime));
+
         System.out.println(timestamp + " 4--->" + Utils.toJson(queryMap));
         eventStore.addGenieEvent(timestamp, queryMap, dimMap, comment, config.getTenant());
     }
@@ -1093,7 +1097,7 @@ public class PerfGenieService implements IPerfGenieService {
         header.add("zuluCount:number");
         final Map<String, Double> dimMap = new HashMap<>();
         final Map<String, String> queryMap = new HashMap<>();
-        queryMap.put("source", "genie");
+        queryMap.put("source", canarySource);
         queryMap.put("tenant-id", "canary");
         queryMap.put("instance-id", host);
         queryMap.put("host", host);
@@ -1197,7 +1201,7 @@ public class PerfGenieService implements IPerfGenieService {
         Map<Long, Map<String, String>> profiles;
         final Map<String, String> dimMap = new HashMap<>();
         final Map<String, String> queryMap = new HashMap<>();
-        queryMap.put("source", "=genie");
+        queryMap.put("source", "="+canarySource);
         queryMap.put("name", "=canary");
         queryMap.put("tenant-id", "=canary");
         queryMap.put("cell", "=" + cell);
@@ -1222,8 +1226,11 @@ public class PerfGenieService implements IPerfGenieService {
         return localDateTime.format(formatter);
     }
 
+
     public String getCanaryEvent(long start, long end) throws IOException {
         List<String> events;
+        Map<String, String> counts;
+        EventStore.CanaryEvents response;
         String host = InetAddress.getLocalHost().getHostName();
         String substrate = System.getenv("SUBSTRATE");
         if (substrate != null || config.getStorageType().equals("grpc")) {
@@ -1231,18 +1238,18 @@ public class PerfGenieService implements IPerfGenieService {
         }
         final Map<String, String> dimMap = new HashMap<>();
         final Map<String, String> queryMap = new HashMap<>();
-        queryMap.put("source", "=genie");
+        queryMap.put("source", "="+canarySource);
         queryMap.put("name", "=canary");
         queryMap.put("tenant-id", "=canary");
         queryMap.put("instance-id", "=" + host);
         queryMap.put("host", "=" + host);
-        queryMap.put("file-name", "=canary-context");//
+        //queryMap.put("file-name", "=canary-context");//
         queryMap.put("type", "=canaryevent");
-        queryMap.put("guid", "=" + start + queryMap.get("cell"));
         try {
             final EventHandler aggregator = new EventHandler();
+            Map<String, String> allcounts = new HashMap<>();
             end = Instant.now().toEpochMilli() + 60 * 60 * 1000;
-            for (int j = 5; j <= 5; j += 5) {
+            for (int j = 5; j <= 30; j += 5) {
                 start = end - 5 * 24 * 60 * 60 * 1000;
                 String pattern = "yyyy-MM-dd HH:mm:ss";
                 String timezone = "UTC";
@@ -1251,23 +1258,96 @@ public class PerfGenieService implements IPerfGenieService {
                 String dateString2 = convertEpochToDateString(end, pattern, timezone);
                 System.out.println(dateString1 + ":" + dateString2);
                 queryMap.remove("guid");
-                events = eventStore.loadGenieEventPayloads(config.getTenant(), start, end, queryMap, dimMap, true);
-                if (events == null || events.size() < 1) {
+                response = eventStore.loadGenieEventAndCommentPayloads(config.getTenant(), start, end, queryMap, dimMap, true);
+                if (response == null || response.getEvents().size() < 1) {
                     //System.out.println("Skip");
                     end = start;
                     continue;
                     //return Utils.toJson(new EventHandler.JfrParserResponse(null, "no profiles found for the given time range", queryMap, null));
                 }
+                events = response.getEvents();
+                counts = response.getCounts();
+                counts.forEach((key, value) -> {
+                    allcounts.put(key, value);
+                });
+
                 for (int i = 0; i < events.size(); i++) {
                     String payload = events.get(i);
-                    aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(payload, EventHandler.ContextResponse.class));
+                    try {
+                        aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(payload, EventHandler.ContextResponse.class));
+                    }catch (Exception e){
+                        System.out.println("skip:"+payload);
+                    }
                 }
                 end = start;
             }
-            return Utils.toJson(aggregator.getLogContext());
+            return Utils.toJson(new canaryResponse(aggregator.getLogContext(), allcounts));
         } catch (Exception e) {
             return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate" + e.getMessage(), queryMap, null));
         }
+    }
+
+    public String backupCanaryEvent(long start, long end) throws IOException {
+        String host = InetAddress.getLocalHost().getHostName();
+        String substrate = System.getenv("SUBSTRATE");
+        if (substrate != null || config.getStorageType().equals("grpc")) {
+            host = "perf-genie-tracker";
+        }
+        final Map<String, String> dimMap = new HashMap<>();
+        final Map<String, String> queryMap = new HashMap<>();
+        queryMap.put("source", "=genie");//get from genie and put in gold
+        queryMap.put("name", "=canary");
+        queryMap.put("tenant-id", "=canary");
+        queryMap.put("instance-id", "=" + host);
+        queryMap.put("host", "=" + host);
+        queryMap.put("type", "=canaryevent");
+        try {
+            end = Instant.now().toEpochMilli() + 60 * 60 * 1000;
+            for (int j = 5; j <= 30; j += 5) {
+                start = end - 5 * 24 * 60 * 60 * 1000;
+                String pattern = "yyyy-MM-dd HH:mm:ss";
+                String timezone = "UTC";
+                String dateString1 = convertEpochToDateString(start, pattern, timezone);
+                String dateString2 = convertEpochToDateString(end, pattern, timezone);
+                boolean ret = eventStore.backupGenieEventAndComments(config.getTenant(), start, end, queryMap, dimMap, true);
+                if (ret) {
+                    System.out.println( "Backup success" + dateString1 + ":" + dateString2);
+                    end = start;
+                    continue;
+                }
+                end = start;
+            }
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "backup Success", queryMap, null));
+        } catch (Exception e) {
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate" + e.getMessage(), queryMap, null));
+        }
+    }
+
+    class canaryResponse {
+        canaryResponse(Object entry, Map<String, String> counts) {
+            this.entry = entry;
+            this.counts = counts;
+        }
+
+        public Object getEntry() {
+            return entry;
+        }
+
+        public void setEntry(Object entry) {
+            this.entry = entry;
+        }
+
+        Object entry;
+
+        public Map<String, String> getCounts() {
+            return counts;
+        }
+
+        public void setCounts(Map<String, String> counts) {
+            this.counts = counts;
+        }
+
+        Map<String, String> counts;
     }
 
     public String getCanaryComments(long start, long end, final Map<String, String> queryMap) throws IOException {
@@ -1279,7 +1359,7 @@ public class PerfGenieService implements IPerfGenieService {
         }
 
         final Map<String, String> dimMap = new HashMap<>();
-        queryMap.put("source", "=genie");
+        queryMap.put("source", "="+canarySource);
         queryMap.put("name", "=canary");
         queryMap.put("tenant-id", "=canary");
         queryMap.put("instance-id", "=" + host);
@@ -1300,7 +1380,7 @@ public class PerfGenieService implements IPerfGenieService {
             Collections.sort(tosort);
             Map<Long, PerfGenieController.Comment> commentsRes = new HashMap<>();
             for (int i = 0; i < tosort.size(); i++) {
-                commentsRes.put(tosort.get(i),comments.get(tosort.get(i)));
+                commentsRes.put(tosort.get(i), comments.get(tosort.get(i)));
                 System.out.println(convertEpochToDateString(tosort.get(i), pattern, timezone));
             }
             return Utils.toJson(commentsRes);
@@ -1318,7 +1398,7 @@ public class PerfGenieService implements IPerfGenieService {
         }
         final Map<String, String> dimMap = new HashMap<>();
         final Map<String, String> queryMap = new HashMap<>();
-        queryMap.put("source", "=genie");
+        queryMap.put("source", "="+canarySource);
         queryMap.put("name", "=canary");
         queryMap.put("tenant-id", "=canary");
         queryMap.put("instance-id", "=" + host);

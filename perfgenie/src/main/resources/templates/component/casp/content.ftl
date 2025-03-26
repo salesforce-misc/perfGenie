@@ -19,10 +19,13 @@
         <label class="color-option" style="color: green;">
             <input type="radio" name="color" value="green"> Green
         </label>
+        <label class="color-option" style="color: black;">
+            <input type="radio" name="color" value="black"> Black
+        </label>
     </div>
 
     <!-- Textarea for the comment -->
-    <textarea id="commentText" placeholder="Type your comment here..."></textarea>
+    <textarea id="commentText" placeholder="Your name: Type your comment here..."></textarea>
 
     <!-- Button container for submit/cancel buttons aligned to the right -->
     <div class="button-container">
@@ -52,19 +55,23 @@
 
         // Submit the comment and selected color
         $("#submitComment").click(function() {
-            const comment = $("#commentText").val();
-            const selectedColor = $("input[name='color']:checked").val();
+            let comment = $("#commentText").val();
+            comment = comment.replaceAll('\n',"<br>");
+            let selectedColor = $("input[name='color']:checked").val();
             let cell = $('#cell').val();
             let timestamp = $('#resulttime').val();
             // If comment and color are selected, close popup
-            if (comment.trim() !== "" && selectedColor) {
+            if(!selectedColor){
+                selectedColor = "black";
+            }
+            if (comment.trim() !== "") {
                 //alert("Comment submitted: " + comment + "\nSelected Color: " + selectedColor);
 
-                postComment(window.location.hostname+":"+comment, selectedColor, cell, timestamp);
+                postComment(comment, selectedColor, cell, timestamp);
                 $("#overlay").fadeOut();
                 $("#commentPopup").fadeOut();
             } else {
-                alert("Please enter a comment and select a color.");
+                toastMessage(toastType.INFO,"Please enter a comment");
             }
         });
 
@@ -95,8 +102,9 @@
         showSpinner();
         $.ajax({
             url: URL, success: function (result) {
-                if(result != undefined && result.records != undefined && result.records.canary != undefined && result.records.canary[1] != undefined) {
-                    canaryContextArray = result.records.canary[1];
+                if(result != undefined && result.entry != undefined  && result.entry.records != undefined && result.entry.records.canary != undefined && result.entry.records.canary[1] != undefined) {
+                    canaryContextArray = result.entry.records.canary[1];
+                    canaryCommentCounts = result.counts;
                     showCanaryTable(canaryContextArray);
                 }
                 hideSpinner();
@@ -127,9 +135,12 @@
                     }
                     arr.sort((a, b) => a - b);
                     for (let i =0; i<arr.length;i++) {
-                        text = text + "<span style='color:"+canaryComments[arr.at(i)].color+"'>" + canaryComments[arr.at(i)].comment + "</span><br>";
+                        if(canaryComments[arr.at(i)] != null && canaryComments[arr.at(i)].color != undefined) {
+                            text = text + "<span style='color:" + canaryComments[arr.at(i)].color + "'>" + canaryComments[arr.at(i)].comment + "</span><br>";
+                        }
                     }
                     $('#comments').html(text);
+                    $('#comments').scrollTop($('#comments')[0].scrollHeight);
                 }
                 hideSpinner("spinner1");
             },
@@ -148,6 +159,7 @@ $(document).ready(function () {
     canaryviewtable.SFDataTableSetPageSize(25);
     Object.freeze(canaryviewtable);
     let canaryContextArray = undefined;
+    let canaryCommentCounts = undefined;
     let canaryComments = undefined;
     function showCanaryTable(result){
         let rowIndex = -1;
@@ -160,7 +172,7 @@ $(document).ready(function () {
             console.log(canaryContextArray[i].record[0]);
             rowIndex++;
             tableRows[rowIndex] = [];
-            canaryviewtable.addContextTableRow(tableRows[rowIndex], moment.utc(canaryContextArray[i].record[0]).format('YYYY-MM-DD HH:mm:ss'));
+            canaryviewtable.addContextTableRow(tableRows[rowIndex], moment.utc(canaryContextArray[i].record[0]).format('YYYY-MM-DD'));
             //canaryviewtable.addContextTableRow(tableRows[rowIndex], canaryContextArray[i].record[1]);//tid
             canaryviewtable.addContextTableRow(tableRows[rowIndex], "<b>"+canaryContextArray[i].record[2]+"</b>");//cell
             let apt = canaryContextArray[i].record[3];
@@ -208,7 +220,15 @@ $(document).ready(function () {
             canaryviewtable.addContextTableRow(tableRows[rowIndex], canaryContextArray[i].record[8]);//zuc
             canaryviewtable.addContextTableRow(tableRows[rowIndex], "<a href='" + canaryContextArray[i].record[6] + "' target='_blank'> link</a>");//url
             canaryviewtable.addContextTableRow(tableRows[rowIndex], "<a href='" + canaryContextArray[i].record[9] + "' target='_blank'> link</a>");
-            canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span onclick='onComment(\""+canaryContextArray[i].record[0]+"\",\""+canaryContextArray[i].record[2]+"\")' style='cursor: pointer; color: black;'> <i class=\"fa fa-comment-o\" aria-hidden=\"true\"></i></span>");
+            let color = "black";
+            let count = "";
+            let key = canaryContextArray[i].record[0] + canaryContextArray[i].record[2];
+            if(canaryCommentCounts[key] != undefined){
+                let arr = canaryCommentCounts[key].split(":");
+                count = arr[0]
+                color = arr[1];
+            }
+            canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span onclick='onComment(\""+canaryContextArray[i].record[0]+"\",\""+canaryContextArray[i].record[2]+"\")' style='cursor: pointer; color: "+color+";'>"+count+" <i class=\"fa fa-comment-o\" aria-hidden=\"true\"></i></span>","id='"+canaryContextArray[i].record[0]+canaryContextArray[i].record[2]+"'");
 
         }
         canaryviewtable.addContextTableHeader(tableHeader,"timestamp",-1, "");
@@ -222,8 +242,7 @@ $(document).ready(function () {
         canaryviewtable.addContextTableHeader(tableHeader,"zuluCount",1, "");
         canaryviewtable.addContextTableHeader(tableHeader,"Dashboard",-1, "");
         canaryviewtable.addContextTableHeader(tableHeader,"Metrics",-1, "");
-        canaryviewtable.addContextTableHeader(tableHeader,"Comment",-1, "class='context-menu-comment'");
-
+        canaryviewtable.addContextTableHeader(tableHeader,"Comment",-1, "");
 
         canaryviewtable.SFDataTable(tableRows, tableHeader, "canaryview");
     }
@@ -255,6 +274,18 @@ $(document).ready(function () {
             contentType: 'application/json',  // Tells the server the request body will be in JSON format
             data: JSON.stringify(requestData),  // Convert the data object to a JSON string
             success: function(response) {
+                //TODO update cell content and count map
+                let count = 1;
+                if(canaryCommentCounts[timestamp+cell] != undefined) {
+                    let arr = canaryCommentCounts[timestamp + cell].split(":");
+                    console.log(canaryCommentCounts[timestamp + cell]);
+                    canaryCommentCounts[timestamp + cell] = (parseInt(arr[0]) + 1) + ":" + color;
+                    console.log(canaryCommentCounts[timestamp + cell]);
+                    count = (parseInt(arr[0]) + 1);
+                }else{
+                    canaryCommentCounts[timestamp + cell] = 1 + ":" + color;
+                }
+                $("#"+timestamp+cell).html("<span onclick='onComment(\""+timestamp+"\",\""+cell+"\")' style='cursor: pointer; color: "+color+";'>"+count+" <i class=\"fa fa-comment-o\" aria-hidden=\"true\"></i></span>");
                 console.log('Comment posted successfully:', response);
             },
             error: function(xhr, status, error) {
