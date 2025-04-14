@@ -1,0 +1,101 @@
+[
+  {
+    "scope": "core.aws.aws-prod0-uswest2.core1",
+    "metric": "AppStartup.totalStartupMs",
+    "tags": {
+      "cell": "usa14s",
+      "k8s_pod_name": "usa14s-casam-app-green-7d5b9b58df-prrsx"
+    },
+    "datapoints": {
+      "1741512540000": 247205
+    }
+  },
+  {
+    "scope": "core.aws.aws-prod0-uswest2.core1",
+    "metric": "AppStartup.totalStartupMs",
+    "tags": {
+      "cell": "usa14s",
+      "k8s_pod_name": "usa14s-casam-app-blue-5c876d96f9-swhzd"
+    },
+    "datapoints": {
+      "1741648200000": 263442
+    }
+  },
+  {
+    "scope": "core.aws.aws-prod0-uswest2.core1",
+    "metric": "AppStartup.totalStartupMs",
+    "tags": {
+      "cell": "usa14s",
+      "k8s_pod_name": "usa14s-casam-app-green-7d5b9b58df-gm84k"
+    },
+    "datapoints": {
+      "1741412220000": 255503
+    }
+  },
+  {
+    "scope": "core.aws.aws-prod0-uswest2.core1",
+    "metric": "AppStartup.totalStartupMs",
+    "tags": {
+      "cell": "usa14s",
+      "k8s_pod_name": "usa14s-casam-app-blue-5c876d96f9-djrdq"
+    },
+    "datapoints": {
+      "1741648200000": 267016
+    }
+  },
+  {
+    "scope": "core.aws.aws-prod0-uswest2.core1",
+    "metric": "AppStartup.totalStartupMs",
+    "tags": {
+      "cell": "usa14s",
+      "k8s_pod_name": "usa14s-casam-app-green-7d5b9b58df-pm699"
+    },
+    "datapoints": {
+      "1741512540000": 247853
+    }
+  },
+  {
+    "scope": "core.aws.aws-prod0-uswest2.core1",
+    "metric": "AppStartup.totalStartupMs",
+    "tags": {
+      "cell": "usa14s",
+      "k8s_pod_name": "usa14s-casam-app-blue-5c876d96f9-gvws9"
+    },
+    "datapoints": {
+      "1741648200000": 264600
+    }
+  },
+  {
+    "scope": "core.aws.aws-prod0-uswest2.core1",
+    "metric": "AppStartup.totalStartupMs",
+    "tags": {
+      "cell": "usa14s",
+      "k8s_pod_name": "usa14s-casam-app-green-7d5b9b58df-mlsfg"
+    },
+    "datapoints": {
+      "1741512480000": 257595
+    }
+  },
+  {
+    "scope": "core.aws.aws-prod0-uswest2.core1",
+    "metric": "AppStartup.totalStartupMs",
+    "tags": {
+      "cell": "usa14s",
+      "k8s_pod_name": "usa14s-casam-app-blue-5c876d96f9-sjcrc"
+    },
+    "datapoints": {
+      "1741648200000": 261389
+    }
+  },
+  {
+    "scope": "core.aws.aws-prod0-uswest2.core1",
+    "metric": "AppStartup.totalStartupMs",
+    "tags": {
+      "cell": "usa14s",
+      "k8s_pod_name": "usa14s-casam-app-green-7d5b9b58df-cxxz8"
+    },
+    "datapoints": {
+      "1741512480000": 254066
+    }
+  }
+]

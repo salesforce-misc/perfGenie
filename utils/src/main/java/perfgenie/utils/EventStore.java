@@ -938,10 +938,19 @@ public class EventStore {
                     if(result.getPayload() != null) {
                         String key = result.getTimestampMillis() + result.getMetadata().get("cell");
                         if(result.getMetadata().get("file-name").equals("canary-context")) {
-                            if (processedMap.containsKey(key) && result.getTimestampMillis() > processedMap.get(key)) { //consider latest
-                                payloads.put(key,new String(Utils.decompress(result.getPayload())));
-                                processedMap.put(key, result.getTimestampMillis());
-                            } else if (!processedMap.containsKey(key)) {
+                            if(result.getMetadata().get("etime") != null){
+                                long etime = Long.parseLong(result.getMetadata().get("etime"));
+                                if (processedMap.containsKey(key)) {
+                                    if (etime > processedMap.get(key)) {
+                                        processedMap.put(key, etime);
+                                        payloads.put(key,new String(Utils.decompress(result.getPayload())));
+                                    }
+                                }else{
+                                    processedMap.put(key, etime);
+                                    payloads.put(key,new String(Utils.decompress(result.getPayload())));
+                                }
+                            }
+                            if(!processedMap.containsKey(key)){
                                 payloads.put(key,new String(Utils.decompress(result.getPayload())));
                                 processedMap.put(key, result.getTimestampMillis());
                             }

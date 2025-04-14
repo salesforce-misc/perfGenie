@@ -1,0 +1,72 @@
+{
+  "queries": {
+    "cumulative": "DIFF(GROUPBYTAG(START:END:SCOPE:METRIC{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:max:all-max,#k8s_container_name#,#SUM#),GROUPBYTAG(START:END:SCOPE:METRIC{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:min:all-min,#k8s_container_name#,#SUM#))",
+    "average": "DOWNSAMPLE(ALIASBYREGEX(ALIAS(GROUPBYTAG(START:END:SCOPE:METRIC{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:1m-avg,#k8s_container_name#,#AVERAGE#),#:#,#literal#,#CELL#,#literal#),#(.*)::\\{#),#1d-avg#,#0#,#abs#)"
+  },
+  "metrics": {
+    "rCPUTime" :{
+      "name": "rCPUTime",
+      "description": "request CPU time Sec?",
+      "scope": "core.aws.INSTANCE.DOMAIN",
+      "metric": "SFDC_type-ServerMetrics.LogMetric-APP_CPU_TIME",
+      "type": "cumulative",
+      "enabled": true
+    },
+    "avgJCPU":{
+      "name": "avgJCPU",
+      "description": "avg JVM CPU %",
+      "scope": "core.aws.INSTANCE.DOMAIN",
+      "metric": "Jvm.processCpuLoadPercent.Value",
+      "type": "average",
+      "enabled": true
+    },
+    "jCPUTime":{
+      "name": "jCPUTime",
+      "description": "Jvm CPU time Ms",
+      "scope": "core.aws.INSTANCE.DOMAIN",
+      "metric": "Jvm.processCpuTimeMs.Value",
+      "type": "cumulative",
+      "enabled": true
+    },
+    "cCPUTime":{
+      "name": "cCPUTime",
+      "description": "container CPU time Sec",
+      "scope": "cadvisor.aws.INSTANCE.DOMAIN",
+      "metric": "container_cpu_usage_seconds_total",
+      "type": "cumulative",
+      "enabled": true
+    },
+    "5xx":{
+      "name": "5xx",
+      "description": "5xx response count",
+      "scope": "core.aws.INSTANCE.DOMAIN",
+      "metric": "jetty.sh.response.5xx",
+      "type": "cumulative",
+      "enabled": true
+    },
+    "4xx":{
+      "name": "4xx",
+      "description": "4xx response count",
+      "scope": "core.aws.INSTANCE.DOMAIN",
+      "metric": "jetty.sh.response.4xx",
+      "type": "cumulative",
+      "enabled": true
+    },
+    "reqCount":{
+      "name": "reqCount",
+      "description": "request count",
+      "scope": "core.aws.INSTANCE.DOMAIN",
+      "metric": "SFDC_type-ServerMetrics.LogMetric-COUNT",
+      "type": "cumulative",
+      "enabled": true
+    },
+    "sfPt":{
+      "name": "sfPt",
+      "description": "safepoint time",
+      "scope": "core.aws.INSTANCE.DOMAIN",
+      "metric": "Jvm.totalSafepointTimeMs.Value",
+      "type": "cumulative",
+      "enabled": true
+    }
+  }
+}

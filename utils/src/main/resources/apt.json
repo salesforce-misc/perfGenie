@@ -1,0 +1,14 @@
+[
+  {
+    "scope": "DIVIDE",
+    "metric": ":",
+    "tags": {
+      "cell": "ind86",
+      "k8s_container_name": "coreapp",
+      "role": "app"
+    },
+    "datapoints": {
+      "1741320000000": 18.39960986850729
+    }
+  }
+]

@@ -17,15 +17,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
+import java.sql.Timestamp;
 public class Utils {
     // special handling for lambdas
     private static String lambdaFrameIndicator = "Lambda$";
@@ -254,4 +251,17 @@ public class Utils {
         // Return the epoch milliseconds of the midnight time
         return midnight.toInstant().toEpochMilli();
     }
+
+    public static String convertEpochToUTCString(long epochMillis) {
+        // Create an Instant from the epoch milliseconds
+        Instant instant = Instant.ofEpochMilli(epochMillis);
+
+        // Define the formatter for the UTC format
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                .withZone(ZoneOffset.UTC);
+
+        // Format the instant into the UTC string
+        return formatter.format(instant);
+    }
+
 }

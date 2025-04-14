@@ -1,5 +1,6 @@
 package perfgenie.utils;
 
+import com.google.common.io.Resources;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -39,7 +40,8 @@ public class Canary {
         podsInstance.put("ind56", "aws-prod2-apsouth1");//min 8, max 40
         podsInstance.put("usa726", "aws-prod21-useast2");//
         podsInstance.put("usa854", "aws-prod21-useast2");//
-
+        podsInstance.put("usa62s", "aws-prod5-uswest2");//
+        podsInstance.put("usa224s", "aws-prod5-uswest2");//
 
 
         //podsInstance.put("sdb2", "dev1-uswest2");
@@ -53,15 +55,21 @@ public class Canary {
         podsDomain.put("ind56", "core1");
         podsDomain.put("usa726", "core1");
         podsDomain.put("usa854", "core1");
+        podsDomain.put("usa62s", "core1");
+        podsDomain.put("usa224s", "core1");
         //podsDomain.put("sdb2", "core002");
+
         podsList.put("ind86", new Integer[]{4, 12});
-        //podsList.put("ind86", new Integer[]{2, 3});
         podsList.put("usa270s", new Integer[]{14, 21});
         podsList.put("usa710s", new Integer[]{14, 22});
+        podsList.put("usa62s", new Integer[]{14, 22});
         podsList.put("usa762s", new Integer[]{15, 22});
         podsList.put("usa30s", new Integer[]{12, 20});
+        podsList.put("usa224s", new Integer[]{12, 20});
         podsList.put("usa432s", new Integer[]{8, 14});
         podsList.put("usa14s", new Integer[]{5, 11});
+
+
         //podsList.put("usa726", new Integer[]{14, 22});
         //podsList.put("usa854", new Integer[]{14, 22});
         //podsList.put("sdb2", new Integer[]{6, 10});
@@ -92,94 +100,7 @@ public class Canary {
 
     public static boolean inUse = false;
 
-    public static List<Object> processCellRelease(long tmp1, String key) {
-        if (accessToken == null) {
 
-        }
-        if (inUse) {//basic check
-            return new ArrayList<>();
-        }
-        inUse = true;
-        List<Object> record = new ArrayList<>();
-        long start = tmp1 - 24 * 60 * 60 * 1000;
-        long end = tmp1;
-        try {
-
-            String metric = null;
-            updateAccessToken();
-            if (accessToken != null) {
-                metric = getRequestCountMetric(String.valueOf(start), String.valueOf(end), podsInstance.get(key), podsDomain.get(key), key);
-            } else {
-                Path path = Path.of("/Users/rpulle/work/casp/findpeak/src/main/resources/requests.json");
-                metric = "{\"array\":" + Files.readString(path) + "}";
-            }
-
-            if (metric != null) {
-                Map<Long, Integer> epochTimestampsMap = new HashMap<>();
-
-                JSONObject jsonObject = new JSONObject(metric);
-                JSONArray jsonArray = jsonObject.getJSONArray("array");
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    JSONObject object = jsonArray.getJSONObject(i);
-                    JSONObject datapoints = object.getJSONObject("datapoints");
-                    Iterator keys = datapoints.keys();
-                    while (keys.hasNext()) {
-                        String k = keys.next().toString();
-                        epochTimestampsMap.put(Long.parseLong(k), datapoints.getInt(String.valueOf(k)));
-                    }
-                }
-                PeakRange.TimeRange range = PeakRange.findLargestContinuousRangeAbovePercentile(epochTimestampsMap, 60);
-                //argus time window limit check
-                if (maxTimeWindow < (range.end - range.start)) {
-                    long diff = (range.end - range.start - maxTimeWindow) / 2;
-                    range.end = curfinalend - diff-1;
-                    range.start = curfinalStart + diff+1;
-                    System.out.println(key+ " adjusted start: " + range.start + " end: " + range.end);
-                }
-                if (range != null) {
-                    if (start - range.start < 60 * 60 * 1000 || range.end - end < 60 * 60 * 1000 || substrate == null) {
-                        System.out.println(key+ " Skip, could be a peak split " + key + ":" + range.start + ":" + range.end);
-                        record.add(end);
-                        KpodsResponse res = getReleaseKpodRanges(String.valueOf(range.start), String.valueOf(range.end), String.valueOf(range.start - 7 * 24 * 60 * 60 * 1000), String.valueOf(range.end - 7 * 24 * 60 * 60 * 1000), podsInstance.get(key), podsDomain.get(key), key);
-                        //String URL = getCanaryDashboardURL(res.pods1, res.pods2, res.start1, res.end1, podsInstance.get(key), podsDomain.get(key), key);
-                        //System.out.println(URL);
-                        String APT = getMetric(APTQueryReleaseT, res.pods1, res.pods2, String.valueOf(res.start1), String.valueOf(res.end1), String.valueOf(res.start2), String.valueOf(res.end2), podsInstance.get(key), podsDomain.get(key), key);
-                        String aptQ = curargusMetricQuery;
-                        System.out.println(key+ " APT:" + APT);
-                        //System.out.println("aptQ:" + aptQ);
-                        record.add(Double.parseDouble(APT));
-
-                        String JVMCpu = getMetric(JVMCpuQueryReleaseT, res.pods1, res.pods2, String.valueOf(res.start1), String.valueOf(res.end1), String.valueOf(res.start2), String.valueOf(res.end2), podsInstance.get(key), podsDomain.get(key), key);
-                        String JVMCpuQ = curargusMetricQuery;
-                        System.out.println(key+ " JVMCpu:" + JVMCpu);
-                        //System.out.println("JVMCpuQ:" + JVMCpuQ);
-                        record.add(Double.parseDouble(JVMCpu));
-                        String containerCpu = getMetric(containerCpuQueryReleaseT, res.pods1, res.pods2, String.valueOf(res.start1), String.valueOf(res.end1), String.valueOf(res.start2), String.valueOf(res.end2), podsInstance.get(key), podsDomain.get(key), key);
-                        String containerCpuQ = curargusMetricQuery;
-                        System.out.println(key+ " containerCpu:" + containerCpu);
-                        //System.out.println("containerCpuQ:" + containerCpuQ);
-                        record.add(Double.parseDouble(containerCpu));
-                        record.add(res.pods1.size());
-                        record.add(aptQ);
-                        record.add(JVMCpuQ);
-                        record.add(containerCpuQ);
-
-                        record.add(podsInstance.get(key));
-                        record.add(podsDomain.get(key));
-
-                    } else {
-                        System.out.println(key+ " Process peak " + key + ":" + range.start + ":" + range.end);
-                    }
-                }
-            } else {
-                System.out.println(key+ " failed to get metric");
-            }
-        } catch (Exception e) {
-            System.out.println(key+ " processCellRelease " + e.getMessage());
-        }
-        inUse = false;
-        return record;
-    }
 
     public static KpodsResponse getReleaseKpodRanges(String startquery1, String endquery1, String startquery2, String endquery2, String instance, String
             domain, String cell) {
@@ -274,13 +195,13 @@ public class Canary {
                             }
                         }
                     }
-                    System.out.println(cell+ " "+pods1.size() + ":" + pods2.size());
+                    System.out.println(cell + " " + pods1.size() + ":" + pods2.size());
                     if (pods1.size() != 0 && pods2.size() != 0) {
                         return new KpodsResponse(start1, end1, start2, end2, pods1, pods2);
                     }
                 }
             } catch (Exception e) {
-                System.out.println(cell+ " getReleaseKpodRanges " + e.getMessage());
+                System.out.println(cell + " getReleaseKpodRanges " + e.getMessage());
                 return null;
             }
         }
@@ -328,27 +249,27 @@ public class Canary {
                 String URL = getCanaryDashboardURL(pod1, pod2, curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key);
                 record.add(tmp2);//epoch
                 record.add(1);//tid
-                System.out.println(key+ " CELL:" + key);
+                System.out.println(key + " CELL:" + key);
                 record.add(key);
                 String APT = getMetric(APTQueryT, pod1, pod2, String.valueOf(curfinalStart), String.valueOf(curfinalend), String.valueOf(curfinalStart), String.valueOf(curfinalend), podsInstance.get(key), podsDomain.get(key), key);
                 String aptQ = curargusMetricQuery;
-                System.out.println(key+ " APT:" + APT);
+                System.out.println(key + " APT:" + APT);
                 record.add(Double.parseDouble(APT));
                 String JVMCpu = getMetric(JVMCpuQueryT, pod1, pod2, String.valueOf(curfinalStart), String.valueOf(curfinalend), String.valueOf(curfinalStart), String.valueOf(curfinalend), podsInstance.get(key), podsDomain.get(key), key);
                 String JVMCpuQ = curargusMetricQuery;
-                System.out.println(key+ " JVMCpu:" + JVMCpu);
+                System.out.println(key + " JVMCpu:" + JVMCpu);
                 record.add(Double.parseDouble(JVMCpu));
                 String containerCpu = getMetric(containerCpuQueryT, pod1, pod2, String.valueOf(curfinalStart), String.valueOf(curfinalend), String.valueOf(curfinalStart), String.valueOf(curfinalend), podsInstance.get(key), podsDomain.get(key), key);
                 String containerCpuQ = curargusMetricQuery;
-                System.out.println(key+ " containerCpu:" + containerCpu);
+                System.out.println(key + " containerCpu:" + containerCpu);
                 record.add(Double.parseDouble(containerCpu));
-                System.out.println(key+ " URL:" + URL);
+                System.out.println(key + " URL:" + URL);
                 record.add(URL);
                 record.add(zingCount);
                 record.add(zuluCount);
 
                 URL1 = getMetricDashboardURL(curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key);
-                record.add(URL1);
+                record.add(URL1);//metric URL
 
                 startupQueryZing = getStartupQueryURL(podall2, curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key);
                 System.out.println(startupQueryZing);
@@ -364,19 +285,49 @@ public class Canary {
                 } else {
                     record.add(-10000.0);//for startup
                 }
-                System.out.println(key + " startup:"+t1+":"+t2);
-                record.add(aptQ);
-                record.add(JVMCpuQ);
-                record.add(containerCpuQ);
+                System.out.println(key + " startup:" + t1 + ":" + t2);
+                record.add(aptQ);//aptQ
+                record.add(JVMCpuQ);//JVMCpuQ
+                record.add(containerCpuQ);//containerCpuQ
                 //startupQueryZing = getStartupQueryURL(podall2, curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key);
-                record.add(startupQueryZing);
+                record.add(startupQueryZing);//startupQueryZing
                 //startupQueryZulu = getStartupQueryURL(podall1, curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key);
-                record.add(startupQueryZulu);
-                record.add(podsInstance.get(key));
-                record.add(podsDomain.get(key));
+                record.add(startupQueryZulu);//startupQueryZulu
+
+                try {
+                    ArgusQueryT.QueryResponse reqCount1 = ArgusQueryT.getMetric(ArgusQueryT.totalRequestsLogMetric_COUNT, curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key, pod1);
+                    ArgusQueryT.QueryResponse reqCount2 = ArgusQueryT.getMetric(ArgusQueryT.totalRequestsLogMetric_COUNT, curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key, pod2);
+
+                    ArgusQueryT.QueryResponse totalReqCPUSec1 = ArgusQueryT.getMetric(ArgusQueryT.requestCPUSecondsTotalDiff, curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key, pod1);
+                    ArgusQueryT.QueryResponse totalReqCPUSec2 = ArgusQueryT.getMetric(ArgusQueryT.requestCPUSecondsTotalDiff, curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key, pod2);
+
+                    Double totalReqCPUSec1perReqPerKpod = totalReqCPUSec1.getMetric() / (reqCount1.getMetric() * pod1.size());
+                    Double totalReqCPUSec2perReqPerKpod = totalReqCPUSec2.getMetric() / (reqCount2.getMetric() * pod2.size());
+
+                    Double totalRequestCPUSecperReqPercentChange = 100.0 * (totalReqCPUSec1perReqPerKpod - totalReqCPUSec2perReqPerKpod) / totalReqCPUSec1perReqPerKpod;
+
+                    record.add(totalRequestCPUSecperReqPercentChange);//totalRequestCPUSecperReqPercentChange
+
+                    ArgusQueryT.QueryResponse total5xx4xxCount1 = ArgusQueryT.getMetric(ArgusQueryT.total5xx4xxCount, curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key, pod1);
+                    ArgusQueryT.QueryResponse total5xx4xxCount2 = ArgusQueryT.getMetric(ArgusQueryT.total5xx4xxCount, curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key, pod2);
+
+                    Double total5xx4xxCount1perKpod = total5xx4xxCount1.getMetric() / pod1.size();
+                    Double total5xx4xxCount2perKpod = total5xx4xxCount2.getMetric() / pod2.size();
+
+                    Double total5xx4xxCountperKpodPercentChange = 100.0 * (total5xx4xxCount1perKpod - total5xx4xxCount2perKpod) / total5xx4xxCount1perKpod;
+
+                    //record.add(total5xx4xxCount1perKpod);//total5xx4xxCount1perKpod
+                    //record.add(total5xx4xxCount2perKpod);//total5xx4xxCount2perKpod
+                    record.add(total5xx4xxCountperKpodPercentChange);//total5xx4xxCountperKpodPercentChange
+
+                } catch (Exception e) {
+                    System.out.println("--------> skip 4xx 5xx" + e.getMessage());
+                }
+                record.add(podsInstance.get(key));//instance
+                record.add(podsDomain.get(key));//domain
             }
         } catch (Exception e) {
-            System.out.println(key+ " getCanaryResults Exception:" + e.getMessage());
+            System.out.println(key + " getCanaryResults Exception:" + e.getMessage());
             inUse = false;
             return new ArrayList<>();
         }
@@ -399,8 +350,7 @@ public class Canary {
             try {
                 //String substrate = System.getenv("SUBSTRATE");
                 if (substrate == null) {
-                    Path path = Paths.get("/Users/rpulle/work/argusmetrics/src/main/resources/startup.json");
-                    metric = Files.readString(path);
+                    metric = "{\"array\":" + Resources.toString(Resources.getResource("startup.json"), StandardCharsets.UTF_8) + "}";
                 }
             } catch (Exception e) {
                 metric = "{}";
@@ -432,7 +382,7 @@ public class Canary {
             }
             return sum / count;
         } catch (Exception e) {
-            System.out.println("getStatupAVG Exception " + e.getMessage() +":"+metric);
+            System.out.println("getStatupAVG Exception " + e.getMessage() + ":" + metric);
             return 0.0;
         }
     }
@@ -472,7 +422,7 @@ public class Canary {
         try {
             query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
         } catch (Exception e) {
-            System.out.println(cell+ " getMetric1 " + e.getMessage());
+            System.out.println(cell + " getMetric1 " + e.getMessage());
             return null;
         }
         String metricCommand = "curl -H \"Authorization: Bearer " + accessToken + "\" " + "https://monitoring-api.salesforce.com/argusws/metrics?expression=" + query;
@@ -484,12 +434,11 @@ public class Canary {
             try {
                 //String substrate = System.getenv("SUBSTRATE");
                 if (substrate == null) {
-                    Path path = Paths.get("/Users/rpulle/work/argusmetrics/src/main/resources/apt.json");
-                    metric = Files.readString(path);
+                    metric = "{\"array\":" + Resources.toString(Resources.getResource("apt.json"), StandardCharsets.UTF_8) + "}";
                 }
             } catch (Exception e) {
                 metric = "{}";
-                System.out.println(cell+ " getMetric2 " + e.getMessage());
+                System.out.println(cell + " getMetric2 " + e.getMessage());
             }
         }
         if (cell.equals("ind86")) {
@@ -508,7 +457,7 @@ public class Canary {
                 }
             }
         } catch (Exception e) {
-            System.out.println(cell+ " getMetric3 " + e.getMessage());
+            System.out.println(cell + " getMetric3 " + e.getMessage() + "\n" + curargusMetricQuery + "\n" + metric);
             return null;
         }
         return metric;
@@ -548,9 +497,10 @@ public class Canary {
             } else {
                 //String substrate = System.getenv("SUBSTRATE");
                 if (substrate == null) {
-                    Path path = Path.of("/Users/rpulle/work/argusmetrics/src/main/resources/gc.json");
-                    String metric = Files.readString(path);
-                    return metric;
+                    if (substrate == null) {
+                        String metric = "{\"array\":" + Resources.toString(Resources.getResource("gc.json"), StandardCharsets.UTF_8) + "}";
+                        return metric;
+                    }
                 }
                 return null;
             }
@@ -576,14 +526,13 @@ public class Canary {
             } else {
                 //String substrate = System.getenv("SUBSTRATE");
                 if (substrate == null) {
-                    Path path = Path.of("/Users/rpulle/work/casp/findpeak/src/main/resources/requests.json");
-                    String metric = Files.readString(path);
+                    String metric = Resources.toString(Resources.getResource("requests.json"), StandardCharsets.UTF_8);
                     return metric;
                 }
                 return null;
             }
         } catch (Exception e) {
-            System.out.println(cell+ " getRequestCountMetric " + e.getMessage());
+            System.out.println(cell + " getRequestCountMetric " + e.getMessage());
             return null;
         }
     }
@@ -605,14 +554,15 @@ public class Canary {
             } else {
                 //String substrate = System.getenv("SUBSTRATE");
                 if (substrate == null) {
-                    Path path = Path.of("/Users/rpulle/work/casp/findpeak/src/main/resources/requestkpods1.json");
-                    String metric = "{\"array\":" + Files.readString(path) + "}";
-                    return metric;
+                    if (substrate == null) {
+                        String metric = "{\"array\":" + Resources.toString(Resources.getResource("requestkpods1.json"), StandardCharsets.UTF_8) + "}";
+                        return metric;
+                    }
                 }
                 return null;
             }
         } catch (Exception e) {
-            System.out.println(cell+ " getRequestCountKpodMetric1 " + e.getMessage());
+            System.out.println(cell + " getRequestCountKpodMetric1 " + e.getMessage());
             return null;
         }
     }
@@ -634,14 +584,15 @@ public class Canary {
             } else {
                 //String substrate = System.getenv("SUBSTRATE");
                 if (substrate == null) {
-                    Path path = Path.of("/Users/rpulle/work/casp/findpeak/src/main/resources/requestkpods2.json");
-                    String metric = "{\"array\":" + Files.readString(path) + "}";
-                    return metric;
+                    if (substrate == null) {
+                        String metric = "{\"array\":" + Resources.toString(Resources.getResource("requestkpods2.json"), StandardCharsets.UTF_8) + "}";
+                        return metric;
+                    }
                 }
                 return null;
             }
         } catch (Exception e) {
-            System.out.println(cell+ " getRequestCountKpodMetric2 " + e.getMessage());
+            System.out.println(cell + " getRequestCountKpodMetric2 " + e.getMessage());
             return null;
         }
     }
@@ -662,7 +613,7 @@ public class Canary {
                 return false;
             }
         } catch (Exception e) {
-            System.out.println(cell+ " processZingCanary " + e.getMessage());
+            System.out.println(cell + " processZingCanary " + e.getMessage());
         }
         return false;
     }
@@ -679,9 +630,9 @@ public class Canary {
 
         long mindiff = 3600000;
 
-        if (cell.equals("ind86")) {
-            //System.out.println(metric);
-        }
+        //if (cell.equals("ind86")) {
+        //System.out.println(metric);
+        //}
 
         List<long[]> zingtimeRanges = new ArrayList<>();
         List<long[]> zulutimeRanges = new ArrayList<>();
@@ -760,7 +711,7 @@ public class Canary {
                 zuluCount++;
             }
         }
-        System.out.println(cell+ " zingCount:" + zingCount + " zuluCount:" + zuluCount);
+        System.out.println(" zingCount:" + zingCount + " zuluCount:" + zuluCount);
 
 
         if (zingCount == 0) {
@@ -788,7 +739,7 @@ public class Canary {
                 }
             }
         } else {
-            System.out.println(cell + " No valid intersection found1.");
+            System.out.println(" No valid intersection found1.");
             return false;
         }
 
@@ -816,7 +767,7 @@ public class Canary {
                 //System.out.println(Arrays.toString(range));
             }
         } else {
-            System.out.println(cell + "No valid intersection found2.");
+            System.out.println("No valid intersection found2.");
             return false;
         }
 
@@ -834,13 +785,13 @@ public class Canary {
 
         curfinalStart = finalStart;
         curfinalend = finalEnd;
-        System.out.println(cell + " start: " + finalStart + " end: " + finalEnd + " finalDiff: " + finalDiff);
+        System.out.println(" start: " + finalStart + " end: " + finalEnd + " finalDiff: " + finalDiff);
         //argus time window limit check
         if (maxTimeWindow < (curfinalend - curfinalStart)) {
             long diff = (curfinalend - curfinalStart - maxTimeWindow) / 2;
-            curfinalend = curfinalend - diff-1;
-            curfinalStart = curfinalStart + diff+1;
-            System.out.println(cell + " adjusted start: " + finalStart + " end: " + finalEnd + " finalDiff: " + finalDiff);
+            curfinalend = curfinalend - diff - 1;
+            curfinalStart = curfinalStart + diff + 1;
+            System.out.println(" adjusted start: " + finalStart + " end: " + finalEnd + " finalDiff: " + finalDiff);
         }
 
 
@@ -1085,7 +1036,6 @@ public class Canary {
             current.remove(current.size() - 1);
         }
     }
-
 }
 
 //curl -vX POST "https://monitoring-api.salesforce.com/monexws/auth/1.0/token" --capath /etc/identity/client/certificates/ --cert /etc/identity/client/certificates/client.pem --key /etc/identity/client/keys/client-key.pem

@@ -1,0 +1,103 @@
+{
+  "config": {
+    "ind86": {
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod2-apsouth1",
+      "peak": [
+        4,
+        12
+      ]
+    },
+    "usa270s": {
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod5-uswest2",
+      "peak": [
+        14,
+        21
+      ]
+    },
+    "usa710s": {
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod21-useast2",
+      "peak": [
+        14,
+        22
+      ]
+    },
+    "usa30s": {
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod5-uswest2",
+      "peak": [
+        12,
+        20
+      ]
+    },
+    "usa432s": {
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod5-uswest2",
+      "peak": [
+        8,
+        14
+      ]
+    },
+    "usa762s": {
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod21-useast2",
+      "peak": [
+        15,
+        22
+      ]
+    },
+    "usa14s": {
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod0-uswest2",
+      "peak": [
+        5,
+        11
+      ]
+    },
+    "ind56": {
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod2-apsouth1",
+      "peak": []
+    },
+    "usa726": {
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod21-useast2",
+      "peak": []
+    },
+    "usa854": {
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod21-useast2",
+      "peak": []
+    },
+    "usa62s": {
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod5-uswest2",
+      "peak": [
+        14,
+        22
+      ]
+    },
+    "usa224s": {
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod5-uswest2",
+      "peak": [
+        12,
+        20
+      ]
+    }
+  }
+}

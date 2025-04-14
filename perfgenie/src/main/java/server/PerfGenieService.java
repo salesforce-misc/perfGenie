@@ -1088,13 +1088,25 @@ public class PerfGenieService implements IPerfGenieService {
         List<String> header = new ArrayList<>();
         header.add("timestamp:timestamp");
         header.add("tid:text");
-        header.add("CELL:text");
-        header.add("APT:number");
-        header.add("JVMCPU:number");
-        header.add("ContainerCPU:number");
-        header.add("URL:text");
-        header.add("zingCount:number");
-        header.add("zuluCount:number");
+        header.add("cell:text");
+        header.add("avgApt %ch:number");
+        header.add("avgJCpu/r %ch:number");
+        header.add("avgCCpu/r %ch:number");
+        header.add("dashURL:text");
+        header.add("zingCC:number");
+        header.add("zuluCC:number");
+        header.add("metrURL:text");
+        header.add("startUp %c:number");
+        header.add("aptQ:text");
+        header.add("jCpuQ:text");
+        header.add("cCpuQ:text");
+        header.add("zingCCQ:text");
+        header.add("zuluCCQ:text");
+        header.add("reqCpu %c:number");
+        header.add("5xx4xx %c:number");
+        header.add("instance:text");
+        header.add("domain:text");
+
         final Map<String, Double> dimMap = new HashMap<>();
         final Map<String, String> queryMap = new HashMap<>();
         queryMap.put("source", canarySource);
@@ -1105,6 +1117,32 @@ public class PerfGenieService implements IPerfGenieService {
         queryMap.put("file-name", "canary-context");//
         queryMap.put("type", "canaryevent");
         queryMap.put("name", "canary");
+        queryMap.put("etime", String.valueOf(System.currentTimeMillis()));
+        final EventHandler aggregator = new EventHandler();
+        aggregator.initializeEvent("canary");
+        aggregator.addHeader("canary", header);
+        aggregator.processContext(record, 1, "canary");
+        String guid = Utils.generateGuid();
+        queryMap.put("guid", guid);
+        queryMap.put("cell", cell);
+        Object logContext = aggregator.getLogContext();
+        //if (!eventEsists(timestamp, host, record.get(2).toString())) {
+        System.out.println(timestamp + " 2--->" + Utils.toJson(queryMap));
+        eventStore.addGenieEvent(timestamp, queryMap, dimMap, Utils.toJson(logContext), config.getTenant());
+        //}
+    }
+    public void addCanaryEventNew(List<Object> record, long timestamp, String cell, String host, List<String> header) throws IOException {
+        final Map<String, Double> dimMap = new HashMap<>();
+        final Map<String, String> queryMap = new HashMap<>();
+        queryMap.put("source", canarySource);
+        queryMap.put("tenant-id", "canary");
+        queryMap.put("instance-id", host);
+        queryMap.put("host", host);
+        queryMap.put("source-file", "canary");
+        queryMap.put("file-name", "canary-context");//
+        queryMap.put("type", "canaryevent");
+        queryMap.put("name", "canary");
+        queryMap.put("etime", String.valueOf(System.currentTimeMillis()));
         final EventHandler aggregator = new EventHandler();
         aggregator.initializeEvent("canary");
         aggregator.addHeader("canary", header);
@@ -1136,13 +1174,14 @@ public class PerfGenieService implements IPerfGenieService {
                 //Integer[] arr = entry.getValue();
                 long curTimeMillis = System.currentTimeMillis();
                 curTimeMillis = curTimeMillis - lastndays * 24 * 60 * 60 * 1000;
-                List<Object> record = Canary.processCellRelease(curTimeMillis, cell);
-
+                CanaryResponse res = WeekOverWeek.processWeekOverWeekCanary(curTimeMillis, curTimeMillis+24 * 60 * 60 * 1000, cell);
+                List<Object> record = res.getRecord();
+                List<String> header = res.getHeader();
                 if (record != null && record.size() > 0) {
                     if (record.size() > 0) {
                         long eventTimestamp = Utils.roundEpochToMidnightUTC(curTimeMillis) + 24 * 60 * 60 * 1000;
                         if (!eventEsists(eventTimestamp, host, cell) && (!local || cell.equals("ind86"))) {
-                            addCanaryEvent(record, eventTimestamp, cell, host);
+                            addCanaryEventNew(record, eventTimestamp, cell, host, header);
                             response.add(record);
                         } else {
                             System.out.println("skip release event exists:" + cell + " : " + eventTimestamp);
@@ -1498,6 +1537,7 @@ public class PerfGenieService implements IPerfGenieService {
                 for (int i = numDaysSt; i < numDays; i++) {
                     long curstart = start - i * 24 * 60 * 60 * 1000;
                     long curend = end - i * 24 * 60 * 60 * 1000;
+                    System.out.println("----------------->" + Utils.convertEpochToUTCString(curstart) +" to "+ Utils.convertEpochToUTCString(curend));
                     try {
                         if (!service.eventEsists(curend, host, cell)) {
                             List<Object> record = test1(curstart, curend, cell);
@@ -1520,11 +1560,14 @@ public class PerfGenieService implements IPerfGenieService {
                 }
                 cell = args[0];
                 start = Long.parseLong(args[1]);
-                long eventTimestamp = Utils.roundEpochToMidnightUTC(start);
+                long eventTimestamp = Utils.roundEpochToMidnightUTC(start) + 24 * 60 * 60 * 1000;
                 if (!service.eventEsists(eventTimestamp, host, cell)) {
-                    List<Object> record = test2(start, cell);
+                    CanaryResponse res = test2(start, cell);
+                    List<Object> record = res.getRecord();
+                    List<String> header = res.getHeader();
                     if (record.size() > 0) {
-                        service.addCanaryEvent(record, eventTimestamp, cell, host);
+                        //service.addCanaryEventNew(record, eventTimestamp, cell, host, header);
+                        System.out.println(Utils.toJson(res));
                     } else {
                         System.out.println(cell + "----> skip record count " + record.size());
                     }
@@ -1552,17 +1595,16 @@ public class PerfGenieService implements IPerfGenieService {
         return new ArrayList<Object>();
     }
 
-    public static List<Object> test2(long start, String cell) {
+    public static CanaryResponse test2(long start, String cell) {
         System.out.println("test2 start");
         try {
-            List<Object> record = Canary.processCellRelease(start, cell);
-            System.out.println(record.size());
-            return record;
+            CanaryResponse res = WeekOverWeek.processWeekOverWeekCanary(start, start+24*60*60*1000,cell);
+            return res;
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
         System.out.println("test2 end");
-        return new ArrayList<Object>();
+        return null;
     }
 
     public synchronized String releaseUploadTask(long start, long end) throws IOException {
@@ -1581,13 +1623,14 @@ public class PerfGenieService implements IPerfGenieService {
                 }
                 long curTimeMillis = System.currentTimeMillis() - 4 * 60 * 60 * 1000;
                 curTimeMillis = curTimeMillis - lastndays * 24 * 60 * 60 * 1000;
-                List<Object> record = Canary.processCellRelease(curTimeMillis, cell);
-
+                CanaryResponse res = WeekOverWeek.processWeekOverWeekCanary(curTimeMillis, curTimeMillis+24*60*60*1000, cell);
+                List<Object> record = res.getRecord();
+                List<String> header = res.getHeader();
                 if (record != null && record.size() > 0) {
                     if (record.size() > 0) {
-                        long eventTimestamp = Utils.roundEpochToMidnightUTC(curTimeMillis);
+                        long eventTimestamp = Utils.roundEpochToMidnightUTC(curTimeMillis)+ 24 * 60 * 60 * 1000;
                         if (!eventEsists(eventTimestamp, host, cell)) {
-                            addCanaryEvent(record, eventTimestamp, cell, host);
+                            addCanaryEventNew(record, eventTimestamp, cell, host,header);
                             response.add(record);
                         } else {
                             System.out.println("skip release event exists:" + cell + " : " + eventTimestamp);
