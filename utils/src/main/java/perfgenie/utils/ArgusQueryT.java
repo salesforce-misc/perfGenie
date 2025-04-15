@@ -221,7 +221,7 @@ public class ArgusQueryT {
         String query = queryT.replaceAll("START", String.valueOf(timestampStart));
         query = query.replaceAll("END", String.valueOf(timestampEnd));
         query = query.replaceAll("SCOPE", ac.metrics.get(m).get("scope"));
-        query = query.replaceAll("SCOPE", ac.metrics.get(m).get("metric"));
+        query = query.replaceAll("METRIC", ac.metrics.get(m).get("metric"));
         query = query.replaceAll("INSTANCE", instance);
         query = query.replaceAll("DOMAIN", domain);
         query = query.replaceAll("CELL", cell);
@@ -240,7 +240,7 @@ public class ArgusQueryT {
         try {
             query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
         } catch (Exception e) {
-            System.out.println(cell + " getMetric1 " + e.getMessage());
+            System.out.println(cell+ " " +m+"1 " + e.getMessage());
             return null;
         }
         String metricCommand = "curl -H \"Authorization: Bearer " + accessToken + "\" " + "https://monitoring-api.salesforce.com/argusws/metrics?expression=" + query;
@@ -255,7 +255,7 @@ public class ArgusQueryT {
                 }
             } catch (Exception e) {
                 metric = "{}";
-                System.out.println(cell + " getMetric2 " + e.getMessage());
+                System.out.println(cell + " " +m+"2 " + e.getMessage());
             }
         }
 
@@ -275,12 +275,12 @@ public class ArgusQueryT {
         } catch (Exception e) {
             System.out.println("query->" + response.query);
             System.out.println("metric->" + metric);
-            System.out.println(cell + " getMetric3 " + e.getMessage());
+            System.out.println(cell + " " +m+"3 " + e.getMessage());
             return null;
         }
         System.out.println("query->" + response.query);
         System.out.println("metric->" + metric);
-        System.out.println(cell + " getMetric4 ");
+        System.out.println(cell + " " +m+"4 ");
         return null;
     }
 

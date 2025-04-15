@@ -1,6 +1,7 @@
 {
   "config": {
     "ind86": {
+      "enabled": true,
       "type": 1,
       "domain": "core1",
       "instance": "aws-prod2-apsouth1",
@@ -10,6 +11,7 @@
       ]
     },
     "usa270s": {
+      "enabled": true,
       "type": 1,
       "domain": "core1",
       "instance": "aws-prod5-uswest2",
@@ -19,6 +21,7 @@
       ]
     },
     "usa710s": {
+      "enabled": true,
       "type": 1,
       "domain": "core1",
       "instance": "aws-prod21-useast2",
@@ -28,6 +31,7 @@
       ]
     },
     "usa30s": {
+      "enabled": true,
       "type": 1,
       "domain": "core1",
       "instance": "aws-prod5-uswest2",
@@ -37,6 +41,7 @@
       ]
     },
     "usa432s": {
+      "enabled": true,
       "type": 1,
       "domain": "core1",
       "instance": "aws-prod5-uswest2",
@@ -46,6 +51,7 @@
       ]
     },
     "usa762s": {
+      "enabled": false,
       "type": 1,
       "domain": "core1",
       "instance": "aws-prod21-useast2",
@@ -55,6 +61,7 @@
       ]
     },
     "usa14s": {
+      "enabled": false,
       "type": 1,
       "domain": "core1",
       "instance": "aws-prod0-uswest2",
@@ -64,24 +71,28 @@
       ]
     },
     "ind56": {
+      "enabled": false,
       "type": 1,
       "domain": "core1",
       "instance": "aws-prod2-apsouth1",
       "peak": []
     },
     "usa726": {
+      "enabled": false,
       "type": 1,
       "domain": "core1",
       "instance": "aws-prod21-useast2",
       "peak": []
     },
     "usa854": {
+      "enabled": false,
       "type": 1,
       "domain": "core1",
       "instance": "aws-prod21-useast2",
       "peak": []
     },
     "usa62s": {
+      "enabled": true,
       "type": 1,
       "domain": "core1",
       "instance": "aws-prod5-uswest2",
@@ -91,6 +102,7 @@
       ]
     },
     "usa224s": {
+      "enabled": true,
       "type": 1,
       "domain": "core1",
       "instance": "aws-prod5-uswest2",

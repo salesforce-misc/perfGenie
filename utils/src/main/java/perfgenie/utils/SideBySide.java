@@ -81,6 +81,13 @@ public class SideBySide {
                     Double metricPercentChange = 100.0 * ((res1.getMetric() / rCount1) - (res2.getMetric() / rCount2)) / (res1.getMetric() / rCount1);
                     record.add(metricPercentChange);
                     header.add(metricList.get(i) + "/r %c:number");
+                }else {
+                    record.add(null);
+                    header.add(metricList.get(i) + "1:number");
+                    record.add(null);
+                    header.add(metricList.get(i) + "2:number");
+                    record.add(null);
+                    header.add(metricList.get(i) + "/r %c:number");
                 }
             }
             record.add(instance);//instance
@@ -400,8 +407,24 @@ public class SideBySide {
 
     public static void main(String[] args) {
         try {
-            CanaryResponse response = processSideBySideCanary(1742270400000L, 1742302800000L, "ind86");
-            System.out.println("--->" + Utils.toJson(response));
+            int start = 6;
+            int end = 4;
+
+            for (int lastndays = end; lastndays <= start; lastndays++) {
+                for (String cell : ArgusQueryT.pc.config.keySet()) {
+                    if ((boolean) ArgusQueryT.pc.config.get(cell).get("enabled") == true && cell.equals("usa62s")) {
+                        System.out.println(((List) ArgusQueryT.pc.config.get(cell).get("peak")).get(0));
+                        long tmp1 = Canary.getUtcEpochForHour((int) (((List) ArgusQueryT.pc.config.get(cell).get("peak")).get(0)));
+                        long tmp2 = Canary.getUtcEpochForHour((int) (((List) ArgusQueryT.pc.config.get(cell).get("peak")).get(1)));
+                        tmp1 = tmp1 - lastndays * 24 * 60 * 60 * 1000;
+                        tmp2 = tmp2 - lastndays * 24 * 60 * 60 * 1000;
+                        CanaryResponse response = processSideBySideCanary(tmp1, tmp2, cell);
+                        String dateString1 = Utils.convertEpochToUTCString(tmp1);
+                        String dateString2 = Utils.convertEpochToUTCString(tmp2);
+                        System.out.println(dateString1 + ":" + dateString2 + ":" + cell + "--->" + Utils.toJson(response));
+                    }
+                }
+            }
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }

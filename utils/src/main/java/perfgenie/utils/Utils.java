@@ -263,5 +263,4 @@ public class Utils {
         // Format the instant into the UTC string
         return formatter.format(instant);
     }
-
 }

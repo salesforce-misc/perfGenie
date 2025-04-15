@@ -1,7 +1,9 @@
 {
   "queries": {
     "cumulative": "DIFF(GROUPBYTAG(START:END:SCOPE:METRIC{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:max:all-max,#k8s_container_name#,#SUM#),GROUPBYTAG(START:END:SCOPE:METRIC{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:min:all-min,#k8s_container_name#,#SUM#))",
-    "average": "DOWNSAMPLE(ALIASBYREGEX(ALIAS(GROUPBYTAG(START:END:SCOPE:METRIC{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:1m-avg,#k8s_container_name#,#AVERAGE#),#:#,#literal#,#CELL#,#literal#),#(.*)::\\{#),#1d-avg#,#0#,#abs#)"
+    "average": "DOWNSAMPLE(ALIASBYREGEX(ALIAS(GROUPBYTAG(START:END:SCOPE:METRIC{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:1m-avg,#k8s_container_name#,#AVERAGE#),#:#,#literal#,#CELL#,#literal#),#(.*)::\\{#),#1d-avg#,#0#,#abs#)",
+    "ccumulative": "DIFF(GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD}:max:all-max,#k8s_container_name#,#SUM#),GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD}:min:all-min,#k8s_container_name#,#SUM#))",
+    "caverage": "DOWNSAMPLE(ALIASBYREGEX(ALIAS(GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD}:avg:1m-avg,#k8s_container_name#,#AVERAGE#),#:#,#literal#,#CELL#,#literal#),#(.*)::\\{#),#1d-avg#,#0#,#abs#)"
   },
   "metrics": {
     "rCPUTime" :{
@@ -33,7 +35,7 @@
       "description": "container CPU time Sec",
       "scope": "cadvisor.aws.INSTANCE.DOMAIN",
       "metric": "container_cpu_usage_seconds_total",
-      "type": "cumulative",
+      "type": "ccumulative",
       "enabled": true
     },
     "5xx":{
