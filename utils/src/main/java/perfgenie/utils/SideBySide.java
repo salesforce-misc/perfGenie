@@ -50,6 +50,26 @@ public class SideBySide {
                 return null;
             }
 
+            //startup
+            ArgusQueryT.QueryResponse startUp1 = ArgusQueryT.getStatupAVG(canary.finalStart, canary.finalEnd, instance, domain, cell, canary.pod1);
+            ArgusQueryT.QueryResponse startUp2 = ArgusQueryT.getStatupAVG(canary.finalStart, canary.finalEnd, instance, domain, cell, canary.pod2);
+            if (startUp1 != null && startUp2 != null) {
+                record.add(startUp1.getMetric());//APT1
+                header.add("startUp1:number");
+                record.add(startUp2.getMetric());//APT2
+                header.add("startUp2:number");
+                Double startUpPercentChange = 100.0 * (startUp1.getMetric() - startUp2.getMetric()) / startUp1.getMetric();
+                record.add(startUpPercentChange);//startUpPercentChange
+                header.add("startUp %c:number");
+            } else {
+                record.add(null);
+                header.add("startUp1:number");
+                record.add(null);
+                header.add("startUp2:number");
+                record.add(null);
+                header.add("startUp %c:number");
+            }
+
             //average APT
             ArgusQueryT.QueryResponse APT1 = ArgusQueryT.getMetric(ArgusQueryT.avgAPT, canary.finalStart, canary.finalEnd, instance, domain, cell, canary.pod1);
             ArgusQueryT.QueryResponse APT2 = ArgusQueryT.getMetric(ArgusQueryT.avgAPT, canary.finalStart, canary.finalEnd, instance, domain, cell, canary.pod2);

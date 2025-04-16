@@ -17,7 +17,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import static perfgenie.utils.ArgusQueries.*;
-import static perfgenie.utils.ArgusQueries.substrate;
 
 public class ArgusQueryT {
     static String substrate = System.getenv("SUBSTRATE");
@@ -114,6 +113,8 @@ public class ArgusQueryT {
 
     static String canaryKpodsQueryT = "START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-trustAptRequestCount.Last_1_Min_Avg{k8s_container_name=coreapp,cell=CELL,k8s_pod_name=*}:sum:1m-sum";
 
+    static String startupQueryT = "START:END:core.aws.INSTANCE.DOMAIN:AppStartup.totalStartupMs{cell=CELL,k8s_pod_name=POD}:avg:1m-avg";
+
     static ArgusConfig ac;
 
     static {
@@ -131,6 +132,86 @@ public class ArgusQueryT {
             pc = (PodConfig) Utils.readValue(Resources.toString(Resources.getResource("podconfig.json"), StandardCharsets.UTF_8), PodConfig.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static QueryResponse getStatupAVG(long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
+        if (pods.size() == 0) {
+            return null;
+        }
+        if ((System.currentTimeMillis() - lastUpdated) > 5 * 60 * 1000) {//5 min
+            updateAccessToken();
+            lastUpdated = System.currentTimeMillis();
+        }
+        QueryResponse response = new QueryResponse();
+
+        String query = startupQueryT.replaceAll("START", String.valueOf(timestampStart - 7 * 24 * 60 * 60 * 1000));//previous 7 days
+        query = query.replaceAll("END", String.valueOf(timestampEnd));
+        query = query.replaceAll("INSTANCE", instance);
+        query = query.replaceAll("DOMAIN", domain);
+        query = query.replaceAll("CELL", cell);
+        String podstr = "";
+        for (int i = 0; i < pods.size(); i++) {
+            if (i == 0) {
+                podstr = pods.get(i);
+            } else {
+                podstr = podstr + "|" + pods.get(i);
+            }
+        }
+        query = query.replaceAll("POD", podstr);
+
+        response.query = query;
+
+        try {
+            query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            System.out.println(cell+ " Statup1 " + e.getMessage());
+            return null;
+        }
+        String metricCommand = "curl -H \"Authorization: Bearer " + accessToken + "\" " + "https://monitoring-api.salesforce.com/argusws/metrics?expression=" + query;
+
+        String metric = "";
+        if (accessToken != null) {
+            metric = "{\"array\":" + executeCurlCommand(metricCommand) + "}";
+        } else {
+            try {
+                if (substrate == null) {
+                    metric = "{\"array\":" + Resources.toString(Resources.getResource("startup.json"), StandardCharsets.UTF_8) + "}";
+                }
+            } catch (Exception e) {
+                metric = "{}";
+                System.out.println(cell + "Statup2 " + e.getMessage());
+            }
+        }
+        try {
+            JSONObject jsonObject = new JSONObject(metric);
+            JSONArray jsonArray = jsonObject.getJSONArray("array");
+            Double sum = 0.0;
+            int count = 0;
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject object = jsonArray.getJSONObject(i);
+                JSONObject datapoints = object.getJSONObject("datapoints");
+                long prevT = -1;
+                Double prevS = 0.0;
+                Iterator keys = datapoints.keys();
+                while (keys.hasNext()) {
+                    String k = keys.next().toString();
+                    Long t = Long.parseLong(k);
+                    if (t > prevT) {
+                        prevT = t;
+                        prevS = datapoints.getDouble(String.valueOf(k));
+                    }
+                }
+                if (prevT != -1) {
+                    sum = sum + prevS;
+                    count++;
+                }
+            }
+            response.setMetric(sum / count);
+            return response;
+        } catch (Exception e) {
+            System.out.println("getStatupAVG Exception " + e.getMessage() + ":" + metric);
+            return null;
         }
     }
 
