@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -20,7 +21,7 @@ import static perfgenie.utils.ArgusQueries.*;
 
 public class ArgusQueryT {
     static String substrate = System.getenv("SUBSTRATE");
-    static String GCQueryT = "START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-AveGCUsage.OneMinuteAverage{cell=CELL,k8s_pod_name=*}:avg:1m-avg";
+    static String GCQueryT = "START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-AveGCUsage.OneMinuteAverage{cell=CELL,k8s_pod_name=*,role=app,k8s_container_name=coreapp}:avg:1m-avg";
     static String containerResourceCount = "GROUPBYTAG(START:END:kube-state-metrics.aws.INSTANCE.DOMAIN:kube_pod_container_resource_requests{k8s_container_name=coreapp,k8s_pod_name=POD,resource=cpu}:max:all-max,#k8s_container_name#,#SUM#)";
     static String containerCPUUsageSecondsTotalDiff = "DIFF(" +
             "  GROUPBYTAG(START:END:cadvisor.aws.INSTANCE.DOMAIN:container_cpu_usage_seconds_total{k8s_container_name=coreapp,k8s_pod_name=POD}:max:all-max,#k8s_container_name#,#SUM#)," +
@@ -29,6 +30,10 @@ public class ArgusQueryT {
     static String requestCPUSecondsTotalDiff = "DIFF(" +
             "  GROUPBYTAG(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-ServerMetrics.LogMetric-APP_CPU_TIME{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:max:all-max,#k8s_container_name#,#SUM#)," +
             "  GROUPBYTAG(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-ServerMetrics.LogMetric-APP_CPU_TIME{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:min:all-min,#k8s_container_name#,#SUM#)" +
+            ")";
+    static String jvmCPUMsTotalDiff = "DIFF(" +
+            "  GROUPBYTAG(START:END:core.aws.INSTANCE.DOMAIN:Jvm.processCpuTimeMs.Value{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:max:all-max,#k8s_container_name#,#SUM#)," +
+            "  GROUPBYTAG(START:END:core.aws.INSTANCE.DOMAIN:Jvm.processCpuTimeMs.Value{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:min:all-min,#k8s_container_name#,#SUM#)" +
             ")";
     static String totalTrustRequestCountLast_1_Min_Avg = "DOWNSAMPLE(" +
             "  GROUPBYTAG(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-trustAptRequestCount.Last_1_Min_Avg{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:1m-avg,#k8s_container_name#,#SUM#,#union#)," +
@@ -109,13 +114,16 @@ public class ArgusQueryT {
             "  GROUPBYTAG(START:END:core.aws.INSTANCE.DOMAIN:Jvm.totalSafepointTimeMs.Value{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:min:all-min,#k8s_container_name#,#SUM#)" +
             ")";
 
+    static String totalSafepointTimeSeries = "ALIASBYTAG(FILL(CULL_BELOW(DERIVATIVE(START:END:core.aws.INSTANCE.DOMAIN:Jvm.totalSafepointTimeMs.Value{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:1m-max),#-2#,#value#),#1m#,#2m#,#0#),#k8s_pod_name#)";
+    static String totalOldgenTimeSeries = "START:END:core.aws.INSTANCE.DOMAIN:Jvm.lastOldGenAfterGcSizeMb.Value{cell=CELL,k8s_pod_name=POD,role=app,k8s_container_name=coreapp}:avg:1m-avg";
+
     static String requestCountQueryT = "GROUPBYTAG(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-trustAptRequestCount.Last_1_Min_Avg{cell=CELL,k8s_pod_name=*}:sum:10m-sum,#cell#,#SUM#)";
 
     static String canaryKpodsQueryT = "START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-trustAptRequestCount.Last_1_Min_Avg{k8s_container_name=coreapp,cell=CELL,k8s_pod_name=*}:sum:1m-sum";
 
     static String startupQueryT = "START:END:core.aws.INSTANCE.DOMAIN:AppStartup.totalStartupMs{cell=CELL,k8s_pod_name=POD}:avg:1m-avg";
 
-    static ArgusConfig ac;
+    public static ArgusConfig ac;
 
     static {
         try {
@@ -125,7 +133,7 @@ public class ArgusQueryT {
         }
     }
 
-    static PodConfig pc;
+    public static PodConfig pc;
 
     static {
         try {
@@ -286,6 +294,170 @@ public class ArgusQueryT {
             System.out.println(cell+ " getRequestCountKpodMetric1 " + e.getMessage());
             return null;
         }
+    }
+
+    public static String getSafepointData(long timestampStart, long timestampEnd, String instance, String domain, String cell, String pod){
+        String tok[] = cell.split("-");//falcon-aws-prod1-useast1-core1-usa358
+        if(cell.contains("falcon")){
+            instance = tok[1]+"-"+tok[2]+"-"+tok[3];
+            domain = tok[4];
+            cell = tok[5];
+        }
+
+        List<String> header = new ArrayList<>();
+        header.add("timestamp:timestamp");
+        header.add("name:text");
+        header.add("safepointMs:number");
+
+        final EventHandler aggregator = new EventHandler();
+        aggregator.initializeEvent("safepoint");
+        aggregator.addHeader("safepoint", header);
+
+
+        if ((System.currentTimeMillis() - lastUpdated) > 5 * 60 * 1000) {//5 min
+            updateAccessToken();
+            lastUpdated = System.currentTimeMillis();
+        }
+        String query = totalSafepointTimeSeries.replaceAll("START", String.valueOf(timestampStart));
+        query = query.replaceAll("END", String.valueOf(timestampEnd));
+        query = query.replaceAll("INSTANCE", instance);
+        query = query.replaceAll("DOMAIN", domain);
+        query = query.replaceAll("CELL", cell);
+        query = query.replaceAll("POD", pod);
+
+        try {
+            query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            System.out.println(cell+ "safepoint1 " + e.getMessage());
+            return null;
+        }
+        String metricCommand = "curl -H \"Authorization: Bearer " + accessToken + "\" " + "https://monitoring-api.salesforce.com/argusws/metrics?expression=" + query;
+
+        String metric = "";
+        if (accessToken != null) {
+            metric = "{\"array\":" + executeCurlCommand(metricCommand) + "}";
+        } else {
+            try {
+                if (substrate == null) {
+                    metric = "{\"array\":" + Resources.toString(Resources.getResource("gc.json"), StandardCharsets.UTF_8) + "}";
+                }
+            } catch (Exception e) {
+                metric = "{}";
+                System.out.println(cell + "safepoint2 " + e.getMessage());
+            }
+        }
+
+        try {
+            JSONObject jsonObject = new JSONObject(metric);
+            JSONArray jsonArray = jsonObject.getJSONArray("array");
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject object = jsonArray.getJSONObject(i);
+                JSONObject datapoints = object.getJSONObject("datapoints");
+                Iterator keys = datapoints.keys();
+                while (keys.hasNext()) {
+                    List<Object> record = new ArrayList<>();
+                    String k = keys.next().toString();
+                    record.add(Long.parseLong(k));
+                    record.add("safepoint");
+                    record.add(datapoints.getDouble(String.valueOf(k)));
+                    aggregator.processContext(record, 1, "safepoint");
+                }
+                Object logContext = aggregator.getLogContext();
+                return Utils.toJson(logContext);
+            }
+        } catch (Exception e) {
+            System.out.println("query->" + query);
+            System.out.println("metric->" + metric);
+            System.out.println(cell + "safepoint3 " + e.getMessage());
+            return null;
+        }
+        System.out.println("query->" + query);
+        System.out.println("metric->" + metric);
+        System.out.println(cell + "safepoint4 ");
+        return null;
+    }
+
+    public static String getOldgenData(long timestampStart, long timestampEnd, String instance, String domain, String cell, String pod){
+
+        String tok[] = cell.split("-");//falcon-aws-prod1-useast1-core1-usa358
+        if(cell.contains("falcon")){
+            instance = tok[1]+"-"+tok[2]+"-"+tok[3];
+            domain = tok[4];
+            cell = tok[5];
+        }
+
+        List<String> header = new ArrayList<>();
+
+        header.add("timestamp:timestamp");
+        header.add("name:text");
+        header.add("oldgen:number");
+
+        final EventHandler aggregator = new EventHandler();
+        aggregator.initializeEvent("oldgen");
+        aggregator.addHeader("oldgen", header);
+
+
+        if ((System.currentTimeMillis() - lastUpdated) > 5 * 60 * 1000) {//5 min
+            updateAccessToken();
+            lastUpdated = System.currentTimeMillis();
+        }
+        String query = totalOldgenTimeSeries.replaceAll("START", String.valueOf(timestampStart));
+        query = query.replaceAll("END", String.valueOf(timestampEnd));
+        query = query.replaceAll("INSTANCE", instance);
+        query = query.replaceAll("DOMAIN", domain);
+        query = query.replaceAll("CELL", cell);
+        query = query.replaceAll("POD", pod);
+        System.out.println("query->" + query);
+        try {
+            query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            System.out.println(cell+ "oldgen1 " + e.getMessage());
+            return null;
+        }
+        String metricCommand = "curl -H \"Authorization: Bearer " + accessToken + "\" " + "https://monitoring-api.salesforce.com/argusws/metrics?expression=" + query;
+
+        String metric = "";
+        if (accessToken != null) {
+            metric = "{\"array\":" + executeCurlCommand(metricCommand) + "}";
+        } else {
+            try {
+                if (substrate == null) {
+                    metric = "{\"array\":" + Resources.toString(Resources.getResource("gc.json"), StandardCharsets.UTF_8) + "}";
+                }
+            } catch (Exception e) {
+                metric = "{}";
+                System.out.println(cell + "oldgen2 " + e.getMessage());
+            }
+        }
+
+        try {
+            JSONObject jsonObject = new JSONObject(metric);
+            JSONArray jsonArray = jsonObject.getJSONArray("array");
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject object = jsonArray.getJSONObject(i);
+                JSONObject datapoints = object.getJSONObject("datapoints");
+                Iterator keys = datapoints.keys();
+                while (keys.hasNext()) {
+                    List<Object> record = new ArrayList<>();
+                    String k = keys.next().toString();
+                    record.add(Long.parseLong(k));
+                    record.add("oldgen");
+                    record.add(datapoints.getDouble(String.valueOf(k)));
+                    aggregator.processContext(record, 1, "oldgen");
+                }
+                Object logContext = aggregator.getLogContext();
+                return Utils.toJson(logContext);
+            }
+        } catch (Exception e) {
+            System.out.println("query->" + query);
+            System.out.println("metric->" + metric);
+            System.out.println(cell + "oldgen3 " + e.getMessage());
+            return null;
+        }
+        System.out.println("query->" + query);
+        System.out.println("metric->" + metric);
+        System.out.println(cell + "oldgen4 ");
+        return null;
     }
 
     public static QueryResponse getArgusMetric(String m, long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {

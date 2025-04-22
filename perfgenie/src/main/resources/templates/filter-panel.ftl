@@ -1773,6 +1773,7 @@
             console.log("addContextData "+count+" skip:" + samplesCustomEvent + event);
             return false;
         }
+        treeToProcess[samplesCustomEvent + event+"-context"] = "done";
 
         let contextStart = treeToProcess.context.start;
         contextTidMap = treeToProcess.context.tidMap;
@@ -1840,8 +1841,6 @@
                     let end = record[timestampIndex] - contextStart + record[spanIndex];
                     let start =  record[timestampIndex] - contextStart;
 
-                    //let stackMap = {};
-
                     try {
                         //do a binary search
                         let entryIndex = isinRequest(contextTidMap[tid], start, end);
@@ -1852,12 +1851,6 @@
                             let curIndex = entryIndex;
                             //consider all matching samples downward
                             while (curIndex >= 0 && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
-                                //if (stackMap[requestArr[curIndex].hash] !== undefined) {
-                                //    stackMap[requestArr[curIndex].hash] = stackMap[requestArr[curIndex].hash] + 1;
-                                //} else {
-                                //    stackMap[requestArr[curIndex].hash] = 1;
-                                //}
-                                //requestArr[curIndex].obj = record;
                                 if(requestArr[curIndex][samplesCustomEvent] == undefined){
                                     requestArr[curIndex][samplesCustomEvent]={};
                                 }
@@ -1871,12 +1864,6 @@
                             curIndex = entryIndex + 1;
                             //consider all matching samples upward
                             while (curIndex < requestArr.length && requestArr[curIndex].time >= start && requestArr[curIndex].time <= end) {
-                                //if (stackMap[requestArr[curIndex].hash] !== undefined) {
-                                //    stackMap[requestArr[curIndex].hash] = stackMap[requestArr[curIndex].hash] + 1;
-                                //} else {
-                                //    stackMap[requestArr[curIndex].hash] = 1;
-                                //}
-                                //requestArr[curIndex].obj = record;
                                 if(requestArr[curIndex][samplesCustomEvent] == undefined){
                                     requestArr[curIndex][samplesCustomEvent]={};
                                 }
@@ -1902,10 +1889,130 @@
         if(event == "Jstack" || event == "json-jstack"){
             addContextDataJstack(event, count);
         }
-        treeToProcess[samplesCustomEvent + event+"-context"] = "done";
         let end = performance.now();
         console.log("addContextData count: " + count + " time:" + (end - start) + ":" + samplesCustomEvent + ":" + event + ":" +scount+":"+reqCount);
         return true;
+    }
+
+
+
+    function addThreadNameContextToAlloc(count, event){
+        let treeToProcess = getContextTree(count, event);
+        let contextStart = treeToProcess.context.start;
+        let contextTidMap = treeToProcess.context.tidMap;
+        for(var tid in jstackTidRecordsMap) {
+            if(contextTidMap[tid]!=undefined) {
+                for (let i = 0; i < contextTidMap[tid].length; i++) {
+                    for (let j = 0; j < jstackTidRecordsMap[tid].length; j++) {
+                        for (let k = i; k < contextTidMap[tid].length; k++, i++) {
+                            let ts = contextStart + contextTidMap[tid][k].time;
+                            if(ts >= jstackTidRecordsMap[tid][j][0][0] && ts <= jstackTidRecordsMap[tid][j][0][1]){
+                                if( contextTidMap[tid][k][samplesCustomEvent] == undefined) {
+                                    contextTidMap[tid][k].tn = jstackTidRecordsMap[tid][j][0][2];
+                                }
+                            }else if(ts > jstackTidRecordsMap[tid][j][0][1]){
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        let localContextData = getContextData(count);
+        let alloccontext = "memory-profile-alloc";
+        let records = localContextData.records;
+        let header = localContextData.header;
+        let tooltips = localContextData.tooltips;
+        if (header[alloccontext] != undefined) {
+            for (let val in header[alloccontext]) {
+                const tokens = header[alloccontext][val].split(":");
+                tooltips[tokens[0]] = tokens[2];
+            }
+        }
+        records[alloccontext] = {};
+        header[alloccontext] = ["timestamp:timestamp:allocation time", "tid:text:tid", "allocation:number:bytes","threadname:text:tid"];
+        if(contextTidMap != undefined) {
+            for (var tid in contextTidMap) {
+                if (records[alloccontext][tid] == undefined) {
+                    records[alloccontext][tid] = [];
+                }
+                for (let i = 0; i < contextTidMap[tid].length; i++) {
+                    if (contextTidMap[tid][i].ctx != undefined) {
+                        if( contextTidMap[tid][i][samplesCustomEvent] == undefined) {
+                            records[alloccontext][tid].push({"record": [contextStart+contextTidMap[tid][i].time, tid, Number(contextTidMap[tid][i].ctx),tid+contextTidMap[tid][i].tn]});
+                        }else{
+                            records[alloccontext][tid].push({"record": [contextStart+contextTidMap[tid][i].time, tid, Number(contextTidMap[tid][i].ctx),tid+contextTidMap[tid][i][samplesCustomEvent].obj[7]]});
+                        }
+                    }
+                }
+                records[alloccontext][tid].sort(function (a, b) {
+                    return a.record[0] - b.record[0];
+                });//descending
+            }
+            /*
+            otherEventsFetched[alloccontext]=true;
+            $('#other-event-input').append($('<option>', {
+                value: alloccontext,
+                text: alloccontext
+            }));*/
+            toastMessage(toastType.INFO, alloccontext + " data re-loaded");
+        }
+    }
+
+    //contextData[1].records["memory-profile-alloc"]
+
+    let jstackTidRecordsMap = {};
+    let jstackTidRecordsMapDone = false;
+    function addThreadNameContextDataFromJstack(event, count){
+        let treeToProcess = getContextTree(count,"json-jstack");
+        if(!jstackTidRecordsMapDone && treeToProcess != undefined) {
+            jstackTidRecordsMapDone=true;
+            addContextData(event, count);
+
+            console.log("addThreadNameContextDataFromJstack");
+            let contextTidMap = treeToProcess.context.tidMap;
+            for (var tid in contextTidMap) {
+
+                let ptn = "";
+                let ctn = "";
+                let rstart = -1;
+                let cstart = -1;
+                let pstart = -1;
+                for (let i = 0; i < contextTidMap[tid].length; i++) {
+                    if (contextTidMap[tid][i].tn == undefined) {
+                        let pair = contextTidMap[tid][i].ctx.split(";");
+                        contextTidMap[tid][i].tn = pair[1];
+                        contextTidMap[tid][i].ts = getThreadState(pair[0]);
+                    }
+                    ctn = contextTidMap[tid][i].tn;
+                    cstart = treeToProcess.context.start + contextTidMap[tid][i].time;
+
+                    if(ptn != "" && ptn != ctn && rstart != -1){
+                        let record = [];
+                        record.push([rstart,cstart,ptn]);
+                        if(jstackTidRecordsMap[tid] == undefined){
+                            jstackTidRecordsMap[tid] = [];
+                        }
+                        jstackTidRecordsMap[tid].push(record);
+                        rstart = -1;
+                    }else if(rstart == -1 && ptn == ctn){
+                        rstart = pstart;
+                    }
+
+                    ptn = ctn;
+                    pstart = cstart;
+                }
+                if(rstart != -1 && cstart != rstart ){
+                    let record = [];
+                    record.push([rstart,cstart,ptn]);
+                    if(jstackTidRecordsMap[tid] == undefined){
+                        jstackTidRecordsMap[tid] = [];
+                    }
+                    jstackTidRecordsMap[tid].push(record);
+                }
+            }
+            addThreadNameContextToAlloc(count, event);
+        }
     }
 
     function addContextDataJstack(event, count){
@@ -4301,6 +4408,9 @@
             otherEvent = $("#other-event-input").val();
             tmpColorMap.clear();
             setToolBarOptions("statetabledrp");
+            if(otherEvent == "memory-profile-alloc"){
+                addThreadNameContextDataFromJstack("jfr_dump_memory.json.gz",1);
+            }
             genRequestTable();
             updateRequestView();
         });
@@ -4936,14 +5046,13 @@
     }
 
     function extractandCreateMemoryAllocationTrendData(count) {
-
         console.log("extractandCreateMemoryAllocationTrendData");
         let localContextData = getContextData(count);
         let treeToProcess = getContextTree(count, "jfr_dump_memory.json.gz");
 
-        if(localContextData == undefined || treeToProcess == undefined){
-            console.log("nodata extractandCreateMemoryAllocationTrendData");
-            return;
+        if((localContextData == undefined || treeToProcess == undefined)){
+                console.log("nodata extractandCreateMemoryAllocationTrendData");
+                return;
         }
 
         let alloccontext = "memory-profile-alloc";

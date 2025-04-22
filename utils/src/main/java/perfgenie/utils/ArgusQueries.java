@@ -2,7 +2,7 @@ package perfgenie.utils;
 
 public class ArgusQueries {
     static String substrate = System.getenv("SUBSTRATE");
-    static String GCQueryT = "START1:END1:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-AveGCUsage.OneMinuteAverage{cell=CELL,k8s_pod_name=*}:avg:1m-avg";
+    static String GCQueryT = "START1:END1:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-AveGCUsage.OneMinuteAverage{cell=CELL,k8s_pod_name=*,role=app,k8s_container_name=coreapp}:avg:1m-avg";
     static String APTQueryT = "SCALE(" +
             "  DIVIDE(" +
             "    DIFF(" +

@@ -530,10 +530,39 @@ public class PerfGenieService implements IPerfGenieService {
         }
     }
 
+    public String getSafepointContext(long start, long end, String instance, String domain, String cell, String pod){
+        String cr = ArgusQueryT.getSafepointData(start, end, instance, domain, cell, pod);
+        return cr;
+    }
+
+    public String getOldgenContext(long start, long end, String instance, String domain, String cell, String pod){
+        String cr = ArgusQueryT.getOldgenData(start, end, instance, domain, cell, pod);
+        return cr;
+    }
+
     @Override
     public String getOtherEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) {
         logger.info("getOtherEvents processing " + queryMap);
         try {
+            if (queryMap.get("name").contains("=safepoint")){
+                System.out.println("get safepoint metrics");
+                String res = getSafepointContext(start,end,queryMap.get("instance"),"core1", tenant, queryMap.get("host").replace("=",""));
+                if(res != null){
+                    return res;
+                }else{
+                    return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to get safepoint metric", queryMap, null));
+                }
+            }
+            if (queryMap.get("name").contains("=oldgen")){
+                System.out.println("get oldgen metrics");
+                String res = getOldgenContext(start,end,queryMap.get("instance"),"core1", tenant, queryMap.get("host").replace("=",""));
+                if(res != null){
+                    return res;
+                }else {
+                    return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to get oldgen metric", queryMap, null));
+                }
+            }
+
             Map<Long, String> otherevents = eventStore.getOtherPayLoads(tenant, start, end, queryMap, dimMap, true);
             boolean parseJstacks = false;
             if (otherevents == null || otherevents.size() < 1) {
@@ -1428,82 +1457,10 @@ public class PerfGenieService implements IPerfGenieService {
         }
     }
 
-    public String getCanaryEventold(long start, long end) throws IOException {
-        Map<String, Map<String, String>> profiles;
-        String host = InetAddress.getLocalHost().getHostName();
-        String substrate = System.getenv("SUBSTRATE");
-        if (substrate != null || config.getStorageType().equals("grpc")) {
-            host = "perf-genie-zingcanary";
-        }
-        final Map<String, String> dimMap = new HashMap<>();
-        final Map<String, String> queryMap = new HashMap<>();
-        queryMap.put("source", "="+canarySource);
-        queryMap.put("name", "=canary");
-        queryMap.put("tenant-id", "=canary");
-        queryMap.put("instance-id", "=" + host);
-        queryMap.put("host", "=" + host);
-        try {
-            final EventHandler aggregator = new EventHandler();
-            end = Instant.now().toEpochMilli() + 60 * 60 * 1000;
-            for (int j = 5; j <= 40; j += 5) {
-                start = end - 5 * 24 * 60 * 60 * 1000;
-                String pattern = "yyyy-MM-dd HH:mm:ss";
-                String timezone = "UTC";
-
-                String dateString1 = convertEpochToDateString(start, pattern, timezone);
-                String dateString2 = convertEpochToDateString(end, pattern, timezone);
-                System.out.println(dateString1 + ":" + dateString2);
-                queryMap.remove("guid");
-                profiles = eventStore.loadGenieProfilesAll(config.getTenant(), start, end, queryMap, dimMap, true);
-                if (profiles == null || profiles.size() < 1) {
-                    //System.out.println("Skip");
-                    end = start;
-                    continue;
-                    //return Utils.toJson(new EventHandler.JfrParserResponse(null, "no profiles found for the given time range", queryMap, null));
-                }
-                List<String> tosort = new ArrayList<>();
-                for (String key : profiles.keySet()) {
-                    tosort.add(key);
-                }
-                Collections.sort(tosort);
-                for (int i = 0; i < tosort.size(); i++) {
-                    String[] array = tosort.get(i).split("::");
-                    queryMap.put("guid", array[1]);
-                    String result = checkLocal(queryMap.get("guid"));
-                    if (result == null) {
-                        result = eventStore.getGenieLargeEvent(Long.parseLong(array[0]), Long.parseLong(array[0]), queryMap, dimMap, config.getTenant());
-                        Path path1 = Paths.get(config.getJfrdir() + "/" + queryMap.get("guid") + ".tmp");
-                        Files.write(path1, result.getBytes());
-                    }
-                    aggregator.aggregateLogContext((EventHandler.ContextResponse) Utils.readValue(result, EventHandler.ContextResponse.class));
-                }
-                end = start;
-
-            }
-            return Utils.toJson(aggregator.getLogContext());
-        } catch (Exception e) {
-            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to aggregate" + e.getMessage(), queryMap, null));
-        }
-    }
-
-    private String checkLocal(String guid) {
-        try {
-            String filepath = config.getJfrdir() + "/" + guid + ".tmp";
-            File f = new File(filepath);
-            if (f.exists()) {
-                return new String(Files.readAllBytes(Paths.get(filepath)));
-            }
-        } catch (Exception e) {
-            System.out.println("checkLocal:" + e.getMessage());
-        }
-        return null;
-    }
-
     public static void main(String[] args) {
         try {
             long start = 0;
             long end = 0;
-            String cell = "ind86";
 
             Config config = new Config();
             Cantor cantor = null;
@@ -1519,11 +1476,54 @@ public class PerfGenieService implements IPerfGenieService {
             PerfGenieService service = new PerfGenieService(eventStore, parser, config);
             String substrate = System.getenv("SUBSTRATE");
             String host = InetAddress.getLocalHost().getHostName();
-            if (args.length == 3 || args.length == 4 || args.length == 5) {
+
+            if(args[0].equals("canary") || args[0].equals("release")){
+                if (substrate != null) {
+                    host = "perf-genie-test10";
+                }
+                start = Long.parseLong(args[1]);
+                end = Long.parseLong(args[2]);
+                for (int lastndays = (int)end; lastndays <= start; lastndays++) {
+                    for (String cell : ArgusQueryT.pc.getConfig().keySet()) {
+                        if ((boolean) ArgusQueryT.pc.getConfig().get(cell).get("enabled") == true) {
+                            System.out.println(((List) ArgusQueryT.pc.getConfig().get(cell).get("peak")).get(0));
+                            long tmp1 = Canary.getUtcEpochForHour((int) (((List) ArgusQueryT.pc.getConfig().get(cell).get("peak")).get(0)));
+                            long tmp2 = Canary.getUtcEpochForHour((int) (((List) ArgusQueryT.pc.getConfig().get(cell).get("peak")).get(1)));
+                            tmp1 = tmp1 - lastndays * 24 * 60 * 60 * 1000;
+                            tmp2 = tmp2 - lastndays * 24 * 60 * 60 * 1000;
+                            try {
+                                if (!service.eventEsists(tmp2, host, cell)) {
+                                    CanaryResponse response;
+                                    if(args[0].equals("canary")) {
+                                        response = SideBySide.processSideBySideCanary(tmp1, tmp2, cell);
+                                    }else{
+                                        response = WeekOverWeek.processWeekOverWeekCanary(tmp1, tmp2, cell);
+                                    }
+                                    String dateString1 = Utils.convertEpochToUTCString(tmp1);
+                                    String dateString2 = Utils.convertEpochToUTCString(tmp2);
+                                    System.out.println(dateString1 + ":" + dateString2 + ":" + cell + "--->" + Utils.toJson(response));
+                                    List<Object> record = response.getRecord();
+                                    if (record.size() > 0) {
+                                        //service.addCanaryEventNew(record, tmp2, cell, host,response.getHeader());
+                                        System.out.println(cell + ":" + lastndays + "----> record count " + record.size());
+                                    } else {
+                                        System.out.println(cell + ":" + lastndays + "----> skip record count " + record.size());
+                                    }
+                                } else {
+                                    System.out.println(cell + ":" + lastndays + "---> Event exists");
+                                }
+                            } catch (Exception e) {
+                                System.out.println(cell + "----> Exception " + lastndays + ":" + cell);
+                            }
+                        }
+                    }
+                }
+            }else if (args.length == 3 || args.length == 4 || args.length == 5) {
                 if (substrate != null) {
                     host = "perf-genie-tracker";
                 }
-                cell = args[0];
+                String cell = args[0];
+
                 start = Long.parseLong(args[1]);
                 end = Long.parseLong(args[2]);
                 int numDays = 1;
@@ -1558,7 +1558,7 @@ public class PerfGenieService implements IPerfGenieService {
                 if (substrate != null) {
                     host = "perf-genie-releasemonitor";
                 }
-                cell = args[0];
+                String cell = args[0];
                 start = Long.parseLong(args[1]);
                 long eventTimestamp = Utils.roundEpochToMidnightUTC(start) + 24 * 60 * 60 * 1000;
                 if (!service.eventEsists(eventTimestamp, host, cell)) {
@@ -1641,4 +1641,5 @@ public class PerfGenieService implements IPerfGenieService {
         }
         return Utils.toJson(response);
     }
+
 }

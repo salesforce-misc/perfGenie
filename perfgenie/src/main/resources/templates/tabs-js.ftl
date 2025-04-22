@@ -543,6 +543,8 @@
         for (var key in otherEvents1) {
             getOtherEvent(timeRange, tenant, host, key, count);
         }
+        getOtherEvent(timeRange, tenant, host, "safepoint", count);
+        getOtherEvent(timeRange, tenant, host, "oldgen", count);
     }
 
     let incrementRefreshTimer = undefined;

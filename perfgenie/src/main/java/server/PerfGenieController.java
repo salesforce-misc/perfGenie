@@ -46,8 +46,9 @@ public class PerfGenieController {
         this.service = service;
     }
 
-    @GetMapping(path = {"/component/casp/v1/canary"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(path = {"/component/casp/v1/canary","/component/casp/v1/canary/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String canary(
+            @PathVariable(required = false, name = "host") String host,
                           @RequestParam(required = false, name = "start") final long start,
                           @RequestParam(required = false, name = "end") final long end,
                           @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
@@ -63,8 +64,9 @@ public class PerfGenieController {
         return service.releaseTask(start,end);
     }
 
-    @GetMapping(path = {"/component/casp/v1/canaryview"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(path = {"/component/casp/v1/canaryview","/component/casp/v1/canaryview/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String canaryview(
+            @PathVariable(required = false, name = "host") String host,
             @RequestParam(required = false, name = "start") final long start,
             @RequestParam(required = false, name = "end") final long end,
             @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {

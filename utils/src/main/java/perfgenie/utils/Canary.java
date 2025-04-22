@@ -320,11 +320,25 @@ public class Canary {
                     //record.add(total5xx4xxCount2perKpod);//total5xx4xxCount2perKpod
                     record.add(total5xx4xxCountperKpodPercentChange);//total5xx4xxCountperKpodPercentChange
 
+                    record.add(podsInstance.get(key));//instance
+                    record.add(podsDomain.get(key));//domain
+                    //JcpuT
+                    ArgusQueryT.QueryResponse totalJCPUMs1 = ArgusQueryT.getMetric(ArgusQueryT.jvmCPUMsTotalDiff, curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key, pod1);
+                    ArgusQueryT.QueryResponse totalJCPUMs2 = ArgusQueryT.getMetric(ArgusQueryT.jvmCPUMsTotalDiff, curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key, pod2);
+                    Double totalJCPUMs1perReqPerKpod = totalJCPUMs1.getMetric() / (reqCount1.getMetric() * pod1.size());
+                    Double totalJCPUMs2perReqPerKpod = totalJCPUMs2.getMetric() / (reqCount2.getMetric() * pod2.size());
+                    Double totalJCPUMsperReqPercentChange = 100.0 * (totalJCPUMs1perReqPerKpod - totalJCPUMs2perReqPerKpod) / totalJCPUMs1perReqPerKpod;
+                    record.add(totalJCPUMsperReqPercentChange);
+                    //CcpuT
+                    ArgusQueryT.QueryResponse totalCCPUSec1 = ArgusQueryT.getMetric(ArgusQueryT.containerCPUUsageSecondsTotalDiff, curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key, pod1);
+                    ArgusQueryT.QueryResponse totalCCPUSec2 = ArgusQueryT.getMetric(ArgusQueryT.containerCPUUsageSecondsTotalDiff, curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key, pod2);
+                    Double totalCCPUSec1perReqPerKpod = totalCCPUSec1.getMetric() / (reqCount1.getMetric() * pod1.size());
+                    Double totalCCPUSec2perReqPerKpod = totalCCPUSec2.getMetric() / (reqCount2.getMetric() * pod2.size());
+                    Double totalCCPUSecperReqPercentChange = 100.0 * (totalCCPUSec1perReqPerKpod - totalCCPUSec2perReqPerKpod) / totalCCPUSec1perReqPerKpod;
+                    record.add(totalCCPUSecperReqPercentChange);
                 } catch (Exception e) {
                     System.out.println("--------> skip 4xx 5xx" + e.getMessage());
                 }
-                record.add(podsInstance.get(key));//instance
-                record.add(podsDomain.get(key));//domain
             }
         } catch (Exception e) {
             System.out.println(key + " getCanaryResults Exception:" + e.getMessage());

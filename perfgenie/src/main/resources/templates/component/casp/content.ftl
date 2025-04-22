@@ -1,3 +1,5 @@
+
+
 <div id="spinner" class="spinner"></div>
 <div style="overflow: scroll">
     <div id="canaryview"></div>
@@ -36,10 +38,12 @@
     </div>
 </div>
 <script type="text/javascript" class="init">
-
+    const urlParams = new URLSearchParams(window.location.search);
+    let dataHost = urlParams.get('host') || "perf-genie-tracker";
     function onComment(resulttime, cell){
         getCanaryComments(resulttime, cell);
     }
+
 
 
     $(document).ready(function() {
@@ -85,7 +89,7 @@
     });
 
     function processCanaryData() {
-        URL = "v1/canary?start=1&end=1";
+        URL = "v1/canary/"+dataHost+"/?start=1&end=1";
         showSpinner();
         $.ajax({
             url: URL, success: function (result) {
@@ -100,7 +104,7 @@
     }
 
     function viewCanaryData() {
-        URL = "v1/canaryview?start=1&end=1";
+        URL = "v1/canaryview/"+dataHost+"/?start=1&end=1";
         showSpinner();
         $.ajax({
             url: URL, success: function (result) {
@@ -203,21 +207,44 @@ $(document).ready(function () {
                 jcpu = parseFloat(jcpu.toFixed(3))
             } catch(err) {}
             if(jcpu > 0){
-                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:green'>" +jcpu+"</span>");//apt
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:green'><s>" +jcpu+"</s></span>");//apt
             }else {
-                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:red'>" +jcpu+"</span>");//apt
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:red'><s>" +jcpu+"</s></span>");//apt
             }
             let ccpu = canaryContextArray[i].record[5];
             try {
                 ccpu = parseFloat(ccpu.toFixed(3))
             } catch(err) {}
             if(ccpu > 0){
-                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:green'>" +ccpu+"</span>");//apt
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:green'><s>" +ccpu+"</s></span>");//apt
             }else {
-                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:red'>" +ccpu+"</span>");//apt
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:red'><s>" +ccpu+"</s></span>");//apt
             }
 
             if(canaryContextArray[i].record.length > 19){
+                if(canaryContextArray[i].record[20] != undefined){
+                    let jcput = canaryContextArray[i].record[20];
+                    try {
+                        jcput = parseFloat(jcput.toFixed(3))
+                    } catch(err) {}
+                    let ccput = canaryContextArray[i].record[21];
+                    try {
+                        ccput = parseFloat(ccput.toFixed(3))
+                    } catch(err) {}
+                    if(jcput > 0) {
+                        canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:green'>" + jcput + "</span>");//
+                    }else{
+                        canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:red'>" + jcput + "</span>");//
+                    }
+                    if(ccput > 0) {
+                        canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:green'>" + ccput + "</span>");//
+                    }else{
+                        canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:red'>" + ccput + "</span>");//
+                    }
+                }else{
+                    canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:black'>NA</span>");//
+                    canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:black'>NA</span>");//
+                }
                 let rcpu = canaryContextArray[i].record[16];
                 try {
                     rcpu = parseFloat(rcpu.toFixed(3))
@@ -239,6 +266,9 @@ $(document).ready(function () {
             }else{
                 canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:black'>NA</span>");//
                 canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:black'>NA</span>");//
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:black'>NA</span>");//
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:black'>NA</span>");//
+
             }
 
             let avgs = canaryContextArray[i].record[10];
@@ -268,8 +298,10 @@ $(document).ready(function () {
         canaryviewtable.addContextTableHeader(tableHeader,"avgApt %c",1, "");
         canaryviewtable.addContextTableHeader(tableHeader,"avgJCpu/r %c",1, "");
         canaryviewtable.addContextTableHeader(tableHeader,"avgCCpu/r %c",1, "");
-        canaryviewtable.addContextTableHeader(tableHeader,"avgReqCpu %c",-1, "");
-        canaryviewtable.addContextTableHeader(tableHeader,"5xx_4xx %c",-1, "");
+        canaryviewtable.addContextTableHeader(tableHeader,"JCpuT/r %c",1, "");
+        canaryviewtable.addContextTableHeader(tableHeader,"CCpuT/r %c",1, "");
+        canaryviewtable.addContextTableHeader(tableHeader,"avgReqCpu %c",1, "");
+        canaryviewtable.addContextTableHeader(tableHeader,"5xx_4xx %c",1, "");
         canaryviewtable.addContextTableHeader(tableHeader,"avgStp %c",1, "");
         canaryviewtable.addContextTableHeader(tableHeader,"zingC",1, "");
         canaryviewtable.addContextTableHeader(tableHeader,"zuluC",1, "");
