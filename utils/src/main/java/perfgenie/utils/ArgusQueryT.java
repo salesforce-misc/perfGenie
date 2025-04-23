@@ -288,6 +288,89 @@ public class ArgusQueryT {
         }
     }
 
+    /* Like getArgusMetric, but returns all of the datapoints in a double[].
+     */
+    public static DatapointsQueryResponse getArgusMetricDatapoints(String m, long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
+        if (pods.size() == 0) {
+            return null;
+        }
+        if ((System.currentTimeMillis() - lastUpdated) > 5 * 60 * 1000) {//5 min
+            updateAccessToken();
+            lastUpdated = System.currentTimeMillis();
+        }
+        DatapointsQueryResponse response = new DatapointsQueryResponse();
+        String queryT = ac.queries.get(ac.metrics.get(m).get("type"));
+
+        String query = queryT.replaceAll("START", String.valueOf(timestampStart));
+        query = query.replaceAll("END", String.valueOf(timestampEnd));
+        query = query.replaceAll("SCOPE", ac.metrics.get(m).get("scope"));
+        query = query.replaceAll("METRIC", ac.metrics.get(m).get("metric"));
+        query = query.replaceAll("INSTANCE", instance);
+        query = query.replaceAll("DOMAIN", domain);
+        query = query.replaceAll("CELL", cell);
+        String podstr = "";
+        for (int i = 0; i < pods.size(); i++) {
+            if (i == 0) {
+                podstr = pods.get(i);
+            } else {
+                podstr = podstr + "|" + pods.get(i);
+            }
+        }
+        query = query.replaceAll("POD", podstr);
+
+        response.query = query;
+
+        try {
+            query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            System.out.println(cell+ " " +m+"1 " + e.getMessage());
+            return null;
+        }
+        String metricCommand = "curl -H \"Authorization: Bearer " + accessToken + "\" " + "https://monitoring-api.salesforce.com/argusws/metrics?expression=" + query;
+
+        String metric = "";
+        if (accessToken != null) {
+            metric = "{\"array\":" + executeCurlCommand(metricCommand) + "}";
+        } else {
+            try {
+                if (substrate == null) {
+                    metric = "{\"array\":" + Resources.toString(Resources.getResource("apt.json"), StandardCharsets.UTF_8) + "}";
+                }
+            } catch (Exception e) {
+                metric = "{}";
+                System.out.println(cell + " " +m+"2 " + e.getMessage());
+            }
+        }
+
+        ArrayList<Double> data = new ArrayList<>();
+        try {
+            JSONObject jsonObject = new JSONObject(metric);
+            JSONArray jsonArray = jsonObject.getJSONArray("array");
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject object = jsonArray.getJSONObject(i);
+                JSONObject datapoints = object.getJSONObject("datapoints");
+                Iterator keys = datapoints.keys();
+                while (keys.hasNext()) {
+                    String k = keys.next().toString();
+                    data.add(datapoints.getDouble(String.valueOf(k)));
+                }
+            }
+            if (!data.isEmpty()) {
+                response.setDatapoints(data.stream().mapToDouble(Double::doubleValue).toArray());
+                return response;
+            }
+        } catch (Exception e) {
+            System.out.println("query->" + response.query);
+            System.out.println("metric->" + metric);
+            System.out.println(cell + " " +m+"3 " + e.getMessage());
+            return null;
+        }
+        System.out.println("query->" + response.query);
+        System.out.println("metric->" + metric);
+        System.out.println(cell + " " +m+"4 ");
+        return null;
+    }
+
     public static QueryResponse getArgusMetric(String m, long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
         if (pods.size() == 0) {
             return null;
@@ -427,6 +510,33 @@ public class ArgusQueryT {
 
         public void setMetric(Double metric) {
             this.metric = metric;
+        }
+    }
+
+    /* Query response that returns all datapoints in a double array, not just the last one.
+     */
+    static class DatapointsQueryResponse {
+        double [] datapoints;
+
+        public String getQuery() { return query; }
+
+        public void setQuery(String query) {
+            this.query = query;
+        }
+
+        String query;
+
+        DatapointsQueryResponse() {
+            datapoints = null;
+            query = null;
+        }
+
+        public double [] getDatapoints() {
+            return datapoints;
+        }
+
+        public void setDatapoints(double [] datapoints) {
+            this.datapoints = datapoints;
         }
     }
 

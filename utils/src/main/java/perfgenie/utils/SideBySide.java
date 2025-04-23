@@ -101,7 +101,7 @@ public class SideBySide {
                     Double metricPercentChange = 100.0 * ((res1.getMetric() / rCount1) - (res2.getMetric() / rCount2)) / (res1.getMetric() / rCount1);
                     record.add(metricPercentChange);
                     header.add(metricList.get(i) + "/r %c:number");
-                }else {
+                } else {
                     record.add(null);
                     header.add(metricList.get(i) + "1:number");
                     record.add(null);
@@ -125,9 +125,75 @@ public class SideBySide {
             record.add(getMetricDashboardURL(canary.finalStart,canary.finalEnd,instance,domain,cell));
             header.add("metrics:url");
 
+            double varianceZulu = getVarianceOf("cCPUTimePerReq", canary.finalStart, canary.finalEnd, instance, domain, cell, canary.pod1);
+            double varianceZing = getVarianceOf("cCPUTimePerReq", canary.finalStart, canary.finalEnd, instance, domain, cell, canary.pod2);
+
+            record.add(varianceZulu);//cell
+            header.add("varianceZulu:number");
+            record.add(varianceZing);//cell
+            header.add("varianceZing:number");
+
             return new CanaryResponse(header,record);
         }
         return null;
+    }
+
+    static double getVarianceOf(String metric, long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
+        double result = 0;
+        ArrayList<double[]> data = new ArrayList<>();
+
+        // get the required metric
+        for (String pod : pods) {
+            ArgusQueryT.DatapointsQueryResponse res = ArgusQueryT.getArgusMetricDatapoints(metric, timestampStart, timestampEnd, instance, domain, cell, Collections.singletonList(pod));
+            if (res == null)
+                continue;
+            // we have valid result, create array from the datapoints we got back, sort & reverse so that we go from highest to lowest
+            double[] arr = res.datapoints;
+            Arrays.sort(arr);
+            reverseArray(arr);
+            data.add(arr);
+        }
+
+        return calculateVariance(data);
+    }
+
+    /* calculates the variance of given set of observations. This is *not* the standard statistical variance, but an
+       integral metric that sorts each dataset from highest to lowest and then at each observation sums up the
+       difference between min and max. The summarized number is then divided by the number of observations
+     */
+    static double calculateVariance(ArrayList<double[]> from) {
+        // sort the arrays in descending order
+        int maxL = 0;
+        for (double [] a : from) {
+            Arrays.sort(a);
+            reverseArray(a);
+            // and figure out the max length
+            if (maxL < a.length)
+                maxL = a.length;
+        }
+        double result = 0;
+        for (int i = 0; i < maxL; i++) {
+            double min = Double.POSITIVE_INFINITY;
+            double max = Double.NEGATIVE_INFINITY;
+            for (double [] a : from) {
+                if (i < a.length) {
+                    if (a[i] < min)
+                        min = a[i];
+                    if (a[i] > max)
+                        max = a[i];
+                }
+            }
+            result = result + (max - min);
+        }
+        return result / maxL;
+    }
+
+    static void reverseArray(double [] a) {
+        for (int i = 0; i < a.length / 2; i++) {
+            double temp = a[i];
+            a[i] = a[a.length - 1 - i];
+            a[a.length - 1 - i] = temp;
+        }
     }
 
     public static String getCanaryDashboardURL(List<String> pod1, List<String> pod2, long curfinalStart,
@@ -163,7 +229,6 @@ public class SideBySide {
         System.out.println(URL1);
         return URL1;
     }
-
 
     public static CanaryDetails processZingCanary(String start, String end, String instance, String domain, String cell) {
         String metric = ArgusQueryT.getGCMetric(start, end, instance, domain, cell);
@@ -425,6 +490,7 @@ public class SideBySide {
         }
     }
 
+    // run this test to do stuff
     public static void main(String[] args) {
         try {
             int start = 6;
