@@ -4,14 +4,32 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.*;
+import java.util.stream.DoubleStream;
 
 
 import static perfgenie.utils.Canary.*;
 
 
+/** Triple for median, confidence and variance.
+ */
+class VarianceResult {
+    double median;
+    double confidence;
+    double variance;
+
+    VarianceResult(double median, double confidence, double variance) {
+        this.median = median;
+        this.confidence = confidence;
+        this.variance = variance;
+    }
+}
+
 public class SideBySide {
     public static long mindiff = 3600000;
     public static long maxTimeWindow = 5 * 60 * 60 * 1000; // 5 hours due to argus query limitations, need to switch to huron
+
+    static int bootstrapCount = 1000;
+    static int bootstrapSize = 5000;
 
     public static CanaryResponse processSideBySideCanary(long timestampStart, long timestampEnd, String cell) {
         return processSideBySideCanaryTask(timestampStart, timestampEnd, podsInstance.get(cell), podsDomain.get(cell), cell);
@@ -125,12 +143,12 @@ public class SideBySide {
             record.add(getMetricDashboardURL(canary.finalStart,canary.finalEnd,instance,domain,cell));
             header.add("metrics:url");
 
-            double varianceZulu = getVarianceOf("cCPUTimePerReq", canary.finalStart, canary.finalEnd, instance, domain, cell, canary.pod1);
-            double varianceZing = getVarianceOf("cCPUTimePerReq", canary.finalStart, canary.finalEnd, instance, domain, cell, canary.pod2);
+            VarianceResult varianceZulu = getVarianceOf("cCPUTimePerReq", canary.finalStart, canary.finalEnd, instance, domain, cell, canary.pod1);
+            VarianceResult varianceZing = getVarianceOf("cCPUTimePerReq", canary.finalStart, canary.finalEnd, instance, domain, cell, canary.pod2);
 
-            record.add(varianceZulu);//cell
+            record.add(varianceZulu.variance);//cell
             header.add("varianceZulu:number");
-            record.add(varianceZing);//cell
+            record.add(varianceZing.variance);//cell
             header.add("varianceZing:number");
 
             return new CanaryResponse(header,record);
@@ -138,8 +156,16 @@ public class SideBySide {
         return null;
     }
 
-    static double getVarianceOf(String metric, long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
-        double result = 0;
+    /* Gets variance info for given metric.
+
+       We get the metric for all selected pods and times and then calculate the variance, which is defined as
+       sum(max - min) / length across pods and observations with observations sorted from highest to lowest.
+
+       The function also calculates the median value and its confidence using bootstrap, if bootstrap count is greater
+       than zero. This works by taking N samples from all the pod's values, calculating medians of the those datasets
+       and then reporting the mean and confidence on this distribution.
+     */
+    static VarianceResult getVarianceOf(String metric, long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
         ArrayList<double[]> data = new ArrayList<>();
 
         // get the required metric
@@ -154,6 +180,7 @@ public class SideBySide {
             data.add(arr);
         }
 
+        // calculate the stats
         return calculateVariance(data);
     }
 
@@ -161,7 +188,7 @@ public class SideBySide {
        integral metric that sorts each dataset from highest to lowest and then at each observation sums up the
        difference between min and max. The summarized number is then divided by the number of observations
      */
-    static double calculateVariance(ArrayList<double[]> from) {
+    static VarianceResult calculateVariance(ArrayList<double[]> from) {
         // sort the arrays in descending order
         int maxL = 0;
         for (double [] a : from) {
@@ -185,7 +212,46 @@ public class SideBySide {
             }
             result = result + (max - min);
         }
-        return result / maxL;
+
+        // if bootstrap is disabled we are done
+        if (bootstrapCount == 0)
+            return new VarianceResult(0, 0, result / maxL);
+
+        // flatten the pod datasets (we don't care they are sorted as we do random sapling anyways)
+        double[] input = from.stream()
+                .flatMapToDouble(DoubleStream::of)
+                .toArray();
+
+        // the array of medians for the sampled datasets (not expecting normal distribution)
+        double[] medians = new double[bootstrapCount];
+        // create the sampled datasets and fill the medians array
+        for (int i = 0; i < medians.length; i++) {
+            double[] dataset = sample(input, bootstrapSize);
+            medians[i] = calculateMedian(dataset);
+        }
+        // calculate array's median (now we expect normal distribution), and standard deviation & error
+        double medianMean = calculateMean(medians);
+        double sd = calculateSd(medians, medianMean);
+        double se = sd / Math.sqrt(medians.length);
+
+        // determine z-score based on the confidence intervals we want and calculate the confidence
+        double zScore = 3.291; // for 0.999
+        //double zScore = 2.576; // for 0.99
+        //double zScore = 1.960; // for 0.95
+        double confidence = se * zScore;
+
+        return new VarianceResult(medianMean, confidence, result / maxL);
+    }
+
+    static double[] sample(double[] input, int sampleSize) {
+        // Concatenate all double arrays into a single double[]
+        double [] result = new double [sampleSize];
+        Random rand = new Random();
+        for (int i = 0; i < sampleSize; i++) {
+            int index = rand.nextInt(input.length);
+            result[i] = input[index];
+        }
+        return result;
     }
 
     static void reverseArray(double [] a) {
@@ -195,6 +261,30 @@ public class SideBySide {
             a[a.length - 1 - i] = temp;
         }
     }
+
+    static double calculateMean(double [] from) {
+        if (from.length == 0)
+            return 0;
+        double sum = 0.0;
+        for (double v : from)
+            sum += v;
+        return sum / from.length;
+    }
+
+    static double calculateSd(double [] from, double mean) {
+        if (from.length == 0)
+            return 0;
+        double sd = 0.0;
+        for (double v : from)
+            sd += Math.pow(v - mean, 2);
+        return Math.sqrt(sd / from.length);
+    }
+
+    static double calculateMedian(double[] from) {
+        Arrays.sort(from);
+        return from[from.length / 2];
+    }
+
 
     public static String getCanaryDashboardURL(List<String> pod1, List<String> pod2, long curfinalStart,
                                                long curfinalEnd, String instance, String domain, String cell) {
