@@ -125,8 +125,12 @@ public class SideBySide {
             record.add(getMetricDashboardURL(canary.finalStart,canary.finalEnd,instance,domain,cell));
             header.add("metrics:url");
 
-
-
+            VarianceResult varianceZulu = Variance.getVarianceOf("jvmCpuMs", canary.finalStart,canary.finalEnd,instance,domain,cell, canary.pod1);
+            VarianceResult varianceZing = Variance.getVarianceOf("jvmCpuMs", canary.finalStart,canary.finalEnd,instance,domain,cell, canary.pod2);
+            record.add(varianceZulu.variance);
+            header.add("varianceZulu:number");
+            record.add(varianceZing.variance);
+            header.add("varianceZing:number");
 
             return new CanaryResponse(header,record);
         }
