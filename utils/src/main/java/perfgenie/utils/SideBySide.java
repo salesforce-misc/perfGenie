@@ -19,7 +19,7 @@ public class SideBySide {
 
     public static CanaryResponse processSideBySideCanaryTask(long timestampStart, long timestampEnd, String instance, String domain, String cell) {
         List<Object> record = new ArrayList<>();
-        List<String> metricList = new ArrayList(Arrays.asList("rCPUTime", "avgJCPU", "jCPUTime", "cCPUTime", "sfPt", "5xx", "4xx"));
+        List<String> metricList = new ArrayList(Arrays.asList("rCPUTime", "jCPUTime", "cCPUTime", "sfPt", "5xx", "4xx"));
         List<String> header = new ArrayList<>();
 
         CanaryDetails canary = processZingCanary(String.valueOf(timestampStart), String.valueOf(timestampEnd), instance, domain, cell);
@@ -124,6 +124,9 @@ public class SideBySide {
 
             record.add(getMetricDashboardURL(canary.finalStart,canary.finalEnd,instance,domain,cell));
             header.add("metrics:url");
+
+
+
 
             return new CanaryResponse(header,record);
         }

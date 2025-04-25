@@ -15,6 +15,7 @@ import java.nio.file.Paths;
 import java.time.*;
 import java.util.*;
 
+import static java.awt.Color.blue;
 import static perfgenie.utils.ArgusQueries.*;
 
 public class Canary {
@@ -27,7 +28,7 @@ public class Canary {
     static String curargusMetricQuery = "";
     public static long curfinalStart = 0;
     public static long curfinalend = 0;
-    public static long maxTimeWindow = 5 * 60 * 60 * 1000; // 5 hours due to argus query limitations, need to switch to huron
+    public static long maxTimeWindow = 4 * 60 * 60 * 1000; // 5 hours due to argus query limitations, need to switch to huron
 
     static {
         podsInstance.put("ind86", "aws-prod2-apsouth1");//min 18, max 50
@@ -42,6 +43,85 @@ public class Canary {
         podsInstance.put("usa854", "aws-prod21-useast2");//
         podsInstance.put("usa62s", "aws-prod5-uswest2");//
         podsInstance.put("usa224s", "aws-prod5-uswest2");//
+
+        podsInstance.put("ind10s", "aws-prod2-apsouth1");//
+        podsList.put("ind10s", new Integer[]{4, 12});
+        podsDomain.put("ind10s", "core1");
+
+        podsInstance.put("usa20s", "aws-prod5-uswest2");//
+        podsList.put("usa20s", new Integer[]{12, 20});
+        podsDomain.put("usa20s", "core1");
+
+        podsInstance.put("ind8s", "aws-prod2-apsouth1");//
+        podsList.put("ind8s", new Integer[]{4, 12});
+        podsDomain.put("ind8s", "core1");
+
+        podsInstance.put("usa770s", "aws-prod21-useast2");//
+        podsList.put("usa770s", new Integer[]{12, 20});
+        podsDomain.put("usa770s", "core1");
+
+        podsInstance.put("che2s", "aws-prod15-eucentral2");//
+        podsList.put("che2s", new Integer[]{7, 14});
+        podsDomain.put("che2s", "core1");
+
+        podsInstance.put("usa60s", "aws-prod5-uswest2");//
+        podsList.put("usa60s", new Integer[]{5, 13});
+        podsDomain.put("usa60s", "core1");
+
+        podsInstance.put("deu6s", "aws-prod3-eucentral1");//
+        podsList.put("deu6s", new Integer[]{7, 13});
+        podsDomain.put("deu6s", "core1");
+
+        podsInstance.put("usa250s", "aws-prod1-useast1");//
+        podsList.put("usa250s", new Integer[]{9, 17});
+        podsDomain.put("usa250s", "core1");
+
+        podsInstance.put("ind64", "aws-prod2-apsouth1");//
+        podsList.put("ind64", new Integer[]{4, 10});
+        podsDomain.put("ind64", "core1");
+
+        podsInstance.put("ind90", "aws-prod2-apsouth1");//
+        podsList.put("ind90", new Integer[]{8, 14});
+        podsDomain.put("ind90", "core1");
+
+        podsInstance.put("usa34", "aws-prod5-uswest2");//
+        podsList.put("usa34", new Integer[]{13, 19});
+        podsDomain.put("usa34", "core1");
+
+        podsInstance.put("ind58", "aws-prod2-apsouth1");//
+        podsList.put("ind58", new Integer[]{9, 13});
+        podsDomain.put("ind58", "core1");
+
+        podsInstance.put("usa290", "aws-prod5-uswest2");//
+        podsList.put("usa290", new Integer[]{13, 19});
+        podsDomain.put("usa290", "core1");
+
+        podsInstance.put("usa286", "aws-prod5-uswest2");//
+        podsList.put("usa286", new Integer[]{13, 19});
+        podsDomain.put("usa286", "core1");
+
+        podsInstance.put("usa476", "aws-prod5-uswest2");//
+        podsList.put("usa476", new Integer[]{13, 19});
+        podsDomain.put("usa476", "core1");
+
+        podsInstance.put("usa430", "aws-prod5-uswest2");//
+        podsList.put("usa430", new Integer[]{13, 19});
+        podsDomain.put("usa430", "core1");
+
+        podsInstance.put("usa442", "aws-prod5-uswest2");//
+        podsList.put("usa442", new Integer[]{13, 19});
+        podsDomain.put("usa442", "core1");
+
+
+        podsList.put("ind86", new Integer[]{4, 12});
+        podsList.put("usa270s", new Integer[]{15, 20});
+        podsList.put("usa710s", new Integer[]{15, 21});
+        podsList.put("usa62s", new Integer[]{15, 21});
+        podsList.put("usa762s", new Integer[]{16, 21});
+        podsList.put("usa30s", new Integer[]{12, 20});
+        podsList.put("usa224s", new Integer[]{12, 20});
+        podsList.put("usa432s", new Integer[]{8, 14});
+        podsList.put("usa14s", new Integer[]{5, 11});
 
 
         //podsInstance.put("sdb2", "dev1-uswest2");
@@ -59,15 +139,7 @@ public class Canary {
         podsDomain.put("usa224s", "core1");
         //podsDomain.put("sdb2", "core002");
 
-        podsList.put("ind86", new Integer[]{4, 12});
-        podsList.put("usa270s", new Integer[]{14, 21});
-        podsList.put("usa710s", new Integer[]{14, 22});
-        podsList.put("usa62s", new Integer[]{14, 22});
-        podsList.put("usa762s", new Integer[]{15, 22});
-        podsList.put("usa30s", new Integer[]{12, 20});
-        podsList.put("usa224s", new Integer[]{12, 20});
-        podsList.put("usa432s", new Integer[]{8, 14});
-        podsList.put("usa14s", new Integer[]{5, 11});
+
 
 
         //podsList.put("usa726", new Integer[]{14, 22});
@@ -268,7 +340,7 @@ public class Canary {
                 record.add(zingCount);
                 record.add(zuluCount);
 
-                URL1 = getMetricDashboardURL(curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key);
+                URL1 = getMetricDashboardURL(pod1, pod2, curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key);
                 record.add(URL1);//metric URL
 
                 startupQueryZing = getStartupQueryURL(podall2, curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key);
@@ -336,9 +408,22 @@ public class Canary {
                     Double totalCCPUSec2perReqPerKpod = totalCCPUSec2.getMetric() / (reqCount2.getMetric() * pod2.size());
                     Double totalCCPUSecperReqPercentChange = 100.0 * (totalCCPUSec1perReqPerKpod - totalCCPUSec2perReqPerKpod) / totalCCPUSec1perReqPerKpod;
                     record.add(totalCCPUSecperReqPercentChange);
+
+                    record.add(reqCount1.getMetric());
+                    record.add(reqCount2.getMetric());
+                    record.add(totalJCPUMs1.getMetric());
+                    record.add(totalJCPUMs2.getMetric());
+                    record.add(totalCCPUSec1.getMetric());
+                    record.add(totalCCPUSec2.getMetric());
+
                 } catch (Exception e) {
                     System.out.println("--------> skip 4xx 5xx" + e.getMessage());
                 }
+
+                VarianceResult varianceZulu = Variance.getVarianceOf("jvmCpuMs", curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key, pod1);
+                VarianceResult varianceZing = Variance.getVarianceOf("jvmCpuMs", curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key, pod2);
+                record.add(varianceZulu.variance);
+                record.add(varianceZing.variance);
             }
         } catch (Exception e) {
             System.out.println(key + " getCanaryResults Exception:" + e.getMessage());
@@ -725,64 +810,73 @@ public class Canary {
                 zuluCount++;
             }
         }
-        System.out.println(" zingCount:" + zingCount + " zuluCount:" + zuluCount);
+        System.out.println(cell + " zingCount:" + zingCount + " zuluCount:" + zuluCount);
 
+        Result result = null;
+        Result result1 = null;
 
-        if (zingCount == 0) {
-            return false;
-        }
+        while(true) {
+            if (zingCount > zuluCount) {
+                zingCount = zuluCount;
+            }
+            if (zingCount == 0 || zuluCount == 0) {
+                System.out.println(cell + " adjusted zingCount:" + zingCount + " zuluCount:" + zuluCount);
+                return false;
+            }
+            System.out.println(cell + " adjusted zingCount:" + zingCount + " zuluCount:" + zuluCount);
+            result = findLargestIntersection(zingtimeRanges, zingCount);
+            HashMap<Integer, Boolean> zingpods = new HashMap<>();
+            pod2.clear();
+            if (result != null && result.largestIntersection != null) {
+                System.out.println("Largest Intersection zing: Start = " + result.largestIntersection[0] + ", End = " + result.largestIntersection[1] + " diff:" + (result.largestIntersection[0] - result.largestIntersection[1]));
+                System.out.println("Combination for largest intersection:");
+                for (long[] range : result.finalCombination) {
 
-        Result result = findLargestIntersection(zingtimeRanges, zingCount);
-        HashMap<Integer, Boolean> zingpods = new HashMap<>();
-        if (result != null && result.largestIntersection != null) {
-            System.out.println("Largest Intersection zing: Start = " + result.largestIntersection[0] + ", End = " + result.largestIntersection[1] + " diff:" + (result.largestIntersection[0] - result.largestIntersection[1]));
-            System.out.println("Combination for largest intersection:");
-            for (long[] range : result.finalCombination) {
-
-                for (int k = 0; k < zingtimeRanges1.size(); k++) {
-                    if (!zingpods.containsKey(k)) {
-                        long[] tmp = zingtimeRanges1.get(k);
-                        if (tmp[0] == range[0] && tmp[1] == range[1]) {
-                            zingpods.put(k, true);
-                            System.out.println(podall2.get(k) + ":" + Arrays.toString(range));
-                            //URL = URL + "&var-pod2=" + zingkpods.get(k);
-                            pod2.add(podall2.get(k));
-                            break;
+                    for (int k = 0; k < zingtimeRanges1.size(); k++) {
+                        if (!zingpods.containsKey(k)) {
+                            long[] tmp = zingtimeRanges1.get(k);
+                            if (tmp[0] == range[0] && tmp[1] == range[1]) {
+                                zingpods.put(k, true);
+                                System.out.println(podall2.get(k) + ":" + Arrays.toString(range));
+                                //URL = URL + "&var-pod2=" + zingkpods.get(k);
+                                pod2.add(podall2.get(k));
+                                break;
+                            }
                         }
                     }
                 }
+            } else {
+                System.out.println(" No valid intersection found1.");
+                return false;
             }
-        } else {
-            System.out.println(" No valid intersection found1.");
-            return false;
-        }
 
-        if (zingCount == 0) {
-            return false;
-        }
-        Result result1 = findLargestIntersection(zulutimeRanges, zingCount);
-        HashMap<Integer, Boolean> zulupods = new HashMap<>();
-        if (result1 != null && result1.largestIntersection != null) {
-            System.out.println("Largest Intersection zulu: Start = " + result1.largestIntersection[0] + ", End = " + result1.largestIntersection[1] + " diff:" + (result1.largestIntersection[0] - result1.largestIntersection[1]));
-            System.out.println("Combination for largest intersection:");
-            for (long[] range : result1.finalCombination) {
-                for (int k = 0; k < zulutimeRanges1.size(); k++) {
-                    if (!zulupods.containsKey(k)) {
-                        long[] tmp = zulutimeRanges1.get(k);
-                        if (tmp[0] == range[0] && tmp[1] == range[1]) {
-                            zulupods.put(k, true);
-                            System.out.println(podall1.get(k) + ":" + Arrays.toString(range));
-                            //URL = URL + "&var-pod1=" + zulukpods.get(k);
-                            pod1.add(podall1.get(k));
-                            break;
+            result1 = findLargestIntersection(zulutimeRanges, zingCount);
+            HashMap<Integer, Boolean> zulupods = new HashMap<>();
+            pod1.clear();
+            if (result1 != null && result1.largestIntersection != null) {
+                System.out.println("Largest Intersection zulu: Start = " + result1.largestIntersection[0] + ", End = " + result1.largestIntersection[1] + " diff:" + (result1.largestIntersection[0] - result1.largestIntersection[1]));
+                System.out.println("Combination for largest intersection:");
+                for (long[] range : result1.finalCombination) {
+                    for (int k = 0; k < zulutimeRanges1.size(); k++) {
+                        if (!zulupods.containsKey(k)) {
+                            long[] tmp = zulutimeRanges1.get(k);
+                            if (tmp[0] == range[0] && tmp[1] == range[1]) {
+                                zulupods.put(k, true);
+                                System.out.println(podall1.get(k) + ":" + Arrays.toString(range));
+                                //URL = URL + "&var-pod1=" + zulukpods.get(k);
+                                pod1.add(podall1.get(k));
+                                break;
+                            }
                         }
                     }
                 }
-                //System.out.println(Arrays.toString(range));
+                System.out.println(cell + " final zingCount:" + zingCount + " zuluCount:" + zuluCount);
+                break;
+            } else {
+                System.out.println("No valid intersection found2.");
+                zingCount--;
+                //return false;
             }
-        } else {
-            System.out.println("No valid intersection found2.");
-            return false;
         }
 
         long finalStart = result.largestIntersection[0];
@@ -799,13 +893,13 @@ public class Canary {
 
         curfinalStart = finalStart;
         curfinalend = finalEnd;
-        System.out.println(" start: " + finalStart + " end: " + finalEnd + " finalDiff: " + finalDiff);
+        System.out.println(cell + " start: " + finalStart + " end: " + finalEnd + " finalDiff: " + finalDiff);
         //argus time window limit check
         if (maxTimeWindow < (curfinalend - curfinalStart)) {
             long diff = (curfinalend - curfinalStart - maxTimeWindow) / 2;
             curfinalend = curfinalend - diff - 1;
             curfinalStart = curfinalStart + diff + 1;
-            System.out.println(" adjusted start: " + finalStart + " end: " + finalEnd + " finalDiff: " + finalDiff);
+            System.out.println(cell + " adjusted start: " + finalStart + " end: " + finalEnd + " finalDiff: " + finalDiff);
         }
 
 
@@ -884,7 +978,7 @@ public class Canary {
         return URL;
     }
 
-    public static String getMetricDashboardURL(long curfinalStart, long curfinalEnd, String instance, String
+    public static String getMetricDashboardURL(List<String> pod1, List<String> pod2, long curfinalStart, long curfinalEnd, String instance, String
             domain, String cell) {
         String URL1 = "https://monitoring.internal.salesforce.com/argusmvp/#/dashboards/94076428?&span=1m&aggregate=avg&k8s_pod_name=%2A&substrate=aws";
         URL1 = URL1 + "&cell=" + cell;
@@ -892,6 +986,24 @@ public class Canary {
         URL1 = URL1 + "&domain=" + domain;
         URL1 = URL1 + "&start=" + curfinalStart;
         URL1 = URL1 + "&end=" + curfinalEnd;
+        String pods = "";
+        for (int i = 0; i < pod1.size(); i++) {
+            if (i == 0) {
+                pods = pod1.get(i);
+            } else {
+                pods = pods + "|" + pod1.get(i);
+            }
+        }
+        URL1 = URL1 + "&pod1=" + pods;
+        pods = "";
+        for (int i = 0; i < pod2.size(); i++) {
+            if (i == 0) {
+                pods = pod2.get(i);
+            } else {
+                pods = pods + "|" + pod2.get(i);
+            }
+        }
+        URL1 = URL1 + "&pod2=" + pods;
         System.out.println(URL1);
         return URL1;
     }

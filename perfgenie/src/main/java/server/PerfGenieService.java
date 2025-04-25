@@ -1237,7 +1237,7 @@ public class PerfGenieService implements IPerfGenieService {
             for (Map.Entry<String, Integer[]> entry : Canary.podsList.entrySet()) {
                 String cell = entry.getKey();
                 Integer[] arr = entry.getValue();
-                if (hr > arr[1]) {
+                if (hr >= arr[1]) {
                     long tmp1 = Canary.getUtcEpochForHour(arr[0]);
                     long tmp2 = Canary.getUtcEpochForHour(arr[1]);
                     tmp1 = tmp1 - lastndays * 24 * 60 * 60 * 1000;
@@ -1504,7 +1504,7 @@ public class PerfGenieService implements IPerfGenieService {
                                     System.out.println(dateString1 + ":" + dateString2 + ":" + cell + "--->" + Utils.toJson(response));
                                     List<Object> record = response.getRecord();
                                     if (record.size() > 0) {
-                                        //service.addCanaryEventNew(record, tmp2, cell, host,response.getHeader());
+                                        service.addCanaryEventNew(record, tmp2, cell, host,response.getHeader());
                                         System.out.println(cell + ":" + lastndays + "----> record count " + record.size());
                                     } else {
                                         System.out.println(cell + ":" + lastndays + "----> skip record count " + record.size());
@@ -1539,7 +1539,7 @@ public class PerfGenieService implements IPerfGenieService {
                     long curend = end - i * 24 * 60 * 60 * 1000;
                     System.out.println("----------------->" + Utils.convertEpochToUTCString(curstart) +" to "+ Utils.convertEpochToUTCString(curend));
                     try {
-                        if (!service.eventEsists(curend, host, cell)) {
+                        if (true || !service.eventEsists(curend, host, cell)) {
                             List<Object> record = test1(curstart, curend, cell);
                             if (record.size() > 0) {
                                 service.addCanaryEvent(record, curend, cell, host);

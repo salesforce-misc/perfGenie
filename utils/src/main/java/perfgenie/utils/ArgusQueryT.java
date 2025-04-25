@@ -114,6 +114,22 @@ public class ArgusQueryT {
             "  GROUPBYTAG(START:END:core.aws.INSTANCE.DOMAIN:Jvm.totalSafepointTimeMs.Value{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:min:all-min,#k8s_container_name#,#SUM#)" +
             ")";
 
+    static String jvmCpuMsPerReqTimeSeries = "GROUPBYTAG(\n" +
+            "  RATE(\n" +
+            "    START:END:core.aws.INSTANCE.DOMAIN:Jvm.processCpuTimeMs.Value{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:1m-avg\n" +
+            "  ),\n" +
+            "  FILL(\n" +
+            "    CULL_BELOW(\n" +
+            "      RATE(\n" +
+            "        START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-ServerMetrics.LogMetric-COUNT{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:1m-avg\n" +
+            "      ),\n" +
+            "      #1#,#value#\n" +
+            "    ),\n" +
+            "    #1m#,#0m#,#1#\n" +
+            "  ),\n" +
+            "  #k8s_pod_name#,#DIVIDE#\n" +
+            ")";
+
     static String totalSafepointTimeSeries = "ALIASBYTAG(FILL(CULL_BELOW(DERIVATIVE(START:END:core.aws.INSTANCE.DOMAIN:Jvm.totalSafepointTimeMs.Value{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:1m-max),#-2#,#value#),#1m#,#2m#,#0#),#k8s_pod_name#)";
     static String totalOldgenTimeSeries = "START:END:core.aws.INSTANCE.DOMAIN:Jvm.lastOldGenAfterGcSizeMb.Value{cell=CELL,k8s_pod_name=POD,role=app,k8s_container_name=coreapp}:avg:1m-avg";
 
@@ -725,6 +741,113 @@ public class ArgusQueryT {
             System.out.println( "executeCurlCommand -> " + e.getMessage());
         }
         return output.toString();
+    }
+
+    /* Like getArgusMetric, but returns all of the datapoints in a double[].
+     */
+    public static DatapointsQueryResponse getJvmCpuMsPerReqTimeSeriesDatapoints(long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
+        if (pods.size() == 0) {
+            return null;
+        }
+        if ((System.currentTimeMillis() - lastUpdated) > 5 * 60 * 1000) {//5 min
+            updateAccessToken();
+            lastUpdated = System.currentTimeMillis();
+        }
+        DatapointsQueryResponse response = new DatapointsQueryResponse();
+
+        String query = jvmCpuMsPerReqTimeSeries.replaceAll("START", String.valueOf(timestampStart));
+        query = query.replaceAll("END", String.valueOf(timestampEnd));
+        query = query.replaceAll("INSTANCE", instance);
+        query = query.replaceAll("DOMAIN", domain);
+        query = query.replaceAll("CELL", cell);
+        String podstr = "";
+        for (int i = 0; i < pods.size(); i++) {
+            if (i == 0) {
+                podstr = pods.get(i);
+            } else {
+                podstr = podstr + "|" + pods.get(i);
+            }
+        }
+        query = query.replaceAll("POD", podstr);
+
+        response.query = query;
+        System.out.println(cell + " query->" + response.query);
+        try {
+            query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            System.out.println(cell+ " getJvmCpuMsPerReqTimeSeriesDatapoints1 " + e.getMessage());
+            return null;
+        }
+        String metricCommand = "curl -H \"Authorization: Bearer " + accessToken + "\" " + "https://monitoring-api.salesforce.com/argusws/metrics?expression=" + query;
+
+        String metric = "";
+        if (accessToken != null) {
+            metric = "{\"array\":" + executeCurlCommand(metricCommand) + "}";
+        } else {
+            try {
+                if (substrate == null) {
+                    metric = "{\"array\":" + Resources.toString(Resources.getResource("apt.json"), StandardCharsets.UTF_8) + "}";
+                }
+            } catch (Exception e) {
+                metric = "{}";
+                System.out.println(cell + " getJvmCpuMsPerReqTimeSeriesDatapoints2 " + e.getMessage());
+            }
+        }
+
+        ArrayList<Double> data = new ArrayList<>();
+        try {
+            JSONObject jsonObject = new JSONObject(metric);
+            JSONArray jsonArray = jsonObject.getJSONArray("array");
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject object = jsonArray.getJSONObject(i);
+                JSONObject datapoints = object.getJSONObject("datapoints");
+                Iterator keys = datapoints.keys();
+                while (keys.hasNext()) {
+                    String k = keys.next().toString();
+                    data.add(datapoints.getDouble(String.valueOf(k)));
+                }
+            }
+            if (!data.isEmpty()) {
+                response.setDatapoints(data.stream().mapToDouble(Double::doubleValue).toArray());
+                return response;
+            }
+        } catch (Exception e) {
+            System.out.println("query->" + response.query);
+            System.out.println("metric->" + metric);
+            System.out.println(cell + " getJvmCpuMsPerReqTimeSeriesDatapoints3 " + e.getMessage());
+            return null;
+        }
+        System.out.println("query->" + response.query);
+        System.out.println("metric->" + metric);
+        System.out.println(cell + " getJvmCpuMsPerReqTimeSeriesDatapoints4 ");
+        return null;
+    }
+
+    /* Query response that returns all datapoints in a double array, not just the last one.
+     */
+    static class DatapointsQueryResponse {
+        double [] datapoints;
+
+        public String getQuery() { return query; }
+
+        public void setQuery(String query) {
+            this.query = query;
+        }
+
+        String query;
+
+        DatapointsQueryResponse() {
+            datapoints = null;
+            query = null;
+        }
+
+        public double [] getDatapoints() {
+            return datapoints;
+        }
+
+        public void setDatapoints(double [] datapoints) {
+            this.datapoints = datapoints;
+        }
     }
 
     public static void main(String[] args) {

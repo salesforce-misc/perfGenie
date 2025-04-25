@@ -123,7 +123,7 @@ border-collapse: collapse;
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>New page title</title>
+    <title>Perf Genie canary</title>
     <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Tangerine" />
 
     <#--    https://github.com/twbs/bootstrap/releases/download/v4.2.1/bootstrap-4.2.1-dist.zip-->
@@ -152,10 +152,8 @@ border-collapse: collapse;
     <script src="/plugins/jquery.ui.position.js"></script>
     <link rel="stylesheet" href="/plugins/jquery.contextMenu.min.css">
 
-
 </head>
 <body>
-
 
 <#include "../../header.ftl">
 <#include "tabs.ftl">

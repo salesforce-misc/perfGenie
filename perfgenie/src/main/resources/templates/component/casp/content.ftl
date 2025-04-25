@@ -195,101 +195,143 @@ $(document).ready(function () {
 
             let apt = canaryContextArray[i].record[3];
             try {
-                apt = parseFloat(apt.toFixed(3))
+                apt = parseFloat(apt).toFixed(3);
             } catch(err) {}
             if(apt > 0){
-                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:green'>" +apt+"</span>");//apt
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:green;'>" +apt+"</span>", apt, "style='color:green;text-align:right'");//apt
             }else {
-                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:red'>" +apt+"</span>");//apt
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:red;'>" +apt+"</span>", apt, "style='color:green;text-align:right'");//apt
             }
             let jcpu = canaryContextArray[i].record[4];
             try {
-                jcpu = parseFloat(jcpu.toFixed(3))
+                jcpu = parseFloat(jcpu).toFixed(3);
             } catch(err) {}
             if(jcpu > 0){
-                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:green'><s>" +jcpu+"</s></span>");//apt
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:green;'><s>" +jcpu+"</s></span>", jcpu, "style='color:green;text-align:right'");//apt
             }else {
-                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:red'><s>" +jcpu+"</s></span>");//apt
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:red;'><s>" +jcpu+"</s></span>", jcpu, "style='color:green;text-align:right'");//apt
             }
             let ccpu = canaryContextArray[i].record[5];
             try {
-                ccpu = parseFloat(ccpu.toFixed(3))
+                ccpu = parseFloat(ccpu).toFixed(3);
             } catch(err) {}
+
             if(ccpu > 0){
-                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:green'><s>" +ccpu+"</s></span>");//apt
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:green;'><s>" +ccpu+"</s></span>", ccpu, "style='color:green;text-align:right'");//apt
             }else {
-                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:red'><s>" +ccpu+"</s></span>");//apt
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:red;'><s>" +ccpu+"</s></span>", ccpu, "style='color:green;text-align:right'");//apt
             }
 
             if(canaryContextArray[i].record.length > 19){
                 if(canaryContextArray[i].record[20] != undefined){
                     let jcput = canaryContextArray[i].record[20];
                     try {
-                        jcput = parseFloat(jcput.toFixed(3))
+                        jcput = parseFloat(jcput).toFixed(3);
                     } catch(err) {}
                     let ccput = canaryContextArray[i].record[21];
                     try {
-                        ccput = parseFloat(ccput.toFixed(3))
+                        ccput = parseFloat(ccput).toFixed(3);
                     } catch(err) {}
-                    if(jcput > 0) {
-                        canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:green'>" + jcput + "</span>");//
-                    }else{
-                        canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:red'>" + jcput + "</span>");//
+                    if(jcput > 0){
+                        canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:green;'>" +jcput+"</span>", jcput, "style='color:green;text-align:right'");//apt
+                    }else {
+                        canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:red;'>" +jcput+"</span>", jcput, "style='color:green;text-align:right'");//apt
                     }
-                    if(ccput > 0) {
-                        canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:green'>" + ccput + "</span>");//
-                    }else{
-                        canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:red'>" + ccput + "</span>");//
+                    if(ccput > 0){
+                        canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:green;'>" +ccput+"</span>", ccput, "style='color:green;text-align:right'");//apt
+                    }else {
+                        canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:red;'>" +ccput+"</span>", ccput, "style='color:green;text-align:right'");//apt
                     }
                 }else{
-                    canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:black'>NA</span>");//
-                    canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:black'>NA</span>");//
+                    canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='color:green;text-align:right'");//
+                    canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='color:green;text-align:right'");//
                 }
                 let rcpu = canaryContextArray[i].record[16];
                 try {
-                    rcpu = parseFloat(rcpu.toFixed(3))
+                    rcpu = parseFloat(rcpu).toFixed(3);
                 } catch(err) {}
                 let errc = canaryContextArray[i].record[17];
                 try {
-                    errc = parseFloat(errc.toFixed(3))
+                    errc = parseFloat(errc).toFixed(3);
                 } catch(err) {}
-                if(rcpu > 0) {
-                    canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:green'>" + rcpu + "</span>");//
-                }else{
-                    canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:red'>" + rcpu + "</span>");//
+                if(rcpu > 0){
+                    canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:green;'>" +rcpu+"</span>", rcpu, "style='color:green;text-align:right'");//apt
+                }else {
+                    canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:red;'>" +rcpu+"</span>", rcpu, "style='color:green;text-align:right'");//apt
                 }
-                if(errc > 0) {
-                    canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:green'>" + errc + "</span>");//
-                }else{
-                    canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:red'>" + errc + "</span>");//
+                if(errc > 0){
+                    canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:green;'>" +errc+"</span>", errc, "style='color:green;text-align:right'");//apt
+                }else {
+                    canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:red;'>" +errc+"</span>", errc, "style='color:green;text-align:right'");//apt
                 }
-            }else{
-                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:black'>NA</span>");//
-                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:black'>NA</span>");//
-                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:black'>NA</span>");//
-                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:black'>NA</span>");//
 
+            }else{
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='color:green;text-align:right'");//
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='color:green;text-align:right'");//
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='color:green;text-align:right'");//
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='color:green;text-align:right'");//
             }
 
             let avgs = canaryContextArray[i].record[10];
             try {
-                avgs = parseFloat(avgs.toFixed(3))
+                avgs = parseFloat(avgs).toFixed(3);
             } catch(err) {}
 
             if(avgs > 0){
-                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:green'>" +avgs+"</span>");//startup
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:green;'>" +avgs+"</span>", avgs, "style='color:green;text-align:right'");//apt
             }else {
                 if(avgs < -1000){
                     avgs = NaN;
                 }
-                canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span style='color:red'>" +avgs+"</span>");//startup
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:red;'>" +avgs+"</span>", avgs, "style='color:green;text-align:right'");//apt
             }
             // <a href="url">link text</a>
-            canaryviewtable.addContextTableRow(tableRows[rowIndex], canaryContextArray[i].record[7]);//zic
-            canaryviewtable.addContextTableRow(tableRows[rowIndex], canaryContextArray[i].record[8]);//zuc
-            canaryviewtable.addContextTableRow(tableRows[rowIndex], "<a href='" + canaryContextArray[i].record[6] + "' target='_blank'> link</a>");//url
-            canaryviewtable.addContextTableRow(tableRows[rowIndex], "<a href='" + canaryContextArray[i].record[9] + "' target='_blank'> link</a>");
-
+            canaryviewtable.addContextTableRow(tableRows[rowIndex], canaryContextArray[i].record[7],"style='text-align:right'");//zic
+            canaryviewtable.addContextTableRow(tableRows[rowIndex], canaryContextArray[i].record[8],"style='text-align:right'");//zuc
+            canaryviewtable.addContextTableRow(tableRows[rowIndex], "<a href='" + canaryContextArray[i].record[6] + "' target='_blank'> link</a>", "style='text-align:center'");//url
+            canaryviewtable.addContextTableRow(tableRows[rowIndex], "<a href='" + canaryContextArray[i].record[9] + "' target='_blank'> link</a>", "style='text-align:center'");
+            let reqCount1 = canaryContextArray[i].record[22];
+            if(reqCount1 != undefined){
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], reqCount1,"style='text-align:right'");
+            }else{
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='text-align:right'");//
+            }
+            let reqCount2 = canaryContextArray[i].record[23];
+            if(reqCount2 != undefined){
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], reqCount2,"style='text-align:right'");
+            }else{
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='text-align:right'");//
+            }
+            let totalJCPUMs1 = canaryContextArray[i].record[24];
+            if(totalJCPUMs1 != undefined){
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], totalJCPUMs1,"style='text-align:right'");
+            }else{
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='text-align:right'");//
+            }
+            let totalJCPUMs2 = canaryContextArray[i].record[25];
+            if(totalJCPUMs2 != undefined){
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], totalJCPUMs2,"style='text-align:right'");
+            }else{
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='text-align:right'");//
+            }
+            let totalCCPUSec1 = canaryContextArray[i].record[26];
+            if(totalCCPUSec1 != undefined){
+                try {
+                    totalCCPUSec1 = parseFloat(totalCCPUSec1).toFixed(3);
+                } catch(err) {}
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], totalCCPUSec1,"style='text-align:right'");
+            }else{
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='text-align:right'");//
+            }
+            let totalCCPUSec2 = canaryContextArray[i].record[27];
+            if(totalCCPUSec2 != undefined){
+                try {
+                    totalCCPUSec2 = parseFloat(totalCCPUSec2).toFixed(3);
+                } catch(err) {}
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], totalCCPUSec2,"style='text-align:right'");
+            }else{
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='text-align:right'");//
+            }
         }
         canaryviewtable.addContextTableHeader(tableHeader,"timestamp",-1, "");
         //canaryviewtable.addContextTableHeader(tableHeader,"tid",1, "");
@@ -307,6 +349,13 @@ $(document).ready(function () {
         canaryviewtable.addContextTableHeader(tableHeader,"zuluC",1, "");
         canaryviewtable.addContextTableHeader(tableHeader,"Dashboard",-1, "");
         canaryviewtable.addContextTableHeader(tableHeader,"Metrics",-1, "");
+
+        canaryviewtable.addContextTableHeader(tableHeader,"reqCount1",1, "");
+        canaryviewtable.addContextTableHeader(tableHeader,"reqCount2",1, "");
+        canaryviewtable.addContextTableHeader(tableHeader,"totalJCPUMs1",1, "");
+        canaryviewtable.addContextTableHeader(tableHeader,"totalJCPUMs2",1, "");
+        canaryviewtable.addContextTableHeader(tableHeader,"totalCCPUSec1",1, "");
+        canaryviewtable.addContextTableHeader(tableHeader,"totalCCPUSec2",1, "");
 
 
 
