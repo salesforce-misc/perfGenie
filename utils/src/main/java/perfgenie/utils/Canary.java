@@ -420,10 +420,10 @@ public class Canary {
                     System.out.println("--------> skip 4xx 5xx" + e.getMessage());
                 }
 
-                VarianceResult varianceZulu = Variance.getVarianceOf("jvmCpuMs", curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key, pod1);
-                VarianceResult varianceZing = Variance.getVarianceOf("jvmCpuMs", curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key, pod2);
-                record.add(varianceZulu.variance);
-                record.add(varianceZing.variance);
+                //VarianceResult varianceZulu = Variance.getVarianceOf("jvmCpuMs", curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key, pod1);
+                //VarianceResult varianceZing = Variance.getVarianceOf("jvmCpuMs", curfinalStart, curfinalend, podsInstance.get(key), podsDomain.get(key), key, pod2);
+                //record.add(varianceZulu.variance);
+                //record.add(varianceZing.variance);
             }
         } catch (Exception e) {
             System.out.println(key + " getCanaryResults Exception:" + e.getMessage());

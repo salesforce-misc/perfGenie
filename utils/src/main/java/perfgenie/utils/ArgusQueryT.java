@@ -786,7 +786,7 @@ public class ArgusQueryT {
         } else {
             try {
                 if (substrate == null) {
-                    metric = "{\"array\":" + Resources.toString(Resources.getResource("apt.json"), StandardCharsets.UTF_8) + "}";
+                    metric = "{\"array\":" + Resources.toString(Resources.getResource("jcpuperreq.json"), StandardCharsets.UTF_8) + "}";
                 }
             } catch (Exception e) {
                 metric = "{}";
