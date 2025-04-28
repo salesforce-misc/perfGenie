@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static perfgenie.utils.ArgusQueries.*;
 
@@ -794,21 +795,25 @@ public class ArgusQueryT {
             }
         }
 
-        ArrayList<Double> data = new ArrayList<>();
+        ArrayList<ArrayList<Double>> data = new ArrayList<>();
         try {
             JSONObject jsonObject = new JSONObject(metric);
             JSONArray jsonArray = jsonObject.getJSONArray("array");
             for (int i = 0; i < jsonArray.length(); i++) {
+                ArrayList<Double> kpodData = new ArrayList<>();
                 JSONObject object = jsonArray.getJSONObject(i);
                 JSONObject datapoints = object.getJSONObject("datapoints");
                 Iterator keys = datapoints.keys();
                 while (keys.hasNext()) {
                     String k = keys.next().toString();
-                    data.add(datapoints.getDouble(String.valueOf(k)));
+                    kpodData.add(datapoints.getDouble(String.valueOf(k)));
                 }
+                data.add(kpodData);
             }
             if (!data.isEmpty()) {
-                response.setDatapoints(data.stream().mapToDouble(Double::doubleValue).toArray());
+                response.setDatapoints(
+                    data.stream().map(arr -> arr.stream().mapToDouble(Double::doubleValue).toArray()).collect(Collectors.toCollection(ArrayList::new))
+                );
                 return response;
             }
         } catch (Exception e) {
@@ -826,7 +831,7 @@ public class ArgusQueryT {
     /* Query response that returns all datapoints in a double array, not just the last one.
      */
     static class DatapointsQueryResponse {
-        double [] datapoints;
+        ArrayList<double[]> datapoints;
 
         public String getQuery() { return query; }
 
@@ -841,11 +846,11 @@ public class ArgusQueryT {
             query = null;
         }
 
-        public double [] getDatapoints() {
+        public ArrayList<double[]> getDatapoints() {
             return datapoints;
         }
 
-        public void setDatapoints(double [] datapoints) {
+        public void setDatapoints(ArrayList<double[]> datapoints) {
             this.datapoints = datapoints;
         }
     }
