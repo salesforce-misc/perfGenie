@@ -12,10 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static perfgenie.utils.ArgusQueries.*;
@@ -795,25 +792,27 @@ public class ArgusQueryT {
             }
         }
 
-        ArrayList<ArrayList<Double>> data = new ArrayList<>();
+        ArrayList<AbstractMap.SimpleEntry<double[], double[]>> data = new ArrayList<>();
         try {
             JSONObject jsonObject = new JSONObject(metric);
             JSONArray jsonArray = jsonObject.getJSONArray("array");
             for (int i = 0; i < jsonArray.length(); i++) {
-                ArrayList<Double> kpodData = new ArrayList<>();
                 JSONObject object = jsonArray.getJSONObject(i);
                 JSONObject datapoints = object.getJSONObject("datapoints");
+                double [] kPodTimes = new double[datapoints.length()];
+                double [] kPodValues = new double[datapoints.length()];
                 Iterator keys = datapoints.keys();
+                int ii = 0;
                 while (keys.hasNext()) {
                     String k = keys.next().toString();
-                    kpodData.add(datapoints.getDouble(String.valueOf(k)));
+                    kPodValues[ii] = datapoints.getDouble(String.valueOf(k));
+                    kPodTimes[ii] = Double.parseDouble(k);
+                    ii++;
                 }
-                data.add(kpodData);
+                data.add(new AbstractMap.SimpleEntry<>(kPodTimes, kPodValues));
             }
             if (!data.isEmpty()) {
-                response.setDatapoints(
-                    data.stream().map(arr -> arr.stream().mapToDouble(Double::doubleValue).toArray()).collect(Collectors.toCollection(ArrayList::new))
-                );
+                response.setDatapoints(data);
                 return response;
             }
         } catch (Exception e) {
@@ -831,7 +830,7 @@ public class ArgusQueryT {
     /* Query response that returns all datapoints in a double array, not just the last one.
      */
     static class DatapointsQueryResponse {
-        ArrayList<double[]> datapoints;
+        ArrayList<AbstractMap.SimpleEntry<double[], double[]>> datapoints;
 
         public String getQuery() { return query; }
 
@@ -846,11 +845,11 @@ public class ArgusQueryT {
             query = null;
         }
 
-        public ArrayList<double[]> getDatapoints() {
+        public ArrayList<AbstractMap.SimpleEntry<double[], double[]>> getDatapoints() {
             return datapoints;
         }
 
-        public void setDatapoints(ArrayList<double[]> datapoints) {
+        public void setDatapoints(ArrayList<AbstractMap.SimpleEntry<double[], double[]>> datapoints) {
             this.datapoints = datapoints;
         }
     }

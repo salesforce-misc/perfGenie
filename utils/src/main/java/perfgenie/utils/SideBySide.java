@@ -3,6 +3,7 @@ package perfgenie.utils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.text.DecimalFormat;
 import java.util.*;
 
 
@@ -127,10 +128,38 @@ public class SideBySide {
 
             VarianceResult varianceZulu = Variance.getVarianceOf("jvmCpuMs", canary.finalStart,canary.finalEnd,instance,domain,cell, canary.pod1);
             VarianceResult varianceZing = Variance.getVarianceOf("jvmCpuMs", canary.finalStart,canary.finalEnd,instance,domain,cell, canary.pod2);
+
+
+            // the bootstrapped median statistic
+            record.add(varianceZulu.median);
+            header.add("cpuPerReqZulu:number");
+            record.add(varianceZing.median);
+            header.add("cpuPerReqZing:number");
+
+            // fewer column values converted to string for zulu & zing in a single column
+            DecimalFormat df = new DecimalFormat("#.###");
+            header.add("confidence:text");
+            record.add(df.format(varianceZulu.confidence) + " / " + df.format(varianceZing.confidence));
+            header.add("variance:text");
+            record.add(df.format(varianceZulu.variance) + " / " + df.format(varianceZing.variance));
+            header.add("timeVariance:text");
+            record.add(df.format(varianceZulu.timeVariance) + " / " + df.format(varianceZing.timeVariance));
+
+            // full variance and confidence
+            record.add(varianceZulu.confidence);
+            header.add("confidenceZulu:number");
+            record.add(varianceZing.confidence);
+            header.add("confidenceZing:number");
+
             record.add(varianceZulu.variance);
             header.add("varianceZulu:number");
             record.add(varianceZing.variance);
             header.add("varianceZing:number");
+
+            record.add(varianceZulu.timeVariance);
+            header.add("timeVarianceZulu:number");
+            record.add(varianceZing.timeVariance);
+            header.add("timeVarianceZing:number");
 
             return new CanaryResponse(header,record);
         }
