@@ -741,7 +741,7 @@ public class ArgusQueryT {
         return output.toString();
     }
 
-    /* Like getArgusMetric, but returns all of the datapoints in a double[].
+    /* Like getArgusMetric, but returns all the datapoints in a double[].
      */
     public static DatapointsQueryResponse getJvmCpuMsPerReqTimeSeriesDatapoints(long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
         if (pods.size() == 0) {
@@ -799,17 +799,24 @@ public class ArgusQueryT {
             for (int i = 0; i < jsonArray.length(); i++) {
                 JSONObject object = jsonArray.getJSONObject(i);
                 JSONObject datapoints = object.getJSONObject("datapoints");
-                double [] kPodTimes = new double[datapoints.length()];
-                double [] kPodValues = new double[datapoints.length()];
+                AbstractMap.SimpleEntry<Double, Double>[] items = new AbstractMap.SimpleEntry[datapoints.length()];
                 Iterator keys = datapoints.keys();
                 int ii = 0;
                 while (keys.hasNext()) {
                     String k = keys.next().toString();
-                    kPodValues[ii] = datapoints.getDouble(String.valueOf(k));
-                    kPodTimes[ii] = Double.parseDouble(k);
+                    items[ii] = new AbstractMap.SimpleEntry<>(
+                            Double.parseDouble(k),
+                            datapoints.getDouble(String.valueOf(k))
+                    );
                     ii++;
                 }
-                data.add(new AbstractMap.SimpleEntry<>(kPodTimes, kPodValues));
+                // sort items by time as the JSON datapoints are object, not an array so the order is not guaranteed
+                Arrays.sort(items, Comparator.comparing(AbstractMap.SimpleEntry::getKey));
+                // and add to the result
+                data.add(new AbstractMap.SimpleEntry<>(
+                        Arrays.stream(items).mapToDouble(AbstractMap.SimpleEntry::getKey).toArray(),
+                        Arrays.stream(items).mapToDouble(AbstractMap.SimpleEntry::getValue).toArray()
+                ));
             }
             if (!data.isEmpty()) {
                 response.setDatapoints(data);
