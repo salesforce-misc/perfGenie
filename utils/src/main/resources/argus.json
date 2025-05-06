@@ -6,32 +6,32 @@
     "caverage": "DOWNSAMPLE(ALIASBYREGEX(ALIAS(GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD}:avg:1m-avg,#k8s_container_name#,#AVERAGE#),#:#,#literal#,#CELL#,#literal#),#(.*)::\\{#),#1d-avg#,#0#,#abs#)"
   },
   "metrics": {
-    "rCPUTime" :{
-      "name": "rCPUTime",
+    "rCpuT" :{
+      "name": "rCpuT",
       "description": "request CPU time Sec?",
       "scope": "core.aws.INSTANCE.DOMAIN",
       "metric": "SFDC_type-ServerMetrics.LogMetric-APP_CPU_TIME",
       "type": "cumulative",
       "enabled": true
     },
-    "avgJCPU":{
-      "name": "avgJCPU",
+    "avgJCpu":{
+      "name": "avgJCpu",
       "description": "avg JVM CPU %",
       "scope": "core.aws.INSTANCE.DOMAIN",
       "metric": "Jvm.processCpuLoadPercent.Value",
       "type": "average",
       "enabled": true
     },
-    "jCPUTime":{
-      "name": "jCPUTime",
+    "jCpuT":{
+      "name": "jCpuT",
       "description": "Jvm CPU time Ms",
       "scope": "core.aws.INSTANCE.DOMAIN",
       "metric": "Jvm.processCpuTimeMs.Value",
       "type": "cumulative",
       "enabled": true
     },
-    "cCPUTime":{
-      "name": "cCPUTime",
+    "cCpuT":{
+      "name": "cCpuT",
       "description": "container CPU time Sec",
       "scope": "cadvisor.aws.INSTANCE.DOMAIN",
       "metric": "container_cpu_usage_seconds_total",

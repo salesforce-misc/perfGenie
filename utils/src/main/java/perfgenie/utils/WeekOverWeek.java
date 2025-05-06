@@ -24,7 +24,7 @@ public class WeekOverWeek {
 
     private static CanaryResponse processWeekOverWeekCanaryTask(long timestampStart, long timestampEnd, String instance, String domain, String cell) {
 
-        List<String> metricList = new ArrayList(Arrays.asList("rCPUTime", "avgJCPU", "jCPUTime", "cCPUTime", "sfPt", "5xx", "4xx"));
+        List<String> metricList = new ArrayList(Arrays.asList("rCpuT", "jCpuT", "cCpuT", "sfPt", "5xx", "4xx"));
         List<String> header = new ArrayList<>();
         String metric = ArgusQueryT.getRequestCountMetric(String.valueOf(timestampStart), String.valueOf(timestampEnd), instance, domain, cell);
         if (metric != null) {

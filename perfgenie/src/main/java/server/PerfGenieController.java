@@ -55,6 +55,17 @@ public class PerfGenieController {
         //final Map<String, String> queryMap = queryToMap(metadataQuery);
         return service.canaryTask(start,end);
     }
+
+    @GetMapping(path = {"/component/casp/v1/canarytask","/component/casp/v1/canarytask/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String canarySideBySideTask(
+            @PathVariable(required = false, name = "host") String host,
+            @RequestParam(required = false, name = "start") final long start,
+            @RequestParam(required = false, name = "end") final long end,
+            @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
+        //final Map<String, String> queryMap = queryToMap(metadataQuery);
+        return service.canarySideBySideTask(start,end,"sidebyside");
+    }
+
     @GetMapping(path = {"/component/casp/v1/release"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String release(
             @RequestParam(required = false, name = "start") final long start,
@@ -71,7 +82,7 @@ public class PerfGenieController {
             @RequestParam(required = false, name = "end") final long end,
             @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
         final Map<String, String> queryMap = queryToMap(metadataQuery);
-        String res = service.getCanaryEvent(start,end);
+        String res = service.getCanaryEvent(host,start,end);
         return res;
     }
 

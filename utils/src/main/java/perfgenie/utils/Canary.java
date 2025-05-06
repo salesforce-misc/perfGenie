@@ -64,7 +64,7 @@ public class Canary {
         podsList.put("che2s", new Integer[]{7, 14});
         podsDomain.put("che2s", "core1");
 
-        podsInstance.put("usa60s", "aws-prod5-uswest2");//
+        podsInstance.put("usa660s", "aws-prod5-uswest2");//
         podsList.put("usa60s", new Integer[]{5, 13});
         podsDomain.put("usa60s", "core1");
 

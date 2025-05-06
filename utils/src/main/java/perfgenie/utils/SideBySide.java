@@ -11,7 +11,7 @@ import static perfgenie.utils.Canary.*;
 
 public class SideBySide {
     public static long mindiff = 3600000;
-    public static long maxTimeWindow = 5 * 60 * 60 * 1000; // 5 hours due to argus query limitations, need to switch to huron
+    public static long maxTimeWindow = 4 * 60 * 60 * 1000; // 5 hours due to argus query limitations, need to switch to huron
 
     public static CanaryResponse processSideBySideCanary(long timestampStart, long timestampEnd, String cell) {
         return processSideBySideCanaryTask(timestampStart, timestampEnd, podsInstance.get(cell), podsDomain.get(cell), cell);
@@ -19,7 +19,7 @@ public class SideBySide {
 
     public static CanaryResponse processSideBySideCanaryTask(long timestampStart, long timestampEnd, String instance, String domain, String cell) {
         List<Object> record = new ArrayList<>();
-        List<String> metricList = new ArrayList(Arrays.asList("rCPUTime", "jCPUTime", "cCPUTime", "sfPt", "5xx", "4xx"));
+        List<String> metricList = new ArrayList(Arrays.asList("rCpuT", "jCpuT", "cCpuT", "sfPt", "5xx", "4xx"));
         List<String> header = new ArrayList<>();
 
         CanaryDetails canary = processZingCanary(String.valueOf(timestampStart), String.valueOf(timestampEnd), instance, domain, cell);
@@ -31,6 +31,20 @@ public class SideBySide {
             record.add(cell);//cell
             header.add("cell:text");
 
+            record.add(canary.pod1.size());
+            header.add("cmpCnt:int");
+            record.add(canary.podall1.size());
+            header.add("cnt1:int");
+            record.add(canary.podall2.size());
+            header.add("cnt2:int");
+
+            //VarianceResult varianceZulu = Variance.getVarianceOf("jvmCpuMs", canary.finalStart,canary.finalEnd,instance,domain,cell, canary.pod1);
+            //VarianceResult varianceZing = Variance.getVarianceOf("jvmCpuMs", canary.finalStart,canary.finalEnd,instance,domain,cell, canary.pod2);
+            record.add(-1);
+            header.add("variance1:number");
+            record.add(-1);
+            header.add("variance2:number");
+
             //total request Count
             ArgusQueryT.QueryResponse reqCount1 = ArgusQueryT.getArgusMetric("reqCount", canary.finalStart, canary.finalEnd, instance, domain, cell, canary.pod1);
             ArgusQueryT.QueryResponse reqCount2 = ArgusQueryT.getArgusMetric("reqCount", canary.finalStart, canary.finalEnd, instance, domain, cell, canary.pod2);
@@ -40,12 +54,12 @@ public class SideBySide {
                 rCount1 = reqCount1.getMetric();
                 rCount2 = reqCount2.getMetric();
                 record.add(rCount1);//reqCount1
-                header.add("rCount1:number");
+                header.add("rCnt1:number");
                 record.add(rCount2);//reqCount2
-                header.add("rCount2:number");
+                header.add("rCnt2:number");
                 Double rCountPercentChange = 100.0 * (rCount1 - rCount2) / rCount1;
                 record.add(rCountPercentChange);//jvmCpuPercentPerReqPercentChange
-                header.add("rCount %c:number");
+                header.add("rCnt %c:number");
             } else {
                 return null;
             }
@@ -55,19 +69,19 @@ public class SideBySide {
             ArgusQueryT.QueryResponse startUp2 = ArgusQueryT.getStatupAVG(canary.finalStart, canary.finalEnd, instance, domain, cell, canary.pod2);
             if (startUp1 != null && startUp2 != null) {
                 record.add(startUp1.getMetric());//APT1
-                header.add("startUp1:number");
+                header.add("avgStp1:number");
                 record.add(startUp2.getMetric());//APT2
-                header.add("startUp2:number");
+                header.add("avgStp2:number");
                 Double startUpPercentChange = 100.0 * (startUp1.getMetric() - startUp2.getMetric()) / startUp1.getMetric();
                 record.add(startUpPercentChange);//startUpPercentChange
-                header.add("startUp %c:number");
+                header.add("avgStp %c:number");
             } else {
                 record.add(null);
-                header.add("startUp1:number");
+                header.add("avgStp1:number");
                 record.add(null);
-                header.add("startUp2:number");
+                header.add("avgStp2:number");
                 record.add(null);
-                header.add("startUp %c:number");
+                header.add("avgStp %c:number");
             }
 
             //average APT
@@ -75,22 +89,23 @@ public class SideBySide {
             ArgusQueryT.QueryResponse APT2 = ArgusQueryT.getMetric(ArgusQueryT.avgAPT, canary.finalStart, canary.finalEnd, instance, domain, cell, canary.pod2);
             if (APT1 != null && APT2 != null) {
                 record.add(APT1.getMetric());//APT1
-                header.add("avgAPT1:number");
+                header.add("avgApt1:number");
                 record.add(APT2.getMetric());//APT2
-                header.add("avgAPT1:number");
+                header.add("avgApt2:number");
                 Double aptPercentChange = 100.0 * (APT1.getMetric() - APT2.getMetric()) / APT1.getMetric();
                 record.add(aptPercentChange);//aptPercentChange
-                header.add("avgAPT %c:number");
+                header.add("avgApt %c:number");
             } else {
                 record.add(null);
-                header.add("avgAPT1:number");
+                header.add("avgApt1:number");
                 record.add(null);
-                header.add("avgAPT1:number");
+                header.add("avgApt2:number");
                 record.add(null);
-                header.add("avgAPT %c:number");
+                header.add("avgApt %c:number");
             }
 
             for (int i = 0; i < metricList.size(); i++) {
+                System.out.println(cell + "start query for :" + metricList.get(i));
                 ArgusQueryT.QueryResponse res1 = ArgusQueryT.getArgusMetric(metricList.get(i), canary.finalStart, canary.finalEnd, instance, domain, cell, canary.pod1);
                 ArgusQueryT.QueryResponse res2 = ArgusQueryT.getArgusMetric(metricList.get(i), canary.finalStart, canary.finalEnd, instance, domain, cell, canary.pod2);
                 if (res1 != null && res2 != null) {
@@ -109,28 +124,31 @@ public class SideBySide {
                     record.add(null);
                     header.add(metricList.get(i) + "/r %c:number");
                 }
+                System.out.println(cell + "end query for :" + metricList.get(i));
             }
-            record.add(instance);//instance
+            record.add(instance.replace("aws-","").replace("-","."));//instance
             header.add("instance:text");
-            record.add(domain);//instance
-            header.add("domain:text");
-            record.add(cell);//cell
-            header.add("cell:text");
+            //record.add(domain);//instance
+            //header.add("domain:text");
             record.add(2);//type release:1, sidebyside:2
             header.add("type:number");
 
+            System.out.println(cell + "start getCanaryDashboardURL");
             record.add(getCanaryDashboardURL(canary.pod1,canary.pod2,canary.finalStart,canary.finalEnd,instance,domain,cell));
             header.add("dashboard:url");
 
-            record.add(getMetricDashboardURL(canary.finalStart,canary.finalEnd,instance,domain,cell));
+            System.out.println(cell + "start getMetricDashboardURL");
+            record.add(getMetricDashboardURL(canary.pod1,canary.pod2,canary.finalStart,canary.finalEnd,instance,domain,cell));
             header.add("metrics:url");
 
-            VarianceResult varianceZulu = Variance.getVarianceOf("jvmCpuMs", canary.finalStart,canary.finalEnd,instance,domain,cell, canary.pod1);
-            VarianceResult varianceZing = Variance.getVarianceOf("jvmCpuMs", canary.finalStart,canary.finalEnd,instance,domain,cell, canary.pod2);
-            record.add(varianceZulu.variance);
-            header.add("varianceZulu:number");
-            record.add(varianceZing.variance);
-            header.add("varianceZing:number");
+            record.add(canary.finalStart);
+            header.add("start:data");
+            record.add(canary.finalEnd);
+            header.add("end:data");
+            record.add(Utils.toJson(canary.pod1));
+            header.add("pod1:data");
+            record.add(Utils.toJson(canary.pod2));
+            header.add("pod2:data");
 
             return new CanaryResponse(header,record);
         }
@@ -159,7 +177,7 @@ public class SideBySide {
         return URL;
     }
 
-    public static String getMetricDashboardURL(long curfinalStart, long curfinalEnd, String instance, String
+    public static String getMetricDashboardURL(List<String> pod1, List<String> pod2, long curfinalStart, long curfinalEnd, String instance, String
             domain, String cell) {
         String URL1 = "https://monitoring.internal.salesforce.com/argusmvp/#/dashboards/94076428?&span=1m&aggregate=avg&k8s_pod_name=%2A&substrate=aws";
         URL1 = URL1 + "&cell=" + cell;
@@ -167,6 +185,24 @@ public class SideBySide {
         URL1 = URL1 + "&domain=" + domain;
         URL1 = URL1 + "&start=" + curfinalStart;
         URL1 = URL1 + "&end=" + curfinalEnd;
+        String pods = "";
+        for (int i = 0; i < pod1.size(); i++) {
+            if (i == 0) {
+                pods = pod1.get(i);
+            } else {
+                pods = pods + "|" + pod1.get(i);
+            }
+        }
+        URL1 = URL1 + "&pod1=" + pods;
+        pods = "";
+        for (int i = 0; i < pod2.size(); i++) {
+            if (i == 0) {
+                pods = pod2.get(i);
+            } else {
+                pods = pods + "|" + pod2.get(i);
+            }
+        }
+        URL1 = URL1 + "&pod2=" + pods;
         System.out.println(URL1);
         return URL1;
     }
@@ -348,14 +384,14 @@ public class SideBySide {
 
         long finalDiff = canary.finalEnd - canary.finalStart;
 
-        System.out.println(" start: " + canary.finalStart + " end: " + canary.finalEnd + " finalDiff: " + finalDiff);
+        System.out.println(" start: " + Utils.convertEpochToUTCString(canary.finalStart) + " end: " + Utils.convertEpochToUTCString(canary.finalEnd) + " finalDiff: " + finalDiff);
 
         //argus time window limit check
         if (maxTimeWindow < (canary.finalEnd - canary.finalStart)) {
             long diff = (canary.finalEnd - canary.finalStart - maxTimeWindow) / 2;
             canary.finalEnd = canary.finalEnd - diff - 1;
             canary.finalStart = canary.finalStart + diff + 1;
-            System.out.println(" adjusted start: " + canary.finalStart + " end: " + canary.finalEnd + " finalDiff: " + finalDiff);
+            System.out.println(" adjusted start: " + Utils.convertEpochToUTCString(canary.finalStart) + " end: " + Utils.convertEpochToUTCString(canary.finalEnd) + " finalDiff: " + finalDiff);
         }
         return canary;
     }
