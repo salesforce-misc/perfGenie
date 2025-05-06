@@ -161,7 +161,7 @@ public class ArgusQueryT {
         if (pods.size() == 0) {
             return null;
         }
-        if ((System.currentTimeMillis() - lastUpdated) > 5 * 60 * 1000) {//5 min
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
             updateAccessToken();
             lastUpdated = System.currentTimeMillis();
         }
@@ -240,7 +240,7 @@ public class ArgusQueryT {
     public static String getRequestCountMetric(String startquery, String endquery, String instance, String
             domain, String cell) {
         try {
-            if ((System.currentTimeMillis() - lastUpdated) > 5 * 60 * 1000) {//5 min
+            if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
                 updateAccessToken();
                 lastUpdated = System.currentTimeMillis();
             }
@@ -273,7 +273,7 @@ public class ArgusQueryT {
 
     public static List<String> getCanaryPods(String startquery, String endquery, String instance, String
             domain, String cell) {
-        if ((System.currentTimeMillis() - lastUpdated) > 5 * 60 * 1000) {//5 min
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
             updateAccessToken();
             lastUpdated = System.currentTimeMillis();
         }
@@ -328,7 +328,7 @@ public class ArgusQueryT {
         aggregator.addHeader("safepoint", header);
 
 
-        if ((System.currentTimeMillis() - lastUpdated) > 5 * 60 * 1000) {//5 min
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
             updateAccessToken();
             lastUpdated = System.currentTimeMillis();
         }
@@ -411,7 +411,7 @@ public class ArgusQueryT {
         aggregator.addHeader("oldgen", header);
 
 
-        if ((System.currentTimeMillis() - lastUpdated) > 5 * 60 * 1000) {//5 min
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
             updateAccessToken();
             lastUpdated = System.currentTimeMillis();
         }
@@ -478,7 +478,7 @@ public class ArgusQueryT {
         if (pods.size() == 0) {
             return null;
         }
-        if ((System.currentTimeMillis() - lastUpdated) > 5 * 60 * 1000) {//5 min
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
             updateAccessToken();
             lastUpdated = System.currentTimeMillis();
         }
@@ -552,7 +552,7 @@ public class ArgusQueryT {
     }
 
     public static String getGCMetric(String startquery, String endquery, String instance, String domain, String cell) {
-        if ((System.currentTimeMillis() - lastUpdated) > 5 * 60 * 1000) {//5 min
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
             updateAccessToken();
             lastUpdated = System.currentTimeMillis();
         }
@@ -581,7 +581,7 @@ public class ArgusQueryT {
     }
 
     public static List<String> getContainerResourceCount(long start, long end, String instance, String domain, String cell, String PODs) {
-        if ((System.currentTimeMillis() - lastUpdated) > 5 * 60 * 1000) {//5 min
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
             updateAccessToken();
             lastUpdated = System.currentTimeMillis();
         }
@@ -590,6 +590,15 @@ public class ArgusQueryT {
     }
 
     static class QueryResponse {
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        String type;
         Double metric;
 
         public String getQuery() {
@@ -605,6 +614,7 @@ public class ArgusQueryT {
         QueryResponse() {
             metric = null;
             query = null;
+            type = null;
         }
 
         public Double getMetric() {
@@ -620,7 +630,7 @@ public class ArgusQueryT {
         if (pods.size() == 0) {
             return null;
         }
-        if ((System.currentTimeMillis() - lastUpdated) > 5 * 60 * 1000) {//5 min
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
             updateAccessToken();
             lastUpdated = System.currentTimeMillis();
         }
@@ -747,7 +757,7 @@ public class ArgusQueryT {
         if (pods.size() == 0) {
             return null;
         }
-        if ((System.currentTimeMillis() - lastUpdated) > 5 * 60 * 1000) {//5 min
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
             updateAccessToken();
             lastUpdated = System.currentTimeMillis();
         }

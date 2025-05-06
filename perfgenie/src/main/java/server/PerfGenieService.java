@@ -74,6 +74,17 @@ public class PerfGenieService implements IPerfGenieService {
         }
     }
 
+    @Scheduled(cron = "0 0 * * * *")
+    private void canaryTaskJob() throws IOException {
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String substrate = System.getenv("SUBSTRATE");
+        if (substrate != null) {
+            logger.info(now.format(formatter) + " running canaryTaskJob");
+            canarySideBySideTask(0, 0,"sidebyside");
+        }
+    }
+
     public void runJob() throws IOException {
         tenant = config.getTenant();
         host = InetAddress.getLocalHost().getHostName();
@@ -1209,7 +1220,7 @@ public class PerfGenieService implements IPerfGenieService {
                 if (record != null && record.size() > 0) {
                     if (record.size() > 0) {
                         long eventTimestamp = Utils.roundEpochToMidnightUTC(curTimeMillis) + 24 * 60 * 60 * 1000;
-                        if (!eventEsists(eventTimestamp, host, cell) && (!local || cell.equals("ind86"))) {
+                        if (!eventEsists(eventTimestamp, host, cell) && (!local)) {
                             addCanaryEventNew(record, eventTimestamp, cell, host, header);
                             response.add(record);
                         } else {
@@ -1243,7 +1254,7 @@ public class PerfGenieService implements IPerfGenieService {
                     tmp1 = tmp1 - lastndays * 24 * 60 * 60 * 1000;
                     tmp2 = tmp2 - lastndays * 24 * 60 * 60 * 1000;
                     //check if event exists
-                    if (!eventEsists(tmp2, host, cell) && (!local || cell.equals("ind86"))) {
+                    if (!eventEsists(tmp2, host, cell) && (!local)) {
                         System.out.println("process ------->:" + cell + " : " + arr[1] + " : " + hr);
                         List<Object> record = Canary.processCellCanary(tmp1, tmp2, cell);
                         if (record != null && record.size() > 0) {
@@ -1295,14 +1306,18 @@ public class PerfGenieService implements IPerfGenieService {
     }
 
 
-    public String getCanaryEvent(long start, long end) throws IOException {
+    public String getCanaryEvent(String host, long start, long end) throws IOException {
         List<String> events;
         Map<String, String> counts;
         EventStore.CanaryEvents response;
-        String host = InetAddress.getLocalHost().getHostName();
+        //String host = InetAddress.getLocalHost().getHostName();
         String substrate = System.getenv("SUBSTRATE");
         if (substrate != null || config.getStorageType().equals("grpc")) {
-            host = "perf-genie-tracker";
+            if(host == null) {
+                host = "perf-genie-tracker";
+            }
+        }else{
+            host = InetAddress.getLocalHost().getHostName();
         }
         final Map<String, String> dimMap = new HashMap<>();
         final Map<String, String> queryMap = new HashMap<>();
@@ -1457,6 +1472,61 @@ public class PerfGenieService implements IPerfGenieService {
         }
     }
 
+    public synchronized String canarySideBySideTask(long start, long end, String type) throws IOException {
+        int hr = Canary.getCurrentHourUTC();
+        String host = InetAddress.getLocalHost().getHostName();
+        String substrate = System.getenv("SUBSTRATE");
+        boolean local = false;
+        if (substrate != null) {
+            host = "perf-genie-test11";
+        } else {
+            local = true;
+        }
+
+        List<List<Object>> res = new ArrayList<>();
+        for (int lastndays = (int)end; lastndays <= start; lastndays++) {
+            for (String cell : ArgusQueryT.pc.getConfig().keySet()) {
+                if ((boolean) ArgusQueryT.pc.getConfig().get(cell).get("enabled") == true) {
+                    long tmp1 = Canary.getUtcEpochForHour((int) (((List) ArgusQueryT.pc.getConfig().get(cell).get("peak")).get(0)));
+                    long tmp2 = Canary.getUtcEpochForHour((int) (((List) ArgusQueryT.pc.getConfig().get(cell).get("peak")).get(1)));
+                    if (hr >= tmp2) {
+                        tmp1 = tmp1 - lastndays * 24 * 60 * 60 * 1000;
+                        tmp2 = tmp2 - lastndays * 24 * 60 * 60 * 1000;
+                        try {
+                            if (!eventEsists(tmp2, host, cell)) {
+                                CanaryResponse response;
+                                if (type.equals("sidebyside")) {
+                                    response = SideBySide.processSideBySideCanary(tmp1, tmp2, cell);
+                                } else {
+                                    response = WeekOverWeek.processWeekOverWeekCanary(tmp1, tmp2, cell);
+                                }
+                                String dateString1 = Utils.convertEpochToUTCString(tmp1);
+                                String dateString2 = Utils.convertEpochToUTCString(tmp2);
+                                System.out.println(dateString1 + ":" + dateString2 + ":" + cell + "--->" + Utils.toJson(response));
+                                List<Object> record = response.getRecord();
+                                if (record.size() > 0) {
+                                    addCanaryEventNew(record, tmp2, cell, host, response.getHeader());
+                                    res.add(record);
+                                    System.out.println(cell + ":" + lastndays + "----> record count " + record.size());
+                                } else {
+                                    System.out.println(cell + ":" + lastndays + "----> skip record count " + record.size());
+                                }
+                            } else {
+                                System.out.println(cell + ":" + lastndays + "---> Event exists");
+                            }
+                        } catch (Exception e) {
+                            System.out.println(cell + "----> Exception " + lastndays + ":" + cell + e.getMessage());
+                        }
+                    }else {
+                        System.out.println("skip:" + cell + " : " + tmp2 + " : " + hr);
+                    }
+                }
+            }
+        }
+
+        return Utils.toJson(res);
+    }
+
     public static void main(String[] args) {
         try {
             long start = 0;
@@ -1479,7 +1549,7 @@ public class PerfGenieService implements IPerfGenieService {
 
             if(args[0].equals("canary") || args[0].equals("release")){
                 if (substrate != null) {
-                    host = "perf-genie-test10";
+                    host = "perf-genie-test11";
                 }
                 start = Long.parseLong(args[1]);
                 end = Long.parseLong(args[2]);
@@ -1492,7 +1562,7 @@ public class PerfGenieService implements IPerfGenieService {
                             tmp1 = tmp1 - lastndays * 24 * 60 * 60 * 1000;
                             tmp2 = tmp2 - lastndays * 24 * 60 * 60 * 1000;
                             try {
-                                if (!service.eventEsists(tmp2, host, cell)) {
+                                if (true || !service.eventEsists(tmp2, host, cell)) {
                                     CanaryResponse response;
                                     if(args[0].equals("canary")) {
                                         response = SideBySide.processSideBySideCanary(tmp1, tmp2, cell);
@@ -1513,7 +1583,7 @@ public class PerfGenieService implements IPerfGenieService {
                                     System.out.println(cell + ":" + lastndays + "---> Event exists");
                                 }
                             } catch (Exception e) {
-                                System.out.println(cell + "----> Exception " + lastndays + ":" + cell);
+                                System.out.println(cell + "----> Exception " + lastndays + ":" + cell + e.getMessage());
                             }
                         }
                     }

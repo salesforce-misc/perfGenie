@@ -202,7 +202,7 @@ $(document).ready(function () {
             }else {
                 canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:red;'>" +apt+"</span>", apt, "style='color:green;text-align:right'");//apt
             }
-            let jcpu = canaryContextArray[i].record[4];
+            /*let jcpu = canaryContextArray[i].record[4];
             try {
                 jcpu = parseFloat(jcpu).toFixed(3);
             } catch(err) {}
@@ -220,7 +220,7 @@ $(document).ready(function () {
                 canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:green;'><s>" +ccpu+"</s></span>", ccpu, "style='color:green;text-align:right'");//apt
             }else {
                 canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:red;'><s>" +ccpu+"</s></span>", ccpu, "style='color:green;text-align:right'");//apt
-            }
+            }*/
 
             if(canaryContextArray[i].record.length > 19){
                 if(canaryContextArray[i].record[20] != undefined){
@@ -338,8 +338,8 @@ $(document).ready(function () {
         canaryviewtable.addContextTableHeader(tableHeader,"Cell",-1, "");
         canaryviewtable.addContextTableHeader(tableHeader,"Cmt",-1, "");
         canaryviewtable.addContextTableHeader(tableHeader,"avgApt %c",1, "");
-        canaryviewtable.addContextTableHeader(tableHeader,"avgJCpu/r %c",1, "");
-        canaryviewtable.addContextTableHeader(tableHeader,"avgCCpu/r %c",1, "");
+       // canaryviewtable.addContextTableHeader(tableHeader,"avgJCpu/r %c",1, "");
+       // canaryviewtable.addContextTableHeader(tableHeader,"avgCCpu/r %c",1, "");
         canaryviewtable.addContextTableHeader(tableHeader,"JCpuT/r %c",1, "");
         canaryviewtable.addContextTableHeader(tableHeader,"CCpuT/r %c",1, "");
         canaryviewtable.addContextTableHeader(tableHeader,"avgReqCpu %c",1, "");
