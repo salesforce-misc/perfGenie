@@ -12,10 +12,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static perfgenie.utils.ArgusQueries.*;
 
@@ -753,7 +751,7 @@ public class ArgusQueryT {
         return output.toString();
     }
 
-    /* Like getArgusMetric, but returns all of the datapoints in a double[].
+    /* Like getArgusMetric, but returns all the datapoints in a double[].
      */
     public static DatapointsQueryResponse getJvmCpuMsPerReqTimeSeriesDatapoints(long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
         if (pods.size() == 0) {
@@ -804,21 +802,34 @@ public class ArgusQueryT {
             }
         }
 
-        ArrayList<Double> data = new ArrayList<>();
+        ArrayList<AbstractMap.SimpleEntry<double[], double[]>> data = new ArrayList<>();
         try {
             JSONObject jsonObject = new JSONObject(metric);
             JSONArray jsonArray = jsonObject.getJSONArray("array");
             for (int i = 0; i < jsonArray.length(); i++) {
                 JSONObject object = jsonArray.getJSONObject(i);
                 JSONObject datapoints = object.getJSONObject("datapoints");
+                AbstractMap.SimpleEntry<Double, Double>[] items = new AbstractMap.SimpleEntry[datapoints.length()];
                 Iterator keys = datapoints.keys();
+                int ii = 0;
                 while (keys.hasNext()) {
                     String k = keys.next().toString();
-                    data.add(datapoints.getDouble(String.valueOf(k)));
+                    items[ii] = new AbstractMap.SimpleEntry<>(
+                            Double.parseDouble(k),
+                            datapoints.getDouble(String.valueOf(k))
+                    );
+                    ii++;
                 }
+                // sort items by time as the JSON datapoints are object, not an array so the order is not guaranteed
+                Arrays.sort(items, Comparator.comparing(AbstractMap.SimpleEntry::getKey));
+                // and add to the result
+                data.add(new AbstractMap.SimpleEntry<>(
+                        Arrays.stream(items).mapToDouble(AbstractMap.SimpleEntry::getKey).toArray(),
+                        Arrays.stream(items).mapToDouble(AbstractMap.SimpleEntry::getValue).toArray()
+                ));
             }
             if (!data.isEmpty()) {
-                response.setDatapoints(data.stream().mapToDouble(Double::doubleValue).toArray());
+                response.setDatapoints(data);
                 return response;
             }
         } catch (Exception e) {
@@ -836,7 +847,7 @@ public class ArgusQueryT {
     /* Query response that returns all datapoints in a double array, not just the last one.
      */
     static class DatapointsQueryResponse {
-        double [] datapoints;
+        ArrayList<AbstractMap.SimpleEntry<double[], double[]>> datapoints;
 
         public String getQuery() { return query; }
 
@@ -851,11 +862,11 @@ public class ArgusQueryT {
             query = null;
         }
 
-        public double [] getDatapoints() {
+        public ArrayList<AbstractMap.SimpleEntry<double[], double[]>> getDatapoints() {
             return datapoints;
         }
 
-        public void setDatapoints(double [] datapoints) {
+        public void setDatapoints(ArrayList<AbstractMap.SimpleEntry<double[], double[]>> datapoints) {
             this.datapoints = datapoints;
         }
     }
