@@ -137,6 +137,10 @@ public class ArgusQueryT {
 
     static String startupQueryT = "START:END:core.aws.INSTANCE.DOMAIN:AppStartup.totalStartupMs{cell=CELL,k8s_pod_name=POD}:avg:1m-avg";
 
+    static String releaseQueryT = "ALIASBYREGEX(GROUPBYTAG(START:END:core.aws.INSTANCE.DOMAIN:app.metric{cell=CELL,role=app,release=*,k8s_pod_name=*}:avg:all-min,#release#,#SUM#,#UNION#),#release=(.+),.*\\}#)";
+    static String instanceTypeQueryT = "ALIASBYREGEX(GROUPBYTAG(START:END:cadvisor.aws.INSTANCE.DOMAIN:container_cpu_system_seconds_total{k8s_pod_name=POD,k8s_container_name=coreapp,instance_type=*}:avg:all-min,#instance_type#,#SUM#,#UNION#),#^(.+):.*#)";
+    static String heapQueryT = "HIGHEST(START:END:core.aws.INSTANCE.DOMAIN:java-lang_type-Memory.HeapMemoryUsage_max{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:all-max,#1#)";
+
     public static ArgusConfig ac;
 
     static {
@@ -154,6 +158,175 @@ public class ArgusQueryT {
             pc = (PodConfig) Utils.readValue(Resources.toString(Resources.getResource("podconfig.json"), StandardCharsets.UTF_8), PodConfig.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static Double getHeap(long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
+        if (pods.size() == 0) {
+            return null;
+        }
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
+            updateAccessToken();
+            lastUpdated = System.currentTimeMillis();
+        }
+        String query = heapQueryT.replaceAll("START", String.valueOf(timestampStart));
+        query = query.replaceAll("END", String.valueOf(timestampEnd));
+        query = query.replaceAll("INSTANCE", instance);
+        query = query.replaceAll("DOMAIN", domain);
+        query = query.replaceAll("CELL", cell);
+        String podstr = "";
+        for (int i = 0; i < pods.size(); i++) {
+            if (i == 0) {
+                podstr = pods.get(i);
+            } else {
+                podstr = podstr + "|" + pods.get(i);
+            }
+        }
+        query = query.replaceAll("POD", podstr);
+
+        try {
+            query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            System.out.println(cell+ " getHeap1 " + e.getMessage());
+            return null;
+        }
+        String metricCommand = "curl -H \"Authorization: Bearer " + accessToken + "\" " + "https://monitoring-api.salesforce.com/argusws/metrics?expression=" + query;
+
+        String metric = "";
+        if (accessToken != null) {
+            metric = "{\"array\":" + executeCurlCommand(metricCommand) + "}";
+        } else {
+            try {
+                if (substrate == null) {
+                    metric = "{\"array\":" + Resources.toString(Resources.getResource("heap.json"), StandardCharsets.UTF_8) + "}";
+                }
+            } catch (Exception e) {
+                metric = "{}";
+                System.out.println(cell + "getHeap2 " + e.getMessage());
+            }
+        }
+        try {
+            JSONObject jsonObject = new JSONObject(metric);
+            JSONArray jsonArray = jsonObject.getJSONArray("array");
+            JSONObject object = jsonArray.getJSONObject(0);
+            JSONObject datapoints = object.getJSONObject("datapoints");
+            Iterator keys = datapoints.keys();
+            while (keys.hasNext()) {
+                String k = keys.next().toString();
+                return datapoints.getDouble(String.valueOf(k));
+            }
+            return null;
+        } catch (Exception e) {
+            System.out.println("getHeap Exception " + e.getMessage() + ":" + metric);
+            return null;
+        }
+    }
+
+    public static String getInstanceTypeTag(long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
+        if (pods.size() == 0) {
+            return null;
+        }
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
+            updateAccessToken();
+            lastUpdated = System.currentTimeMillis();
+        }
+        String query = instanceTypeQueryT.replaceAll("START", String.valueOf(timestampStart));
+        query = query.replaceAll("END", String.valueOf(timestampEnd));
+        query = query.replaceAll("INSTANCE", instance);
+        query = query.replaceAll("DOMAIN", domain);
+        query = query.replaceAll("CELL", cell);
+        String podstr = "";
+        for (int i = 0; i < pods.size(); i++) {
+            if (i == 0) {
+                podstr = pods.get(i);
+            } else {
+                podstr = podstr + "|" + pods.get(i);
+            }
+        }
+        query = query.replaceAll("POD", podstr);
+
+        try {
+            query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            System.out.println(cell+ " getInstanceTypeTag1 " + e.getMessage());
+            return null;
+        }
+        String metricCommand = "curl -H \"Authorization: Bearer " + accessToken + "\" " + "https://monitoring-api.salesforce.com/argusws/metrics?expression=" + query;
+
+        String metric = "";
+        if (accessToken != null) {
+            metric = "{\"array\":" + executeCurlCommand(metricCommand) + "}";
+        } else {
+            try {
+                if (substrate == null) {
+                    metric = "{\"array\":" + Resources.toString(Resources.getResource("instancetype.json"), StandardCharsets.UTF_8) + "}";
+                }
+            } catch (Exception e) {
+                metric = "{}";
+                System.out.println(cell + "getInstanceTypeTag2 " + e.getMessage());
+            }
+        }
+        try {
+            JSONObject jsonObject = new JSONObject(metric);
+            JSONArray jsonArray = jsonObject.getJSONArray("array");
+            return jsonArray.getJSONObject(0).getJSONObject("tags").get("instance_type").toString();
+        } catch (Exception e) {
+            System.out.println("getInstanceTypeTag Exception " + e.getMessage() + ":" + metric);
+            return null;
+        }
+    }
+
+    public static String getReleaseTag(long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
+        if (pods.size() == 0) {
+            return null;
+        }
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
+            updateAccessToken();
+            lastUpdated = System.currentTimeMillis();
+        }
+        String query = releaseQueryT.replaceAll("START", String.valueOf(timestampStart));
+        query = query.replaceAll("END", String.valueOf(timestampEnd));
+        query = query.replaceAll("INSTANCE", instance);
+        query = query.replaceAll("DOMAIN", domain);
+        query = query.replaceAll("CELL", cell);
+        String podstr = "";
+        for (int i = 0; i < pods.size(); i++) {
+            if (i == 0) {
+                podstr = pods.get(i);
+            } else {
+                podstr = podstr + "|" + pods.get(i);
+            }
+        }
+        query = query.replaceAll("POD", podstr);
+
+        try {
+            query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            System.out.println(cell+ " getReleaseTag1 " + e.getMessage());
+            return null;
+        }
+        String metricCommand = "curl -H \"Authorization: Bearer " + accessToken + "\" " + "https://monitoring-api.salesforce.com/argusws/metrics?expression=" + query;
+
+        String metric = "";
+        if (accessToken != null) {
+            metric = "{\"array\":" + executeCurlCommand(metricCommand) + "}";
+        } else {
+            try {
+                if (substrate == null) {
+                    metric = "{\"array\":" + Resources.toString(Resources.getResource("release.json"), StandardCharsets.UTF_8) + "}";
+                }
+            } catch (Exception e) {
+                metric = "{}";
+                System.out.println(cell + "getReleaseTag2 " + e.getMessage());
+            }
+        }
+        try {
+            JSONObject jsonObject = new JSONObject(metric);
+            JSONArray jsonArray = jsonObject.getJSONArray("array");
+            return jsonArray.getJSONObject(0).getJSONObject("tags").get("release").toString();
+        } catch (Exception e) {
+            System.out.println("getReleaseTag Exception " + e.getMessage() + ":" + metric);
+            return null;
         }
     }
 

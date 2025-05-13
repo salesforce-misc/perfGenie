@@ -1,0 +1,14 @@
+[
+  {
+    "scope": "254.13.18",
+    "metric": "app.metric",
+    "tags": {
+      "cell": "ind86",
+      "release": "254.13.18",
+      "role": "app"
+    },
+    "datapoints": {
+      "1747155943739": 7
+    }
+  }
+]

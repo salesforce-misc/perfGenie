@@ -403,7 +403,7 @@
                 resetTreeInvertedLevel(FilterLevel.LEVEL3, key, 1);
             }
             //resetTreeAllLevel(getActiveTree(getEventType(), false));
-            resetTreeAllLevel(getTree(1,getEventType()));
+            resetTreeAllLevelWrapper(getTree(1,getEventType()));
 
             if(compareTree) {
                 for (var key in jfrprofiles2) {
@@ -412,7 +412,7 @@
                     resetTreeInvertedLevel(FilterLevel.LEVEL3, key, 2);
                 }
                 //resetTreeAllLevel(getActiveTree(getEventType(), false));
-                resetTreeAllLevel(getTree(2,getEventType()));
+                resetTreeAllLevelWrapper(getTree(2,getEventType()));
             }
             enableRequestTimelineView(false);
 
@@ -593,7 +593,8 @@
     let contextTree2 = {};
 
     let contextTreeInverted = {};
-    //let contextTreeInverted2 = {};
+    //1 for LEVEL1, 2 for LEVEL2 and 3 for LEVEL3
+    let contextTreeInvertedLevel = {};
 
     let mergedContextTree = {};
     let mergedBacktraceTree = {};
@@ -618,8 +619,7 @@
     let isJfrContext = false;
     let isS3 = "true";
 
-    //1 for LEVEL1, 2 for LEVEL2 and 3 for LEVEL3
-    let contextTreeInvertedLevel = {};
+
 
     let prevReqTid = "";
     let prevReqTime = "";
@@ -659,7 +659,7 @@
 
     let showTimeline = true;
 
-    //one for LEVEL1, 2 for LEVEL2 and 3 for LEVEL3
+    //one for LEVEL1, 2 for LEVEL2 and 3 for LEVEL3, this was used in old tsview.ftl, double check and remove this
     let filteredStackMap = {1:{},2:{},3:{}};
 
     function addToFilter(val) {
@@ -771,7 +771,7 @@
         }
     }
 
-    function onLevel1Filter(eventType, count) {
+    function onLevel1Filter(eventType, count) {//This applies context filter on tree
         if (filterMap["tid"] == undefined && isFilterEmpty() && (pStart === '' || pEnd === '') && (fContext === 'all' || fContext === '') ) {
             //none
         } else {
@@ -819,19 +819,22 @@
                 prevReqTime = "";
                 document.getElementById("stack").innerHTML = "";
                 //resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL1);
-                resetTreeLevel(getTree(count,eventType), FilterLevel.LEVEL1);
+                resetTreeLevelWrapper(getTree(count,eventType), FilterLevel.LEVEL1);
                 resetTreeInvertedLevel(FilterLevel.LEVEL1,eventType, count);
                 //resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL2);
-                resetTreeLevel(getTree(count,eventType), FilterLevel.LEVEL2);
+                resetTreeLevelWrapper(getTree(count,eventType), FilterLevel.LEVEL2);
                 resetTreeInvertedLevel(FilterLevel.LEVEL2,eventType, count);
                 //resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL3);
-                resetTreeLevel(getTree(count,eventType), FilterLevel.LEVEL3);
+                resetTreeLevelWrapper(getTree(count,eventType), FilterLevel.LEVEL3);
                 resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType, count);
 
                 setmergedContextTree(undefined, eventType);
                 setmergedBacktraceTree(undefined, eventType);
 
+                //This applies context filter on backtrace tree which is default
+                //will not create a new tree
                 onLevel1Filter(eventType, count);
+
                 updateContextTable = true;
                 hasFilterChanged = true;
             }
@@ -849,10 +852,10 @@
                 prevReqCellTime = "";
                 prevReqCellObj = null;
                 //resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL2);
-                resetTreeLevel(getTree(count,eventType), FilterLevel.LEVEL2);
+                resetTreeLevelWrapper(getTree(count,eventType), FilterLevel.LEVEL2);
                 resetTreeInvertedLevel(FilterLevel.LEVEL2,eventType, count);
                 //resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL3);
-                resetTreeLevel(getTree(count,eventType), FilterLevel.LEVEL3);
+                resetTreeLevelWrapper(getTree(count,eventType), FilterLevel.LEVEL3);
                 resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType, count);
                 setmergedContextTree(undefined, eventType);
                 setmergedBacktraceTree(undefined, eventType);
@@ -867,7 +870,7 @@
             if (level3InputTmp !== contextInput[count][FilterLevel.LEVEL3][eventType]) {
                 contextInput[count][FilterLevel.LEVEL3][eventType] = level3InputTmp;
                 //resetTreeLevel(getActiveTree(eventType, false), FilterLevel.LEVEL3);
-                resetTreeLevel(getTree(count,eventType), FilterLevel.LEVEL3);
+                resetTreeLevelWrapper(getTree(count,eventType), FilterLevel.LEVEL3);
                 resetTreeInvertedLevel(FilterLevel.LEVEL3,eventType, count);
 
                 setmergedContextTree(undefined, eventType);
@@ -920,12 +923,13 @@
                     //if (getSelectedLevel(getActiveTree(eventType, false)) === FilterLevel.UNDEFINED) {
                     if (selectedLevel === FilterLevel.UNDEFINED) {
                         if (getContextTreeInverted(count, eventType) === undefined) {
-                            setContextTreeInverted(invertTreeV1(getContextTree(count, eventType), 1), count, eventType);
+                            setContextTreeInverted(invertTreeV1(getContextTree(count, eventType), count), count, eventType);
                             sortTreeBySize(getContextTreeInverted(count,eventType));
                         }
                     } else if (getcontextTreeInvertedLevel(eventType, selectedLevel, count) === undefined) {
-                        setcontextTreeInvertedLevel(invertTreeV1AtLevel(getContextTree(count,eventType), 1, selectedLevel), eventType, selectedLevel, count);
-                        sortTreeBySize(getcontextTreeInvertedLevel(eventType,selectedLevel,count));
+                        setcontextTreeInvertedLevel(invertTreeV1AtLevel(getContextTree(count,eventType), count, selectedLevel), eventType, selectedLevel, count);
+                        sortTreeBySize(getcontextTreeInvertedLevel(eventType,selectedLevel,count)); // call tree do not have level attribute
+                        //sortTreeLevelBySizeWrapper(getcontextTreeInvertedLevel(eventType,selectedLevel,count),selectedLevel);// not for call tree
                     }
                 }else{
                     let selectedLevel = getSelectedLevel(getTree(count,eventType));
@@ -947,7 +951,8 @@
                         if (selectedLevel === FilterLevel.UNDEFINED) {
                             setmergedContextTree(mergeTreesV1(getContextTreeInverted(1, eventType), getContextTreeInverted(2, eventType), 1), eventType);
                         } else {
-                            setmergedContextTree(mergeTreesV1(getcontextTreeInvertedLevel(eventType, selectedLevel, 1), getcontextTreeInvertedLevel(eventType, selectedLevel, 2), 1), eventType);
+                            //setmergedContextTree(mergeTreesV1Level(getcontextTreeInvertedLevel(eventType, selectedLevel, 1), getcontextTreeInvertedLevel(eventType, selectedLevel, 2), 1, selectedLevel), eventType); // not for call tree
+                            setmergedContextTree(mergeTreesV1(getcontextTreeInvertedLevel(eventType, selectedLevel, 1), getcontextTreeInvertedLevel(eventType, selectedLevel, 2), 1), eventType);// call tree do not have level attribute
                         }
                     }
                 }else{
@@ -995,6 +1000,10 @@
         //}
     }
 
+    function resetTreeLevelWrapper(tree, level){
+        resetTreeLevel(tree, level);
+    }
+
     function resetTreeLevel(tree, level) {
         if (tree[level] !== undefined) {
             tree[level] = undefined;
@@ -1006,6 +1015,10 @@
                 resetTreeLevel(ch[index], level);
             }
         }
+    }
+
+    function resetTreeAllLevelWrapper(tree){
+        resetTreeAllLevel(tree);
     }
 
     function resetTreeAllLevel(tree) {
@@ -1072,12 +1085,13 @@
             //let level = getSelectedLevel(getActiveTree(eventType, false));
             let level = getSelectedLevel(getTree(count,eventType));
             frameFilterStackMap[eventType+customEvent] = {};
-            filterFramesV1Level(tree, false, level, eventType);
+            console.log("calling filterFramesV1Level " + level + ":"+ count + ":" + eventType );
+            filterFramesV1Level(tree, false, level, eventType, count);
         }
     }
 
     function sortTreeLevelBySizeWrapper(tree, level){
-        //console.log("sortTreeLevelBySize:"+level);
+        console.log("sortTreeLevelBySize:"+level);
         if (tree['tree'] !== undefined) {
             tree = tree['tree'];
         }
@@ -1303,7 +1317,7 @@
     let curLevelT = undefined;
     let curSizeT = undefined;
 
-    function getTreeStackLevel(tree, stackid, size, level) {
+    function getTreeStackLevel(tree, stackid, size, level, count) {
         if (tree['tree'] !== undefined) {
             tree = tree['tree'];
         }
@@ -1313,7 +1327,7 @@
             curLevelT = level;
             curSizeT = size;
 
-            if (getStackLevel(tree.ch[tree.sm[stackid]], 0)) {
+            if (getStackLevel(tree.ch[tree.sm[stackid]], 0, count)) {
                 if (tree[level] !== undefined) {
                     tree[level] = tree[level] + size;
                 } else {
@@ -1360,9 +1374,9 @@
         }
     }
 
-    function getStackLevel(baseJsonTree, depth) {
+    function getStackLevel(baseJsonTree, depth, count) {
 
-        if (depth != 0 && baseJsonTree.sm[curStackIDT] !== undefined && baseJsonTree.sm[curStackIDT] === 1) {
+        if (depth != 0 && baseJsonTree.sm[curStackIDT] !== undefined && baseJsonTree.sm[curStackIDT] === 1 && !(count == 1 && baseJsonTree['canary'])) {
 
             if (baseJsonTree[curLevelT] !== undefined) {
                 baseJsonTree[curLevelT] = baseJsonTree[curLevelT] + curSizeT;
@@ -1372,19 +1386,19 @@
             return true;
         }
 
-        if (baseJsonTree['ch'] == null || baseJsonTree['ch'].length == 0) {
+        if (baseJsonTree['ch'] == null || baseJsonTree['ch'].length == 0 || (count == 1 && baseJsonTree['canary'])) {
             return false;
         }
 
         let found = false;
-        if (isCalltree && baseJsonTree.hash !== undefined && baseJsonTree.hash[curStackIDT] !== undefined) {
-            let res = getStackLevel(baseJsonTree['ch'][baseJsonTree.hash[curStackIDT]], depth + 1);
+        if (isCalltree && baseJsonTree.hash !== undefined && baseJsonTree.hash[curStackIDT] !== undefined) {//check this, test this flow
+            let res = getStackLevel(baseJsonTree['ch'][baseJsonTree.hash[curStackIDT]], depth + 1, count);
             if (res === true) {
                 found = true;
             }
         } else {
             for (let treeIndex = 0; treeIndex < baseJsonTree['ch'].length; treeIndex++) {
-                let res = getStackLevel(baseJsonTree['ch'][treeIndex], depth + 1);
+                let res = getStackLevel(baseJsonTree['ch'][treeIndex], depth + 1, count);
                 if (res === true) {
                     found = true;
                     break; // break loop, stack already found
@@ -1443,7 +1457,8 @@
     let frameFilterStackMap = {1:undefined,2:undefined,3:undefined,4:undefined};
 
 
-    function filterFramesV1Level(baseJsonTree, include, level, eventType) {
+    function filterFramesV1Level(baseJsonTree, include, level, eventType, num) {
+
         if (baseJsonTree == null) {//safety check
             return 0;
         }
@@ -1451,20 +1466,27 @@
             return 0;
         }
 
+        if(compareTree){
+            //merging adds new branches from  tree 2 into  tree 1. make sure we ignore merged branches of tree 1
+            if (num == 1 && baseJsonTree['canary']) { //canary flag added to identify base and canary branches
+            //if(num == 1 && baseJsonTree['bsz'] !== undefined && baseJsonTree['bsz'] == 0){
+                return 0;
+            }
+        }
+
         let count = 0;
         let curInclude = false;
         let event = eventType;
         if (!include) {
             //check if current frame contains filter string
-
             if (baseJsonTree !== null && getFrameName(baseJsonTree['nm']) !== undefined && getFrameName(baseJsonTree['nm']).includes(frameFilterString)) {
-                if (level != FilterLevel.UNDEFINED) {
-                    count = baseJsonTree[level];
-                } else {
-                    count = baseJsonTree['sz'];
-                }
-                include = true;
-                curInclude = true;
+                    if (level != FilterLevel.UNDEFINED) {
+                        count = baseJsonTree[level];
+                    } else {
+                        count = baseJsonTree['sz'];
+                    }
+                    include = true;
+                    curInclude = true;
             }
         }
 
@@ -1488,7 +1510,7 @@
                 if (level != FilterLevel.UNDEFINED && baseJsonTree['ch'][treeIndex][level] === undefined) {
                     continue;
                 }
-                chCount = chCount + filterFramesV1Level(baseJsonTree['ch'][treeIndex], include, level, eventType);
+                chCount = chCount + filterFramesV1Level(baseJsonTree['ch'][treeIndex], include, level, eventType, num);
             }
         } else {
             if (curInclude || include) {
@@ -2201,7 +2223,7 @@
         }
         for (stack in stackMap) {
             //getTreeStackLevel(getActiveTree(eventType, false), stack, stackMap[stack], FilterLevel.LEVEL1);
-            getTreeStackLevel(getTree(count, eventType), stack, stackMap[stack], FilterLevel.LEVEL1);
+            getTreeStackLevel(getTree(count, eventType), stack, stackMap[stack], FilterLevel.LEVEL1,count);
         }
         console.log("filterOnType end");
     }
@@ -2320,7 +2342,7 @@
                                 if (allSamples || (obj.time >= jstackdiffstart && obj.time <= jstackdiffstart + runTime)) {
                                     if (isJstack && applyFilter) {
                                         //getTreeStackLevel(getActiveTree(jstackEvent, false), obj.hash, 1, FilterLevel.LEVEL2);
-                                        getTreeStackLevel(getTree(count, jstackEvent), obj.hash, 1, FilterLevel.LEVEL2);
+                                        getTreeStackLevel(getTree(count, jstackEvent), obj.hash, 1, FilterLevel.LEVEL2,count);
                                     }
                                     if (isJstack && applyFilter) {
                                         if (filteredStackMap[FilterLevel.LEVEL2][tid] == undefined) {
@@ -2346,7 +2368,7 @@
                                     if (eventType == tempeventType) {
                                         if (applyFilter) {
                                             //getTreeStackLevel(getActiveTree(tempeventType, false), obj.hash, 1, FilterLevel.LEVEL2);
-                                            getTreeStackLevel(getTree(count, tempeventType), obj.hash, 1, FilterLevel.LEVEL2);
+                                            getTreeStackLevel(getTree(count, tempeventType), obj.hash, 1, FilterLevel.LEVEL2,count);
                                         }
                                     }
                                 }
@@ -4438,7 +4460,7 @@
     }
 
     function invertTreeV1(tree, num) {
-        console.log("invertTreeV1");
+        console.log("invertTreeV1 " + num);
         if (tree['tree'] !== undefined) {
             tree = tree['tree'];
         }
@@ -4463,7 +4485,8 @@
             return 0;
         }
         if (compareTree) {
-            if ((baseJsonTree['bsz'] !== undefined && num == 1 && baseJsonTree['bsz'] == 0) || (baseJsonTree['csz'] !== undefined && num == 2 && baseJsonTree['csz'] == 0)) { // this was added form compare tree 2
+            if ((num == 1 && baseJsonTree['canary']) || (num == 2 && baseJsonTree['canary'] == undefined)) { //canary flag added to identify base and canary branches
+            //if ((num == 1 && baseJsonTree['bsz'] !== undefined && baseJsonTree['bsz'] == 0) || (num == 2 && baseJsonTree['csz'] !== undefined &&  baseJsonTree['csz'] == 0)) { // this was added form compare tree 2
                 return 0;
             }
         }
@@ -4497,7 +4520,7 @@
     }
 
     function invertTreeV1AtLevel(tree, num,level) {
-        console.log("invertTreeV1AtLevel");
+        console.log("invertTreeV1AtLevel " + num +":"+level);
         if (tree['tree'] !== undefined) {
             tree = tree['tree'];
         }
@@ -4527,7 +4550,8 @@
             return 0;
         }
         if (compareTree) {
-            if ((baseJsonTree['bsz'] !== undefined && num == 1 && baseJsonTree['bsz'] == 0) || (baseJsonTree['csz'] !== undefined && num == 2 && baseJsonTree['csz'] == 0)) { // this was added form compare tree 2
+            if ((num == 1 && baseJsonTree['canary']) || (num == 2 && baseJsonTree['canary'] == undefined)){
+            //if ((baseJsonTree['bsz'] !== undefined && num == 1 && baseJsonTree['bsz'] == 0) || (baseJsonTree['csz'] !== undefined && num == 2 && baseJsonTree['csz'] == 0)) { // this was added form compare tree 2
                 return 0;
             }
         }
@@ -4662,6 +4686,21 @@
         }
     }
 
+    //need this to identify canary branches in tree
+    function setCanaryFlag(tree) {
+        if (tree == undefined) {
+            return;
+        }
+
+        tree['canary'] = true;
+        let ch = tree['ch'];
+        if (ch != undefined && ch !== null) {
+            for (let index = 0; index < ch.length; index++) {
+                setCanaryFlag(ch[index]);
+            }
+        }
+    }
+
     function setContextTree(tree, count, eventType) {
         if (eventType == undefined) {
             eventType = getEventType();
@@ -4669,6 +4708,12 @@
         if (count == 1) {
             contextTree1[eventType] = tree;
         } else {
+            let canaryTree = tree;
+            if (canaryTree != undefined && canaryTree['tree'] !== undefined) {
+                canaryTree =  canaryTree['tree'];
+            }
+            console.log("setContextTree setCanaryFlag");
+            setCanaryFlag(canaryTree);
             contextTree2[eventType] = tree;
         }
     }
@@ -4697,6 +4742,15 @@
             contextTreeInverted[count] = {};
         }
         contextTreeInverted[count][eventType] = tree;
+
+        if(count == 2){
+            let canaryTree = tree;
+            if (canaryTree != undefined && canaryTree['tree'] !== undefined) {
+                canaryTree =  canaryTree['tree'];
+            }
+            console.log("setContextTreeInverted setCanaryFlag");
+            setCanaryFlag(canaryTree);
+        }
 
         /*
         if (count == 1) {
@@ -4768,6 +4822,14 @@
             contextTreeInvertedLevel[count][eventType] = {};
         }
         contextTreeInvertedLevel[count][eventType][level] = tree;
+        if(count == 2){
+            let canaryTree = tree;
+            if (canaryTree != undefined && canaryTree['tree'] !== undefined) {
+                canaryTree =  canaryTree['tree'];
+            }
+            console.log("setcontextTreeInvertedLevel setCanaryFlag");
+            setCanaryFlag(canaryTree);
+        }
     }
 
     function getcontextTreeInvertedLevel(eventType, level, count) {
@@ -5153,15 +5215,25 @@
     function mergeTreesV1(contextTreeMaster, contextTreeBranch, excludeDepth) {
         console.log("mergeTreesV1");
         if ((isJfrContext) || (compareTree && isJfrContext)) {
-            if (contextTreeMaster['merged'] !== undefined) {
-                toastr_warning("mergeTreesV1 already done");
-            }
             if (contextTreeMaster['tree'] !== undefined) {
                 contextTreeMaster = contextTreeMaster['tree'];
             }
+            resetMergedTree(contextTreeMaster);
+            /*
+            //this logic will not work as for all levels we use bsz and csz. we need to make this at level
+            //better merge always for now, performance improvement opportunity.
+            if (contextTreeMaster['merged'] !== undefined) {
+                toastr_warning("mergeTreesV1 already done");
+                return contextTreeMaster;
+            }
+            contextTreeMaster['merged'] = true;
+            */
+
             if (contextTreeBranch['tree'] !== undefined) {
                 contextTreeBranch = contextTreeBranch['tree'];
             }
+            resetMergedTree(contextTreeMaster);
+
             mergeTreesV2(contextTreeMaster, contextTreeBranch);
 
             updateStackIndex(contextTreeMaster);
@@ -5173,23 +5245,53 @@
                 contextTreeMaster.bsz = contextTreeMaster.sz;
                 contextTreeMaster.csz = contextTreeBranch.sz;
             }
-            contextTreeMaster['merged'] = true;
+
             return contextTreeMaster;
         }
     }
 
-    function mergeTreesV1Level(contextTreeMaster, contextTreeBranch, excludeDepth , level) {
-        console.log("mergeTreesV1");
-        if ((isJfrContext) || (compareTree && isJfrContext)) {
-            if (contextTreeMaster['merged'] !== undefined) {
-                toastr_warning("mergeTreesV1 already done");
+    function resetMergedTree(tree){
+        if(tree == undefined){
+            return;
+        }
+        if(tree['bsz'] != undefined || tree['csz'] != undefined) {
+            tree['bsz'] = undefined;
+            tree['csz'] = undefined;
+            let ch = tree['ch'];
+            if (ch != undefined && ch !== null) {
+                for (let index = 0; index < ch.length; index++) {
+                    resetMergedTree(ch[index]);
+                }
             }
+        }
+    }
+
+    function mergeTreesV1Level(contextTreeMaster, contextTreeBranch, excludeDepth , level) {
+        console.log("mergeTreesV1Level " + level);
+        if ((isJfrContext) || (compareTree && isJfrContext)) {
+
             if (contextTreeMaster['tree'] !== undefined) {
                 contextTreeMaster = contextTreeMaster['tree'];
             }
+
+            /*
+            //this logic will not work as for all levels we use bsz and csz. we need to make this at level
+            //better merge always for now, performance improvement opportunity.
+            if (contextTreeMaster['merged'+level] !== undefined) {
+                toastr_warning("mergeTreesV1 already done");
+                return contextTreeMaster;
+            }
+            contextTreeMaster['merged'+level] = true;
+             */
+
+            //reset merged tree if it is merged before, re merging will cause problem.
+            resetMergedTree(contextTreeMaster);
+
             if (contextTreeBranch['tree'] !== undefined) {
                 contextTreeBranch = contextTreeBranch['tree'];
             }
+            resetMergedTree(contextTreeBranch);
+
             mergeTreesV2Level(contextTreeMaster, contextTreeBranch, level);
 
             updateStackIndex(contextTreeMaster);
@@ -5201,7 +5303,6 @@
                 contextTreeMaster.bsz = contextTreeMaster.sz;
                 contextTreeMaster.csz = contextTreeBranch.sz;
             }
-            contextTreeMaster['merged'] = true;
             return contextTreeMaster;
         }
     }
@@ -5248,7 +5349,7 @@
                 }else{
                     baseCh[baseIndex]['csz'] = 0;
                 }
-                if( baseCh[baseIndex][level] != undefined) {
+                if( baseCh[baseIndex][level] != undefined && !baseCh[baseIndex]['canary']) {
                     baseCh[baseIndex]['bsz'] = baseCh[baseIndex][level];
                 }else{
                     baseCh[baseIndex]['bsz'] = 0;
@@ -5302,10 +5403,9 @@
             }else{
                 baseCh[appendIndex]['csz'] = 0;
             }
-
             baseCh[appendIndex]['bsz'] = 0;
             sortCanaryTreeLevelBySizeWrapper(baseCh[appendIndex], level);//make sure sub tree is sorted by size
-            index++;
+            //index++;
             appendIndex++;
         }
         //sort merged children based on frame count
@@ -5325,12 +5425,12 @@
         let ch = tree['ch'];
         if (ch != undefined && ch !== null) {
             for (let index = 0; index < ch.length; index++) {
-                ch[index]['csz'] = 0;
                 if(ch[index][level] != undefined){
                     ch[index]['bsz'] = ch[index][level];
                 }else{
                     ch[index]['bsz'] = 0;
                 }
+                ch[index]['csz'] = 0;
                 sortBaseTreeLevelBySize(ch[index], level);
             }
             ch.sort(function (a, b) {
@@ -5414,10 +5514,17 @@
         let baseIndex = 0;
         let canaryIndex = 0;
         let appendIndex = baseLen;
+        /*if(contextTreeBase['sz'] == 1274  && contextTreeBase['nm'] == -463203109){
+            console.log(contextTreeBase['nm']);
+        }*/
         while (baseIndex < baseLen && canaryIndex < canaryLen) {
             if (baseCh[baseIndex]['nm'] == canaryCh[canaryIndex]['nm']) {
                 baseCh[baseIndex]['csz'] = canaryCh[canaryIndex]['sz'];
-                baseCh[baseIndex]['bsz'] = baseCh[baseIndex]['sz'];
+                if(!baseCh[baseIndex]['canary']) {
+                    baseCh[baseIndex]['bsz'] = baseCh[baseIndex]['sz'];
+                }else{
+                    baseCh[baseIndex]['bsz'] = 0;
+                }
                 mergeTreesV2(baseCh[baseIndex], canaryCh[canaryIndex]);//merge recurrsively
                 baseIndex++;
                 canaryIndex++;
@@ -5439,12 +5546,11 @@
         //update remaining baseCh
         for (let index = baseIndex; index < baseLen; index++) {
             baseCh[index]['csz'] = 0;
-            baseCh[index]['bsz'] = baseCh[index]['sz'];
-            //TODO update all childs bsz to sz and csz to 0
-            sortBaseTreeBySizeWrapper(baseCh[index]);//make sure sub tree is sorted by size
+            baseCh[baseIndex]['bsz'] = baseCh[baseIndex]['sz'];
+            sortBaseTreeBySizeWrapper(baseCh[index]);//make sure sub tree is sorted by size, update all childs bsz to sz and csz to 0
         }
 
-        //append remaining canaryCh to baseCh
+        //append remaining canaryCh to baseCh, remaining count should be zero while merging second time of same trees
         for (let index = canaryIndex; index < canaryLen; index++) {
             if (baseCh === null) {
                 baseCh = [];
@@ -5453,7 +5559,7 @@
             baseCh[appendIndex]['csz'] = canaryCh[index]['sz'];
             baseCh[appendIndex]['bsz'] = 0;
             sortCanaryTreeBySizeWrapper(baseCh[appendIndex]);//make sure sub tree is sorted by size
-            index++;
+            //index++;
             appendIndex++;
         }
 

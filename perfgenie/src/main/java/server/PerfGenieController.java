@@ -34,10 +34,11 @@ public class PerfGenieController {
     private final PerfGenieService service;
     private static final Pattern queryPatterns = Pattern.compile("(?<key>.*?)(?<value>(>|<|=|!=|~|!~|<=|>=).*)");
 
-    @PostMapping(path = {"/component/casp/v1/comment"})
-    public ResponseEntity<String> postComment(@RequestBody Comment comment) throws IOException{
+    @PostMapping(path = {"/component/casp/v1/comment","/component/casp/v1/comment/{host}"})
+    public ResponseEntity<String> postComment(@PathVariable(required = false, name = "host") String host,
+                                              @RequestBody Comment comment) throws IOException{
         comment.setCommentTime(System.currentTimeMillis());
-        service.addCanaryComment(Utils.toJson(comment),comment.getTimestamp(),comment.getCell(),comment.getColor(),comment.getCommentTime());
+        service.addCanaryComment(Utils.toJson(comment),comment.getTimestamp(),comment.getCell(),comment.getColor(),comment.getCommentTime(), host);
         return ResponseEntity.ok("Comment posted successfully!");
     }
 
@@ -53,7 +54,7 @@ public class PerfGenieController {
                           @RequestParam(required = false, name = "end") final long end,
                           @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
         //final Map<String, String> queryMap = queryToMap(metadataQuery);
-        return service.canaryTask(start,end);
+        return service.canaryTask(start,end,host);
     }
 
     @GetMapping(path = {"/component/casp/v1/canarytask","/component/casp/v1/canarytask/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -63,16 +64,17 @@ public class PerfGenieController {
             @RequestParam(required = false, name = "end") final long end,
             @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
         //final Map<String, String> queryMap = queryToMap(metadataQuery);
-        return service.canarySideBySideTask(start,end,"sidebyside");
+        return service.canarySideBySideTask(start,end,"sidebyside",host);
     }
 
-    @GetMapping(path = {"/component/casp/v1/release"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(path = {"/component/casp/v1/release","/component/casp/v1/release/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String release(
+            @PathVariable(required = false, name = "host") String host,
             @RequestParam(required = false, name = "start") final long start,
             @RequestParam(required = false, name = "end") final long end,
             @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
         //final Map<String, String> queryMap = queryToMap(metadataQuery);
-        return service.releaseTask(start,end);
+        return service.releaseTask(start,end, host);
     }
 
     @GetMapping(path = {"/component/casp/v1/canaryview","/component/casp/v1/canaryview/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -96,13 +98,14 @@ public class PerfGenieController {
         return res;
     }
 
-    @GetMapping(path = {"/component/casp/v1/canarycomments"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(path = {"/component/casp/v1/canarycomments","/component/casp/v1/canarycomments/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String canarycomments(
+            @PathVariable(required = false, name = "host") String host,
             @RequestParam(required = false, name = "start") final long start,
             @RequestParam(required = false, name = "end") final long end,
             @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
         final Map<String, String> queryMap = queryToMap(metadataQuery);
-        String res = service.getCanaryComments(start,end, queryMap);
+        String res = service.getCanaryComments(start,end, queryMap,host);
         return res;
     }
 

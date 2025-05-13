@@ -1,0 +1,15 @@
+[
+  {
+    "scope": "core.aws.aws-prod2-apsouth1.core1",
+    "metric": "java-lang_type-Memory.HeapMemoryUsage_max",
+    "tags": {
+      "cell": "ind86",
+      "k8s_container_name": "coreapp",
+      "k8s_pod_name": "ind86-casam-app-green-56b5dfdbbd-xkmps",
+      "role": "app"
+    },
+    "datapoints": {
+      "1747156719544": 51539607552
+    }
+  }
+]

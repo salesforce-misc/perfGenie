@@ -63,11 +63,15 @@ public class Variance {
        input dataset and that it works with all kinds of statistics (for now we use it to calculate median of the dataset,
        but p99, or similar metrics would work exactly the same.
      */
-    static VarianceResult getVarianceOf(String metric, long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
+    static synchronized VarianceResult getVarianceOf(String metric, long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
+        long startTime = System.currentTimeMillis();
         // get results for all pods, each pod will be its own array
         ArgusQueryT.DatapointsQueryResponse res = ArgusQueryT.getJvmCpuMsPerReqTimeSeriesDatapoints(timestampStart, timestampEnd, instance, domain, cell, pods);
-        if (res != null)
-            return calculate(res.getDatapoints());
+        if (res != null) {
+            VarianceResult vr = calculate(res.getDatapoints());
+            System.out.println("getVarianceOf timeMs:" +(System.currentTimeMillis()- startTime)+":"+instance +":"+ domain+":"+cell);
+            return vr;
+        }
         return new VarianceResult(Double.NaN, Double.NaN, Double.NaN, Double.NaN);
     }
 

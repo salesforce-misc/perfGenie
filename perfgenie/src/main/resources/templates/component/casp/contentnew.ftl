@@ -122,7 +122,7 @@
     }
 
     function getCanaryComments(resulttime, cell) {
-        URL = "v1/canarycomments?start=" + resulttime + "&end=" + resulttime + "&metadata_query=" + encodeURIComponent("cell=" + cell);
+        URL = "v1/canarycomments/"+dataHost+"/?start=" + resulttime + "&end=" + resulttime + "&metadata_query=" + encodeURIComponent("cell=" + cell);
         showSpinner("spinner1");
         $.ajax({
             url: URL, success: function (result) {
@@ -286,7 +286,7 @@
 
         // Make the AJAX request using jQuery
         $.ajax({
-            url: 'v1/comment',  // Replace with your API endpoint
+            url: 'v1/comment/'+ dataHost,
             type: 'POST',
             contentType: 'application/json',  // Tells the server the request body will be in JSON format
             data: JSON.stringify(requestData),  // Convert the data object to a JSON string

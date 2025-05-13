@@ -1,0 +1,15 @@
+[
+  {
+    "scope": "m6a.24xlarge",
+    "metric": "container_cpu_system_seconds_total",
+    "tags": {
+      "instance_type": "m6a.24xlarge",
+      "k8s_cluster": "sam-processing1",
+      "k8s_container_name": "coreapp"
+    },
+    "displayName": "m6a.24xlarge",
+    "datapoints": {
+      "1747156214942": 906445.12
+    }
+  }
+]

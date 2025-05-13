@@ -18,12 +18,12 @@ public class SideBySide {
         return processSideBySideCanaryTask(timestampStart, timestampEnd, podsInstance.get(cell), podsDomain.get(cell), cell);
     }
 
-    public static CanaryResponse processSideBySideCanaryTask(long timestampStart, long timestampEnd, String instance, String domain, String cell) {
+    public static synchronized CanaryResponse processSideBySideCanaryTask(long timestampStart, long timestampEnd, String instance, String domain, String cell) {
         List<Object> record = new ArrayList<>();
         List<String> metricList = new ArrayList(Arrays.asList("rCpuT", "jCpuT", "cCpuT", "sfPt", "5xx", "4xx"));
         List<String> header = new ArrayList<>();
 
-        CanaryDetails canary = processZingCanary(String.valueOf(timestampStart), String.valueOf(timestampEnd), instance, domain, cell);
+        CanaryDetails canary = processCanary(String.valueOf(timestampStart), String.valueOf(timestampEnd), instance, domain, cell);
         if (canary != null && canary.pod1.size() == canary.pod2.size()) {
             record.add(timestampEnd);//epoch
             header.add("timestamp:timestamp");
@@ -41,10 +41,10 @@ public class SideBySide {
 
             //VarianceResult varianceZulu = Variance.getVarianceOf("jvmCpuMs", canary.finalStart,canary.finalEnd,instance,domain,cell, canary.pod1);
             //VarianceResult varianceZing = Variance.getVarianceOf("jvmCpuMs", canary.finalStart,canary.finalEnd,instance,domain,cell, canary.pod2);
-            record.add(-1);
+            /*record.add(-1);
             header.add("variance1:number");
             record.add(-1);
-            header.add("variance2:number");
+            header.add("variance2:number");*/
 
             //total request Count
             ArgusQueryT.QueryResponse reqCount1 = ArgusQueryT.getArgusMetric("reqCount", canary.finalStart, canary.finalEnd, instance, domain, cell, canary.pod1);
@@ -146,13 +146,6 @@ public class SideBySide {
             VarianceResult varianceZulu = Variance.getVarianceOf("jvmCpuMs", canary.finalStart,canary.finalEnd,instance,domain,cell, canary.pod1);
             VarianceResult varianceZing = Variance.getVarianceOf("jvmCpuMs", canary.finalStart,canary.finalEnd,instance,domain,cell, canary.pod2);
 
-
-            // the bootstrapped median statistic
-            record.add(varianceZulu.median);
-            header.add("cpuPerReqZulu:number");
-            record.add(varianceZing.median);
-            header.add("cpuPerReqZing:number");
-
             // fewer column values converted to string for zulu & zing in a single column
             DecimalFormat df = new DecimalFormat("#.###");
             header.add("confidence:text");
@@ -162,7 +155,14 @@ public class SideBySide {
             header.add("timeVariance:text");
             record.add(df.format(varianceZulu.timeVariance) + " / " + df.format(varianceZing.timeVariance));
 
-            // full variance and confidence
+            /*
+            // the bootstrapped median statistic
+            record.add(varianceZulu.median);
+            header.add("cpuPerReqZulu:number");
+            record.add(varianceZing.median);
+            header.add("cpuPerReqZing:number");
+
+             // full variance and confidence
             record.add(varianceZulu.confidence);
             header.add("confidenceZulu:number");
             record.add(varianceZing.confidence);
@@ -173,6 +173,11 @@ public class SideBySide {
             record.add(varianceZing.variance);
             header.add("varianceZing:number");
 
+            record.add(varianceZulu.timeVariance);
+            header.add("timeVarianceZulu:number");
+            record.add(varianceZing.timeVariance);
+            header.add("timeVarianceZing:number");*/
+
             record.add(canary.finalStart);
             header.add("start:data");
             record.add(canary.finalEnd);
@@ -181,12 +186,6 @@ public class SideBySide {
             header.add("pod1:data");
             record.add(Utils.toJson(canary.pod2));
             header.add("pod2:data");
-
-
-            record.add(varianceZulu.timeVariance);
-            header.add("timeVarianceZulu:number");
-            record.add(varianceZing.timeVariance);
-            header.add("timeVarianceZing:number");
 
             return new CanaryResponse(header,record);
         }
@@ -245,10 +244,15 @@ public class SideBySide {
         return URL1;
     }
 
-
-    public static CanaryDetails processZingCanary(String start, String end, String instance, String domain, String cell) {
+    public static CanaryDetails processCanary(String start, String end, String instance, String domain, String cell) {
         String metric = ArgusQueryT.getGCMetric(start, end, instance, domain, cell);
-        return parse(metric);
+        CanaryDetails cd = null;
+        try {
+            cd = parse(metric);
+        }catch (OutOfMemoryError e){
+            System.out.println( cell + " processCanary OutOfMemoryError");
+        }
+        return cd;
     }
 
     public static class CanaryDetails {

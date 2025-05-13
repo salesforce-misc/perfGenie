@@ -123,7 +123,7 @@
     }
 
     function getCanaryComments(resulttime, cell) {
-        URL = "v1/canarycomments?start="+resulttime+"&end=" +resulttime+ "&metadata_query=" + encodeURIComponent("cell=" + cell);
+        URL = "v1/canarycomments/"+dataHost+"/?start="+resulttime+"&end=" +resulttime+ "&metadata_query=" + encodeURIComponent("cell=" + cell);
         showSpinner("spinner1");
         $.ajax({
             url: URL, success: function (result) {
@@ -332,6 +332,56 @@ $(document).ready(function () {
             }else{
                 canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='text-align:right'");//
             }
+
+            canaryviewtable.addContextTableRow(tableRows[rowIndex], "<b>"+canaryContextArray[i].record[2]+"</b>");//for table readability
+
+            let heap1 = canaryContextArray[i].record[28];
+            if(heap1 != undefined){
+                try {
+                    heap1 = parseFloat(heap1).toFixed(3);
+                } catch(err) {}
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], heap1,"style='text-align:right'");
+            }else{
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='text-align:right'");//
+            }
+            let heap2 = canaryContextArray[i].record[29];
+            if(heap2 != undefined){
+                try {
+                    heap2 = parseFloat(heap2).toFixed(3);
+                } catch(err) {}
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], heap2,"style='text-align:right'");
+            }else{
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='text-align:right'");//
+            }
+
+            let instanceType1 = canaryContextArray[i].record[30];
+            if(instanceType1 != undefined){
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], instanceType1,"style='text-align:right'");
+            }else{
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='text-align:right'");//
+            }
+
+            let instanceType2 = canaryContextArray[i].record[31];
+            if(instanceType2 != undefined){
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], instanceType2,"style='text-align:right'");
+            }else{
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='text-align:right'");//
+            }
+
+            let release1 = canaryContextArray[i].record[32];
+            if(release1 != undefined){
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], release1,"style='text-align:right'");
+            }else{
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='text-align:right'");//
+            }
+
+            let release2 = canaryContextArray[i].record[33];
+            if(release2 != undefined){
+                canaryviewtable.addContextTableRow(tableRows[rowIndex], release2,"style='text-align:right'");
+            }else{
+                canaryviewtable.addContextTableOrderRow(tableRows[rowIndex], "<span style='color:black'>NA</span>",0,"style='text-align:right'");//
+            }
+
         }
         canaryviewtable.addContextTableHeader(tableHeader,"timestamp",-1, "");
         //canaryviewtable.addContextTableHeader(tableHeader,"tid",1, "");
@@ -356,6 +406,13 @@ $(document).ready(function () {
         canaryviewtable.addContextTableHeader(tableHeader,"totalJCPUMs2",1, "");
         canaryviewtable.addContextTableHeader(tableHeader,"totalCCPUSec1",1, "");
         canaryviewtable.addContextTableHeader(tableHeader,"totalCCPUSec2",1, "");
+        canaryviewtable.addContextTableHeader(tableHeader,"cell",-1, "");
+        canaryviewtable.addContextTableHeader(tableHeader,"heap1",1, "");
+        canaryviewtable.addContextTableHeader(tableHeader,"heap2",1, "");
+        canaryviewtable.addContextTableHeader(tableHeader,"awsInstance1",-1, "");
+        canaryviewtable.addContextTableHeader(tableHeader,"awsInstance2",-1, "");
+        canaryviewtable.addContextTableHeader(tableHeader,"release1",-1, "");
+        canaryviewtable.addContextTableHeader(tableHeader,"release2",-1, "");
 
 
 
@@ -384,7 +441,7 @@ $(document).ready(function () {
 
         // Make the AJAX request using jQuery
         $.ajax({
-            url: 'v1/comment',  // Replace with your API endpoint
+            url: 'v1/comment/'+ dataHost,
             type: 'POST',
             contentType: 'application/json',  // Tells the server the request body will be in JSON format
             data: JSON.stringify(requestData),  // Convert the data object to a JSON string
