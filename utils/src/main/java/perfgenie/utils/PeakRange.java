@@ -46,6 +46,54 @@ public class PeakRange {
         }
     }*/
 
+    public static List<TimeRange> findContinuousRangesAbovePercentile(Map<Long, Integer> epochTimestampsMap, int percentile) {
+        // Calculate the percentile threshold
+        List<Integer> allRequestRates = new ArrayList<>(epochTimestampsMap.values());
+
+        // Sort request rates and calculate the percentile threshold
+        Collections.sort(allRequestRates);
+        int percentileIndex = (int) Math.ceil(allRequestRates.size() * (percentile / 100.0)) - 1;
+        int percentileThreshold = allRequestRates.get(percentileIndex);
+
+        // Print the percentile threshold
+        System.out.println(percentile + "th Percentile (high request rate threshold): " + percentileThreshold);
+
+        List<TimeRange> ranges = new ArrayList<>();
+        Long start = null;
+        Long end = null;
+
+        // Sort the map entries by epoch timestamp (ascending order)
+        List<Map.Entry<Long, Integer>> sortedEntries = new ArrayList<>(epochTimestampsMap.entrySet());
+        sortedEntries.sort(Map.Entry.comparingByKey());
+
+        for (Map.Entry<Long, Integer> entry : sortedEntries) {
+            long epochTimestamp = entry.getKey();
+            int currentRate = entry.getValue();
+            if (currentRate >= percentileThreshold) {
+                // If the current rate is above the threshold, we are in a continuous range
+                if (start == null) {
+                    start = epochTimestamp; // Start a new range
+                }
+                end = epochTimestamp; // Extend the current range
+            } else {
+                // If the current rate drops below the threshold, finalize the previous range
+                if (start != null) {
+                    TimeRange currentRange = new TimeRange(start, end);
+                    ranges.add(currentRange);
+                    start = null; // Reset the start for the next range
+                    end = null;   // Reset the end for the next range
+                }
+            }
+        }
+        // If a range is still ongoing at the end, add it to the largest range
+        if (start != null) {
+            TimeRange currentRange = new TimeRange(start, end);
+            ranges.add(currentRange);
+
+        }
+        return ranges;
+    }
+
     // Method to find the largest continuous time range where request rate is above the given percentile
     public static TimeRange findLargestContinuousRangeAbovePercentile(
             Map<Long, Integer> epochTimestampsMap, int percentile) {
@@ -99,9 +147,9 @@ public class PeakRange {
                 largestRange = currentRange;
             }
         }
-
         return largestRange;
     }
+
     // TimeRange class to represent a start and end time in epoch format
     public static class TimeRange {
         long start;

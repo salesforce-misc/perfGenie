@@ -3,7 +3,8 @@
     "cumulative": "DIFF(GROUPBYTAG(START:END:SCOPE:METRIC{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:max:all-max,#k8s_container_name#,#SUM#),GROUPBYTAG(START:END:SCOPE:METRIC{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:min:all-min,#k8s_container_name#,#SUM#))",
     "average": "DOWNSAMPLE(ALIASBYREGEX(ALIAS(GROUPBYTAG(START:END:SCOPE:METRIC{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:1m-avg,#k8s_container_name#,#AVERAGE#),#:#,#literal#,#CELL#,#literal#),#(.*)::\\{#),#1d-avg#,#0#,#abs#)",
     "ccumulative": "DIFF(GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD}:max:all-max,#k8s_container_name#,#SUM#),GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD}:min:all-min,#k8s_container_name#,#SUM#))",
-    "caverage": "DOWNSAMPLE(ALIASBYREGEX(ALIAS(GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD}:avg:1m-avg,#k8s_container_name#,#AVERAGE#),#:#,#literal#,#CELL#,#literal#),#(.*)::\\{#),#1d-avg#,#0#,#abs#)"
+    "caverage": "DOWNSAMPLE(ALIASBYREGEX(ALIAS(GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD}:avg:1m-avg,#k8s_container_name#,#AVERAGE#),#:#,#literal#,#CELL#,#literal#),#(.*)::\\{#),#1d-avg#,#0#,#abs#)",
+    "ccpusum": "DOWNSAMPLE(ALIASBYREGEX(ALIAS(GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD,resource=cpu}:avg:1m-avg,#k8s_container_name#,#SUM#),#:#,#literal#,#CELL#,#literal#),#(.*)::\\{#),#1d-sum#,#0#,#abs#)"
   },
   "metrics": {
     "rCpuT" :{
@@ -12,6 +13,14 @@
       "scope": "core.aws.INSTANCE.DOMAIN",
       "metric": "SFDC_type-ServerMetrics.LogMetric-APP_CPU_TIME",
       "type": "cumulative",
+      "enabled": true
+    },
+    "cCpuR" :{
+      "name": "cCpuR",
+      "description": "container CPU requests",
+      "scope": "kube-state-metrics.aws.INSTANCE.DOMAIN",
+      "metric": "kube_pod_container_resource_requests",
+      "type": "ccpusum",
       "enabled": true
     },
     "avgJCpu":{

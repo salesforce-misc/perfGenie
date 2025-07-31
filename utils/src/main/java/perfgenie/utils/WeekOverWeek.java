@@ -6,6 +6,7 @@ import org.checkerframework.checker.units.qual.A;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.HashMap;
@@ -16,16 +17,13 @@ import static perfgenie.utils.ArgusQueryT.getCanaryPods;
 
 public class WeekOverWeek {
     public static long mindiff = 3600000;
-    public static long maxTimeWindow = 5 * 60 * 60 * 1000; // 4 hours due to argus query limitations, need to switch to huron
+    public static long maxTimeWindow = 120 * 60 * 60 * 1000; // 5*24 hours due to argus query limitations, need to switch to huron
 
     public static CanaryResponse processWeekOverWeekCanary(long timestampStart, long timestampEnd, String cell) {
         return processWeekOverWeekCanaryTask(timestampStart,timestampEnd, (String)ArgusQueryT.pc.config.get(cell).get("instance"), (String)ArgusQueryT.pc.config.get(cell).get("domain"), cell);
     }
 
     private static CanaryResponse processWeekOverWeekCanaryTask(long timestampStart, long timestampEnd, String instance, String domain, String cell) {
-
-        List<String> metricList = new ArrayList(Arrays.asList("rCpuT", "jCpuT", "cCpuT", "sfPt", "5xx", "4xx"));
-        List<String> header = new ArrayList<>();
         String metric = ArgusQueryT.getRequestCountMetric(String.valueOf(timestampStart), String.valueOf(timestampEnd), instance, domain, cell);
         if (metric != null) {
             Map<Long, Integer> epochTimestampsMap = new HashMap<>();
@@ -46,136 +44,431 @@ public class WeekOverWeek {
                 long diff = (range.end - range.start - maxTimeWindow) / 2;
                 range.end = range.end - diff - 1;
                 range.start = range.start + diff + 1;
-                System.out.println(cell + " adjusted start: " + range.start + " end: " + range.end);
+                System.out.println(cell + " adjusted weekoverweek start: " + Utils.convertEpochToUTCString(range.start) + " end: " + Utils.convertEpochToUTCString(range.end));
+            }else{
+                System.out.println(cell + " not adjusted weekoverweek start: " + Utils.convertEpochToUTCString(range.start) + " end: " + Utils.convertEpochToUTCString(range.end));
             }
-
             if (range != null){
-                List<Object> record = new ArrayList<>();
                 long previousTimeDiffMs = 7 * 24 * 60 * 60 * 1000;
-                List<String> pods1 = getCanaryPods(String.valueOf(range.start), String.valueOf(range.end), instance, domain, cell);
-                List<String> pods2 = getCanaryPods(String.valueOf(range.start-previousTimeDiffMs), String.valueOf(range.end-previousTimeDiffMs), instance, domain, cell);
-                if(!pods1.isEmpty() && !pods2.isEmpty()){
-                    record.add(timestampEnd);//epoch
-                    header.add("timestamp:timestamp");
-                    record.add(1);//tid
-                    header.add("tid:text");
-                    record.add(cell);//cell
-                    header.add("cell:text");
-
-                    //total request Count
-                    ArgusQueryT.QueryResponse reqCount1 = ArgusQueryT.getArgusMetric("reqCount", range.start, range.end, instance, domain, cell, pods1);
-                    ArgusQueryT.QueryResponse reqCount2 = ArgusQueryT.getArgusMetric("reqCount", range.start - previousTimeDiffMs, range.end - previousTimeDiffMs, instance, domain, cell, pods2);
-                    Double rCount1 = 0.0;
-                    Double rCount2 = 0.0;
-                    if (reqCount1 != null && reqCount2 != null) {
-                        rCount1 = reqCount1.getMetric();
-                        rCount2 = reqCount2.getMetric();
-                        record.add(rCount1);//reqCount1
-                        header.add("rCount1:number");
-                        record.add(rCount2);//reqCount2
-                        header.add("rCount2:number");
-                        Double rCountPercentChange = 100.0 * (rCount1 - rCount2) / rCount1;
-                        record.add(rCountPercentChange);//jvmCpuPercentPerReqPercentChange
-                        header.add("rCount %c:number");
-                    } else {
-                        return null;
-                    }
-
-                    //startup
-                    ArgusQueryT.QueryResponse startUp1 = ArgusQueryT.getStatupAVG(range.start, range.end, instance, domain, cell, pods1);
-                    ArgusQueryT.QueryResponse startUp2 = ArgusQueryT.getStatupAVG(range.start - previousTimeDiffMs, range.end - previousTimeDiffMs, instance, domain, cell, pods2);
-                    if (startUp1 != null && startUp2 != null) {
-                        record.add(startUp1.getMetric());//APT1
-                        header.add("startUp1:number");
-                        record.add(startUp2.getMetric());//APT2
-                        header.add("startUp2:number");
-                        Double startUpPercentChange = 100.0 * (startUp1.getMetric() - startUp2.getMetric()) / startUp1.getMetric();
-                        record.add(startUpPercentChange);//startUpPercentChange
-                        header.add("startUp %c:number");
-                    } else {
-                        record.add(null);
-                        header.add("startUp1:number");
-                        record.add(null);
-                        header.add("startUp2:number");
-                        record.add(null);
-                        header.add("startUp %c:number");
-                    }
-
-                    //average APT
-                    ArgusQueryT.QueryResponse APT1 = ArgusQueryT.getMetric(ArgusQueryT.avgAPT, range.start, range.end, instance, domain, cell, pods1);
-                    ArgusQueryT.QueryResponse APT2 = ArgusQueryT.getMetric(ArgusQueryT.avgAPT, range.start - previousTimeDiffMs, range.end - previousTimeDiffMs, instance, domain, cell, pods2);
-                    if (APT1 != null && APT2 != null) {
-                        record.add(APT1.getMetric());//APT1
-                        record.add(APT2.getMetric());//APT2
-                        Double aptPercentChange = 100.0 * (APT1.getMetric() - APT2.getMetric()) / APT1.getMetric();
-                        record.add(aptPercentChange);//aptPercentChange
-                        header.add("avgAPT %c:number");
-                    }else {
-                        record.add(null);
-                        header.add("avgAPT1:number");
-                        record.add(null);
-                        header.add("avgAPT1:number");
-                        record.add(null);
-                        header.add("avgAPT %c:number");
-                    }
-
-                    for (int i=0; i<metricList.size();i++){
-                        ArgusQueryT.QueryResponse res1 = ArgusQueryT.getArgusMetric(metricList.get(i), range.start, range.end, instance, domain, cell, pods1);
-                        ArgusQueryT.QueryResponse res2 = ArgusQueryT.getArgusMetric(metricList.get(i), range.start - previousTimeDiffMs, range.end - previousTimeDiffMs, instance, domain, cell, pods2);
-                        if (res1 != null && res2 != null) {
-                            record.add(res1.getMetric());
-                            header.add(metricList.get(i) + "1:number");
-                            record.add(res2.getMetric());
-                            header.add(metricList.get(i) + "2:number");
-                            Double metricPercentChange = 100.0 * (res1.getMetric() - res2.getMetric()) / res1.getMetric();
-                            record.add(metricPercentChange);
-                            header.add(metricList.get(i) + " %c:number");
-                        }else {
-                            record.add(null);
-                            header.add(metricList.get(i) + "1:number");
-                            record.add(null);
-                            header.add(metricList.get(i) + "2:number");
-                            record.add(null);
-                            header.add(metricList.get(i) + "/r %c:number");
-                        }
-                    }
-
-                    record.add(instance);//instance
-                    header.add("instance:text");
-                    record.add(domain);//instance
-                    header.add("domain:text");
-                    record.add(cell);//cell
-                    header.add("cell:text");
-                    record.add(1);//type release:1, sidebyside:2
-                    header.add("type:number");
-
-                    return new CanaryResponse(header,record);
-                }
+                return getCanaryResponseWeekOverWeek(range.start,range.end, instance, domain, cell, range.start-previousTimeDiffMs, range.end-previousTimeDiffMs, instance, domain, cell, 1);
             }
-
         }
         return null;
     }
 
-    public static String getCanaryDashboardURL(List<String> pod1, List<String> pod2, long curfinalStart,
-                                               long curfinalEnd, String instance, String domain, String cell) {
-        String URL = "https://moncloud-grafana.sfproxy.monitoring.aws-esvc1-useast2.aws.sfdc.cl/d/evIw19pHz/zulu-zing-canary-falcon-rpulle-automation?orgId=1&";
-        URL = URL + "&var-cell1=" + cell;
-        URL = URL + "&var-cell2=" + cell;
-        URL = URL + "&var-functional_domain1=" + domain;
-        URL = URL + "&var-functional_domain2=" + domain;
-        URL = URL + "&var-falcon_instance1=" + instance;
-        URL = URL + "&var-falcon_instance2=" + instance;
+    public static String getSplunkweekAPTURL(long finalStart1,long finalEnd1, String instance1,String domain1, String cell1, List<String> pod1, long finalStart2,long finalEnd2, String instance2,String domain2, String cell2, List<String> pod2){
+        String p1 = "";
+        String or = "";
+        try {
+            for (int i = 0; i < pod1.size(); i++) {
+                p1 = p1 + or + URLEncoder.encode("host=\"" + pod1.get(i) + "\"",StandardCharsets.UTF_8.toString());
+                if(i == 0){
+                    or = "%20OR%20";
+                }
+            }
+            String p2 = "";
+            or = "";
+            for (int i = 0; i < pod2.size(); i++) {
+                p2 = p2 + or + URLEncoder.encode("host=\"" + pod2.get(i) + "\"",StandardCharsets.UTF_8.toString());
+                if(i == 0){
+                    or = "%20OR%20";
+                }
+            }
+
+            System.out.println(p1);
+            System.out.println(p2);
+            return "https://splunk-web.log-analytics.monitoring.aws-esvc1-useast2.aws.sfdc.is/en-US/app/publicSharing/zing_falcon_prod_canary_apt?form.time1.earliest=" + finalStart1 / 1000 + "&form.time1.latest=" + finalEnd1 / 1000 +"&form.time2.earliest=" + finalStart2 / 1000 + "&form.time2.latest=" + finalEnd2 / 1000 + "&form.POD1=" + cell1 + "&form.POD2=" + cell2+ "&form.Baseline=" + p1 + "&form.Canary=" + p2;
+
+            //return URLEncoder.encode("https://splunk-web.log-analytics.monitoring.aws-esvc1-useast2.aws.sfdc.is/en-US/app/publicSharing/zing_falcon_prod_canary_apt?earliest=" + finalStart / 1000 + "&latest=" + finalEnd / 1000 + "&form.POD=" + cell + "&form.Baseline=" + p1 + "&form.Canary=" + p2, StandardCharsets.UTF_8.toString());
+        }catch (Exception e){
+            return null;
+        }
+    }
+
+    public static String getweekMetricDashboardURL(long finalStart1,long finalEnd1, String instance1,String domain1, String cell1, List<String> pod1, long finalStart2,long finalEnd2, String instance2,String domain2, String cell2, List<String> pod2) {
+        String URL1 = "https://monitoring.internal.salesforce.com/argusmvp/#/dashboards/130683428?&span=1m&aggregate=avg&k8s_pod_name=%2A&substrate=aws";
+        URL1 = URL1 + "&cell1=" + cell1;
+        URL1 = URL1 + "&instance1=" + instance1;
+        URL1 = URL1 + "&domain1=" + domain1;
+        URL1 = URL1 + "&start1=" + finalStart1;
+        URL1 = URL1 + "&end1=" + finalEnd1;
+        URL1 = URL1 + "&cell2=" + cell2;
+        URL1 = URL1 + "&instance2=" + instance2;
+        URL1 = URL1 + "&domain2=" + domain2;
+        URL1 = URL1 + "&start2=" + finalStart2;
+        URL1 = URL1 + "&end2=" + finalEnd2;
+        String pods = "";
+        for (int i = 0; i < pod1.size(); i++) {
+            if (i == 0) {
+                pods = pod1.get(i);
+            } else {
+                pods = pods + "|" + pod1.get(i);
+            }
+        }
+        URL1 = URL1 + "&pod1=" + pods;
+        pods = "";
+        for (int i = 0; i < pod2.size(); i++) {
+            if (i == 0) {
+                pods = pod2.get(i);
+            } else {
+                pods = pods + "|" + pod2.get(i);
+            }
+        }
+        URL1 = URL1 + "&pod2=" + pods;
+        URL1 = URL1 + "&prev=" + (finalStart1-finalStart2)/(1000*60) + "m";
+        System.out.println(URL1);
+        return URL1;
+    }
+
+    public static CanaryResponse getCanaryResponseWeekOverWeek(long timestampStart1, long timestampEnd1, String instance1, String domain1, String cell1, long timestampStart2, long timestampEnd2, String instance2, String domain2, String cell2, int type){
+        List<String> pods1 = getCanaryPods(String.valueOf(timestampStart1), String.valueOf(timestampEnd1), instance1, domain1, cell1);
+        List<String> pods2 = getCanaryPods(String.valueOf(timestampStart2), String.valueOf(timestampEnd2), instance2, domain2, cell2);
+        if(!pods1.isEmpty() && !pods2.isEmpty()){
+            List<String> header = new ArrayList<>();
+            List<Object> record = new ArrayList<>();
+            List<String> metricList = new ArrayList(Arrays.asList("rCpuT", "jCpuT", "cCpuT", "cCpuR", "sfPt", "5xx", "4xx"));
+
+            record.add("timestamp:timestamp");
+            if(type == 3){
+                record.add(System.currentTimeMillis());//add time stamp of when it ran
+            }else {
+                record.add(timestampEnd1);//epoch
+            }
+            header.add("timestamp:timestamp");
+
+            record.add("tid:data");
+            record.add(1);//tid
+            header.add("tid:text");
+            record.add("cell:text");
+            record.add(cell1);//cell
+            header.add("cell:text");
+
+            record.add("cnt1:int");
+            record.add(pods1.size());
+            header.add("cnt1:int");
+            record.add("cnt2:int");
+            record.add(pods2.size());
+            header.add("cnt2:int");
+
+            System.out.println(cell1 + "start getCanaryDashboardURL");
+            record.add("dashboard:url");
+            record.add(getCanaryWeekDashboardURL(timestampStart1, timestampEnd1, instance1, domain1, cell1, pods1,timestampStart2, timestampEnd2, instance2, domain2, cell2, pods2));
+            header.add("dashboard:url");
+
+            System.out.println(cell1 + "start getMetricDashboardURL");
+            record.add("metrics:url");
+            record.add(getweekMetricDashboardURL(timestampStart1, timestampEnd1, instance1, domain1, cell1, pods1,timestampStart2, timestampEnd2, instance2, domain2, cell2, pods2));
+            header.add("metrics:url");
+
+
+            String aptURL = getSplunkweekAPTURL(timestampStart1, timestampEnd1, instance1, domain1, cell1, pods1,timestampStart2, timestampEnd2, instance2, domain2, cell2, pods2);
+            System.out.println(aptURL);
+
+
+            //total request Count
+            ArgusQueryT.QueryResponse reqCount1 = ArgusQueryT.getArgusMetric("reqCount", timestampStart1, timestampEnd1, instance1, domain1, cell1, pods1);
+            ArgusQueryT.QueryResponse reqCount2 = ArgusQueryT.getArgusMetric("reqCount", timestampStart2, timestampEnd2, instance2, domain2, cell2, pods2);
+            Double rCount1 = 0.0;
+            Double rCount2 = 0.0;
+            if (reqCount1 != null && reqCount2 != null) {
+                rCount1 = reqCount1.getMetric();
+                rCount2 = reqCount2.getMetric();
+                record.add("rCnt1:number");
+                record.add(rCount1);//reqCount1
+                header.add("rCnt1:number");
+                record.add("rCnt2:number");
+                record.add(rCount2);//reqCount2
+                header.add("rCnt2:number");
+                Double rCountPercentChange = 100.0 * (rCount1 - rCount2) / rCount1;
+                record.add("rCnt %c:number");
+                record.add(rCountPercentChange);//jvmCpuPercentPerReqPercentChange
+                header.add("rCnt %c:number");
+
+                long spanSec = (timestampEnd1-timestampStart1)/(1000);
+                record.add("CellReqPerSec1:number");
+                record.add(rCount1/spanSec);//rPerSec1
+                header.add("CellReqPerSec1:number");
+                record.add("CellReqPerSec2:number");
+                record.add(rCount2/spanSec);//rPerSec2
+                header.add("CellReqPerSec2:number");
+            } else {
+                return null;
+            }
+
+            //startup
+            List<PeakRange.TimeRange> ranges1 = ArgusQueryT.getPeakTimeRanges( timestampStart1-2*24*60*60*1000,  timestampEnd1,  instance1,  domain1,  cell1); //last 2 day
+            List<PeakRange.TimeRange> ranges2 = ArgusQueryT.getPeakTimeRanges( timestampStart2-2*24*60*60*1000,  timestampEnd2,  instance2,  domain2,  cell2); //last 2 day
+            ArgusQueryT.QueryResponse startUp1 = ArgusQueryT.getStatupAVG(timestampStart1, timestampEnd1, instance1, domain1, cell1, pods1,timestampStart1,timestampEnd1,ranges1,type);
+            ArgusQueryT.QueryResponse startUp2 = ArgusQueryT.getStatupAVG(timestampStart2, timestampEnd2, instance2, domain2, cell2, pods2,timestampStart2,timestampEnd2,ranges2,type);
+            if (startUp1 != null && startUp2 != null) {
+                record.add("avgStp1:number");
+                record.add(startUp1.getMetric());//APT1
+                header.add("avgStp1:number");
+                record.add("avgStp2:number");
+                record.add(startUp2.getMetric());//APT2
+                header.add("avgStp2:number");
+                Double startUpPercentChange = 100.0 * (startUp1.getMetric() - startUp2.getMetric()) / startUp1.getMetric();
+                record.add("avgStp %c:number");
+                record.add(startUpPercentChange);//startUpPercentChange
+                header.add("avgStp %c:number");
+
+                record.add("avgWrmpApt1:number");
+                record.add(startUp1.getMetric1());//APT1
+                header.add("avgWrmpApt1:number");
+                record.add("avgWrmpApt2:number");
+                record.add(startUp2.getMetric1());//APT2
+                header.add("avgWrmpApt2:number");
+                Double warmupUpPercentChange = 100.0 * (startUp1.getMetric1() - startUp2.getMetric1()) / startUp1.getMetric1();
+                record.add("avgWrmpApt %c:number");
+                record.add(warmupUpPercentChange);//startUpPercentChange
+                header.add("avgWrmpApt %c:number");
+
+                record.add("avgpeakWrmpApt1:number");
+                record.add(startUp1.getMetric2());//APT1
+                header.add("avgpeakWrmpApt1:number");
+                record.add("avgpeakWrmpApt2:number");
+                record.add(startUp2.getMetric2());//APT2
+                header.add("avgpeakWrmpApt2:number");
+                Double warmuppeakUpPercentChange = 100.0 * (startUp1.getMetric2() - startUp2.getMetric2()) / startUp1.getMetric2();
+                record.add("avgpeakWrmpApt %c:number");
+                record.add(warmuppeakUpPercentChange);//startUpPercentChange
+                header.add("avgpeakWrmpApt %c:number");
+            } else {
+                record.add("avgStp1:number");
+                record.add(null);
+                header.add("avgStp1:number");
+                record.add("avgStp2:number");
+                record.add(null);
+                header.add("avgStp2:number");
+                record.add("avgStp %c:number");
+                record.add(null);
+                header.add("avgStp %c:number");
+
+                record.add("avgWrmpApt1:number");
+                record.add(null);
+                header.add("avgWrmpApt1:number");
+                record.add("avgWrmpApt2:number");
+                record.add(null);
+                header.add("avgWrmpApt2:number");
+                record.add("avgWrmpApt %c:number");
+                record.add(null);
+                header.add("avgWrmpApt %c:number");
+            }
+
+            //average APT
+            ArgusQueryT.QueryResponse APT1 = ArgusQueryT.getMetric(ArgusQueryT.avgAPT, timestampStart1, timestampEnd1, instance1, domain1, cell1, pods1);
+            ArgusQueryT.QueryResponse APT2 = ArgusQueryT.getMetric(ArgusQueryT.avgAPT, timestampStart2, timestampEnd2, instance2, domain2, cell2, pods2);
+            if (APT1 != null && APT2 != null) {
+                record.add("avgApt1:number");
+                record.add(APT1.getMetric());//APT1
+                header.add("avgApt1:number");
+                record.add("avgApt2:number");
+                record.add(APT2.getMetric());//APT2
+                header.add("avgApt2:number");
+                Double aptPercentChange = 100.0 * (APT1.getMetric() - APT2.getMetric()) / APT1.getMetric();
+                record.add("avgApt %c:number");
+                record.add(aptPercentChange);//aptPercentChange
+                header.add("avgApt %c:number");
+            } else {
+                record.add("avgApt1:number");
+                record.add(null);
+                header.add("avgApt1:number");
+                record.add("avgApt2:number");
+                record.add(null);
+                header.add("avgApt2:number");
+                record.add("avgApt %c:number");
+                record.add(null);
+                header.add("avgApt %c:number");
+            }
+
+            for (int i=0; i<metricList.size();i++){
+                System.out.println(cell1 + "start query for :" + metricList.get(i));
+                ArgusQueryT.QueryResponse res1 = ArgusQueryT.getArgusMetric(metricList.get(i), timestampStart1, timestampEnd1, instance1, domain1, cell1, pods1);
+                ArgusQueryT.QueryResponse res2 = ArgusQueryT.getArgusMetric(metricList.get(i), timestampStart2, timestampEnd2, instance2, domain2, cell2, pods2);
+                if (res1 != null && res2 != null) {
+                    record.add(metricList.get(i) + "1:number");
+                    record.add(res1.getMetric());
+                    header.add(metricList.get(i) + "1:number");
+                    record.add(metricList.get(i) + "2:number");
+                    record.add(res2.getMetric());
+                    header.add(metricList.get(i) + "2:number");
+                    Double metricPercentChange = 100.0 * ((res1.getMetric() / rCount1) - (res2.getMetric() / rCount2)) / (res1.getMetric() / rCount1);
+                    record.add(metricList.get(i) + "/r %c:number");
+                    record.add(metricPercentChange);
+                    header.add(metricList.get(i) + "/r %c:number");
+                }else {
+                    record.add(metricList.get(i) + "1:number");
+                    record.add(null);
+                    header.add(metricList.get(i) + "1:number");
+                    record.add(metricList.get(i) + "2:number");
+                    record.add(null);
+                    header.add(metricList.get(i) + "2:number");
+                    record.add(metricList.get(i) + "/r %c:number");
+                    record.add(null);
+                    header.add(metricList.get(i) + "/r %c:number");
+                }
+                System.out.println(cell1 + "end query for :" + metricList.get(i));
+            }
+
+            record.add("instance:text");
+            record.add(instance1.replace("aws-","").replace("-","."));//instance
+            header.add("instance:text");
+            //record.add(domain);//instance
+            //header.add("domain:text");
+            record.add("type:number");
+            record.add(type);//type release:1, sidebyside:2
+            header.add("type:number");
+
+            header.add("spanMin:int");
+            record.add("spanMin:int");
+            record.add((timestampEnd1-timestampStart1)/(60*1000));
+
+            if(type == 4){
+                record.add("start:timestamp");
+                record.add(timestampStart1);
+                header.add("start:timestamp");
+                record.add("end:timestamp");
+                record.add(timestampEnd1);
+                header.add("end:timestamp");
+            }else {
+                record.add("start:data");
+                record.add(timestampStart1);
+                header.add("start:data");
+                record.add("end:data");
+                record.add(timestampEnd1);
+                header.add("end:data");
+            }
+
+            record.add("pod1:data");
+            record.add(Utils.toJson(pods1));
+            header.add("pod1:data");
+            record.add("pod2:data");
+            record.add(Utils.toJson(pods2));
+            header.add("pod2:data");
+
+            System.out.println("getHeap start");
+            Double heap1 = ArgusQueryT.getHeap(timestampStart1, timestampEnd1, instance1, domain1, cell1, pods1);
+            Double heap2 = ArgusQueryT.getHeap(timestampStart2, timestampEnd2, instance2, domain2, cell2, pods2);
+            System.out.println("getHeap end");
+
+            System.out.println("getInstanceTypeTag start");
+            String instanceType1 = ArgusQueryT.getInstanceTypeTag(timestampStart1, timestampEnd1, instance1, domain1, cell1, pods1);
+            String instanceType2 = ArgusQueryT.getInstanceTypeTag(timestampStart2, timestampEnd2, instance2, domain2, cell2, pods2);
+            System.out.println("getInstanceTypeTag end");
+
+            System.out.println("getReleaseTag start");
+            String release1 = ArgusQueryT.getReleaseTag(timestampStart1, timestampEnd1, instance1, domain1, cell1, pods1);
+            String release2 = ArgusQueryT.getReleaseTag(timestampStart2, timestampEnd2, instance2, domain2, cell2, pods2);
+            System.out.println("getReleaseTag end");
+
+
+            header.add("heap1:number");
+            record.add("heap1:number");
+            if(heap1 != null) {
+                record.add(heap1/(1024*1024*1024));
+            }else{
+                record.add("NA");
+            }
+            header.add("heap2:number");
+            record.add("heap2:number");
+            if(heap2 != null) {
+                record.add(heap2/(1024*1024*1024));
+            }else{
+                record.add("NA");
+            }
+            header.add("awsInstance1:text");
+            record.add("awsInstance1:text");
+            record.add(instanceType1);
+            header.add("awsInstance2:text");
+            record.add("awsInstance2:text");
+            record.add(instanceType2);
+            header.add("release1:text");
+            record.add("release1:text");
+            record.add(release1);
+            header.add("release2:text");
+            record.add("release2:text");
+            record.add(release2);
+
+            Double aptc1 = ArgusQueryT.getAPTCount(ArgusQueryT.TotalAPTCount,timestampStart1, timestampEnd1, instance1, domain1, cell1, pods1);
+            Double aptc2 = ArgusQueryT.getAPTCount(ArgusQueryT.TotalAPTCountBelow500,timestampStart1, timestampEnd1, instance1, domain1, cell1, pods1);
+            Double aptC500Percent1=null;
+            Double aptC1above500=null;
+            if (aptc1 != null && aptc2 != null) {
+                record.add("aptC1:number");
+                record.add(aptc1);
+                header.add("aptC1:number");
+                record.add("aptC1<500:number");
+                record.add(aptc2);
+                header.add("aptC1<500:number");
+                aptC500Percent1 = 100.0 * aptc2 / aptc1;
+                record.add("aptC1<500 %:number");
+                record.add(aptC500Percent1);
+                header.add("aptC1<500 %:number");
+                aptC1above500 = aptc1 - aptc2;
+            }
+            aptc1 = ArgusQueryT.getAPTCount(ArgusQueryT.TotalAPTCount,timestampStart2, timestampEnd2, instance2, domain2, cell2, pods2);
+            aptc2 = ArgusQueryT.getAPTCount(ArgusQueryT.TotalAPTCountBelow500,timestampStart2, timestampEnd2, instance2, domain2, cell2, pods2);
+            Double aptC500Percent2 = null;
+            Double aptC2above500=null;
+            if (aptc1 != null && aptc2 != null) {
+                record.add("aptC2:number");
+                record.add(aptc1);
+                header.add("aptC2:number");
+                record.add("aptC2<500:number");
+                record.add(aptc2);
+                header.add("aptC2<500:number");
+                aptC500Percent2 = 100.0 * aptc2 / aptc1;
+                record.add("aptC2<500 %:number");
+                record.add(aptC500Percent2);
+                header.add("aptC2<500 %:number");
+                aptC2above500 = aptc1 - aptc2;
+            }
+            if (aptC500Percent1 != null && aptC500Percent2 != null) {
+                Double aptC500Percent = 100.00 * (aptC500Percent1-aptC500Percent2)/aptC500Percent1;
+                record.add("aptC<500 % %c:number");
+                record.add(aptC500Percent);
+                header.add("aptC<500 % %c:number");
+
+                Double aptCabove500Percent = 100.00 * (aptC2above500-aptC1above500)/aptC1above500;
+                record.add("aptC>500 % %c:number");
+                record.add(aptCabove500Percent);
+                header.add("aptC>500 % %c:number");
+            }
+
+            String release = SideBySide.cellReleaseMap.getOrDefault(cell1,"NA");
+            record.add("release:text");
+            record.add(release);
+            header.add("release:text");
+
+            record.add("splunkapt:url");
+            record.add(aptURL);
+            header.add("splunkapt:url");
+
+            return new CanaryResponse(header,record);
+        }
+        return null;
+    }
+
+    public static String getCanaryWeekDashboardURL(long finalStart1,long finalEnd1, String instance1,String domain1, String cell1, List<String> pod1, long finalStart2,long finalEnd2, String instance2,String domain2, String cell2, List<String> pod2) {
+        String URL = "https://moncloud-grafana.sfproxy.monitoring.aws-esvc1-useast2.aws.sfdc.cl/d/ndLYoVsHz/week-over-week-falcon-rpulle-automation?orgId=1&";
+        URL = URL + "&var-cell1=" + cell1;
+        URL = URL + "&var-cell2=" + cell2;
+        URL = URL + "&var-functional_domain1=" + domain1;
+        URL = URL + "&var-functional_domain2=" + domain2;
+        URL = URL + "&var-falcon_instance1=" + instance1;
+        URL = URL + "&var-falcon_instance2=" + instance2;
         URL = URL + "&var-interval=1m";
-        URL = URL + "&var-prev=0m";
+        URL = URL + "&var-prev="+(finalStart1-finalStart2)/(1000*60)+"m";
         for (int i = 0; i < pod2.size(); i++) {
             URL = URL + "&var-pod2=" + pod2.get(i);
         }
         for (int i = 0; i < pod1.size(); i++) {
             URL = URL + "&var-pod1=" + pod1.get(i);
         }
-        URL = URL + "&from=" + curfinalStart;
-        URL = URL + "&to=" + curfinalEnd;
+        URL = URL + "&from=" + finalStart1;
+        URL = URL + "&to=" + finalEnd1;
+        URL = URL + "&var-start2=" + finalStart2;
+        URL = URL + "&var-end2=" + finalEnd2;
         return URL;
     }
 

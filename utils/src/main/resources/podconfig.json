@@ -36,8 +36,8 @@
       "domain": "core1",
       "instance": "aws-prod5-uswest2",
       "peak": [
-        12,
-        20
+        14,
+        18
       ]
     },
     "usa432s": {
@@ -46,12 +46,12 @@
       "domain": "core1",
       "instance": "aws-prod5-uswest2",
       "peak": [
-        8,
-        14
+        14,
+        18
       ]
     },
     "usa762s": {
-      "enabled": false,
+      "enabled": true,
       "type": 1,
       "domain": "core1",
       "instance": "aws-prod21-useast2",
@@ -67,7 +67,7 @@
       "instance": "aws-prod5-uswest2",
       "peak": [
         15,
-        21
+        20
       ]
     },
     "usa224s": {
@@ -76,8 +76,8 @@
       "domain": "core1",
       "instance": "aws-prod5-uswest2",
       "peak": [
-        12,
-        20
+        14,
+        18
       ]
     },
     "ind10s": {
@@ -96,8 +96,8 @@
       "domain": "core1",
       "instance": "aws-prod5-uswest2",
       "peak": [
-        12,
-        20
+        14,
+        19
       ]
     },
     "ind8s": {
@@ -126,18 +126,18 @@
       "domain": "core1",
       "instance": "aws-prod15-eucentral2",
       "peak": [
-        7,
-        14
+        17,
+        22
       ]
     },
-    "usa60s": {
+    "usa660s": {
       "enabled": true,
       "type": 1,
       "domain": "core1",
       "instance": "aws-prod5-uswest2",
       "peak": [
-        5,
-        13
+        14,
+        19
       ]
     },
     "deu6s": {
@@ -146,8 +146,8 @@
       "domain": "core1",
       "instance": "aws-prod3-eucentral1",
       "peak": [
-        7,
-        13
+        1,
+        5
       ]
     },
     "usa250s": {
@@ -248,6 +248,128 @@
       "peak": [
         13,
         19
+      ]
+    },
+    "swe16": {
+      "enabled": true,
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod16-eunorth1",
+      "peak": [
+        9,
+        13
+      ]
+    },
+    "swe72": {
+      "enabled": true,
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod16-eunorth1",
+      "peak": [
+        9,
+        13
+      ]
+    },
+
+
+    "usa952s": {
+      "enabled": true,
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod21-useast2",
+      "peak": [
+        14,
+        18
+      ]
+    },
+    "swe132s": {
+      "enabled": true,
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod16-eunorth1",
+      "peak": [
+        9,
+        13
+      ]
+    },
+    "ind26s": {
+      "enabled": true,
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod2-apsouth1",
+      "peak": [
+        8,
+        14
+      ]
+    },
+    "swe70": {
+      "enabled": true,
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod16-eunorth1",
+      "peak": [
+        9,
+        13
+      ]
+    },
+    "usa950s": {
+      "enabled": true,
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod1-useast1",
+      "peak": [
+        9,
+        17
+      ]
+    },
+    "swe130s": {
+      "enabled": true,
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod16-eunorth1",
+      "peak": [
+        9,
+        13
+      ]
+    },
+    "ind14s": {
+      "enabled": true,
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod2-apsouth1",
+      "peak": [
+        8,
+        14
+      ]
+    },
+    "usa948s": {
+      "enabled": true,
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod1-useast1",
+      "peak": [
+        9,
+        17
+      ]
+    },
+    "swe128s": {
+      "enabled": true,
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod16-eunorth1",
+      "peak": [
+        9,
+        13
+      ]
+    },
+    "ind2s": {
+      "enabled": true,
+      "type": 1,
+      "domain": "core1",
+      "instance": "aws-prod2-apsouth1",
+      "peak": [
+        8,
+        14
       ]
     }
   }

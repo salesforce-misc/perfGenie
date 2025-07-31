@@ -141,6 +141,10 @@ public class ArgusQueryT {
     static String instanceTypeQueryT = "ALIASBYREGEX(GROUPBYTAG(START:END:cadvisor.aws.INSTANCE.DOMAIN:container_cpu_system_seconds_total{k8s_pod_name=POD,k8s_container_name=coreapp,instance_type=*}:avg:all-min,#instance_type#,#SUM#,#UNION#),#^(.+):.*#)";
     static String heapQueryT = "HIGHEST(START:END:core.aws.INSTANCE.DOMAIN:java-lang_type-Memory.HeapMemoryUsage_max{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:all-max,#1#)";
 
+    static String TotalAPTCount = "DOWNSAMPLE(COUNT(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-trustAptRequestTime.Last_1_Min_Avg{cell=CELL,k8s_pod_name=POD,role=app}:avg:1m-avg),#1d-sum#)";
+    static String TotalAPTCountBelow500 = "DOWNSAMPLE(COUNT(CULL_ABOVE(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-trustAptRequestTime.Last_1_Min_Avg{cell=CELL,k8s_pod_name=POD,role=app}:avg:1m-avg,#500#,#value#)),#1d-sum#)";
+
+
     public static ArgusConfig ac;
 
     static {
@@ -158,6 +162,67 @@ public class ArgusQueryT {
             pc = (PodConfig) Utils.readValue(Resources.toString(Resources.getResource("podconfig.json"), StandardCharsets.UTF_8), PodConfig.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static Double getAPTCount(String querytemplate, long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
+        if (pods.size() == 0) {
+            return null;
+        }
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
+            updateAccessToken();
+            lastUpdated = System.currentTimeMillis();
+        }
+        String query = querytemplate.replaceAll("START", String.valueOf(timestampStart));
+        query = query.replaceAll("END", String.valueOf(timestampEnd));
+        query = query.replaceAll("INSTANCE", instance);
+        query = query.replaceAll("DOMAIN", domain);
+        query = query.replaceAll("CELL", cell);
+        String podstr = "";
+        for (int i = 0; i < pods.size(); i++) {
+            if (i == 0) {
+                podstr = pods.get(i);
+            } else {
+                podstr = podstr + "|" + pods.get(i);
+            }
+        }
+        query = query.replaceAll("POD", podstr);
+
+        try {
+            query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            System.out.println(cell+ " getAPTCount1 " + e.getMessage());
+            return null;
+        }
+        String metricCommand = "curl -H \"Authorization: Bearer " + accessToken + "\" " + "https://monitoring-api.salesforce.com/argusws/metrics?expression=" + query;
+
+        String metric = "";
+        if (accessToken != null) {
+            metric = "{\"array\":" + executeCurlCommand(metricCommand) + "}";
+        } else {
+            try {
+                if (substrate == null) {
+                    metric = "{\"array\":" + Resources.toString(Resources.getResource("heap.json"), StandardCharsets.UTF_8) + "}";
+                }
+            } catch (Exception e) {
+                metric = "{}";
+                System.out.println(cell + "getAPTCount2 " + e.getMessage());
+            }
+        }
+        try {
+            JSONObject jsonObject = new JSONObject(metric);
+            JSONArray jsonArray = jsonObject.getJSONArray("array");
+            JSONObject object = jsonArray.getJSONObject(0);
+            JSONObject datapoints = object.getJSONObject("datapoints");
+            Iterator keys = datapoints.keys();
+            while (keys.hasNext()) {
+                String k = keys.next().toString();
+                return datapoints.getDouble(String.valueOf(k));
+            }
+            return null;
+        } catch (Exception e) {
+            System.out.println("getAPTCount Exception " + e.getMessage() + ":" + metric);
+            return null;
         }
     }
 
@@ -330,7 +395,7 @@ public class ArgusQueryT {
         }
     }
 
-    public static QueryResponse getStatupAVG(long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
+    public static QueryResponse getStatupAVG(long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods, long peakStart, long peakEnd, List<PeakRange.TimeRange> ranges, int type) {
         if (pods.size() == 0) {
             return null;
         }
@@ -379,12 +444,15 @@ public class ArgusQueryT {
             }
         }
         try {
+            HashMap<String, Long> kpodStartTimeMap = new HashMap<>();
+            HashMap<Long, String> startupKpodMap = new HashMap<>();
             JSONObject jsonObject = new JSONObject(metric);
             JSONArray jsonArray = jsonObject.getJSONArray("array");
             Double sum = 0.0;
             int count = 0;
             for (int i = 0; i < jsonArray.length(); i++) {
                 JSONObject object = jsonArray.getJSONObject(i);
+                String kpodname = object.getJSONObject("tags").get("k8s_pod_name").toString();
                 JSONObject datapoints = object.getJSONObject("datapoints");
                 long prevT = -1;
                 Double prevS = 0.0;
@@ -396,18 +464,103 @@ public class ArgusQueryT {
                         prevT = t;
                         prevS = datapoints.getDouble(String.valueOf(k));
                     }
+                    while(startupKpodMap.containsKey(t)){
+                        t++;
+                    }
+                    startupKpodMap.put(t,kpodname);
                 }
-                if (prevT != -1) {
+                if (prevT != -1) {//consider last 24 hr startups
+                    kpodStartTimeMap.put(kpodname,prevT);
                     sum = sum + prevS;
                     count++;
                 }
             }
             response.setMetric(sum / count);
+            List<HashMap<Long, String>> startups = getPeakStarts(instance, domain, cell, startupKpodMap, peakStart,peakEnd, ranges, type);
+            System.out.println(cell + "kpods:" +  podstr);
+            System.out.println(cell + " : off peak startup count " + startups.get(0).size() + " startup count:" + startupKpodMap.size()+ " pod count: " + pods.size());
+            System.out.println(cell + " : peak startup count " + startups.get(1).size()+ " startup count:" + startupKpodMap.size()+ " pod count: " + pods.size());
+            response.setMetric1(getWarmupAvgAPT(instance, domain, cell, startups.get(0)));
+            response.setMetric2(getWarmupAvgAPT(instance, domain, cell, startups.get(1)));
             return response;
         } catch (Exception e) {
             System.out.println("getStatupAVG Exception " + e.getMessage() + ":" + metric);
             return null;
         }
+    }
+
+    public static List<HashMap<Long, String>> getPeakStarts(String instance, String domain, String cell,HashMap<Long, String> startupKpodMap, long peakStart, long peakEnd,List<PeakRange.TimeRange> ranges, int type){
+         if(ranges == null){
+            return null;
+        }
+        HashMap<Long, String> peakstartupKpodMap = new HashMap<>();
+        HashMap<Long, String> offpeakstartupKpodMap = new HashMap<>();
+        for (Long start : startupKpodMap.keySet()) {
+            boolean ispeakStart = false;
+            if(type == 3 || type == 4){
+                if (start >= peakStart && start <= peakEnd) {
+                    System.out.println(startupKpodMap.get(start) + ":" + Utils.convertEpochToUTCString(peakStart) + ":" + Utils.convertEpochToUTCString(start) + ":" + Utils.convertEpochToUTCString(peakEnd));
+                    peakstartupKpodMap.put(start, startupKpodMap.get(start));
+                    ispeakStart = true;
+                    break;
+                }
+            }else {
+                for (int i = 0; i < ranges.size(); i++) {
+                    if (start >= ranges.get(i).start && start <= ranges.get(i).end) {
+                        System.out.println(startupKpodMap.get(start) + ":" + Utils.convertEpochToUTCString(ranges.get(i).start) + ":" + Utils.convertEpochToUTCString(start) + ":" + Utils.convertEpochToUTCString(ranges.get(i).end));
+                        peakstartupKpodMap.put(start, startupKpodMap.get(start));
+                        ispeakStart = true;
+                        break;
+                    }
+                }
+                if(!ispeakStart && (start > peakEnd-2*24*60*60*1000)){//consider only last 48 hr startups
+                    offpeakstartupKpodMap.put(start,startupKpodMap.get(start));
+                }
+            }
+        }
+        List<HashMap<Long, String>> list = new ArrayList<>();
+        list.add(offpeakstartupKpodMap);
+        list.add(peakstartupKpodMap);
+        return list;
+    }
+
+    public static List<PeakRange.TimeRange> getPeakTimeRanges(long timestampStart, long timestampEnd, String instance, String domain, String cell) {
+        String metric = ArgusQueryT.getRequestCountMetric(String.valueOf(timestampStart), String.valueOf(timestampEnd), instance, domain, cell);
+        if (metric != null) {
+            Map<Long, Integer> epochTimestampsMap = new HashMap<>();
+            JSONObject jsonObject = new JSONObject(metric);
+            JSONArray jsonArray = jsonObject.getJSONArray("array");
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject object = jsonArray.getJSONObject(i);
+                JSONObject datapoints = object.getJSONObject("datapoints");
+                Iterator keys = datapoints.keys();
+                while (keys.hasNext()) {
+                    String k = keys.next().toString();
+                    epochTimestampsMap.put(Long.parseLong(k), datapoints.getInt(String.valueOf(k)));
+                }
+            }
+            List<PeakRange.TimeRange> ranges = PeakRange.findContinuousRangesAbovePercentile(epochTimestampsMap, 60);
+            return ranges;
+        }
+        return null;
+    }
+
+    public static Double getWarmupAvgAPT(String instance, String domain, String cell, HashMap<Long, String> startupKpodMap){
+        Double totalAPT = 0.0;
+        int count = 0;
+        for (Long start : startupKpodMap.keySet()) {
+            String kpod = startupKpodMap.get(start);
+            long end = start + 15 * 60 * 1000; // 15 min
+            ArgusQueryT.QueryResponse APT = ArgusQueryT.getMetric(ArgusQueryT.avgAPT, start, end, instance, domain, cell,  Arrays.asList(kpod));
+            if(APT != null) {
+                totalAPT += APT.getMetric();
+                if(count == 0){
+                    //System.out.println("getWarmupAvgAPT query: " + APT.getQuery());
+                }
+                count++;
+            }
+        }
+        return totalAPT/count;
     }
 
     public static String getRequestCountMetric(String startquery, String endquery, String instance, String
@@ -749,6 +902,8 @@ public class ArgusQueryT {
                 return null;
             }
         } catch (Exception e) {
+            System.out.println(cell + " getGCMetric " +e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }
@@ -773,6 +928,26 @@ public class ArgusQueryT {
 
         String type;
         Double metric;
+
+        public Double getMetric1() {
+            return metric1;
+        }
+
+        public void setMetric1(Double metric1) {
+            this.metric1 = metric1;
+        }
+
+        Double metric1;
+
+        public Double getMetric2() {
+            return metric2;
+        }
+
+        public void setMetric2(Double metric2) {
+            this.metric2 = metric2;
+        }
+
+        Double metric2;
 
         public String getQuery() {
             return query;
@@ -952,7 +1127,7 @@ public class ArgusQueryT {
         query = query.replaceAll("POD", podstr);
 
         response.query = query;
-        System.out.println(cell + " query->" + response.query);
+        //System.out.println(cell + " query->" + response.query);
         try {
             query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
         } catch (Exception e) {

@@ -8,6 +8,7 @@
 package server;
 
 import com.google.common.base.Strings;
+import com.google.common.io.Resources;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamResource;
@@ -22,6 +23,7 @@ import perfgenie.utils.Utils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -34,6 +36,17 @@ public class PerfGenieController {
     private final PerfGenieService service;
     private static final Pattern queryPatterns = Pattern.compile("(?<key>.*?)(?<value>(>|<|=|!=|~|!~|<=|>=).*)");
 
+    @GetMapping(path = {"/component/casp/v1/canaryview","/component/casp/v1/canaryview/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String canaryview(
+            @PathVariable(required = false, name = "host") String host,
+            @RequestParam(required = false, name = "start") final long start,
+            @RequestParam(required = false, name = "end") final long end,
+            @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        String res = service.getCanaryEvent(host,start,end);
+        return res;
+    }
+
     @PostMapping(path = {"/component/casp/v1/comment","/component/casp/v1/comment/{host}"})
     public ResponseEntity<String> postComment(@PathVariable(required = false, name = "host") String host,
                                               @RequestBody Comment comment) throws IOException{
@@ -45,6 +58,11 @@ public class PerfGenieController {
     @Autowired
     public PerfGenieController(PerfGenieService service) {
         this.service = service;
+    }
+
+    @GetMapping(path = {"/component/casp/v1/canaryheader"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String canaryheader() throws IOException {
+        return Resources.toString(Resources.getResource("canaryheader.json"), StandardCharsets.UTF_8);
     }
 
     @GetMapping(path = {"/component/casp/v1/canary","/component/casp/v1/canary/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -77,14 +95,34 @@ public class PerfGenieController {
         return service.releaseTask(start,end, host);
     }
 
-    @GetMapping(path = {"/component/casp/v1/canaryview","/component/casp/v1/canaryview/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(path = {"/component/casp/v1/processcustomcanary","/component/casp/v1/processcustomcanary/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String canaryview(
             @PathVariable(required = false, name = "host") String host,
             @RequestParam(required = false, name = "start") final long start,
             @RequestParam(required = false, name = "end") final long end,
-            @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
-        final Map<String, String> queryMap = queryToMap(metadataQuery);
-        String res = service.getCanaryEvent(host,start,end);
+            @RequestParam(required = false, name = "cell") final String cell,
+            @RequestParam(required = false, name = "instance") final String instance,
+            @RequestParam(required = false, name = "domain") final String domain
+            ) throws IOException {
+        String res = service.processSideBySideCanaryTask(start,end,instance,domain,cell,host);
+        return res;
+    }
+
+    @GetMapping(path = {"/component/casp/v1/processperfswat","/component/casp/v1/processperfswat/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String canaryview(
+            @PathVariable(required = false, name = "host") String host,
+            @RequestParam(required = false, name = "start1") final long start1,
+            @RequestParam(required = false, name = "end1") final long end1,
+            @RequestParam(required = false, name = "cell1") final String cell1,
+            @RequestParam(required = false, name = "instance1") final String instance1,
+            @RequestParam(required = false, name = "domain1") final String domain1,
+            @RequestParam(required = false, name = "start2") final long start2,
+            @RequestParam(required = false, name = "end2") final long end2,
+            @RequestParam(required = false, name = "cell2") final String cell2,
+            @RequestParam(required = false, name = "instance2") final String instance2,
+            @RequestParam(required = false, name = "domain2") final String domain2
+    ) throws IOException {
+        String res = service.processWeekOverWeekCanaryTask(start1,end1,instance1,domain1,cell1,start2,end2,instance2,domain2,cell2,host);
         return res;
     }
 
