@@ -1346,22 +1346,30 @@ public class PerfGenieService implements IPerfGenieService {
             final EventHandler aggregator = new EventHandler();
             Map<String, String> allcounts = new HashMap<>();
             end = Instant.now().toEpochMilli() + 60 * 60 * 1000;
-            for (int j = 5; j <= 30; j += 5) {
+            for (int j = 5; j <= 40; j += 5) {
                 start = end - 5 * 24 * 60 * 60 * 1000;
                 String pattern = "yyyy-MM-dd HH:mm:ss";
                 String timezone = "UTC";
 
                 String dateString1 = convertEpochToDateString(start, pattern, timezone);
                 String dateString2 = convertEpochToDateString(end, pattern, timezone);
-                System.out.println(dateString1 + ":" + dateString2);
+
                 queryMap.remove("guid");
                 response = eventStore.loadGenieEventAndCommentPayloads(config.getTenant(), start, end, queryMap, dimMap, true);
+
+                if(response != null){
+                    System.out.println(dateString1 + ":" + dateString2 + ":" + response.getEvents().size());
+                }else{
+                    System.out.println(dateString1 + ":" + dateString2 + ":null");
+                }
                 if (response == null || response.getEvents().size() < 1) {
                     //System.out.println("Skip");
                     end = start;
+
                     continue;
                     //return Utils.toJson(new EventHandler.JfrParserResponse(null, "no profiles found for the given time range", queryMap, null));
                 }
+
                 events = response.getEvents();
                 counts = response.getCounts();
                 counts.forEach((key, value) -> {

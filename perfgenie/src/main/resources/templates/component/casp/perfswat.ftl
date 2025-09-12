@@ -83,12 +83,12 @@
             let duration = (moment.utc($("#endpicker4").val()).valueOf() - moment.utc($("#startpicker4").val()).valueOf());
             let duration2 = (moment.utc($("#endpicker5").val()).valueOf() - moment.utc($("#startpicker5").val()).valueOf());
             $("#perfswat-input-info").css("display", "block");
-            if (duration <= 4 * 60 * 60 * 1000 && duration2 <= 4 * 60 * 60 * 1000) {
+            if (duration <= 24 * 60 * 60 * 1000 && duration2 <= 24 * 60 * 60 * 1000) {
                 $("#submit-perfswat-input").attr("disabled", true);
                 $('#perfswat-input-info-text').html("Processing " + info + " This may take couple of munutes ...");
                 processCustomPerfswatData(moment.utc($("#startpicker4").val()).valueOf(), moment.utc($("#endpicker4").val()).valueOf(), $('#swatcell-input1').val(), $('#swatinstance-input1').val(), $('#swatdomain-input1').val(),moment.utc($("#startpicker5").val()).valueOf(), moment.utc($("#endpicker5").val()).valueOf(), $('#swatcell-input2').val(), $('#swatinstance-input2').val(), $('#swatdomain-input2').val());
             } else {
-                $('#perfswat-input-info-text').html("Invalid input: time range 1: " + duration / (60 * 1000) + " time range 2: " + duration2 / (60 * 1000) + " min,  one of them is more than 4 hours");
+                $('#perfswat-input-info-text').html("Invalid input: time range 1: " + duration / (60 * 1000) + " time range 2: " + duration2 / (60 * 1000) + " min,  one of them is more than 24 hours");
             }
             //process and remove message
         } else {

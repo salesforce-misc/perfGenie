@@ -2,6 +2,7 @@ package perfgenie.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
+import org.checkerframework.checker.guieffect.qual.UIType;
 import org.checkerframework.checker.units.qual.A;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -281,7 +282,7 @@ public class WeekOverWeek {
                 header.add("avgApt %c:number");
             }
 
-            for (int i=0; i<metricList.size();i++){
+            for (int i = 0; i < metricList.size(); i++) {
                 System.out.println(cell1 + "start query for :" + metricList.get(i));
                 ArgusQueryT.QueryResponse res1 = ArgusQueryT.getArgusMetric(metricList.get(i), timestampStart1, timestampEnd1, instance1, domain1, cell1, pods1);
                 ArgusQueryT.QueryResponse res2 = ArgusQueryT.getArgusMetric(metricList.get(i), timestampStart2, timestampEnd2, instance2, domain2, cell2, pods2);
@@ -296,7 +297,72 @@ public class WeekOverWeek {
                     record.add(metricList.get(i) + "/r %c:number");
                     record.add(metricPercentChange);
                     header.add(metricList.get(i) + "/r %c:number");
-                }else {
+                } else if (metricList.get(i).equals("cCpuT")) {
+                    //try incremental
+                    long window = 3 * 60 * 60 * 1000;
+                    Double cCpuTime1Total = 0.0;
+                    Double cCpuTime2Total = 0.0;
+                    Boolean success = true;
+
+                    long currentStart = timestampStart1;
+                    while (currentStart <= timestampEnd1) {
+                        long currentEnd = currentStart + window;
+                        if (currentEnd > timestampEnd1) {
+                            currentEnd = timestampEnd1; // handle last partial window
+                        }
+                        System.out.println("Looping for 1:" + instance1 + ":" + domain1 + ":" + cell1 + ":" + Utils.convertEpochToUTCString(currentStart) + ":" + Utils.convertEpochToUTCString(currentEnd));
+                        ArgusQueryT.QueryResponse res = ArgusQueryT.getArgusMetric(metricList.get(i), currentStart, currentEnd, instance1, domain1, cell1, pods1);
+                        if (res != null) {
+                            cCpuTime1Total += res.getMetric();
+                        } else {
+                            success = false;
+                        }
+                        currentStart = currentEnd + 1;
+                    }
+                    if (success) {
+                        System.out.println("Looping success for1:" + instance2 + ":" + domain2 + ":" + cell2);
+                        currentStart = timestampStart2;
+                        while (currentStart <= timestampEnd2) {
+                            long currentEnd = currentStart + window;
+                            if (currentEnd > timestampEnd2) {
+                                currentEnd = timestampEnd2; // handle last partial window
+                            }
+                            System.out.println("Looping for 2:" + instance2 + ":" + domain2 + ":" + cell2 + ":" + Utils.convertEpochToUTCString(currentStart) + ":" + Utils.convertEpochToUTCString(currentEnd));
+                            ArgusQueryT.QueryResponse res = ArgusQueryT.getArgusMetric(metricList.get(i), currentStart, currentEnd, instance2, domain2, cell2, pods2);
+                            if (res != null) {
+                                cCpuTime2Total += res.getMetric();
+                            } else {
+                                success = false;
+                            }
+                            currentStart = currentEnd + 1;
+                        }
+                    }
+                    if (success) {
+                        System.out.println("Looping success for2:" + instance2 + ":" + domain2 + ":" + cell2);
+                        record.add(metricList.get(i) + "1:number");
+                        record.add(cCpuTime1Total);
+                        header.add(metricList.get(i) + "1:number");
+                        record.add(metricList.get(i) + "2:number");
+                        record.add(cCpuTime2Total);
+                        header.add(metricList.get(i) + "2:number");
+                        Double metricPercentChange = 100.0 * ((cCpuTime1Total / rCount1) - (cCpuTime2Total / rCount2)) / (cCpuTime1Total / rCount1);
+                        record.add(metricList.get(i) + "/r %c:number");
+                        record.add(metricPercentChange);
+                        header.add(metricList.get(i) + "/r %c:number");
+                    } else {
+                        System.out.println("Looping failed for2:" + instance1 + ":" + domain1 + ":" + cell1);
+                        record.add(metricList.get(i) + "1:number");
+                        record.add(null);
+                        header.add(metricList.get(i) + "1:number");
+                        record.add(metricList.get(i) + "2:number");
+                        record.add(null);
+                        header.add(metricList.get(i) + "2:number");
+                        record.add(metricList.get(i) + "/r %c:number");
+                        record.add(null);
+                        header.add(metricList.get(i) + "/r %c:number");
+                    }
+                } else {
+                    System.out.println("Looping failed for1:" + instance1 + ":" + domain1 + ":" + cell1);
                     record.add(metricList.get(i) + "1:number");
                     record.add(null);
                     header.add(metricList.get(i) + "1:number");

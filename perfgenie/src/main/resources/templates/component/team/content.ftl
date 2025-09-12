@@ -22,11 +22,14 @@
             const fdi = jsonData.tags?.["functional_domain_instance"];
             const pod = jsonData.tags?.["sfdc.pod"];
 
-            if(duration != undefined && threadId != undefined && host != undefined && dc != undefined && fdi != undefined && pod!=undefined ) {
+            if(duration != undefined && threadId != undefined && host != undefined && dc != undefined && pod!=undefined ) {
                 const startTime = ts - 60000;
                 const endTime = ts + 15 * 60 * 1000;
 
-                const tenant = "falcon-" + dc + "-" + fdi + "-" + pod;
+                let tenant = "falcon-" + dc + "-" + fdi + "-" + pod;
+                if(fdi == undefined){
+                    tenant = pod;
+                }
                 const pStart = ts;
                 const pEnd = ts + Math.floor(duration / 1000);
 
