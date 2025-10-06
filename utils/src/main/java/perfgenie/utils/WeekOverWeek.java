@@ -11,6 +11,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.HashMap;
+import java.util.concurrent.Future;
 
 import static perfgenie.utils.ArgusQueryT.getCanaryPods;
 //import static perfgenie.utils.Canary.*;
@@ -19,6 +20,8 @@ import static perfgenie.utils.ArgusQueryT.getCanaryPods;
 public class WeekOverWeek {
     public static long mindiff = 3600000;
     public static long maxTimeWindow = 120 * 60 * 60 * 1000; // 5*24 hours due to argus query limitations, need to switch to huron
+
+    static FunctionExecutorPool pool = new FunctionExecutorPool(5);
 
     public static CanaryResponse processWeekOverWeekCanary(long timestampStart, long timestampEnd, String cell) {
         return processWeekOverWeekCanaryTask(timestampStart,timestampEnd, (String)ArgusQueryT.pc.config.get(cell).get("instance"), (String)ArgusQueryT.pc.config.get(cell).get("domain"), cell);
@@ -121,7 +124,62 @@ public class WeekOverWeek {
         return URL1;
     }
 
-    public static CanaryResponse getCanaryResponseWeekOverWeek(long timestampStart1, long timestampEnd1, String instance1, String domain1, String cell1, long timestampStart2, long timestampEnd2, String instance2, String domain2, String cell2, int type){
+    public static int isZuluOrZing(String timestampStart1, String timestampEnd1, String instance1, String domain1, String cell1){
+        boolean check = true;
+        String metric = ArgusQueryT.getGCMetric(timestampStart1, timestampEnd1, instance1, domain1, cell1);
+        JSONObject jsonObject = new JSONObject(metric);
+        JSONArray jsonArray = jsonObject.getJSONArray("array");
+
+        boolean hasMinusOne = false;
+        boolean hasNotMinusOne = false;
+        for (int i = 0; i < jsonArray.length(); i++) {
+            JSONObject object = jsonArray.getJSONObject(i);
+            JSONObject datapoints = object.getJSONObject("datapoints");
+            JSONObject tags = object.getJSONObject("tags");
+            Iterator keys = datapoints.keys();
+            while (keys.hasNext()) {
+                String k = keys.next().toString();
+                if(datapoints.getDouble(String.valueOf(k)) == -1){
+                    hasMinusOne = true;
+                }else{
+                    hasNotMinusOne = true;
+                }
+                if (hasMinusOne && hasNotMinusOne) {
+                    return 0;
+                }
+            }
+        }
+        if(hasMinusOne){
+            return 1;
+        }else {
+            return 2;
+        }
+    }
+
+    public static CanaryResponse getCanaryResponseWeekOverWeek(final long timestampStart1, final long timestampEnd1, final String instance1, final String domain1, final String cell1, final long timestampStart2, final long timestampEnd2, final String instance2, final String domain2, final String cell2, final int type){
+        //hack, check if all zulu or zing
+        List<Future<Integer>> futures = new ArrayList<>();
+        futures.add(pool.submitTask(() -> isZuluOrZing(String.valueOf(timestampStart1), String.valueOf(timestampEnd1), instance1, domain1, cell1)));
+        int check1 = isZuluOrZing(String.valueOf(timestampStart1), String.valueOf(timestampEnd1), instance1, domain1, cell1);
+        int check2 = isZuluOrZing(String.valueOf(timestampStart2), String.valueOf(timestampEnd2), instance2, domain2, cell2);
+
+
+        if(check1 == 0 || check2 == 0 || check1 == check2){
+            System.out.println("No canary for " + instance1 + ":" +  domain1 +":"+ cell1 + ":"+check1+":"+check2);
+            return null;
+        }else{
+            System.out.println("canary for " + instance1 + ":" +  domain1 +":"+ cell1 + ":"+check1+":"+check2);
+        }
+
+        if(check1 == 1){//zing, swap timestamps, first timestamp should be zulu
+            long tmpStart = timestampStart1;
+            long tmpEnd = timestampEnd1;
+            timestampStart1 = timestampStart2;
+            timestampEnd1 = timestampEnd2;
+            timestampStart2 = tmpStart;
+            timestampEnd2 = tmpEnd;
+        }
+
         List<String> pods1 = getCanaryPods(String.valueOf(timestampStart1), String.valueOf(timestampEnd1), instance1, domain1, cell1);
         List<String> pods2 = getCanaryPods(String.valueOf(timestampStart2), String.valueOf(timestampEnd2), instance2, domain2, cell2);
         if(!pods1.isEmpty() && !pods2.isEmpty()){
@@ -254,6 +312,16 @@ public class WeekOverWeek {
                 record.add("avgWrmpApt %c:number");
                 record.add(null);
                 header.add("avgWrmpApt %c:number");
+
+                record.add("avgpeakWrmpApt1:number");
+                record.add(null);//APT1
+                header.add("avgpeakWrmpApt1:number");
+                record.add("avgpeakWrmpApt2:number");
+                record.add(null);//APT2
+                header.add("avgpeakWrmpApt2:number");
+                record.add("avgpeakWrmpApt %c:number");
+                record.add(null);//startUpPercentChange
+                header.add("avgpeakWrmpApt %c:number");
             }
 
             //average APT
@@ -297,7 +365,7 @@ public class WeekOverWeek {
                     record.add(metricList.get(i) + "/r %c:number");
                     record.add(metricPercentChange);
                     header.add(metricList.get(i) + "/r %c:number");
-                } else if (metricList.get(i).equals("cCpuT")) {
+                } else if (metricList.get(i).equals("cCpuT") || metricList.get(i).equals("cCpuR")) {
                     //try incremental
                     long window = 3 * 60 * 60 * 1000;
                     Double cCpuTime1Total = 0.0;
@@ -305,7 +373,7 @@ public class WeekOverWeek {
                     Boolean success = true;
 
                     long currentStart = timestampStart1;
-                    while (currentStart <= timestampEnd1) {
+                    while (currentStart <= timestampEnd1 && success) {
                         long currentEnd = currentStart + window;
                         if (currentEnd > timestampEnd1) {
                             currentEnd = timestampEnd1; // handle last partial window
@@ -322,7 +390,7 @@ public class WeekOverWeek {
                     if (success) {
                         System.out.println("Looping success for1:" + instance2 + ":" + domain2 + ":" + cell2);
                         currentStart = timestampStart2;
-                        while (currentStart <= timestampEnd2) {
+                        while (currentStart <= timestampEnd2 && success) {
                             long currentEnd = currentStart + window;
                             if (currentEnd > timestampEnd2) {
                                 currentEnd = timestampEnd2; // handle last partial window
@@ -338,7 +406,7 @@ public class WeekOverWeek {
                         }
                     }
                     if (success) {
-                        System.out.println("Looping success for2:" + instance2 + ":" + domain2 + ":" + cell2);
+                        System.out.println("Looping success for:" + instance2 + ":" + domain2 + ":" + cell2);
                         record.add(metricList.get(i) + "1:number");
                         record.add(cCpuTime1Total);
                         header.add(metricList.get(i) + "1:number");
@@ -350,7 +418,7 @@ public class WeekOverWeek {
                         record.add(metricPercentChange);
                         header.add(metricList.get(i) + "/r %c:number");
                     } else {
-                        System.out.println("Looping failed for2:" + instance1 + ":" + domain1 + ":" + cell1);
+                        System.out.println("Looping failed for:" + instance1 + ":" + domain1 + ":" + cell1);
                         record.add(metricList.get(i) + "1:number");
                         record.add(null);
                         header.add(metricList.get(i) + "1:number");
@@ -362,7 +430,6 @@ public class WeekOverWeek {
                         header.add(metricList.get(i) + "/r %c:number");
                     }
                 } else {
-                    System.out.println("Looping failed for1:" + instance1 + ":" + domain1 + ":" + cell1);
                     record.add(metricList.get(i) + "1:number");
                     record.add(null);
                     header.add(metricList.get(i) + "1:number");
@@ -390,12 +457,19 @@ public class WeekOverWeek {
             record.add((timestampEnd1-timestampStart1)/(60*1000));
 
             if(type == 4){
-                record.add("start:timestamp");
+                record.add("start1:timestamp");
                 record.add(timestampStart1);
-                header.add("start:timestamp");
-                record.add("end:timestamp");
+                header.add("start1:timestamp");
+                record.add("end1:timestamp");
                 record.add(timestampEnd1);
-                header.add("end:timestamp");
+                header.add("end1:timestamp");
+
+                record.add("start2:timestamp");
+                record.add(timestampStart2);
+                header.add("start2:timestamp");
+                record.add("end2:timestamp");
+                record.add(timestampEnd2);
+                header.add("end2:timestamp");
             }else {
                 record.add("start:data");
                 record.add(timestampStart1);
@@ -418,8 +492,16 @@ public class WeekOverWeek {
             System.out.println("getHeap end");
 
             System.out.println("getInstanceTypeTag start");
-            String instanceType1 = ArgusQueryT.getInstanceTypeTag(timestampStart1, timestampEnd1, instance1, domain1, cell1, pods1);
-            String instanceType2 = ArgusQueryT.getInstanceTypeTag(timestampStart2, timestampEnd2, instance2, domain2, cell2, pods2);
+            //hack use only 1 hr
+            long tmp1 = timestampEnd1;
+            long tmp2 = timestampEnd2;
+            if((timestampEnd1 - timestampStart1) > 60*60*1000){
+                tmp1 = timestampStart1 + 60*60*1000;
+                tmp2 = timestampStart2 + 60*60*1000;
+
+            }
+            String instanceType1 = ArgusQueryT.getInstanceTypeTag(timestampStart1, tmp1, instance1, domain1, cell1, pods1);
+            String instanceType2 = ArgusQueryT.getInstanceTypeTag(timestampStart2, tmp2, instance2, domain2, cell2, pods2);
             System.out.println("getInstanceTypeTag end");
 
             System.out.println("getReleaseTag start");
@@ -540,7 +622,9 @@ public class WeekOverWeek {
 
     public static void main(String[] args) {
         try {
+
             CanaryResponse res = processWeekOverWeekCanary(1742270400000L, 1742302800000L, "ind86");
+            //
             System.out.println("--->" + Utils.toJson(res));
         } catch (Exception e) {
             System.out.println(e.getMessage());

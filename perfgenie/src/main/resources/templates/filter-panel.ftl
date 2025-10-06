@@ -3817,13 +3817,13 @@
             });
             $("#filtertimepickerstart").change(function (event) {
                 if (moment.utc($("#filtertimepickerstart").val()).valueOf() < getContextTree(1,eventType).context.start) {//not applicable for compare
-                    $("#filtertimepickerstart").val(moment.utc(getContextTree(1,eventType).context.start).format('YYYY-MM-DD HH:mm:ss'));
+                    $("#filtertimepickerstart").val(moment.utc(getContextTree(1,eventType).context.start).format('YYYY-MM-DD HH:mm:ss.SSS'));
                     pStart = getContextTree(1,eventType).context.start;
                 }else{
                     pStart = moment.utc($("#filtertimepickerstart").val()).valueOf();
                 }
                 if ($("#filtertimepickerend").val() != '' && moment.utc($("#filtertimepickerend").val()).valueOf() > getContextTree(1,eventType).context.end) {
-                    $("#filtertimepickerend").val(moment.utc(getContextTree(1,eventType).context.end).format('YYYY-MM-DD HH:mm:ss'));
+                    $("#filtertimepickerend").val(moment.utc(getContextTree(1,eventType).context.end).format('YYYY-MM-DD HH:mm:ss.SSS'));
                     pEnd = getContextTree(1,eventType).context.end;
                 }else{
                     pEnd = moment.utc($("#filtertimepickerend").val()).valueOf();
@@ -3833,13 +3833,13 @@
             });
             $("#filtertimepickerend").change(function (event) {
                 if (moment.utc($("#filtertimepickerend").val()).valueOf() > getContextTree(1,eventType).context.end) {//not applicable for compare
-                    $("#filtertimepickerend").val(moment.utc(getContextTree(1,eventType).context.end).format('YYYY-MM-DD HH:mm:ss'));
+                    $("#filtertimepickerend").val(moment.utc(getContextTree(1,eventType).context.end).format('YYYY-MM-DD HH:mm:ss.SSS'));
                     pEnd = getContextTree(1,eventType).context.end;
                 }else{
                     pEnd = moment.utc($("#filtertimepickerend").val()).valueOf();
                 }
                 if ($("#filtertimepickerstart").val() != '' && moment.utc($("#filtertimepickerstart").val()).valueOf() < getContextTree(1,eventType).context.start) {
-                    $("#filtertimepickerstart").val(moment.utc(getContextTree(1,eventType).context.start).format('YYYY-MM-DD HH:mm:ss'));
+                    $("#filtertimepickerstart").val(moment.utc(getContextTree(1,eventType).context.start).format('YYYY-MM-DD HH:mm:ss.SSS'));
                     pStart = getContextTree(1,eventType).context.start;
                 }else{
                     pStart = moment.utc($("#filtertimepickerstart").val()).valueOf();
@@ -3851,14 +3851,14 @@
                 return;
             }
             if(pStart != '') {
-                $("#filtertimepickerstart").val(moment.utc(Number(pStart)).format('YYYY-MM-DD HH:mm:ss'));
+                $("#filtertimepickerstart").val(moment.utc(Number(pStart)).format('YYYY-MM-DD HH:mm:ss.SSS'));
             }else{
-                $("#filtertimepickerstart").val(moment.utc( getContextTree(1,eventType).context.start).format('YYYY-MM-DD HH:mm:ss'));
+                $("#filtertimepickerstart").val(moment.utc( getContextTree(1,eventType).context.start).format('YYYY-MM-DD HH:mm:ss.SSS'));
             }
             if(pEnd != '') {
-                $("#filtertimepickerend").val(moment.utc(Number(pEnd)).format('YYYY-MM-DD HH:mm:ss'));
+                $("#filtertimepickerend").val(moment.utc(Number(pEnd)).format('YYYY-MM-DD HH:mm:ss.SSS'));
             }else{
-                $("#filtertimepickerend").val(moment.utc( getContextTree(1,eventType).context.end).format('YYYY-MM-DD HH:mm:ss'));
+                $("#filtertimepickerend").val(moment.utc( getContextTree(1,eventType).context.end).format('YYYY-MM-DD HH:mm:ss.SSS'));
             }
         }
     }

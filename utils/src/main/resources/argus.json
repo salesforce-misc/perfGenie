@@ -4,7 +4,7 @@
     "average": "DOWNSAMPLE(ALIASBYREGEX(ALIAS(GROUPBYTAG(START:END:SCOPE:METRIC{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:1m-avg,#k8s_container_name#,#AVERAGE#),#:#,#literal#,#CELL#,#literal#),#(.*)::\\{#),#1d-avg#,#0#,#abs#)",
     "ccumulative": "DIFF(GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD}:max:all-max,#k8s_container_name#,#SUM#),GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD}:min:all-min,#k8s_container_name#,#SUM#))",
     "caverage": "DOWNSAMPLE(ALIASBYREGEX(ALIAS(GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD}:avg:1m-avg,#k8s_container_name#,#AVERAGE#),#:#,#literal#,#CELL#,#literal#),#(.*)::\\{#),#1d-avg#,#0#,#abs#)",
-    "ccpusum": "DOWNSAMPLE(ALIASBYREGEX(ALIAS(GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD,resource=cpu}:avg:1m-avg,#k8s_container_name#,#SUM#),#:#,#literal#,#CELL#,#literal#),#(.*)::\\{#),#1d-sum#,#0#,#abs#)"
+    "ccpusum": "GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD,resource=cpu}:sum:all-sum,#k8s_container_name#,#SUM#)"
   },
   "metrics": {
     "rCpuT" :{

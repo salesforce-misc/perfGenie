@@ -840,7 +840,15 @@ public class ArgusQueryT {
 
         String metric = "";
         if (accessToken != null) {
-            metric = "{\"array\":" + executeCurlCommand(metricCommand) + "}";
+            metric = executeCurlCommand(metricCommand);
+            if(metric.contains("request timeout")){
+                System.out.println("--> timeout Retry");
+                metric = executeCurlCommand(metricCommand);
+            }else if(metric.contains("disable this java.lang.RuntimeException")){
+                System.out.println("--> java.lang.RuntimeException Retry");
+                metric = executeCurlCommand(metricCommand);
+            }
+            metric = "{\"array\":" + metric + "}";
         } else {
             try {
                 if (substrate == null) {

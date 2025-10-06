@@ -1624,8 +1624,20 @@ public class PerfGenieService implements IPerfGenieService {
             PerfGenieService service = new PerfGenieService(eventStore, parser, config);
             String substrate = System.getenv("SUBSTRATE");
             String host = InetAddress.getLocalHost().getHostName();
-
-            if(args[0].equals("canary") || args[0].equals("release")){
+            System.out.println(args[0]);
+            if(args[0].equals("week")){
+                ArrayList<String> cells = new ArrayList<>(Arrays.asList("usa360", "usa322", "usa234","ind56", "deu86", "deu72","aus60"));
+                ArrayList<String> instances = new ArrayList<>(Arrays.asList("aws-prod1-useast1", "aws-prod1-useast1", "aws-prod5-uswest2","aws-prod2-apsouth1", "aws-prod3-eucentral1", "aws-prod3-eucentral1","aws-prod4-apsoutheast2"));
+                long startTime = Long.parseLong(args[1]);
+                long endTime = Long.parseLong(args[2]);
+                String cell = args[3];
+                String instance = args[4];
+                long previousTimeDiffMs = 7 * 24 * 60 * 60 * 1000;
+                //for(int i=0; i<cells.size();i++){
+                    //service.processWeekOverWeekCanaryTask(startTime, endTime, instances.get(i), "core1", cells.get(i), startTime-previousTimeDiffMs, endTime-previousTimeDiffMs, instances.get(i), "core1", cells.get(i), "perf-genie-test15");
+                service.processWeekOverWeekCanaryTask(startTime, endTime, instance, "core1", cell, startTime-previousTimeDiffMs, endTime-previousTimeDiffMs, instance, "core1", cell, "perf-genie-test16");
+                //}
+             }else if(args[0].equals("canary") || args[0].equals("release")){
                 if (substrate != null) {
                     host = "perf-genie-test13";
                 }
