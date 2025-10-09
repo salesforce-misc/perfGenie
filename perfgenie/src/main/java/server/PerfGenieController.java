@@ -36,6 +36,24 @@ public class PerfGenieController {
     private final PerfGenieService service;
     private static final Pattern queryPatterns = Pattern.compile("(?<key>.*?)(?<value>(>|<|=|!=|~|!~|<=|>=).*)");
 
+    @PostMapping(path = {"/component/casp/v1/savelense","/component/casp/v1/savelense/{host}"})
+    public ResponseEntity<String> saveLense(@PathVariable(required = false, name = "host") String host,
+                                            @RequestBody Lense lense) throws IOException{
+        lense.setTimestamp(System.currentTimeMillis());
+        lense.setSource(host);
+        service.addLense(Utils.toJson(lense),lense.getTimestamp(),lense.getSource(), lense.getType());
+        return ResponseEntity.ok("Lense added successfully!");
+    }
+
+    @GetMapping(path = {"/component/casp/v1/getlenses","/component/casp/v1/getlenses/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getLenses(
+            @PathVariable(required = false, name = "host") String host,
+            @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        String res = service.getCanaryLenses(queryMap,host);
+        return res;
+    }
+
     @GetMapping(path = {"/component/casp/v1/canaryview","/component/casp/v1/canaryview/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String canaryview(
             @PathVariable(required = false, name = "host") String host,
@@ -469,4 +487,47 @@ public class PerfGenieController {
             this.color = color;
         }
     }
+    public static class Lense {
+        public String getConfig() {
+            return config;
+        }
+
+        public void setConfig(String config) {
+            this.config = config;
+        }
+
+        private String config;
+
+        public String getSource() {
+            return source;
+        }
+
+        public void setSource(String source) {
+            this.source = source;
+        }
+
+        private String source;
+
+        public long getTimestamp() {
+            return timestamp;
+        }
+
+        public void setTimestamp(long timestamp) {
+            this.timestamp = timestamp;
+        }
+
+        private long timestamp;
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        private String type;
+
+    }
+
 }

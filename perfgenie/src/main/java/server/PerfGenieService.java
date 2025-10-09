@@ -1127,9 +1127,68 @@ public class PerfGenieService implements IPerfGenieService {
         queryMap.put("color", color);
         queryMap.put("ctime", String.valueOf(ctime));
 
-        System.out.println(timestamp + " 4--->" + Utils.toJson(queryMap));
+        System.out.println(timestamp + "  4--->" + Utils.toJson(queryMap));
         eventStore.addGenieEvent(timestamp, queryMap, dimMap, comment, config.getTenant());
     }
+
+    public void addLense(String lense, Long timestamp, String host, String type) throws IOException {
+        String substrate = System.getenv("SUBSTRATE");
+        if (substrate != null || config.getStorageType().equals("grpc")) {
+            if(host == null) {
+                host = "perf-genie-tracker";
+            }
+        }else{
+            host = InetAddress.getLocalHost().getHostName();
+        }
+
+        final Map<String, Double> dimMap = new HashMap<>();
+        final Map<String, String> queryMap = new HashMap<>();
+        queryMap.put("source", canarySource);
+        queryMap.put("tenant-id", "lense");
+        queryMap.put("instance-id", host);//TODO this shold be input
+        queryMap.put("host", host);
+        queryMap.put("source-file", "lense");
+        queryMap.put("file-name", "canary-lense");//
+        queryMap.put("type", type);
+        queryMap.put("name", "lense");
+        queryMap.put("guid", timestamp + type);
+
+        System.out.println(timestamp + " addLense 5--->" + Utils.toJson(queryMap));
+        eventStore.addGenieEvent(timestamp, queryMap, dimMap, lense, config.getTenant());
+    }
+
+    public String getCanaryLenses(final Map<String, String> queryMap,String host) throws IOException {
+        String substrate = System.getenv("SUBSTRATE");
+        if (substrate != null || config.getStorageType().equals("grpc")) {
+            if(host == null) {
+                host = "perf-genie-tracker";
+            }
+        }else{
+            host = InetAddress.getLocalHost().getHostName();
+        }
+
+        final Map<String, String> dimMap = new HashMap<>();
+        queryMap.put("source", canarySource);
+        queryMap.put("tenant-id", "lense");
+        queryMap.put("instance-id", host);//TODO this shold be input
+        queryMap.put("host", host);
+        queryMap.put("source-file", "lense");
+        queryMap.put("file-name", "canary-lense");//
+        queryMap.put("name", "lense");
+
+        try {
+            long end = Instant.now().toEpochMilli() + 60 * 60 * 1000;
+            for (int j = 5; j <= 40; j += 5) {
+                long start = end - 5 * 24 * 60 * 60 * 1000;
+                List<String> lenses = eventStore.getCanaryComments(config.getTenant(), start, end, queryMap, dimMap, true);
+                return Utils.toJson(lenses);
+            }
+        } catch (Exception e) {
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to get lenses" + e.getMessage(), queryMap, null));
+        }
+        return null;
+    }
+
 
     public void addCanaryEvent(List<Object> record, long timestamp, String cell, String host) throws IOException {
         List<String> header = new ArrayList<>();
@@ -1635,7 +1694,7 @@ public class PerfGenieService implements IPerfGenieService {
                 long previousTimeDiffMs = 7 * 24 * 60 * 60 * 1000;
                 //for(int i=0; i<cells.size();i++){
                     //service.processWeekOverWeekCanaryTask(startTime, endTime, instances.get(i), "core1", cells.get(i), startTime-previousTimeDiffMs, endTime-previousTimeDiffMs, instances.get(i), "core1", cells.get(i), "perf-genie-test15");
-                service.processWeekOverWeekCanaryTask(startTime, endTime, instance, "core1", cell, startTime-previousTimeDiffMs, endTime-previousTimeDiffMs, instance, "core1", cell, "perf-genie-test16");
+                service.processWeekOverWeekCanaryTask(startTime, endTime, instance, "core1", cell, startTime-previousTimeDiffMs, endTime-previousTimeDiffMs, instance, "core1", cell, "perf-genie-test17");
                 //}
              }else if(args[0].equals("canary") || args[0].equals("release")){
                 if (substrate != null) {

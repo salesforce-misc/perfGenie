@@ -76,9 +76,10 @@
     }
 
 </script>
+<#include "wave-js.ftl">
 <div style="" id="dataview">
     <h3 style="width:100%;padding-top: 2px !important;padding-bottom: 2px !important;">Data explorer</h3>
-    <div>tbd</div>
+    <div style="padding-left: 23px; padding-bottom: 0px; padding-top: 0px;" id="dataviewcontent">tbd</div>
 </div>
 <div id="tabs">
     <ul>

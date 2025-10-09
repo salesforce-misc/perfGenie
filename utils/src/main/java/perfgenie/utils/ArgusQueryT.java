@@ -227,6 +227,7 @@ public class ArgusQueryT {
     }
 
     public static Double getHeap(long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
+        System.out.println(cell+ " getHeap");
         if (pods.size() == 0) {
             return null;
         }
@@ -288,6 +289,7 @@ public class ArgusQueryT {
     }
 
     public static String getInstanceTypeTag(long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
+        System.out.println(cell+ " getInstanceTypeTag");
         if (pods.size() == 0) {
             return null;
         }
@@ -342,6 +344,7 @@ public class ArgusQueryT {
     }
 
     public static String getReleaseTag(long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
+        System.out.println(cell+ " getReleaseTag");
         if (pods.size() == 0) {
             return null;
         }
@@ -396,6 +399,7 @@ public class ArgusQueryT {
     }
 
     public static QueryResponse getStatupAVG(long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods, long peakStart, long peakEnd, List<PeakRange.TimeRange> ranges, int type) {
+        System.out.println(cell+ " getStatupAVG" );
         if (pods.size() == 0) {
             return null;
         }
@@ -599,6 +603,7 @@ public class ArgusQueryT {
 
     public static List<String> getCanaryPods(String startquery, String endquery, String instance, String
             domain, String cell) {
+        System.out.println(cell+ " getCanaryPods");
         if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
             updateAccessToken();
             lastUpdated = System.currentTimeMillis();
@@ -801,6 +806,7 @@ public class ArgusQueryT {
     }
 
     public static QueryResponse getArgusMetric(String m, long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
+        System.out.println(cell+ " getArgusMetric " +m);
         if (pods.size() == 0) {
             return null;
         }
@@ -886,6 +892,7 @@ public class ArgusQueryT {
     }
 
     public static String getGCMetric(String startquery, String endquery, String instance, String domain, String cell) {
+        System.out.println(cell + " getGCMetric");
         if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
             updateAccessToken();
             lastUpdated = System.currentTimeMillis();
@@ -983,6 +990,7 @@ public class ArgusQueryT {
     }
 
     public static QueryResponse getMetric(String queryT, long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
+        System.out.println(cell + " getMetric");
         if (pods.size() == 0) {
             return null;
         }
@@ -1060,15 +1068,20 @@ public class ArgusQueryT {
     private static long lastUpdated = 0;
 
     public static synchronized boolean updateAccessToken() {
-        String curlCommand = "curl -vX POST \"https://monitoring-api.salesforce.com/monexws/auth/1.0/token\" "
-                + "--capath /etc/identity/client/certificates/ "
-                + "--cert /etc/identity/client/certificates/client.pem "
-                + "--key /etc/identity/client/keys/client-key.pem";
-        String response = executeCurlCommand(curlCommand);
-        accessToken = parseAccessToken(response);
-        if (accessToken != null) {
-            return false;
-        } else {
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
+            String curlCommand = "curl -vX POST \"https://monitoring-api.salesforce.com/monexws/auth/1.0/token\" "
+                    + "--capath /etc/identity/client/certificates/ "
+                    + "--cert /etc/identity/client/certificates/client.pem "
+                    + "--key /etc/identity/client/keys/client-key.pem";
+            String response = executeCurlCommand(curlCommand);
+            accessToken = parseAccessToken(response);
+            lastUpdated = System.currentTimeMillis();
+            if (accessToken != null) {
+                return false;
+            } else {
+                return true;
+            }
+        }else{
             return true;
         }
     }

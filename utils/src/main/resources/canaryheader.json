@@ -3,7 +3,6 @@
     "timestamp:timestamp",
     "cell:text",
     "avgApt %c:numberc",
-    "jCpuT/r %c:numberc",
     "cCpuT/r %c:numberc",
     "rCpuT/r %c:numberc",
     "5xx/r %c:numberc",
