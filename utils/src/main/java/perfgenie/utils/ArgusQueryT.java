@@ -144,6 +144,7 @@ public class ArgusQueryT {
     static String TotalAPTCount = "DOWNSAMPLE(COUNT(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-trustAptRequestTime.Last_1_Min_Avg{cell=CELL,k8s_pod_name=POD,role=app}:avg:1m-avg),#1d-sum#)";
     static String TotalAPTCountBelow500 = "DOWNSAMPLE(COUNT(CULL_ABOVE(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-trustAptRequestTime.Last_1_Min_Avg{cell=CELL,k8s_pod_name=POD,role=app}:avg:1m-avg,#500#,#value#)),#1d-sum#)";
 
+    static String ScopeQuery = "START:END:core.*:java-lang_type-Runtime.Uptime{cell=CELL}:avg:all-max";
 
     public static ArgusConfig ac;
 
@@ -164,6 +165,7 @@ public class ArgusQueryT {
             throw new RuntimeException(e);
         }
     }
+
 
     public static Double getAPTCount(String querytemplate, long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
         if (pods.size() == 0) {
@@ -222,6 +224,52 @@ public class ArgusQueryT {
             return null;
         } catch (Exception e) {
             System.out.println("getAPTCount Exception " + e.getMessage() + ":" + metric);
+            return null;
+        }
+    }
+
+    public static String getScope(long timestampStart, long timestampEnd, String cell) {
+        System.out.println(cell+ " getScope");
+
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
+            updateAccessToken();
+            lastUpdated = System.currentTimeMillis();
+        }
+        String query = ScopeQuery.replaceAll("START", String.valueOf(timestampStart));
+        query = query.replaceAll("END", String.valueOf(timestampEnd));
+        query = query.replaceAll("CELL", cell);
+
+        try {
+            System.out.println("getScope query " + query);
+            query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            System.out.println(cell+ " getScope1 " + e.getMessage());
+            return null;
+        }
+        String metricCommand = "curl -H \"Authorization: Bearer " + accessToken + "\" " + "https://monitoring-api.salesforce.com/argusws/metrics?expression=" + query;
+
+        String metric = "";
+        if (accessToken != null) {
+            metric = "{\"array\":" + executeCurlCommand(metricCommand) + "}";
+        } else {
+            try {
+                if (substrate == null) {
+                    metric = "{\"array\":" + Resources.toString(Resources.getResource("uptime.json"), StandardCharsets.UTF_8) + "}";
+                }
+            } catch (Exception e) {
+                metric = "{}";
+                System.out.println(cell + "getScope2 " + e.getMessage());
+            }
+        }
+        try {
+            JSONObject jsonObject = new JSONObject(metric);
+            JSONArray jsonArray = jsonObject.getJSONArray("array");
+            JSONObject object = jsonArray.getJSONObject(0);
+            String scope = object.getString("scope");
+            return scope;
+        } catch (Exception e) {
+            System.out.println("getScope Exception " + e.getMessage() + ":" + metric);
+            System.out.println("getScope Exception " + query);
             return null;
         }
     }
@@ -802,6 +850,59 @@ public class ArgusQueryT {
         System.out.println("query->" + query);
         System.out.println("metric->" + metric);
         System.out.println(cell + "oldgen4 ");
+        return null;
+    }
+    public static JSONObject getArgusTimeSeriesForMetric(String query, String cell){
+        System.out.println(cell+ " getArgusTimeSeriesForMetric");
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
+            updateAccessToken();
+            lastUpdated = System.currentTimeMillis();
+        }
+        try {
+            query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            System.out.println(cell+ " " +query+" getArgusTimeSeriesForMetric1 " + e.getMessage());
+            return null;
+        }
+        String metricCommand = "curl -H \"Authorization: Bearer " + accessToken + "\" " + "https://monitoring-api.salesforce.com/argusws/metrics?expression=" + query;
+
+        String metric = "";
+        if (accessToken != null) {
+            metric = executeCurlCommand(metricCommand);
+            if(metric.contains("request timeout")){
+                System.out.println("--> timeout Retry");
+                metric = executeCurlCommand(metricCommand);
+            }else if(metric.contains("disable this java.lang.RuntimeException")){
+                System.out.println("--> java.lang.RuntimeException Retry");
+                metric = executeCurlCommand(metricCommand);
+            }
+            metric = "{\"array\":" + metric + "}";
+        } else {
+            try {
+                if (substrate == null) {
+                    metric = "{\"array\":" + Resources.toString(Resources.getResource("apt.json"), StandardCharsets.UTF_8) + "}";
+                }
+            } catch (Exception e) {
+                metric = "{}";
+                System.out.println(cell+ " " +query+" getArgusTimeSeriesForMetric2 " + e.getMessage());
+            }
+        }
+
+        try {
+            JSONObject jsonObject = new JSONObject(metric);
+            JSONArray jsonArray = jsonObject.getJSONArray("array");
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject object = jsonArray.getJSONObject(i);
+                JSONObject datapoints = object.getJSONObject("datapoints");
+                return datapoints;
+            }
+        } catch (Exception e) {
+            System.out.println("query->" + query);
+            System.out.println("metric->" + metric);
+            System.out.println(cell+ " " +query+" getArgusTimeSeriesForMetric3 " + e.getMessage());
+            return null;
+        }
+
         return null;
     }
 

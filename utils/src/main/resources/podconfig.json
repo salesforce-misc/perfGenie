@@ -1,375 +1,357 @@
 {
   "config": {
     "ind86": {
+      "enabled": false,
+      "type": 2,
+      "peak": [
+        12,
+        8
+      ]
+    },
+    "deu86": {
       "enabled": true,
       "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod2-apsouth1",
       "peak": [
-        4,
+        16,
+        12
+      ]
+    },
+    "aus60": {
+      "enabled": true,
+      "type": 1,
+      "peak": [
+        7,
+        13
+      ]
+    },
+    "usa322": {
+      "enabled": true,
+      "type": 1,
+      "peak": [
+        22,
+        11
+      ]
+    },
+    "deu72": {
+      "enabled": true,
+      "type": 1,
+      "peak": [
+        15,
+        11
+      ]
+    },
+    "ind56": {
+      "enabled": true,
+      "type": 1,
+      "peak": [
+        1,
+        23
+      ]
+    },
+    "usa360": {
+      "enabled": true,
+      "type": 1,
+      "peak": [
+        22,
+        11
+      ]
+    },
+    "usa234": {
+      "enabled": true,
+      "type": 1,
+      "peak": [
+        23,
         12
       ]
     },
     "usa270s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod5-uswest2",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        15,
-        20
-      ]
-    },
-    "usa710s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod21-useast2",
-      "peak": [
-        15,
-        21
-      ]
-    },
-    "usa30s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod5-uswest2",
-      "peak": [
-        14,
-        18
-      ]
-    },
-    "usa432s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod5-uswest2",
-      "peak": [
-        14,
-        18
-      ]
-    },
-    "usa762s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod21-useast2",
-      "peak": [
-        16,
-        21
-      ]
-    },
-    "usa62s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod5-uswest2",
-      "peak": [
-        15,
-        20
-      ]
-    },
-    "usa224s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod5-uswest2",
-      "peak": [
-        14,
-        18
-      ]
-    },
-    "ind10s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod2-apsouth1",
-      "peak": [
-        4,
-        12
-      ]
-    },
-    "usa20s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod5-uswest2",
-      "peak": [
-        14,
-        19
-      ]
-    },
-    "ind8s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod2-apsouth1",
-      "peak": [
-        4,
-        12
-      ]
-    },
-    "usa770s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod21-useast2",
-      "peak": [
-        12,
-        20
-      ]
-    },
-    "che2s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod15-eucentral2",
-      "peak": [
-        17,
-        22
-      ]
-    },
-    "usa660s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod5-uswest2",
-      "peak": [
-        14,
-        19
-      ]
-    },
-    "deu6s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod3-eucentral1",
-      "peak": [
-        1,
+        20,
         5
       ]
     },
-    "usa250s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod1-useast1",
+    "usa710s": {
+      "enabled": false,
+      "type": 2,
       "peak": [
-        9,
-        17
+        21,
+        6
+      ]
+    },
+    "usa30s": {
+      "enabled": false,
+      "type": 2,
+      "peak": [
+        18,
+        4
+      ]
+    },
+    "usa432s": {
+      "enabled": false,
+      "type": 2,
+      "peak": [
+        18,
+        4
+      ]
+    },
+    "usa762s": {
+      "enabled": false,
+      "type": 2,
+      "peak": [
+        21,
+        5
+      ]
+    },
+    "usa62s": {
+      "enabled": false,
+      "type": 2,
+      "peak": [
+        20,
+        5
+      ]
+    },
+    "usa224s": {
+      "enabled": false,
+      "type": 2,
+      "peak": [
+        18,
+        4
+      ]
+    },
+    "ind10s": {
+      "enabled": false,
+      "type": 2,
+      "peak": [
+        12,
+        8
+      ]
+    },
+    "usa20s": {
+      "enabled": false,
+      "type": 2,
+      "peak": [
+        19,
+        5
+      ]
+    },
+    "ind8s": {
+      "enabled": false,
+      "type": 2,
+      "peak": [
+        12,
+        8
+      ]
+    },
+    "usa770s": {
+      "enabled": false,
+      "type": 2,
+      "peak": [
+        20,
+        8
+      ]
+    },
+    "che2s": {
+      "enabled": false,
+      "type": 2,
+      "peak": [
+        22,
+        5
+      ]
+    },
+    "usa660s": {
+      "enabled": false,
+      "type": 2,
+      "peak": [
+        19,
+        5
+      ]
+    },
+    "deu6s": {
+      "enabled": false,
+      "type": 2,
+      "peak": [
+        5,
+        4
+      ]
+    },
+    "usa250s": {
+      "enabled": false,
+      "type": 2,
+      "peak": [
+        19,
+        8
       ]
     },
     "ind64": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod2-apsouth1",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        4,
-        10
+        10,
+        6
       ]
     },
     "ind90": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod2-apsouth1",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        8,
-        14
+        14,
+        6
       ]
     },
     "usa34": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod5-uswest2",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        13,
-        19
+        19,
+        5
       ]
     },
     "ind58": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod2-apsouth1",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        9,
-        13
+        13,
+        4
       ]
     },
     "usa290": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod5-uswest2",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        13,
-        19
+        19,
+        6
       ]
     },
     "usa286": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod5-uswest2",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        13,
-        19
+        19,
+        6
       ]
     },
     "usa476": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod5-uswest2",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        13,
-        19
+        19,
+        6
       ]
     },
     "usa430": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod5-uswest2",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        13,
-        19
+        19,
+        6
       ]
     },
     "usa442": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod5-uswest2",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        13,
-        19
+        19,
+        6
       ]
     },
     "swe16": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod16-eunorth1",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        9,
-        13
+        13,
+        4
       ]
     },
     "swe72": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod16-eunorth1",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        9,
-        13
+        13,
+        4
       ]
     },
-
-
     "usa952s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod21-useast2",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        14,
-        18
+        18,
+        4
       ]
     },
     "swe132s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod16-eunorth1",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        9,
-        13
+        13,
+        4
       ]
     },
     "ind26s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod2-apsouth1",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        8,
-        14
+        14,
+        8
       ]
     },
     "swe70": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod16-eunorth1",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        9,
-        13
+        13,
+        4
       ]
     },
     "usa950s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod1-useast1",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        9,
-        17
+        17,
+        8
       ]
     },
     "swe130s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod16-eunorth1",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        9,
-        13
+        13,
+        4
       ]
     },
     "ind14s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod2-apsouth1",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        8,
-        14
+        14,
+        6
       ]
     },
     "usa948s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod1-useast1",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        9,
-        17
+        17,
+        8
       ]
     },
     "swe128s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod16-eunorth1",
+      "enabled": false,
+      "type": 2,
+
+
       "peak": [
-        9,
-        13
+        13,
+        4
       ]
     },
     "ind2s": {
-      "enabled": true,
-      "type": 1,
-      "domain": "core1",
-      "instance": "aws-prod2-apsouth1",
+      "enabled": false,
+      "type": 2,
       "peak": [
-        8,
-        14
+        14,
+        6
       ]
     }
   }

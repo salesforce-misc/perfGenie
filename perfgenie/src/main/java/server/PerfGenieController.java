@@ -17,7 +17,6 @@ import org.springframework.http.HttpRange;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import perfgenie.utils.Canary;
 import perfgenie.utils.Utils;
 
 import java.io.File;
@@ -54,6 +53,17 @@ public class PerfGenieController {
         return res;
     }
 
+    @GetMapping(path = {"/component/casp/v1/canaryview/timeseries/","/component/casp/v1/canaryview/timeseries/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getCanaryCellTimeSeries(
+            @PathVariable(required = false, name = "host") String host,
+            @RequestParam(required = false, name = "start") final long start,
+            @RequestParam(required = false, name = "end") final long end,
+            @RequestParam(required = false, name = "cell") final String cell) throws IOException {
+        final Map<String, String> queryMap = new HashMap<>();
+        String res = service.getAllCanaryCellTimeSeries(start, end, cell,host);
+        return Utils.toJson(res);
+    }
+
     @GetMapping(path = {"/component/casp/v1/canaryview","/component/casp/v1/canaryview/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String canaryview(
             @PathVariable(required = false, name = "host") String host,
@@ -83,7 +93,7 @@ public class PerfGenieController {
         return Resources.toString(Resources.getResource("canaryheader.json"), StandardCharsets.UTF_8);
     }
 
-    @GetMapping(path = {"/component/casp/v1/canary","/component/casp/v1/canary/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    /*@GetMapping(path = {"/component/casp/v1/canary","/component/casp/v1/canary/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String canary(
             @PathVariable(required = false, name = "host") String host,
                           @RequestParam(required = false, name = "start") final long start,
@@ -91,19 +101,26 @@ public class PerfGenieController {
                           @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
         //final Map<String, String> queryMap = queryToMap(metadataQuery);
         return service.canaryTask(start,end,host);
-    }
+    }*/
 
     @GetMapping(path = {"/component/casp/v1/canarytask","/component/casp/v1/canarytask/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String canarySideBySideTask(
             @PathVariable(required = false, name = "host") String host,
             @RequestParam(required = false, name = "start") final long start,
             @RequestParam(required = false, name = "end") final long end,
+            @RequestParam(required = false, name = "type") final String type,
             @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
         //final Map<String, String> queryMap = queryToMap(metadataQuery);
-        return service.canarySideBySideTask(start,end,"sidebyside",host);
+        //avoids duplicates
+        if(type == null){
+            return service.canarySideBySideTask(start,end,"sidebyside",host);
+        }else{
+            return service.canarySideBySideTask(start,end,type,host);
+        }
+
     }
 
-    @GetMapping(path = {"/component/casp/v1/release","/component/casp/v1/release/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    /*@GetMapping(path = {"/component/casp/v1/release","/component/casp/v1/release/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String release(
             @PathVariable(required = false, name = "host") String host,
             @RequestParam(required = false, name = "start") final long start,
@@ -111,7 +128,7 @@ public class PerfGenieController {
             @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
         //final Map<String, String> queryMap = queryToMap(metadataQuery);
         return service.releaseTask(start,end, host);
-    }
+    }*/
 
     @GetMapping(path = {"/component/casp/v1/processcustomcanary","/component/casp/v1/processcustomcanary/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String canaryview(
@@ -122,7 +139,8 @@ public class PerfGenieController {
             @RequestParam(required = false, name = "instance") final String instance,
             @RequestParam(required = false, name = "domain") final String domain
             ) throws IOException {
-        String res = service.processSideBySideCanaryTask(start,end,instance,domain,cell,host);
+        //creates duplicates
+        String res = service.processSideBySideCanaryTask(start,end,cell,host);
         return res;
     }
 
@@ -140,7 +158,8 @@ public class PerfGenieController {
             @RequestParam(required = false, name = "instance2") final String instance2,
             @RequestParam(required = false, name = "domain2") final String domain2
     ) throws IOException {
-        String res = service.processWeekOverWeekCanaryTask(start1,end1,instance1,domain1,cell1,start2,end2,instance2,domain2,cell2,host);
+        //creates duplicates
+        String res = service.processWeekOverWeekCanaryTask(start1,end1,cell1,start2,end2,cell2,host);
         return res;
     }
 

@@ -71,12 +71,16 @@
             showCanaryTable(canaryContextArray,"canarycustomview",3);
         }else if(id == "perfswat"){
             updateTabUrl("#perfswat");
-            showCanaryTable(canaryContextArray,"canaryperfswatview",4);
+            showCanaryTable(canaryContextArray,"canaryperfswatview",1);
+        }else if(id == "perfswatcustom"){
+            updateTabUrl("#perfswatcustom");
+            showCanaryTable(canaryContextArray,"canaryperfswatcustomview",4);
         }
     }
 
 </script>
 <#include "wave-js.ftl">
+
 <div style="" id="dataview">
     <h3 style="width:100%;padding-top: 2px !important;padding-bottom: 2px !important;">Data explorer</h3>
     <div style="padding-left: 23px; padding-bottom: 0px; padding-top: 0px;" id="dataviewcontent">tbd</div>
@@ -86,6 +90,7 @@
         <li><a href="#zing">Side by side</a></li>
         <li><a href="#zingcustom">Side by side custom</a></li>
         <li><a href="#perfswat">Week over week</a></li>
+        <li><a href="#perfswatcustom">Week over week custom</a></li>
     </ul>
     <div id="zing" style="min-height: 900px; paddingt-left: 0px" class="row no-padding">
         <#include "contentnew.ftl">
@@ -95,6 +100,9 @@
     </div>
     <div id="perfswat">
         <#include "perfswat.ftl">
+    </div>
+    <div id="perfswatcustom">
+        <#include "perfswatcustom.ftl">
     </div>
 </div>
 <div id="modals-guid" class="col-lg-12">

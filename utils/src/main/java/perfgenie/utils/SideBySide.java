@@ -11,7 +11,7 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 
-import static perfgenie.utils.Canary.*;
+//import static perfgenie.utils.Canary.*;
 
 
 public class SideBySide {
@@ -27,10 +27,23 @@ public class SideBySide {
     }
 
     public static CanaryResponse processSideBySideCanary(long timestampStart, long timestampEnd, String cell) {
-        return processSideBySideCanaryTask(timestampStart, timestampEnd, podsInstance.get(cell), podsDomain.get(cell), cell, 2);
+        return processSideBySideCanaryTask(timestampStart, timestampEnd, cell, 2);
     }
 
-    public static synchronized CanaryResponse processSideBySideCanaryTask(long timestampStart, long timestampEnd, String instance, String domain, String cell, int type) {
+    public static synchronized CanaryResponse processSideBySideCanaryTask(long timestampStart, long timestampEnd, String cell, int type) {
+
+        String scope = ArgusQueryT.getScope(timestampStart,timestampEnd,cell);
+        if(scope == null){
+            System.out.println(cell + " failed get scope");
+            return null;
+        }
+
+        String[] parts = scope.split("\\.");
+        String instance = parts[2];
+        String domain = parts[3];
+
+        System.out.println(scope + ":" + instance + ":" + domain);
+
         List<Object> record = new ArrayList<>();
         List<String> metricList = new ArrayList(Arrays.asList("rCpuT", "jCpuT", "cCpuT", "sfPt", "5xx", "4xx"));
         List<String> header = new ArrayList<>();
@@ -47,9 +60,14 @@ public class SideBySide {
             record.add("tid:data");
             record.add(1);//tid
             header.add("tid:text");
+
             record.add("cell:text");
             record.add(cell);//cell
             header.add("cell:text");
+
+            record.add("type:number");
+            record.add(type);//type release:1, sidebyside:2
+            header.add("type:number");
 
             record.add("cmpCnt:int");
             record.add(canary.pod1.size());
@@ -217,9 +235,7 @@ public class SideBySide {
             header.add("instance:text");
             //record.add(domain);//instance
             //header.add("domain:text");
-            record.add("type:number");
-            record.add(type);//type release:1, sidebyside:2
-            header.add("type:number");
+
 
             System.out.println(cell + "start getCanaryDashboardURL");
             record.add("dashboard:url");
@@ -714,7 +730,7 @@ public class SideBySide {
         return canary;
     }
 
-    public static Canary.Result findLargestIntersection(List<long[]> timeRanges, int k) {
+    public static Result findLargestIntersection(List<long[]> timeRanges, int k) {
         if (timeRanges == null || timeRanges.size() < k) {
             return null;  // Not enough ranges to choose from
         }
@@ -759,7 +775,7 @@ public class SideBySide {
 
         // Return the result with the largest intersection and the corresponding combination
         if (bestIntersection != null) {
-            return new Canary.Result(bestIntersection, finalCombination);
+            return new Result(bestIntersection, finalCombination);
         } else {
             return null;
         }
@@ -786,6 +802,16 @@ public class SideBySide {
         }
     }
 
+    public static class Result {
+        long[] largestIntersection;
+        List<long[]> finalCombination;
+
+        Result(long[] largestIntersection, List<long[]> finalCombination) {
+            this.largestIntersection = largestIntersection;
+            this.finalCombination = finalCombination;
+        }
+    }
+
     public static void main(String[] args) {
         try {
             int start = 1;
@@ -795,10 +821,14 @@ public class SideBySide {
                 for (String cell : ArgusQueryT.pc.config.keySet()) {
                     if ((boolean) ArgusQueryT.pc.config.get(cell).get("enabled") == true && cell.equals("deu6s")) {
                         System.out.println(((List) ArgusQueryT.pc.config.get(cell).get("peak")).get(0));
-                        long tmp1 = Canary.getUtcEpochForHour((int) (((List) ArgusQueryT.pc.config.get(cell).get("peak")).get(0)));
-                        long tmp2 = Canary.getUtcEpochForHour((int) (((List) ArgusQueryT.pc.config.get(cell).get("peak")).get(1)));
-                        tmp1 = tmp1 - lastndays * 24 * 60 * 60 * 1000;
-                        tmp2 = tmp2 - lastndays * 24 * 60 * 60 * 1000;
+                        //long tmp1 = Utils.getUtcEpochForHour((int) (((List) ArgusQueryT.pc.config.get(cell).get("peak")).get(0)));
+                        //long tmp2 = Utils.getUtcEpochForHour((int) (((List) ArgusQueryT.pc.config.get(cell).get("peak")).get(1)));
+
+                        long tmp2 = Utils.getUtcEpochForHour((int) (((List) ArgusQueryT.pc.getConfig().get(cell).get("peak")).get(0)));//end hour
+                        long tmp1 = tmp2 - ((int) (((List) ArgusQueryT.pc.getConfig().get(cell).get("peak")).get(1))) * 60 * 60 * 1000; // tmp2 minus duration hours * 60 * 60 * 1000
+
+                        tmp1 = tmp1 - lastndays * 24 * 60 * 60 * 1000L;
+                        tmp2 = tmp2 - lastndays * 24 * 60 * 60 * 1000L;
                         CanaryResponse response = processSideBySideCanary(tmp1, tmp2, cell);
                         String dateString1 = Utils.convertEpochToUTCString(tmp1);
                         String dateString2 = Utils.convertEpochToUTCString(tmp2);
@@ -810,4 +840,6 @@ public class SideBySide {
             System.out.println(e.getMessage());
         }
     }
+
+
 }

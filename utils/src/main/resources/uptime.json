@@ -1,0 +1,10 @@
+[ {
+  "scope" : "core.aws.aws-prod0-uswest2.core1",
+  "metric" : "java-lang_type-Runtime.Uptime",
+  "tags" : {
+    "cell" : "usa14s"
+  },
+  "datapoints" : {
+    "1759982558000" : 1.9061743027777776E7
+  }
+} ]

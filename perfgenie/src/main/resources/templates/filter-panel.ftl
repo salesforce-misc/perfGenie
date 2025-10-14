@@ -6,6 +6,7 @@
 * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
 */
 </script>
+<#include "component/casp/wave-js.ftl">
 <style type="text/css">
     .xaxisid::-webkit-scrollbar {
         width: 0px;
@@ -4143,6 +4144,7 @@
             }
 
             toolBarOptions += '           <option ' + (tableFormat == 3 ? "selected" : "") + ' value=3>metric timeline view</option>\n';
+            toolBarOptions += '           <option ' + (tableFormat == 4 ? "selected" : "") + ' value=4>analytics view</option>\n';
         }
 
         toolBarOptions +=    '                    </select>';
@@ -6104,11 +6106,39 @@
                 }
             }
         }
+
         let end1 = performance.now();
         console.log("genRequestTable 0 time:" + (end1 - start1))
         let start = performance.now();
         let order = getOrderandType();
-        if (tableFormat == 2 || tableFormat == 3) {
+        if(tableFormat == 4){
+            console.log("Wave");
+            let exampleCSVData = `timestamp,cell,instance,avgApt %c,jCpuT/r %c,cCpuT/r %c,rCpuT/r %c,5xx/r %c,4xx/r %c,memory_usage,request_count
+2024-01-01 10:00:00,cell-01,instance-001,85.5,12.3,8.7,15.2,0.1,2.3,2048,1250
+2024-01-01 10:05:00,cell-01,instance-001,87.2,11.8,9.1,14.8,0.0,1.9,2156,1180
+2024-01-01 10:10:00,cell-01,instance-002,82.1,13.5,7.9,16.1,0.2,2.8,1987,1320
+2024-01-01 10:15:00,cell-02,instance-001,89.3,10.9,8.3,13.7,0.0,1.5,2234,1100
+2024-01-01 10:20:00,cell-02,instance-002,84.7,12.1,8.9,15.5,0.1,2.1,2076,1280
+2024-01-01 10:25:00,cell-01,instance-001,86.8,11.5,8.5,14.9,0.0,1.8,2123,1200
+2024-01-01 10:30:00,cell-02,instance-001,88.1,11.2,8.1,14.2,0.0,1.6,2198,1150
+2024-01-01 10:35:00,cell-01,instance-002,83.4,12.8,8.6,15.8,0.1,2.5,2012,1350
+2024-01-01 10:40:00,cell-02,instance-002,87.6,10.7,8.4,13.9,0.0,1.7,2256,1120
+2024-01-01 10:45:00,cell-01,instance-001,85.9,12.0,8.8,15.1,0.0,2.0,2089,1230
+2024-01-01 10:50:00,cell-02,instance-001,88.7,10.5,8.2,14.0,0.0,1.4,2211,1080
+2024-01-01 10:55:00,cell-01,instance-002,84.2,12.6,8.7,15.6,0.1,2.2,1998,1300
+2024-01-01 11:00:00,cell-02,instance-002,86.3,11.8,8.5,14.6,0.0,1.9,2145,1220
+2024-01-01 11:05:00,cell-01,instance-001,87.9,11.1,8.3,14.1,0.0,1.6,2178,1170
+2024-01-01 11:10:00,cell-02,instance-001,85.4,12.2,8.9,15.3,0.0,2.1,2067,1260
+2024-01-01 11:15:00,cell-01,instance-002,83.7,12.9,8.4,16.0,0.1,2.7,2001,1380
+2024-01-01 11:20:00,cell-02,instance-002,88.2,10.8,8.1,13.8,0.0,1.5,2223,1090
+2024-01-01 11:25:00,cell-01,instance-001,86.5,11.7,8.6,14.8,0.0,1.9,2102,1210
+2024-01-01 11:30:00,cell-02,instance-001,87.3,11.3,8.2,14.3,0.0,1.7,2189,1160
+2024-01-01 11:35:00,cell-01,instance-002,84.8,12.4,8.8,15.7,0.1,2.3,2023,1330`;
+            window.waveAnalytics = new WaveAnalytics('statetable');
+            window.waveAnalytics.setCSVDataAsString(sfContextDataTable.getTableAsCSV());
+            // Initialize collapse functionality for categories panel
+            window.waveAnalytics.initializeCollapsePanel();
+        } else if (tableFormat == 2 || tableFormat == 3) {
             let minStart = getContextTree(1, eventType).context.start; //todo: records are aligned to method profile context start
             if(eventType == "json-jstack" || eventType == "Jstack"){//find other profile start time
                 for (var profile in jfrprofiles1) {

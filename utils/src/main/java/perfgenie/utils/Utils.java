@@ -19,7 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.UUID;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import java.sql.Timestamp;
@@ -262,5 +262,55 @@ public class Utils {
 
         // Format the instant into the UTC string
         return formatter.format(instant);
+    }
+
+    public static int getCurrentHourUTC() {
+        ZonedDateTime currentTimeUTC = ZonedDateTime.now(ZoneOffset.UTC);
+        return currentTimeUTC.getHour();
+    }
+
+    public static long getUtcEpochForHour(int hour) {
+        // Get the current date in UTC
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+
+        // Create a LocalDateTime for the given hour on the current day in UTC
+        LocalDateTime dateTime = today.atTime(hour, 0);  // Using hour and minute 0
+
+        // Convert LocalDateTime to Instant (epoch time) in UTC
+        Instant instant = dateTime.atZone(ZoneOffset.UTC).toInstant();
+
+        // Return the epoch time (milliseconds since Unix epoch)
+        return instant.toEpochMilli();
+    }
+
+    public static Map<String, Double> getPercentiles(List<Double> values) {
+        Map<String, Double> result = new HashMap<>();
+
+        if (values == null || values.isEmpty()) {
+            return result; // return empty map
+        }
+
+        List<Double> sorted = new ArrayList<>(values);
+        Collections.sort(sorted);
+        int size = sorted.size();
+
+        double[] percentiles = {99, 95, 90, 50};
+        for (double p : percentiles) {
+            double index = p / 100.0 * (size - 1);
+            int lower = (int) Math.floor(index);
+            int upper = (int) Math.ceil(index);
+            double weight = index - lower;
+
+            double value;
+            if (upper >= size) {
+                value = sorted.get(size - 1);
+            } else {
+                value = sorted.get(lower) * (1 - weight) + sorted.get(upper) * weight;
+            }
+
+            result.put("P" + (int)p, value);
+        }
+
+        return result;
     }
 }

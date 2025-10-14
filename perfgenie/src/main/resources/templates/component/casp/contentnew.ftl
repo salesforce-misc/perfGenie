@@ -140,7 +140,7 @@
             }
         });
     }
-    /*let exampleCSVData = `timestamp,cell,instance,avgApt %c,jCpuT/r %c,cCpuT/r %c,rCpuT/r %c,5xx/r %c,4xx/r %c,memory_usage,request_count
+    let exampleCSVData = `timestamp,cell,instance,avgApt %c,jCpuT/r %c,cCpuT/r %c,rCpuT/r %c,5xx/r %c,4xx/r %c,memory_usage,request_count
 2024-01-01 10:00:00,cell-01,instance-001,85.5,12.3,8.7,15.2,0.1,2.3,2048,1250
 2024-01-01 10:05:00,cell-01,instance-001,87.2,11.8,9.1,14.8,0.0,1.9,2156,1180
 2024-01-01 10:10:00,cell-01,instance-002,82.1,13.5,7.9,16.1,0.2,2.8,1987,1320
@@ -161,15 +161,18 @@
 2024-01-01 11:25:00,cell-01,instance-001,86.5,11.7,8.6,14.8,0.0,1.9,2102,1210
 2024-01-01 11:30:00,cell-02,instance-001,87.3,11.3,8.2,14.3,0.0,1.7,2189,1160
 2024-01-01 11:35:00,cell-01,instance-002,84.8,12.4,8.8,15.7,0.1,2.3,2023,1330`;
-*/
+
     $(document).ready(function () {
         getCanaryHeader();
-        // Initialize Wave Analytics component
-        window.waveAnalytics = new WaveAnalytics('dataviewcontent');
-        //window.waveAnalytics.setCSVDataAsString(exampleCSVData);
+        // Initialize Wave Analytics component only if not already initialized
+        if (!window.waveAnalytics) {
+            window.waveAnalytics = new WaveAnalytics('dataviewcontent');
+            // Initialize collapse functionality for categories panel
+            window.waveAnalytics.initializeCollapsePanel();
+        }
+        // Set data and functions on existing instance
+        window.waveAnalytics.setCSVDataAsString(exampleCSVData);
         window.waveAnalytics.setDataFetchFunction(getTableAsCSV);
-        // Initialize collapse functionality for categories panel
-        window.waveAnalytics.initializeCollapsePanel();
         getCanaryLenses();
     });
 
@@ -196,9 +199,63 @@
         return typeof number === 'number' && number % 1 !== 0;
     }
 
+    function getCellTimeSeriesData(cell){
+        showTimeRangeFilter(minTimeStamp, maxTimeStamp,
+            (result) => {
+                getTimeSeriesDataAndLoad(cell,result.start,result.end);
+            },
+            () => {
+                console.log('❌ Label Prefix Test - Cancelled');
+            },
+            cell // Label prefix
+        );
+    }
+
+    let timeSeriesData;
+    let timeSeriesChartObj = undefined;
+    document.addEventListener('DOMContentLoaded', initializeCharts);
+    function initializeCharts() {
+        timeSeriesChartObj = new TimeSeriesChart('my-chart', {
+            height: 400,
+            showLegend: true,
+            showLegendText: true, // Set to false to hide legend text, show only colored indicators
+            showCustomLegend: false, // Set to false to hide the custom legend div (default: hidden)
+            showTooltip: true,
+            showGrid: true,
+            animate: false
+        });
+    }
+    function  getTimeSeriesDataAndLoad(cell,startEpoch,endEpoch){
+        URL = "v1/canaryview/timeseries/" + dataHost + "/?cell="+cell+"&start=" + startEpoch + "&end=" + endEpoch;
+        showSpinner("spinnerswat");
+        $.ajax({
+            url: URL, success: function (result) {
+                hideSpinner("spinnerswat");
+                if (result != undefined) {
+                    timeSeriesData=JSON.parse(result);
+                    for(let i=0; i<timeSeriesData.length ; i++) {
+                        if(i==0) {
+                            timeSeriesChartObj.loadData(timeSeriesData[i]["timestamps"], timeSeriesData[i]["metrics"],cell,timeSeriesData[i]["colors"]);
+                        }else{
+                            timeSeriesChartObj.addChart(timeSeriesData[i]["timestamps"], timeSeriesData[i]["metrics"],false,cell,timeSeriesData[i]["colors"]);
+                        }
+                    }
+                }
+
+            },
+            error: function (xhr, status, error) {
+                toastMessage(toastType.ERROR, "Failed to process canary data");
+                hideSpinner("spinnerswat");
+            }
+        });
+    }
+
     let extraHeadersHandled = false;
+    let minTimeStamp = Number.MAX_VALUE;;
+    let maxTimeStamp = 0;
+
     function showCanaryTable(result,divId,type) {
-        console.log("showCanaryTable");
+        console.log("showCanaryTable " + type);
         tableHeader = [];
         canaryviewtable.addContextTableHeader(tableHeader, "Cmt", -1, "");
         //create table header
@@ -214,6 +271,9 @@
             }
             if(tokens[1] == "timestamp" || tokens[1] == "text" || tokens[1] == "url"){
                 canaryviewtable.addContextTableHeader(tableHeader, headerLableMap[tokens[0]], -1, "");
+                if(tokens[1] == "timestamp"  && type == 1){
+                    canaryviewtable.addContextTableHeader(tableHeader, "day", -1, "");
+                }
             }else if(tokens[1] == "number" || tokens[1] == "numberc" || tokens[1] == "int"){
                 canaryviewtable.addContextTableHeader(tableHeader, headerLableMap[tokens[0]], 1, "");
             }
@@ -247,6 +307,9 @@
                 }
             }
         }
+
+        console.log("showCanaryTable " + typeIndex);
+
         for (let i = 0; i < canaryContextArray.length; i++) {
             if(typeIndex == -1 || canaryContextArray[i].record[typeIndex] != type){
                 continue;
@@ -311,8 +374,18 @@
                 let val = canaryContextArray[i][tokens[0]];
                 if (val != undefined) {
                     if (headerTypeMap[tokens[0]] == "timestamp") {
-                        if(type == 3 || type == 4){
+                        if(type == 2 || type == 3 || type == 4 || type == 1){
                             canaryviewtable.addContextTableRow(tableRows[rowIndex], moment.utc(val).format('YY-MM-DD HH:MM:SS'));
+
+                            if(type == 1){
+                                if(minTimeStamp > val){
+                                    minTimeStamp = val;
+                                }
+                                if(maxTimeStamp < val){
+                                    maxTimeStamp = val;
+                                }
+                                canaryviewtable.addContextTableRow(tableRows[rowIndex], moment.utc(val).format('ddd'));
+                            }
                         }else {
                             canaryviewtable.addContextTableRow(tableRows[rowIndex], moment.utc(val).format('YYYY-MM-DD'));
                         }
@@ -342,18 +415,24 @@
                         canaryviewtable.addContextTableRow(tableRows[rowIndex], "<a href='" + val + "' target='_blank'> link</a>", "style='text-align:center'");//url
                     } else if (headerTypeMap[tokens[0]] != "data") {
                         //do not show data type
-                        canaryviewtable.addContextTableRow(tableRows[rowIndex], val);
+                        if(headerLableMap[tokens[0]] == "cell"){
+                           canaryviewtable.addContextTableRow(tableRows[rowIndex], val,"<span onclick='getCellTimeSeriesData(\""+val+"\")'");
+                        }else{
+                            canaryviewtable.addContextTableRow(tableRows[rowIndex], val);
+                        }
                     }
                 } else {
                     if (headerTypeMap[tokens[0]] != "data") {
                         //do not show data type
                         canaryviewtable.addContextTableRow(tableRows[rowIndex], "na", "style='text-align:right'");
+
                     }
                 }
             }
         }
         canaryviewtable.SFDataTable(tableRows, tableHeader, divId, 1);
         $("#canaryviewtableSFDownloadtable").before('<a title="Download raw json data" id="jsonDownload" href="javascript:downloadJson()"><i style="font-size:18px;" class="fa fa-download" aria-hidden="true"></i>&nbsp;</a>');
+        $("#canaryviewtablepagination").after('<span id="timeseriesload"></span>');
 
     }
 
@@ -368,6 +447,12 @@
             "add": {name: "add comment"}
         }
     });
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    function getUtcDayFromEpoch(epochMillis) {
+        const date = new Date(epochMillis);
+        const dayIndex = date.getUTCDay(); // 0 (Sun) to 6 (Sat)
+        return days[dayIndex];
+    }
 
     function postComment(commentText, color, cell, timestamp) {
         // Create the data to send in the request body

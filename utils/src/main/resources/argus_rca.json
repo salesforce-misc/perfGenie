@@ -1,0 +1,99 @@
+{
+  "metrics": {
+    "startup" :{
+      "description": "AppStartup.totalStartupMs",
+      "query": "START:END:core.aws.INSTANCE.DOMAIN:AppStartup.totalStartupMs{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:1m-avg",
+      "enabled": true
+    },
+    "cell_cpu" :{
+      "description": "kube_horizontalpodautoscaler_status_target_metric",
+      "query": "START:END:kube-state-metrics.aws.INSTANCE.DOMAIN:kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler=CELL-casam-app,metric_target_type=utilization,metric_name=cpu}:max:1m-max",
+      "enabled": true
+    },
+    "rss" :{
+      "description": "Jvm.osRssMemoryMb.Value",
+      "query": "CULL_ABOVE(START:END:core.aws.INSTANCE.DOMAIN:Jvm.osRssMemoryMb.Value{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:1m-avg,#125226698752#,#value#)",
+      "enabled": true
+    },
+    "trustAptRequestCount" :{
+      "description": "trustAptRequestCount.Last_1_Min_Avg",
+      "query": "CULL_ABOVE(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-trustAptRequestCount.Last_1_Min_Avg{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:1m-avg,#125226698752#,#value#)",
+      "enabled": true
+    },
+    "LogMetric-COUNT" :{
+      "description": "LogMetric-COUNT",
+      "query": "RATE(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-ServerMetrics.LogMetric-COUNT{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:1m-max)",
+      "enabled": true
+    },
+    "totalSafepointTimeMs" :{
+      "description": "totalSafepointTimeMs",
+      "query": "RATE(START:END:core.aws.INSTANCE.DOMAIN:Jvm.totalSafepointTimeMs.Value{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:1m-max)",
+      "enabled": true
+    },
+
+    "cCpuR" :{
+      "name": "cCpuR",
+      "description": "container CPU requests",
+      "scope": "kube-state-metrics.aws.INSTANCE.DOMAIN",
+      "metric": "kube_pod_container_resource_requests",
+      "type": "ccpusum",
+      "enabled": true
+    },
+    "avgJCpu":{
+      "name": "avgJCpu",
+      "description": "avg JVM CPU %",
+      "scope": "core.aws.INSTANCE.DOMAIN",
+      "metric": "Jvm.processCpuLoadPercent.Value",
+      "type": "average",
+      "enabled": true
+    },
+    "jCpuT":{
+      "name": "jCpuT",
+      "description": "Jvm CPU time Ms",
+      "scope": "core.aws.INSTANCE.DOMAIN",
+      "metric": "Jvm.processCpuTimeMs.Value",
+      "type": "cumulative",
+      "enabled": true
+    },
+    "cCpuT":{
+      "name": "cCpuT",
+      "description": "container CPU time Sec",
+      "scope": "cadvisor.aws.INSTANCE.DOMAIN",
+      "metric": "container_cpu_usage_seconds_total",
+      "type": "ccumulative",
+      "enabled": true
+    },
+    "5xx":{
+      "name": "5xx",
+      "description": "5xx response count",
+      "scope": "core.aws.INSTANCE.DOMAIN",
+      "metric": "jetty.sh.response.5xx",
+      "type": "cumulative",
+      "enabled": true
+    },
+    "4xx":{
+      "name": "4xx",
+      "description": "4xx response count",
+      "scope": "core.aws.INSTANCE.DOMAIN",
+      "metric": "jetty.sh.response.4xx",
+      "type": "cumulative",
+      "enabled": true
+    },
+    "reqCount":{
+      "name": "reqCount",
+      "description": "request count",
+      "scope": "core.aws.INSTANCE.DOMAIN",
+      "metric": "SFDC_type-ServerMetrics.LogMetric-COUNT",
+      "type": "cumulative",
+      "enabled": true
+    },
+    "sfPt":{
+      "name": "sfPt",
+      "description": "safepoint time",
+      "scope": "core.aws.INSTANCE.DOMAIN",
+      "metric": "Jvm.totalSafepointTimeMs.Value",
+      "type": "cumulative",
+      "enabled": true
+    }
+  }
+}

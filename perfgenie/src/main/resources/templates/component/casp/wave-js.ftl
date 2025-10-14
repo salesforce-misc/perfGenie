@@ -37,6 +37,31 @@
     text-anchor: middle !important;
     dominant-baseline: hanging !important;
 }
+
+/* Style width multiplier select */
+.width-multiplier-container {
+    display: inline-block;
+    margin: 0 5px;
+}
+
+.width-multiplier-select {
+    width: 50px;
+    height: 28px;
+    padding: 2px 4px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 11px;
+    text-align: center;
+    background: #fff;
+    color: #333;
+    cursor: pointer;
+}
+
+.width-multiplier-select:focus {
+    outline: none;
+    border-color: #0070d2;
+    box-shadow: 0 0 3px rgba(0, 112, 210, 0.3);
+}
 </style>
 
 
@@ -125,6 +150,8 @@
             this.timestampDimensions = []; // Track timestamp dimensions
             this.dateTimeFilters = {}; // Store date/time filters
             this.selectedFilters = []; // Store active filters
+            this.sortedGroups = null; // Store sorted group order for table rendering
+            this.columnTypes = {}; // Store detected column types for sorting
             this.filterOperators = [
                 { value: 'between', label: '≤ x ≤' },
                 { value: 'less than', label: '<' },
@@ -145,6 +172,7 @@
             this.ignoredRows = new Set(); // Set to track ignored row indices
             this.dimensionFilters = {}; // Store dimension filters with selected values
             this.dataFetchFunction = null; // Store the data fetch function
+            this.chartExpandedWidth = 0; // Track current expanded width
             this.init();
         }
 
@@ -157,13 +185,150 @@
         }
 
 
+        /**
+         * Expand chart width by adding current container width
+         */
+        expandChartWidth() {
+            const lensChart = document.getElementById('lensChart');
+            const lensDisplay = document.querySelector('.lens-display');
+            const lensCanvas = document.querySelector('.lens-canvas');
+            const multiplierInput = document.getElementById('widthMultiplier');
+            
+            if (!lensChart || !lensDisplay || !lensCanvas) {
+                console.log('Required elements not found');
+                return;
+            }
+            
+            // Get multiplier value from input (default to 1 if not found)
+            const multiplier = multiplierInput ? parseFloat(multiplierInput.value) || 1 : 1;
+            
+            // For first time click, always use multiplier as 1
+            const actualMultiplier = this.chartExpandedWidth === 0 ? 1 : multiplier;
+            
+            // Get lens-display width as the base increment amount
+            const lensDisplayRect = lensDisplay.getBoundingClientRect();
+            const lensDisplayWidth = lensDisplayRect.width;
+            const incrementWidth = lensDisplayWidth * actualMultiplier;
+            
+            console.log('Before expansion - chartExpandedWidth:', this.chartExpandedWidth, 'lensDisplayWidth:', lensDisplayWidth, 'selectedMultiplier:', multiplier, 'actualMultiplier:', actualMultiplier, 'incrementWidth:', incrementWidth);
+            
+            // Add increment width to expanded width
+            this.chartExpandedWidth += incrementWidth;
+            
+            console.log('After expansion - chartExpandedWidth:', this.chartExpandedWidth);
+            
+            // Apply expanded width to lensChart container
+            lensChart.style.width = this.chartExpandedWidth + 'px';
+            lensChart.style.minWidth = this.chartExpandedWidth + 'px';
+            
+            // Add horizontal scrolling to lens-display
+            lensDisplay.style.overflowX = 'auto';
+            lensDisplay.style.overflowY = 'hidden';
+            
+            // Ensure lens-canvas doesn't expand by setting fixed width
+            if (!lensCanvas.style.width) {
+                const lensCanvasRect = lensCanvas.getBoundingClientRect();
+                lensCanvas.style.width = lensCanvasRect.width - 2 + 'px';
+                lensCanvas.style.flex = '0 0 auto'; // Don't grow or shrink
+                return;
+            }
+            
+            // Re-render chart with new width
+            if (this.selectedDimensions.length > 0 || this.selectedMetrics.length > 0) {
+                this.renderLensChart();
+            }
+            
+            console.log('Lens chart expanded to width: ' + this.chartExpandedWidth + 'px (added: ' + incrementWidth + 'px)');
+        }
 
+        /**
+         * Reduce chart width by removing lens-display width
+         */
+        reduceChartWidth() {
+            const lensChart = document.getElementById('lensChart');
+            const lensDisplay = document.querySelector('.lens-display');
+            const lensCanvas = document.querySelector('.lens-canvas');
+            const multiplierInput = document.getElementById('widthMultiplier');
+            
+            if (!lensChart || !lensDisplay || !lensCanvas) {
+                console.log('Required elements not found');
+                return;
+            }
+            
+            // Get multiplier value from input (default to 1 if not found)
+            const multiplier = multiplierInput ? parseFloat(multiplierInput.value) || 1 : 1;
+            
+            // Get lens-display width as the base reduction amount
+            const lensDisplayRect = lensDisplay.getBoundingClientRect();
+            const lensDisplayWidth = lensDisplayRect.width;
+            const reduceWidth = lensDisplayWidth * multiplier;
+            
+            console.log('Before reduction - chartExpandedWidth:', this.chartExpandedWidth, 'lensDisplayWidth:', lensDisplayWidth, 'multiplier:', multiplier, 'reduceWidth:', reduceWidth);
+            
+            // Reduce expanded width
+            this.chartExpandedWidth = Math.max(0, this.chartExpandedWidth - reduceWidth);
+            
+            console.log('After reduction - chartExpandedWidth:', this.chartExpandedWidth);
+            
+            if (this.chartExpandedWidth <= 0) {
+                // Reset to default if fully reduced
+                this.resetChartWidth();
+                return;
+            }
+            
+            // Apply reduced width to lensChart container
+            lensChart.style.width = this.chartExpandedWidth + 'px';
+            lensChart.style.minWidth = this.chartExpandedWidth + 'px';
+            
+            // Re-render chart with new width
+            if (this.selectedDimensions.length > 0 || this.selectedMetrics.length > 0) {
+                this.renderLensChart();
+            }
+            
+            console.log('Lens chart reduced to width: ' + this.chartExpandedWidth + 'px (reduced by: ' + reduceWidth + 'px)');
+        }
+
+
+        /**
+         * Reset chart width to default
+         */
+        resetChartWidth() {
+            this.chartExpandedWidth = 0;
+            const lensChart = document.getElementById('lensChart');
+            const lensDisplay = document.querySelector('.lens-display');
+            const lensCanvas = document.querySelector('.lens-canvas');
+            
+            if (lensChart) {
+                lensChart.style.width = '';
+                lensChart.style.minWidth = '';
+            }
+            
+            if (lensDisplay) {
+                lensDisplay.style.overflowX = '';
+                lensDisplay.style.overflowY = '';
+            }
+            
+            if (lensCanvas) {
+                lensCanvas.style.width = '';
+                lensCanvas.style.flex = '';
+            }
+            
+            // Re-render chart with default width
+            if (this.selectedDimensions.length > 0 || this.selectedMetrics.length > 0) {
+                this.renderLensChart();
+            }
+            
+            console.log('Chart width reset to default');
+        }
 
         async init() {
             this.showLoadingState();
             try {
                 await this.loadData();
                 this.render();
+                console.log('DEBUG: About to call updateFiltersZone() in init()');
+                this.updateFiltersZone();
+                console.log('DEBUG: updateFiltersZone() called in init()');
                 this.removeExistingTimestampFilters();
                 this.updateLensDropdown();
                 
@@ -221,8 +386,19 @@
                 const row = {};
                 headers.forEach((header, index) => {
                     let value = values[index] || '';
+                    
+                    // Check for timestamp formats and convert to epoch
+                    if (this.isTimestampWithMs(value)) {
+                        value = this.convertTimestampToEpoch(value);
+                    }
+                    else if (this.isTimestampFormat(value)) {
+                        value = this.convertTimestampToEpochSimple(value);
+                    }
+                    else if (this.isTimestampFormatFull(value)) {
+                        value = this.convertTimestampToEpochFull(value);
+                    }
                     // Try to parse numeric values
-                    if (!isNaN(value) && value !== '' && value !== '-1000000') {
+                    else if (!isNaN(value) && value !== '' && value !== '-1000000') {
                         value = parseFloat(value);
                     }
                     row[header] = value;
@@ -236,6 +412,133 @@
             this.filteredData = [...this.parsedData];
         }
 
+        /**
+         * Check if a value matches the timestamp format "year:month:day Hr:min:sec ms"
+         * Example: "2025-10-09 00:48:40 679"
+         */
+        isTimestampWithMs(value) {
+            if (typeof value !== 'string') return false;
+            
+            // Regex pattern for "YYYY-MM-DD HH:mm:ss mmm" format
+            const timestampPattern = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \d{3}$/;
+            return timestampPattern.test(value.trim());
+        }
+
+        /**
+         * Convert timestamp string to epoch milliseconds
+         * Input format: "2025-10-09 00:48:40 679"
+         * Output: epoch timestamp in milliseconds
+         */
+        convertTimestampToEpoch(timestampStr) {
+            try {
+                // Parse the timestamp string
+                const parts = timestampStr.trim().split(' ');
+                if (parts.length !== 3) return null;
+                
+                const dateTime = parts[0] + ' ' + parts[1]; // "2025-10-09 00:48:40"
+                const milliseconds = parseInt(parts[2]); // "679"
+                
+                // Create Date object and add milliseconds
+                const date = new Date(dateTime);
+                if (isNaN(date.getTime())) return null;
+                
+                // Add the milliseconds to get the exact timestamp
+                const epochMs = date.getTime() + milliseconds;
+                
+                console.log('Converted timestamp:', timestampStr, 'to epoch:', epochMs);
+                return epochMs;
+            } catch (error) {
+                console.warn('Error converting timestamp to epoch:', error);
+                return null;
+            }
+        }
+
+        /**
+         * Check if a value matches the timestamp format "year-month-day hr:min:sec"
+         * Example: "25-09-29 22:09:00"
+         */
+        isTimestampFormat(value) {
+            if (typeof value !== 'string') return false;
+            
+            // Regex pattern for "YY-MM-DD HH:mm:ss" format
+            const timestampPattern = /^\d{2}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+            return timestampPattern.test(value.trim());
+        }
+
+        /**
+         * Check if a value matches the timestamp format "year-month-day hr:min:sec"
+         * Example: "2024-01-01 10:00:00"
+         */
+        isTimestampFormatFull(value) {
+            if (typeof value !== 'string') return false;
+            
+            // Regex pattern for "YYYY-MM-DD HH:mm:ss" format
+            const timestampPattern = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+            return timestampPattern.test(value.trim());
+        }
+
+        /**
+         * Convert full timestamp string to epoch milliseconds
+         * Input format: "2024-01-01 10:00:00"
+         * Output: epoch timestamp in milliseconds
+         */
+        convertTimestampToEpochFull(timestampStr) {
+            try {
+                // Parse the timestamp string directly
+                const date = new Date(timestampStr);
+                if (isNaN(date.getTime())) return null;
+                
+                const epochMs = date.getTime();
+                
+                console.log('Converted full timestamp:', timestampStr, 'to epoch:', epochMs);
+                return epochMs;
+            } catch (error) {
+                console.warn('Error converting full timestamp to epoch:', error);
+                return null;
+            }
+        }
+
+        /**
+         * Convert simple timestamp string to epoch milliseconds
+         * Input format: "25-09-29 22:09:00"
+         * Output: epoch timestamp in milliseconds
+         */
+        convertTimestampToEpochSimple(timestampStr) {
+            try {
+                // Parse the timestamp string
+                const parts = timestampStr.trim().split(' ');
+                if (parts.length !== 2) return null;
+                
+                const dateTime = parts[0] + ' ' + parts[1]; // "25-09-29 22:09:00"
+                
+                // Convert 2-digit year to 4-digit year
+                const dateParts = parts[0].split('-');
+                if (dateParts.length !== 3) return null;
+                
+                const year = parseInt(dateParts[0]);
+                const month = parseInt(dateParts[1]);
+                const day = parseInt(dateParts[2]);
+                
+                // Convert 2-digit year to 4-digit (assuming 20xx for years 00-99)
+                const fullYear = year < 100 ? 2000 + year : year;
+                
+                // Create the full timestamp string
+                const fullTimestamp = fullYear + '-' + month.toString().padStart(2, '0') + '-' + day.toString().padStart(2, '0') + ' ' + parts[1];
+                
+                // Create Date object
+                const date = new Date(fullTimestamp);
+                if (isNaN(date.getTime())) return null;
+                
+                const epochMs = date.getTime();
+                
+                console.log('Converted simple timestamp:', timestampStr, 'to epoch:', epochMs);
+                return epochMs;
+            } catch (error) {
+                console.warn('Error converting simple timestamp to epoch:', error);
+                return null;
+            }
+        }
+
         analyzeDataStructure() {
             const sampleSize = Math.min(10, this.parsedData.length);
             const sampleData = this.parsedData.slice(0, sampleSize);
@@ -244,7 +547,6 @@
             this.dimensions = [];
             this.metrics = [];
             this.timestampDimensions = [];
-            this.dateStringDimensions = [];
             
             headers.forEach(header => {
                 const values = sampleData.map(row => row[header]).filter(v => v !== undefined && v !== '');
@@ -254,68 +556,37 @@
                     return;
                 }
                 
-                const isNumeric = values.every(value => {
-                    return typeof value === 'number' || 
-                           (!isNaN(parseFloat(value)) && isFinite(parseFloat(value)));
+                // Rule 1: If header contains "timestamp", it's a Date category
+                const isTimestampHeader = /timestamp/i.test(header);
+                if (isTimestampHeader) {
+                    this.dimensions.push(header);
+                    this.timestampDimensions.push(header);
+                    return;
+                }
+                
+                // Rule 2: If values can be converted to integer or float, it's a Metric
+                const canConvertToNumber = values.every(value => {
+                    if (typeof value === 'number') {
+                        return true;
+                    }
+                    // Check if the string represents a pure number (no letters, only digits, decimal point, and optional minus sign)
+                    const strValue = String(value).trim();
+                    const isPureNumber = /^-?\d+(\.\d+)?$/.test(strValue);
+                    if (isPureNumber) {
+                        const num = parseFloat(strValue);
+                        return !isNaN(num) && isFinite(num);
+                    }
+                    return false;
                 });
                 
-                const isCategorical = values.every(value => {
-                    return typeof value === 'string' || 
-                           (typeof value === 'number' && Number.isInteger(value) && value < 1000);
-                });
-                
-                const uniqueValues = new Set(values.map(v => String(v))).size;
-                const uniquenessRatio = uniqueValues / values.length;
-                
-                // Check for metric indicators in header name
-                const isMetricHeader = /%|percent|rate|ratio|count|sum|avg|average|max|min|total|usage|utilization|throughput|latency|response|error|success/i.test(header);
-                
-                // Decision logic for dimension vs metric
-                if (isNumeric && (uniquenessRatio > 0.7 || isMetricHeader)) {
-                    // High uniqueness + numeric OR metric header = likely metric
+                if (canConvertToNumber) {
                     this.metrics.push(header);
-                } else if (isCategorical || (uniquenessRatio < 0.3 && !isMetricHeader)) {
-                    // Low uniqueness or categorical (but not metric header) = likely dimension
-                    this.dimensions.push(header);
-                } else if (isNumeric && uniquenessRatio <= 0.7 && uniquenessRatio >= 0.3) {
-                    // Medium uniqueness + numeric = check for patterns
-                    const hasTimePattern = this.detectTimePattern(values);
-                    const hasIdPattern = this.detectIdPattern(values);
-                    
-                    if (hasTimePattern || hasIdPattern) {
-                        this.dimensions.push(header);
-                        if (hasTimePattern) {
-                            this.timestampDimensions.push(header);
-                        }
-                    } else if (isMetricHeader) {
-                        // If header suggests metric, classify as metric
-                        this.metrics.push(header);
-                    } else {
-                        this.metrics.push(header);
-                    }
-                } else {
-                    // Default to dimension for ambiguous cases
-                    this.dimensions.push(header);
-                    // Check if it's a timestamp even in default case
-                    const hasTimePattern = this.detectTimePattern(values);
-                    const isTimestampHeader = /time|date|timestamp|created|updated|start|end/i.test(header);
-                    if (hasTimePattern || isTimestampHeader) {
-                        this.timestampDimensions.push(header);
-                    }
+                    return;
                 }
                 
-                // Additional check: if header suggests timestamp, force it to dimensions
-                const isTimestampHeader = /time|date|timestamp|created|updated|start|end/i.test(header);
-                if (isTimestampHeader && !this.dimensions.includes(header)) {
-                    this.dimensions.push(header);
-                    if (!this.timestampDimensions.includes(header)) {
-                        this.timestampDimensions.push(header);
-                    }
-                }
+                // Rule 3: Everything else is a Dimension
+                this.dimensions.push(header);
             });
-            
-            // Ensure timestamp fields are not in metrics
-            this.metrics = this.metrics.filter(metric => !this.timestampDimensions.includes(metric));
             
             console.log('Detected Dimensions:', this.dimensions);
             console.log('Detected Metrics:', this.metrics);
@@ -406,22 +677,6 @@
         render() {
             this.container.innerHTML = 
                 '<div class="wave-analytics-container">' +
-                '<div class="wave-header">' +
-                    '<div class="wave-controls">' +
-                        '<div class="view-controls">' +
-                            '<select id="loadLensSelect" class="lens-select" title="Load Saved Lens">' +
-                                '<option value="">Load Lens...</option>' +
-                            '</select>' +
-                            '<button id="saveLensBtn" class="wave-btn" title="Save Lens">💾</button>' +
-                            '<button id="tableViewBtn" class="wave-btn" title="Table View"><i class="fa fa-fw fa-table"></i></button>' +
-                            '<button id="lineChartBtn" class="wave-btn" title="Line Chart">📈</button>' +
-                            '<button id="barChartBtn" class="wave-btn active" title="Bar Chart">📊</button>' +
-                            '<button id="clearLensBtn" class="wave-btn" title="Clear Lens">🗑️</button>' +
-                            '<button id="exportBtn" class="wave-btn" title="Export CSV">📤</button>' +
-                            '<button id="refreshBtn" class="wave-btn" title="Refresh Data">🔄</button>' +
-                        '</div>' +
-                    '</div>' +
-                '</div>' +
                     '<div class="wave-content">' +
                         '<div class="lens-builder">' +
                             '<div class="field-palette" id="fieldPalette">' +
@@ -492,6 +747,34 @@
                                             '<span class="drop-hint">Drag metrics here to filter</span>' +
                                         '</div>' +
                                     '</div>' +
+                                '</div>' +
+                                '<div class="wave-header">' +
+                                    '<div class="wave-controls">' +
+                                        '<div class="view-controls">' +
+                                            '<select id="loadLensSelect" class="lens-select" title="Load Saved Lens">' +
+                                                '<option value="">Load Lens...</option>' +
+                                            '</select>' +
+                                            '<button id="saveLensBtn" class="wave-btn" title="Save Lens">💾</button>' +
+                                            '<button id="tableViewBtn" class="wave-btn" title="Table View"><i class="fa fa-fw fa-table"></i></button>' +
+                                            '<button id="lineChartBtn" class="wave-btn" title="Line Chart">📈</button>' +
+                                            '<button id="barChartBtn" class="wave-btn active" title="Bar Chart">📊</button>' +
+                                            '<button id="clearLensBtn" class="wave-btn" title="Clear Lens">🗑️</button>' +
+                                            '<button id="exportBtn" class="wave-btn" title="Export CSV">📤</button>' +
+                                            '<button id="refreshBtn" class="wave-btn" title="Refresh Data">🔄</button>' +
+                                        '</div>' +
+                                    '</div>' +
+                                                                    
+                                '</div>' +
+'<div class="floating-chart-controls">' +
+                                    '<button id="chartReduceIcon" class="wave-btn" title="Reduce Chart Width"><i class="fa fa-long-arrow-left"></i></button>' +
+                                    '<div class="width-multiplier-container" title="Width Expansion Multiplier">' +
+                                        '<select id="widthMultiplier" class="width-multiplier-select" title="Width Multiplier">' +
+                                            '<option value="1">1x</option>' +
+                                            '<option value="2">2x</option>' +
+                                            '<option value="5">5x</option>' +
+                                        '</select>' +
+                                    '</div>' +
+                                    '<button id="chartExpandIcon" class="wave-btn" title="Expand Chart Width"><i class="fa fa-long-arrow-right"></i></button>' +
                                 '</div>' +
                                 '<div class="lens-display">' +
                                     '<div class="chart-container" id="lensChart">' +
@@ -1131,11 +1414,15 @@
         }
 
         updateFiltersZone() {
+            console.log('DEBUG: updateFiltersZone() called');
             const zone = document.getElementById('filtersArea');
+            console.log('DEBUG: filtersArea element found:', zone);
             zone.innerHTML = '';
             
+            console.log('DEBUG: ignoredRows.size =', this.ignoredRows.size);
             // Check if we have any ignored rows and add rows filter
-            if (this.ignoredRows.size > 0) {
+            if (this.ignoredRows.size >= 0) {
+                console.log('DEBUG: Adding rows filter to drop zone');
                 const rowsFilterDiv = document.createElement('div');
                 rowsFilterDiv.className = 'selected-item filter-item rows-filter';
                 rowsFilterDiv.innerHTML = 
@@ -1146,6 +1433,11 @@
                     '</div>';
                 
                 zone.appendChild(rowsFilterDiv);
+                console.log('DEBUG: Rows filter added to DOM');
+                console.log('DEBUG: Zone innerHTML after adding rows filter:', zone.innerHTML);
+                console.log('DEBUG: Zone children count:', zone.children.length);
+            } else {
+                console.log('DEBUG: Not adding rows filter - condition not met');
             }
             
             // Add dimension filters
@@ -1194,10 +1486,8 @@
                 zone.appendChild(filterDiv);
             });
             
-            if (this.selectedFilters.length === 0 && this.ignoredRows.size === 0 && Object.keys(this.dimensionFilters).length === 0) {
-                zone.innerHTML = '<span class="drop-hint">Drag metrics or dimensions here to filter</span>';
-            } else {
-                this.selectedFilters.forEach((filter, index) => {
+            // Add selected filters
+            this.selectedFilters.forEach((filter, index) => {
                     const filterDiv = document.createElement('div');
                     filterDiv.className = 'selected-item filter-item';
                     filterDiv.innerHTML = 
@@ -1213,53 +1503,52 @@
                         '</div>';
                     
                     zone.appendChild(filterDiv);
+            });
+            
+            // Add event listeners
+            zone.querySelectorAll('.filter-operator').forEach(select => {
+                select.addEventListener('change', (e) => {
+                    const index = parseInt(e.target.dataset.index);
+                    const newOperator = e.target.value;
+                    const filter = this.selectedFilters[index];
+                    // Get min/max excluding the current filter being changed
+                    const { min, max } = this.getMetricRangeExcludingFilter(filter.metric, index);
+                    
+                    // Update operator
+                    filter.operator = newOperator;
+                    
+                    // Set appropriate default values based on operator
+                    if (newOperator === 'between') {
+                        filter.value1 = min.toString();
+                        filter.value2 = max.toString();
+                    } else if (newOperator === 'less than' || newOperator === 'less than or equal') {
+                        filter.value1 = max.toString();
+                    } else if (newOperator === 'greater than' || newOperator === 'greater than or equal') {
+                        filter.value1 = min.toString();
+                    } else {
+                        filter.value1 = min.toString();
+                    }
+                    
+                    this.updateFiltersZone(); // Re-render to show appropriate inputs
+                    this.applyFilters();
                 });
-                
-                // Add event listeners
-                zone.querySelectorAll('.filter-operator').forEach(select => {
-                    select.addEventListener('change', (e) => {
-                        const index = parseInt(e.target.dataset.index);
-                        const newOperator = e.target.value;
-                        const filter = this.selectedFilters[index];
-                        // Get min/max excluding the current filter being changed
-                        const { min, max } = this.getMetricRangeExcludingFilter(filter.metric, index);
-                        
-                        // Update operator
-                        filter.operator = newOperator;
-                        
-                        // Set appropriate default values based on operator
-                        if (newOperator === 'between') {
-                            filter.value1 = min.toString();
-                            filter.value2 = max.toString();
-                        } else if (newOperator === 'less than' || newOperator === 'less than or equal') {
-                            filter.value1 = max.toString();
-                        } else if (newOperator === 'greater than' || newOperator === 'greater than or equal') {
-                            filter.value1 = min.toString();
-                        } else {
-                            filter.value1 = min.toString();
-                        }
-                        
-                        this.updateFiltersZone(); // Re-render to show appropriate inputs
-                        this.applyFilters();
-                    });
+            });
+            
+            zone.querySelectorAll('.filter-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const index = parseInt(e.target.dataset.index);
+                    const field = e.target.dataset.field;
+                    this.selectedFilters[index][field] = e.target.value;
+                    this.applyFilters();
                 });
-                
-                zone.querySelectorAll('.filter-input').forEach(input => {
-                    input.addEventListener('input', (e) => {
-                        const index = parseInt(e.target.dataset.index);
-                        const field = e.target.dataset.field;
-                        this.selectedFilters[index][field] = e.target.value;
-                        this.applyFilters();
-                    });
+            });
+            
+            zone.querySelectorAll('.remove-btn[data-filter-index]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = parseInt(e.target.dataset.filterIndex);
+                    this.removeFilter(index);
                 });
-                
-                zone.querySelectorAll('.remove-btn[data-filter-index]').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const index = parseInt(e.target.dataset.filterIndex);
-                        this.removeFilter(index);
-                    });
-                });
-            }
+            });
             
             // Add event listener for table icon in rows filter
             zone.querySelectorAll('.table-icon').forEach(icon => {
@@ -1864,25 +2153,35 @@
                 console.log('Expanded state - calculated available width:', availableWidth, 'container:', containerRect.width);
             }
             
-            if (isTimeSeries) {
-                // For time series: calculate optimal dimensions based on available space
-                const containerWidth = availableWidth - legendSpace - 40; // Account for additional margins/padding
-
-                // Calculate optimal height based on available width and aspect ratio
-                const optimalAspectRatio = 2.2; // Slightly less wide for better space utilization
-                const maxHeightByWidth = containerWidth / optimalAspectRatio;
-                // Use more of the viewport height when drop zones are expanded
-                const viewportHeightMultiplier = anyDropZonesCollapsed ? 0.75 : 0.85;
-                const maxHeightByViewport = availableViewportHeight * viewportHeightMultiplier;
-
-                chartHeight = Math.min(maxHeightByWidth, maxHeightByViewport, 700); // Increased max height
-                chartHeight = Math.max(chartHeight, 300); // Minimum height
-
-                chartWidth = containerWidth;
+            // Use expanded width if chart has been expanded
+            if (this.chartExpandedWidth > 0) {
+                // For expanded width, use the stored expanded width directly
+                chartWidth = this.chartExpandedWidth - legendSpace - 40;
+                console.log('Using stored expanded width:', chartWidth, 'total expanded:', this.chartExpandedWidth);
+                
+                // Keep the same height as calculated for normal width - don't recalculate
+                // This preserves the original height when expanding width
             } else {
-                // For regular charts, use the calculated baseHeight which already accounts for drop zone state
-                chartHeight = baseHeight;
-                chartWidth = availableWidth - legendSpace - 40; // Account for additional margins/padding
+                if (isTimeSeries) {
+                    // For time series: calculate optimal dimensions based on available space
+                    const containerWidth = availableWidth - legendSpace - 40; // Account for additional margins/padding
+
+                    // Calculate optimal height based on available width and aspect ratio
+                    const optimalAspectRatio = 2.5; // Increased aspect ratio for better height utilization
+                    const maxHeightByWidth = containerWidth / optimalAspectRatio;
+                    // Use more of the viewport height - increased multipliers
+                    const viewportHeightMultiplier = anyDropZonesCollapsed ? 0.85 : 0.95; // Increased from 0.75/0.85
+                    const maxHeightByViewport = availableViewportHeight * viewportHeightMultiplier;
+
+                    chartHeight = Math.min(maxHeightByWidth, maxHeightByViewport, 800); // Increased max height from 700
+                    chartHeight = Math.max(chartHeight, 400); // Increased minimum height from 300
+
+                    chartWidth = containerWidth;
+                } else {
+                    // For regular charts, use the calculated baseHeight which already accounts for drop zone state
+                    chartHeight = baseHeight;
+                    chartWidth = availableWidth - legendSpace - 40; // Account for additional margins/padding
+                }
             }
             
             // Ensure canvas div height doesn't exceed parent container height
@@ -1913,6 +2212,9 @@
                 return;
             }
             
+            // Analyze column types based on the data being displayed
+            this.analyzeColumnTypes(data);
+            
             // Create table HTML
             let tableHTML = '<div class="table-wrapper"><table class="wave-table">';
             
@@ -1937,14 +2239,16 @@
             
             // Create body
             tableHTML += '<tbody>';
-            Object.keys(data.data).forEach(groupKey => {
+            // Use sorted groups if available, otherwise use original order
+            const groupsToRender = this.sortedGroups || Object.keys(data.data);
+            groupsToRender.forEach(groupKey => {
                 tableHTML += '<tr>';
                 
                 // Add dimension values
                 if (this.selectedDimensions.length > 0) {
                     const dimensionValues = groupKey.split(' | ');
                     dimensionValues.forEach(value => {
-                        tableHTML += '<td>' + this.formatValue(value) + '</td>';
+                        tableHTML += '<td>' + this.formatValueForTable(value) + '</td>';
                     });
                 } else {
                     tableHTML += '<td>All Data</td>';
@@ -1956,7 +2260,7 @@
                     selectedAggregations.forEach(aggregationType => {
                         const key = metricName + '_' + aggregationType;
                         const value = data.data[groupKey][key] || 0;
-                        tableHTML += '<td>' + this.formatValue(value) + '</td>';
+                        tableHTML += '<td>' + this.formatValueForTable(value) + '</td>';
                     });
                 });
                 
@@ -1978,8 +2282,19 @@
                 return;
             }
 
+            // Dynamically set table container width to match lens-display width
+            const lensDisplay = document.querySelector('.lens-display');
+            if (lensDisplay) {
+                const lensDisplayWidth = lensDisplay.getBoundingClientRect().width;
+                tableContainer.style.width = lensDisplayWidth + 'px';
+                tableContainer.style.maxWidth = lensDisplayWidth + 'px';
+            }
+
             // Get all available columns from the first row
             const allColumns = Object.keys(this.filteredData[0] || {});
+            
+            // Analyze column types for raw data
+            this.analyzeColumnTypes(null);
             
             // Create table HTML
             let tableHTML = '<div class="table-wrapper"><table class="wave-table">';
@@ -1995,9 +2310,15 @@
             });
             tableHTML += '</tr></thead>';
             
-            // Create body with all rows
+            // Create body with limited rows (max 100)
+            const maxRows = 100;
+            const totalRows = this.filteredData.length;
+            const rowsToShow = Math.min(maxRows, totalRows);
+            const hasMoreRows = totalRows > maxRows;
+            
             tableHTML += '<tbody>';
-            this.filteredData.forEach((row, index) => {
+            for (let index = 0; index < rowsToShow; index++) {
+                const row = this.filteredData[index];
                 const rowId = this.generateRowId(row, index);
                 const isIgnored = this.ignoredRows.has(rowId);
                 tableHTML += '<tr data-row-id="' + rowId + '">';
@@ -2011,11 +2332,21 @@
                 
                 allColumns.forEach(column => {
                     const value = row[column] || '';
-                    tableHTML += '<td>' + this.formatValue(value) + '</td>';
+                    tableHTML += '<td>' + this.formatValueForTable(value) + '</td>';
                 });
                 tableHTML += '</tr>';
-            });
-            tableHTML += '</tbody></table></div>';
+            }
+            tableHTML += '</tbody></table>';
+            
+            // Add message if there are more rows
+            if (hasMoreRows) {
+                tableHTML += '<div class="table-more-rows-message">' +
+                    '<p><i class="fa fa-info-circle"></i> Showing first ' + maxRows + ' of ' + totalRows + ' rows. ' +
+                    'Use the "View all rows" option in the filters to see all data.</p>' +
+                    '</div>';
+            }
+            
+            tableHTML += '</div>';
             
             tableContainer.innerHTML = tableHTML;
             
@@ -2079,6 +2410,9 @@
                     // Update filters zone to show/hide rows filter
                     this.updateFiltersZone();
                     
+                    // Update drop zone counts to reflect rows filter in header
+                    this.updateDropZoneCounts();
+                    
                     // Re-render other views to reflect ignored rows
                     this.renderLensChart();
                 });
@@ -2086,6 +2420,12 @@
         }
 
         showRowsPopup() {
+            // Check if modal already exists and remove it
+            const existingModal = document.querySelector('.rows-popup-overlay');
+            if (existingModal) {
+                document.body.removeChild(existingModal);
+            }
+            
             // Create modal overlay
             const modalOverlay = document.createElement('div');
             modalOverlay.className = 'modal-overlay rows-popup-overlay';
@@ -2120,7 +2460,7 @@
                                                     ' data-row-id="' + rowId + '">' +
                                                 '</td>' +
                                                 Object.values(row).map(value => 
-                                                    '<td>' + (value !== null && value !== undefined ? value : '') + '</td>'
+                                                    '<td>' + this.formatValueForTable(value) + '</td>'
                                                 ).join('') +
                                             '</tr>';
                                         }).join('') +
@@ -2161,6 +2501,56 @@
             };
             document.addEventListener('keydown', escapeHandler);
             
+            // Add event listeners for the table
+            this.addRowsPopupEventListeners(modalOverlay);
+        }
+
+        updateRowsPopupTable(modalOverlay) {
+            // Update the table content in the existing modal
+            const tableContainer = modalOverlay.querySelector('.rows-popup-table-container');
+            if (tableContainer) {
+                tableContainer.innerHTML = 
+                    '<div class="rows-popup-table-wrapper">' +
+                        '<table class="wave-table rows-popup-table">' +
+                            '<thead>' +
+                                '<tr>' +
+                                    '<th class="ignore-header">Ignore</th>' +
+                                    Object.keys(this.filteredData[0] || {}).map(col => 
+                                        '<th class="sortable-header" data-column="' + col + '" data-type="raw">' +
+                                            this.formatHeader(col) + this.getSortIcon(col) +
+                                        '</th>'
+                                    ).join('') +
+                                '</tr>' +
+                            '</thead>' +
+                            '<tbody>' +
+                                this.filteredData.map((row, index) => {
+                                    const rowId = 'row_' + index;
+                                    const isIgnored = this.ignoredRows.has(rowId);
+                                    return '<tr class="' + (isIgnored ? 'ignored-row' : '') + '">' +
+                                        '<td class="ignore-cell">' +
+                                            '<input type="checkbox" class="ignore-checkbox" data-row-id="' + rowId + '"' + (isIgnored ? ' checked' : '') + '>' +
+                                        '</td>' +
+                                        Object.keys(row).map(col => 
+                                            '<td>' + this.formatValueForTable(row[col]) + '</td>'
+                                        ).join('') +
+                                    '</tr>';
+                                }).join('') +
+                            '</tbody>' +
+                        '</table>' +
+                    '</div>';
+                
+                // Re-add event listeners for the updated table
+                this.addRowsPopupEventListeners(modalOverlay);
+            }
+        }
+
+        addRowsPopupEventListeners(modalOverlay) {
+            // Remove existing event listeners to prevent duplicates
+            modalOverlay.querySelectorAll('.sortable-header').forEach(header => {
+                const newHeader = header.cloneNode(true);
+                header.parentNode.replaceChild(newHeader, header);
+            });
+            
             // Add ignore checkbox event listeners
             modalOverlay.querySelectorAll('.ignore-checkbox').forEach(checkbox => {
                 checkbox.addEventListener('change', (e) => {
@@ -2183,19 +2573,28 @@
                     
                     // Update filters zone and re-render
                     this.updateFiltersZone();
+                    
+                    // Update drop zone counts to reflect rows filter in header
+                    this.updateDropZoneCounts();
+                    
                     this.renderLensChart();
                 });
             });
             
             // Add sort event listeners
-            modalOverlay.querySelectorAll('.sortable-header').forEach(header => {
+            const sortableHeaders = modalOverlay.querySelectorAll('.sortable-header');
+            console.log('DEBUG: Adding event listeners to', sortableHeaders.length, 'sortable headers');
+            sortableHeaders.forEach((header, index) => {
+                console.log('DEBUG: Adding listener to header', index, ':', header.dataset.column);
                 header.addEventListener('click', (e) => {
+                    console.log('DEBUG: Sort header clicked');
                     const column = e.target.closest('.sortable-header').dataset.column;
                     const type = e.target.closest('.sortable-header').dataset.type;
+                    console.log('DEBUG: Column:', column, 'Type:', type);
                     this.sortTable(column, type);
                     
-                    // Re-render the popup table
-                    this.showRowsPopup();
+                    // Update the existing modal instead of creating a new one
+                    this.updateRowsPopupTable(modalOverlay);
                 });
             });
         }
@@ -2219,6 +2618,8 @@
         }
 
         sortTable(column, type) {
+            console.log('DEBUG: sortTable called with column:', column, 'type:', type);
+            
             // Toggle sort direction if clicking the same column
             if (this.sortColumn === column) {
                 this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
@@ -2227,18 +2628,91 @@
                 this.sortDirection = 'asc';
             }
 
+            console.log('Sort direction:', this.sortDirection);
+
+            // Clear previous sorted groups
+            this.sortedGroups = null;
+
             // Re-render the table with sorted data
             if (type === 'raw') {
                 // For raw data table, sort the filtered data directly
+                console.log('Calling sortRawData for raw data');
                 this.sortRawData();
                 this.renderAllDataTable();
+            } else if (type === 'metric') {
+                // For aggregated metric columns, sort the aggregated data
+                console.log('Calling sortAggregatedMetricData for metric column');
+                this.sortAggregatedMetricData();
+                this.renderLensChart();
             } else {
+                // For dimension columns, just re-render
+                console.log('Re-rendering chart for dimension column');
                 this.renderLensChart();
             }
         }
 
+        // Analyze column data types when table is loaded
+        analyzeColumnTypes(data) {
+            this.columnTypes = {};
+            
+            if (data && data.data) {
+                // For aggregated data, analyze the first group's values
+                const firstGroup = Object.keys(data.data)[0];
+                if (firstGroup && data.data[firstGroup]) {
+                    Object.keys(data.data[firstGroup]).forEach(column => {
+                        const value = data.data[firstGroup][column];
+                        this.columnTypes[column] = this.detectValueType(value);
+                    });
+                }
+            } else if (this.filteredData && this.filteredData.length > 0) {
+                // For raw data, analyze sample values
+                const sampleSize = Math.min(10, this.filteredData.length);
+                const sampleData = this.filteredData.slice(0, sampleSize);
+                
+                Object.keys(sampleData[0] || {}).forEach(column => {
+                    const values = sampleData.map(row => row[column]).filter(val => 
+                        val !== null && val !== undefined && val !== ''
+                    );
+                    this.columnTypes[column] = this.detectValueType(values[0]);
+                });
+            }
+            
+            console.log('Column types detected:', this.columnTypes);
+        }
+
+        // Detect the type of a single value
+        detectValueType(value) {
+            if (value === null || value === undefined || value === '') {
+                return 'string';
+            }
+            
+            // Check if it's a timestamp
+            if (this.timestampDimensions.some(dim => value.toString().includes(dim))) {
+                return 'timestamp';
+            }
+            
+            // Try to parse as number
+            const num = parseFloat(value);
+            if (!isNaN(num)) {
+                return Number.isInteger(num) ? 'integer' : 'float';
+            }
+            
+            // Default to string
+            return 'string';
+        }
+
         sortRawData() {
             if (!this.sortColumn) return;
+
+            // Check if this is an aggregated metric column (contains '_')
+            if (this.sortColumn.includes('_')) {
+                // This is an aggregated metric column, sort the chart data instead
+                this.sortAggregatedMetricData();
+                return;
+            }
+
+            const columnType = this.columnTypes[this.sortColumn] || 'string';
+            console.log('Sorting column:', this.sortColumn, 'as type:', columnType);
 
             this.filteredData.sort((a, b) => {
                 let valueA = a[this.sortColumn];
@@ -2248,23 +2722,35 @@
                 if (valueA === null || valueA === undefined) valueA = '';
                 if (valueB === null || valueB === undefined) valueB = '';
 
-                // Check if this is a timestamp column
-                if (this.timestampDimensions.includes(this.sortColumn)) {
-                    // Parse as timestamps for proper chronological sorting
-                    const timestampA = this.parseTimestamp(valueA);
-                    const timestampB = this.parseTimestamp(valueB);
-                    if (!isNaN(timestampA) && !isNaN(timestampB)) {
-                        valueA = timestampA;
-                        valueB = timestampB;
-                    }
-                } else {
-                    // Try to parse as numbers for numeric sorting
-                    const numA = parseFloat(valueA);
-                    const numB = parseFloat(valueB);
-                    if (!isNaN(numA) && !isNaN(numB)) {
-                        valueA = numA;
-                        valueB = numB;
-                    }
+                // Sort based on detected column type
+                switch (columnType) {
+                    case 'timestamp':
+                        const timestampA = this.parseTimestamp(valueA);
+                        const timestampB = this.parseTimestamp(valueB);
+                        if (!isNaN(timestampA) && !isNaN(timestampB)) {
+                            valueA = timestampA;
+                            valueB = timestampB;
+                        } else {
+                            valueA = String(valueA);
+                            valueB = String(valueB);
+                        }
+                        break;
+                        
+                    case 'integer':
+                        valueA = parseInt(valueA) || 0;
+                        valueB = parseInt(valueB) || 0;
+                        break;
+                        
+                    case 'float':
+                        valueA = parseFloat(valueA) || 0;
+                        valueB = parseFloat(valueB) || 0;
+                        break;
+                        
+                    case 'string':
+                    default:
+                        valueA = String(valueA).toLowerCase();
+                        valueB = String(valueB).toLowerCase();
+                        break;
                 }
 
                 if (valueA < valueB) {
@@ -2274,6 +2760,88 @@
                 }
                 return 0;
             });
+        }
+
+        sortAggregatedMetricData() {
+            if (!this.sortColumn) {
+                console.log('No sort column set for aggregated metric data');
+                return;
+            }
+
+            const columnType = this.columnTypes[this.sortColumn] || 'float';
+            console.log('Sorting aggregated metric data for column:', this.sortColumn, 'as type:', columnType);
+            console.log('Available column types:', this.columnTypes);
+
+            // Generate chart data to get the aggregated values
+            const chartData = this.generateChartData();
+            if (!chartData || !chartData.data) {
+                console.log('No chart data available for sorting');
+                return;
+            }
+
+            console.log('Chart data groups:', Object.keys(chartData.data));
+            console.log('First group data:', chartData.data[Object.keys(chartData.data)[0]]);
+
+            // Convert chart data to array for sorting
+            const dataArray = Object.keys(chartData.data).map(group => ({
+                group: group,
+                value: chartData.data[group][this.sortColumn] || 0
+            }));
+
+            console.log('Data array before sorting:', dataArray);
+
+            // Sort the data array
+            dataArray.sort((a, b) => {
+                let valueA = a.value;
+                let valueB = b.value;
+
+                // Handle null/undefined values
+                if (valueA === null || valueA === undefined) valueA = 0;
+                if (valueB === null || valueB === undefined) valueB = 0;
+
+                // Sort based on detected column type
+                switch (columnType) {
+                    case 'timestamp':
+                        const timestampA = this.parseTimestamp(valueA);
+                        const timestampB = this.parseTimestamp(valueB);
+                        if (!isNaN(timestampA) && !isNaN(timestampB)) {
+                            valueA = timestampA;
+                            valueB = timestampB;
+                        } else {
+                            valueA = String(valueA);
+                            valueB = String(valueB);
+                        }
+                        break;
+                        
+                    case 'integer':
+                        valueA = parseInt(valueA) || 0;
+                        valueB = parseInt(valueB) || 0;
+                        break;
+                        
+                    case 'float':
+                        valueA = parseFloat(valueA) || 0;
+                        valueB = parseFloat(valueB) || 0;
+                        break;
+                        
+                    case 'string':
+                    default:
+                        valueA = String(valueA).toLowerCase();
+                        valueB = String(valueB).toLowerCase();
+                        break;
+                }
+
+                if (valueA < valueB) {
+                    return this.sortDirection === 'asc' ? -1 : 1;
+                } else if (valueA > valueB) {
+                    return this.sortDirection === 'asc' ? 1 : -1;
+                }
+                return 0;
+            });
+
+            // Store the sorted order for rendering
+            this.sortedGroups = dataArray.map(item => item.group);
+            console.log('Data array after sorting:', dataArray);
+            console.log('Sorted groups:', this.sortedGroups);
         }
 
         generateChartData() {
@@ -2804,6 +3372,11 @@
             const containerHeight = document.getElementById('lensChartCanvas').offsetHeight;
             const totalLegendItems = groups.length * metrics.length;
             
+            // Determine if we should show value labels based on number of bars
+            const totalBars = groups.length * metrics.length;
+            const maxBarsForLabels = 50; // Hide labels if more than 50 bars
+            const showValueLabels = totalBars <= maxBarsForLabels;
+            
             // Optimized legend width calculation
             const baseLegendWidth = totalLegendItems * 7;
             const maxLegendWidth = containerWidth * 0.1;
@@ -2835,6 +3408,7 @@
                 container.innerHTML = '';
                 
                 // Create C3.js bar chart with proper grouping and styling
+                const self = this; // Capture reference to this for use in C3.js callbacks
                 const chart = c3.generate({
                     bindto: '#lensChartCanvas',
                     size: {
@@ -2844,22 +3418,26 @@
                         columns: columns,
                         type: 'bar',
                         colors: colors,
-                        labels: {
+                        labels: showValueLabels ? {
                             format: function (v) {
                                 return v.toFixed(2);
                             }
-                        }
+                        } : false
                     },
                     axis: {
                         x: {
                             type: 'category',
-                            categories: groups,
+                            categories: groups.map(group => self.formatGroupKeyForDisplay(group)), // Format multi-dimensional group keys
                             show: true,
-                            tick: {
+                            tick: showValueLabels ? {
                                 format: function(x) {
-                                    // Return empty string to hide original labels
+                                    // Return empty string to hide original labels when showing custom labels
                                     return '';
                                 }
+                            } : {
+                                // Use default C3 tick formatting when not showing custom labels
+                                rotate: -45,
+                                multiline: false
                             }
                         },
                         y: {
@@ -2888,7 +3466,7 @@
                     },
                     tooltip: {
                         format: {
-                            title: function (d) { return groups[d]; },
+                            title: function (d) { return self.formatGroupKeyForTooltip(groups[d]); },
                             value: function (value, ratio, id) {
                                 return value.toFixed(2);
                             }
@@ -2904,10 +3482,12 @@
                     }
                 });
                 
-                // Add custom stacked labels after chart generation
-                setTimeout(() => {
-                    this.addStackedLabels(groups);
-                }, 100);
+                // Add custom stacked labels after chart generation only if showing custom labels
+                if (showValueLabels) {
+                    setTimeout(() => {
+                        this.addStackedLabels(groups);
+                    }, 100);
+                }
             } catch (error) {
                 console.error('C3.js bar chart error:', error);
                 // Show error message to user
@@ -2943,13 +3523,31 @@
                 return;
             }
             
-            // Prepare data for C3.js
+            // Prepare data for C3.js timeseries - using separate x and y columns
             const columns = [];
             const colors = {};
             const colorPalette = ['#0070d2', '#00a1e0', '#4bca81', '#ffb75d', '#ff6b6b', '#4ecdc4', '#9b59b6', '#e74c3c', '#f39c12', '#2ecc71'];
             let colorIndex = 0;
             
-            // Generate columns for each group+metric+aggregation combination
+            // First, create x column with all valid timestamps
+            const xColumnId = 'x';
+            const xValues = [xColumnId];
+            const validTimestamps = [];
+            
+            timestamps.forEach(timestamp => {
+                const parsedTimestamp = this.parseTimestamp(timestamp);
+                if (parsedTimestamp && !isNaN(parsedTimestamp) && parsedTimestamp > 0) {
+                    xValues.push(parsedTimestamp);
+                    validTimestamps.push(timestamp);
+                }
+            });
+            
+            if (xValues.length > 1) {
+                columns.push(xValues);
+                console.log('Created x column with', xValues.length - 1, 'timestamps');
+            }
+            
+            // Generate y columns for each group+metric+aggregation combination
             groupCombinations.forEach(group => {
                 this.selectedMetrics.forEach(metricName => {
                     const selectedAggregations = this.metricAggregations[metricName] || ['average'];
@@ -2958,29 +3556,97 @@
                         const columnId = group + '_' + key;
                         const values = [columnId];
                         
-                        // Add values for each timestamp
-                        timestamps.forEach(timestamp => {
-                            const value = sortedData[timestamp][group] && sortedData[timestamp][group][key];
-                            values.push(value !== null && value !== undefined ? value : null);
+                        // Add values for each valid timestamp (aligned with x column)
+                        let hasValidData = false;
+                        validTimestamps.forEach(timestamp => {
+                            // Safety check for data structure
+                            if (sortedData[timestamp] && sortedData[timestamp][group]) {
+                                const value = sortedData[timestamp][group][key];
+                                if (value !== null && value !== undefined && !isNaN(value)) {
+                                    values.push(value);
+                                    hasValidData = true;
+                                } else {
+                                    values.push(null); // Keep alignment with x column
+                                }
+                            } else {
+                                values.push(null); // Keep alignment with x column
+                            }
                         });
                         
-                        columns.push(values);
-                        colors[columnId] = colorPalette[colorIndex % colorPalette.length];
-                        colorIndex++;
+                        // Only add column if it has valid data points
+                        if (hasValidData && values.length > 1) {
+                            columns.push(values);
+                            colors[columnId] = colorPalette[colorIndex % colorPalette.length];
+                            colorIndex++;
+                            console.log('Added y column:', columnId, 'with', values.length - 1, 'values');
+                        } else {
+                            console.log('Skipped y column:', columnId, 'hasValidData:', hasValidData, 'values.length:', values.length);
+                        }
                     });
                 });
             });
             
-            // Format timestamps for display
-            const formattedTimestamps = timestamps.map(timestamp => {
-                const date = new Date(this.parseTimestamp(timestamp));
-                return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+            // Debug: Check columns data
+            console.log('Time series columns:', columns);
+            console.log('Time series colors:', colors);
+            console.log('Sample sortedData:', Object.keys(sortedData).slice(0, 3).map(key => ({ timestamp: key, data: sortedData[key] })));
+            
+            // Debug each column to see its structure
+            columns.forEach((column, index) => {
+                console.log('Column ' + index + ':', column[0], 'has', column.length - 1, 'data points');
+                if (column.length > 1) {
+                    console.log('First data point:', column[1]);
+                    console.log('Last data point:', column[column.length - 1]);
+                }
+            });
+            
+            // Check if we have any data and validate columns
+            if (columns.length === 0) {
+                console.log('No data columns generated for time series chart');
+                return;
+            }
+            
+            // Final validation: ensure all columns have data points
+            const validColumns = columns.filter(column => {
+                if (column.length <= 1) {
+                    console.warn('Removing empty column:', column[0]);
+                    return false;
+                }
+                return true;
+            });
+            
+            if (validColumns.length === 0) {
+                console.log('No valid data columns after validation');
+                return;
+            }
+            
+            console.log('Using', validColumns.length, 'valid columns out of', columns.length, 'total');
+            
+            // Final debug: Check what we're passing to C3.js
+            console.log('Final validColumns being passed to C3.js:', validColumns);
+            validColumns.forEach((column, index) => {
+                console.log('Final column ' + index + ':', column[0], 'length:', column.length);
+                if (column.length > 1) {
+                    console.log('  First data point:', column[1]);
+                    console.log('  Second data point:', column[2]);
+                    console.log('  Last data point:', column[column.length - 1]);
+                    // Check if data points are arrays
+                    if (Array.isArray(column[1])) {
+                        console.log('  Data points are arrays (good for timeseries)');
+                    } else {
+                        console.log('  Data points are NOT arrays (problem for timeseries)');
+                    }
+                }
             });
             
             // Calculate optimal legend positioning based on available space
             const totalLegendItems = groupCombinations.length * this.selectedMetrics.length;
             const containerWidth = document.getElementById('lensChartCanvas').offsetWidth;
             const containerHeight = document.getElementById('lensChartCanvas').offsetHeight;
+            
+            // Calculate dynamic tick culling based on chart width
+            const maxTicks = Math.max(5, Math.floor(containerWidth / 80));
+            console.log('Time series chart - containerWidth:', containerWidth, 'maxTicks:', maxTicks);
             
             // Force maximum chart width - ultra-minimal legend space
             const baseLegendWidth = totalLegendItems * 2; // Ultra-compact legend
@@ -3020,41 +3686,53 @@
                 // Clear any existing content
                 container.innerHTML = '';
                 
-                // Create C3.js time series chart with proper grouping and styling
+                // Determine if we should show points and labels based on data density
+            const maxPointsForLabels = 20; // Hide labels when more than 20 points
+            const maxPointsForPoints = 50; // Hide points when more than 50 points
+            const shouldShowLabels = timestamps.length <= maxPointsForLabels;
+            const shouldShowPoints = timestamps.length <= maxPointsForPoints;
+            
+            // Create C3.js time series chart with proper grouping and styling
+            try {
+                console.log('Attempting to create C3.js chart with data:', {
+                    columns: validColumns,
+                    colors: colors,
+                    type: 'line'
+                });
+                
+                
                 const chart = c3.generate({
-                    bindto: '#lensChartCanvas',
-                    size: {
-                        height: chartHeight || 400
-                    },
-                    data: {
-                        columns: columns,
-                        type: 'line',
-                        colors: colors,
-                        labels: {
-                            format: function (v) {
-                                return v !== null ? v.toFixed(2) : '';
-                            }
+                bindto: '#lensChartCanvas',
+                size: {
+                    height: chartHeight || 400
+                },
+                data: {
+                    x: 'x', // Specify which column contains x-axis data
+                    columns: validColumns,
+                    type: 'line',
+                    colors: colors,
+                    labels: shouldShowLabels ? {
+                        format: function (v) {
+                            return v !== null ? v.toFixed(2) : '';
                         }
-                    },
-                    line: {
-                        connectNull: true
-                    },
-                    point: {
-                        show: true,
-                        r: 4
-                    },
+                    } : false
+                },
+                line: {
+                    connectNull: true
+                },
+                point: {
+                    show: shouldShowPoints,
+                    r: 4
+                },
                     axis: {
                         x: {
-                            type: 'category',
-                            categories: timestamps,
+                            type: 'timeseries',
                             show: true,
                             tick: {
-                                format: function(x) {
-                                    // Use default labels for time series to avoid overlapping
-                                    return timestamps[x];
-                                },
+                                format: '%m-%d %H:%M:%S', // C3.js native time format
                                 rotate: -45, // Rotate labels to prevent overlapping
                                 multiline: false
+                                // count removed to allow auto tick count
                             }
                         },
                         y: {
@@ -3078,7 +3756,11 @@
                     },
                     tooltip: {
                         format: {
-                            title: function (d) { return timestamps[d]; },
+                            title: function (d) { 
+                                // For timeseries, d is the timestamp value
+                                const date = new Date(d);
+                                return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                            },
                             value: function (value, ratio, id) {
                                 return value !== null ? value.toFixed(2) : 'N/A';
                             }
@@ -3093,12 +3775,24 @@
                         position: 'right'
                     }
                 });
+                
+                console.log('C3.js chart created successfully');
+                
             } catch (error) {
                 console.error('C3.js time series chart error:', error);
+                console.error('Error details:', error.message, error.stack);
                 // Show error message to user
                 const container = document.getElementById('lensChartCanvas');
                 if (container) {
                     container.innerHTML = '<div style="padding: 20px; text-align: center; color: #d32f2f;">Error creating time series chart. Please check console for details.</div>';
+                }
+            }
+            } catch (error) {
+                console.error('C3.js time series chart setup error:', error);
+                // Show error message to user
+                const container = document.getElementById('lensChartCanvas');
+                if (container) {
+                    container.innerHTML = '<div style="padding: 20px; text-align: center; color: #d32f2f;">Error setting up time series chart. Please check console for details.</div>';
                 }
             }
         }
@@ -3205,8 +3899,14 @@
                     
                     
                     parts.forEach((part, partIndex) => {
+                        // Convert timestamp to readable date string if it's a timestamp
+                        let displayText = part;
+                        if (this.isTimestamp(part)) {
+                            displayText = this.formatTimestampForDisplay(part);
+                        }
+                        
                         // Truncate text based on available width
-                        const truncatedText = this.truncateTextForWidth(part, availableWidth, 11); // 11px font size
+                        const truncatedText = this.truncateTextForWidth(displayText, availableWidth, 11); // 11px font size
                         
                         const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                         label.setAttribute('x', x);
@@ -3217,7 +3917,7 @@
                         label.textContent = truncatedText;
                         
                         svg.appendChild(label);
-                        console.log('Created label for group ' + index + ', part ' + partIndex + ': "' + truncatedText + '" (original: "' + part + '") at x=' + x + ', y=' + (svgHeight - 60 + (partIndex * 14)) + ', availableWidth=' + availableWidth);
+                        console.log('Created label for group ' + index + ', part ' + partIndex + ': "' + truncatedText + '" (original: "' + part + '", display: "' + displayText + '") at x=' + x + ', y=' + (svgHeight - 60 + (partIndex * 14)) + ', availableWidth=' + availableWidth);
                     });
                 } else {
                     console.log('Skipping group ' + index + ' - no corresponding tick position');
@@ -3251,6 +3951,38 @@
             // But be more generous - only truncate if we really need to
             const truncateAt = Math.max(1, maxChars - 3);
             return text.substring(0, truncateAt) + '...';
+        }
+        
+        // Helper function to check if a value is a timestamp
+        isTimestamp(value) {
+            if (typeof value === 'number') {
+                // Check if it's a reasonable timestamp (between 1970 and 2100)
+                return value > 0 && value < 4102444800000; // Jan 1, 2100
+            }
+            
+            if (typeof value === 'string') {
+                // Check if it's a numeric string that could be a timestamp
+                const numericValue = parseFloat(value);
+                return !isNaN(numericValue) && numericValue > 0 && numericValue < 4102444800000;
+            }
+            
+            return false;
+        }
+        
+        // Helper function to format timestamp for display
+        formatTimestampForDisplay(timestamp) {
+            const parsedTimestamp = this.parseTimestamp(timestamp);
+            if (isNaN(parsedTimestamp)) {
+                return timestamp; // Return original if can't parse
+            }
+            
+            const date = new Date(parsedTimestamp);
+            // Format as MM/DD/YYYY for compact display
+            return date.toLocaleDateString('en-US', {
+                month: '2-digit',
+                day: '2-digit',
+                year: 'numeric'
+            });
         }
 
         createTimeSeriesChart(ctx, data, width, height) {
@@ -3314,9 +4046,17 @@
         parseTimestamp(timestamp) {
             // Handle various timestamp formats
             if (typeof timestamp === 'number') {
-                return timestamp > 1e10 ? timestamp : timestamp * 1000;
+                // If it's already a number, return it as-is (it's already in milliseconds)
+                return timestamp;
             }
             
+            // Try to parse as a number first (in case it's a string representation of epoch)
+            const numericTimestamp = parseFloat(timestamp);
+            if (!isNaN(numericTimestamp)) {
+                return numericTimestamp;
+            }
+            
+            // Try to parse as a date string
             const date = new Date(timestamp);
             return isNaN(date.getTime()) ? 0 : date.getTime();
         }
@@ -4179,7 +4919,7 @@
             
             // Draw group labels
             const groupLabels = groups.map((group, index) => ({
-                label: group,
+                label: this.formatGroupKeyForDisplay(group), // Format multi-dimensional group keys
                 x: yAxisPadding + index * groupWidth + groupWidth / 2
             }));
             this.drawXAxisLabels(ctx, groupLabels.map(item => item.label), yAxisPadding, topPadding, chartWidth, chartHeight);
@@ -4202,7 +4942,7 @@
             this.filteredData.forEach(row => {
                 tableHTML += '<tr>';
                 headers.forEach(header => {
-                    tableHTML += '<td>' + this.formatValue(row[header]) + '</td>';
+                    tableHTML += '<td>' + this.formatValueForTable(row[header]) + '</td>';
                 });
                 tableHTML += '</tr>';
             });
@@ -4537,15 +5277,15 @@
             try {
                 // Try modern approach first
                 if (window.URL && window.URL.createObjectURL) {
-            const blob = new Blob([csvContent], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'performance-data.csv';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'performance-data.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
                 } else {
                     // Fallback for older browsers or restricted environments
                     this.downloadCSVFallback(csvContent, 'performance-data.csv');
@@ -4613,6 +5353,16 @@
                 }
             });
             
+            // Chart expand icon event
+            document.getElementById('chartExpandIcon').addEventListener('click', () => {
+                this.expandChartWidth();
+            });
+            
+            // Chart reduce icon event
+            document.getElementById('chartReduceIcon').addEventListener('click', () => {
+                this.reduceChartWidth();
+            });
+            
             // Setup collapsible categories
             this.setupCollapsibleCategories();
             
@@ -4650,8 +5400,13 @@
                 return;
             }
             
-            // Use event delegation to handle drop zone header clicks
-            document.addEventListener('click', (e) => {
+            // Check if event listener is already attached globally
+            if (window.dropZoneClickHandlerAttached) {
+                return;
+            }
+            
+            // Store the event handler function so we can remove it later if needed
+            this.dropZoneClickHandler = (e) => {
                 // Check if click is on drop zone header (including button or icon)
                 const header = e.target.closest('.drop-zone-header');
                 if (header) {
@@ -4659,52 +5414,86 @@
                     e.stopPropagation();
                     
                     console.log('Drop zone header clicked');
-                    const dropZone = header.closest('.drop-zone');
-                    const allDropZones = document.querySelectorAll('.drop-zone');
                     
-                    // Check if any drop zone is currently collapsed
-                    const anyCollapsed = Array.from(allDropZones).some(zone => zone.classList.contains('collapsed'));
-                    
-                    if (anyCollapsed) {
-                        // If any zone is collapsed, expand all zones
-                        allDropZones.forEach(zone => {
-                            zone.classList.remove('collapsed');
-                            const icon = zone.querySelector('.drop-zone-collapse-btn i');
-                            if (icon) {
-                                icon.className = 'fa fa-chevron-down';
-                            }
-                        });
-                        console.log('All drop zones expanded');
-                        
-                        // Re-render chart with adjusted height after expansion
-                        setTimeout(() => {
-                            if (this.selectedDimensions.length > 0 || this.selectedMetrics.length > 0) {
-                                this.renderLensChart();
-                            }
-                        }, 100);
-                    } else {
-                        // If no zones are collapsed, collapse all zones
-                        allDropZones.forEach(zone => {
-                            zone.classList.add('collapsed');
-                            const icon = zone.querySelector('.drop-zone-collapse-btn i');
-                            if (icon) {
-                                icon.className = 'fa fa-chevron-up';
-                            }
-                        });
-                        console.log('All drop zones collapsed');
-                        
-                        // Re-render chart with adjusted height after collapse
-                        setTimeout(() => {
-                            if (this.selectedDimensions.length > 0 || this.selectedMetrics.length > 0) {
-                                this.renderLensChart();
-                            }
-                        }, 100);
+                    // Add debounce to prevent double-click issues
+                    if (this.dropZoneClickTimeout) {
+                        clearTimeout(this.dropZoneClickTimeout);
+                        return;
                     }
+                    
+                    this.dropZoneClickTimeout = setTimeout(() => {
+                        this.toggleDropZones();
+                        this.dropZoneClickTimeout = null;
+                    }, 100);
                 }
-            });
+            };
             
-            // Mark as set up
+            // Use event delegation to handle drop zone header clicks
+            document.addEventListener('click', this.dropZoneClickHandler);
+            
+            // Mark as set up globally to prevent multiple instances
+            window.dropZoneClickHandlerAttached = true;
             this.dropZoneCollapseSetup = true;
+        }
+        
+        toggleDropZones() {
+            const allDropZones = document.querySelectorAll('.drop-zone');
+            
+            // Check if any drop zone is currently collapsed
+            const anyCollapsed = Array.from(allDropZones).some(zone => zone.classList.contains('collapsed'));
+            
+            if (anyCollapsed) {
+                // If any zone is collapsed, expand all zones
+                allDropZones.forEach(zone => {
+                    zone.classList.remove('collapsed');
+                    const icon = zone.querySelector('.drop-zone-collapse-btn i');
+                    if (icon) {
+                        icon.className = 'fa fa-chevron-down';
+                    }
+                });
+                console.log('All drop zones expanded');
+                
+                // Re-render chart with adjusted height after expansion
+                setTimeout(() => {
+                    if (this.selectedDimensions.length > 0 || this.selectedMetrics.length > 0) {
+                        this.renderLensChart();
+                    }
+                    // Update floating controls position
+                    this.updateFloatingControlsPosition();
+                }, 100);
+            } else {
+                // If no zones are collapsed, collapse all zones
+                allDropZones.forEach(zone => {
+                    zone.classList.add('collapsed');
+                    const icon = zone.querySelector('.drop-zone-collapse-btn i');
+                    if (icon) {
+                        icon.className = 'fa fa-chevron-up';
+                    }
+                });
+                console.log('All drop zones collapsed');
+                
+                // Re-render chart with adjusted height after collapse
+                setTimeout(() => {
+                    if (this.selectedDimensions.length > 0 || this.selectedMetrics.length > 0) {
+                        this.renderLensChart();
+                    }
+                    // Update floating controls position
+                    this.updateFloatingControlsPosition();
+                }, 100);
+            }
+        }
+        
+        updateFloatingControlsPosition() {
+            const waveControls = document.querySelector('.wave-controls');
+            const floatingControls = document.querySelector('.floating-chart-controls');
+            
+            if (waveControls && floatingControls) {
+                const waveControlsRect = waveControls.getBoundingClientRect();
+                // Update floating controls position
+                floatingControls.style.top = waveControlsRect.bottom + 10 + 'px';
+                floatingControls.style.left = waveControlsRect.left + 'px';
+                
+            }
         }
 
         updateDropZoneCounts() {
@@ -4720,10 +5509,19 @@
                 metricsCount.textContent = this.selectedMetrics.length;
             }
             
-            // Update filters count (include both selectedFilters and dimensionFilters)
+            // Update filters count (include selectedFilters, dimensionFilters, and rows filter only when rows are ignored)
             const filtersCount = document.getElementById('filtersCount');
             if (filtersCount) {
-                const totalFilters = this.selectedFilters.length + Object.keys(this.dimensionFilters).length;
+                let totalFilters = this.selectedFilters.length + Object.keys(this.dimensionFilters).length;
+                console.log('DEBUG: Filter count calculation - selectedFilters:', this.selectedFilters.length, 'dimensionFilters:', Object.keys(this.dimensionFilters).length, 'ignoredRows.size:', this.ignoredRows.size);
+                
+                // Add 1 for the rows filter only when there are ignored rows
+                if (this.ignoredRows.size > 0) {
+                    totalFilters += 1;
+                    console.log('DEBUG: Added rows filter to count, total:', totalFilters);
+                } else {
+                    console.log('DEBUG: No ignored rows, not adding rows filter to count, total:', totalFilters);
+                }
                 filtersCount.textContent = totalFilters;
             }
             
@@ -4778,6 +5576,7 @@
         }
 
         toggleView(viewType) {
+            console.log('toggleView called with:', viewType);
             const chartContainer = document.getElementById('lensChart');
             const tableContainer = document.getElementById('lensTable');
             const tableBtn = document.getElementById('tableViewBtn');
@@ -4790,12 +5589,55 @@
                 tableBtn.classList.add('active');
                 lineBtn.classList.remove('active');
                 barBtn.classList.remove('active');
+                
+                // Add table-view class and hide floating controls
+                const lensDisplay = document.querySelector('.lens-display');
+                const floatingControls = document.querySelector('.floating-chart-controls');
+                if (lensDisplay) {
+                    lensDisplay.classList.add('table-view');
+                    console.log('Added table-view class to lens-display');
+                    console.log('lens-display classes:', lensDisplay.className);
+                    const lensDisplayWidth = lensDisplay.getBoundingClientRect().width;
+                    tableContainer.style.width = lensDisplayWidth + 'px';
+                    tableContainer.style.maxWidth = lensDisplayWidth + 'px';
+                } else {
+                    console.log('lens-display element not found');
+                }
+                
+                // Hide floating controls directly
+                if (floatingControls) {
+                    floatingControls.style.display = 'none';
+                    console.log('Hidden floating controls');
+                } else {
+                    console.log('floating-chart-controls element not found');
+                }
+                
                 // Re-render to ensure table content is up to date
                 this.renderLensChart();
             } else if (viewType === 'chart') {
                 chartContainer.style.display = 'block';
                 tableContainer.style.display = 'none';
                 tableBtn.classList.remove('active');
+                
+                // Remove table-view class and show floating controls
+                const lensDisplay = document.querySelector('.lens-display');
+                const floatingControls = document.querySelector('.floating-chart-controls');
+                if (lensDisplay) {
+                    lensDisplay.classList.remove('table-view');
+                    console.log('Removed table-view class from lens-display');
+                    console.log('lens-display classes:', lensDisplay.className);
+                } else {
+                    console.log('lens-display element not found');
+                }
+                
+                // Show floating controls directly
+                if (floatingControls) {
+                    floatingControls.style.display = 'flex';
+                    console.log('Shown floating controls');
+                } else {
+                    console.log('floating-chart-controls element not found');
+                }
+                
                 // Set the appropriate chart type button as active
                 lineBtn.classList.toggle('active', this.chartType === 'line');
                 barBtn.classList.toggle('active', this.chartType === 'bar');
@@ -4810,12 +5652,54 @@
             this.metricAggregations = {};
             this.selectedFilters = [];
             this.dimensionFilters = {};
+            this.currentFilters = {}; // Clear current filters when clearing lens
+            this.dateTimeFilters = {}; // Clear date/time filters when clearing lens
+            this.ignoredRows.clear(); // Clear ignored rows when clearing lens
+            this.sortedGroups = null; // Clear sorted groups when clearing lens
+            this.sortColumn = null; // Clear sort column when clearing lens
+            this.sortDirection = 'asc'; // Reset sort direction when clearing lens
+            this.filteredData = [...this.parsedData]; // Reset filtered data to original data
+            this.resetChartWidth(); // Reset chart width when clearing lens
+            
+            // Clear all DOM filter selections
+            this.clearAllDOMFilterSelections();
+            
             this.updateDropZone('dimensionsArea', this.selectedDimensions);
             this.updateDropZone('metricsArea', this.selectedMetrics);
             this.updateFiltersZone();
             this.updateDropZoneCounts();
             this.updateFieldItemIcons();
             this.renderLensChart();
+        }
+        
+        clearAllDOMFilterSelections() {
+            // Clear dimension filter checkboxes
+            document.querySelectorAll('.dimension-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            // Clear metric filter inputs
+            document.querySelectorAll('.filter-input').forEach(input => {
+                input.value = '';
+            });
+            
+            // Clear metric filter operators
+            document.querySelectorAll('.filter-operator').forEach(select => {
+                select.selectedIndex = 0;
+            });
+            
+            // Clear date/time filter inputs
+            document.querySelectorAll('input[type="date"], input[type="datetime-local"]').forEach(input => {
+                input.value = '';
+            });
+            
+            // Clear search filters
+            const searchInputs = document.querySelectorAll('input[type="text"]');
+            searchInputs.forEach(input => {
+                if (input.placeholder && input.placeholder.toLowerCase().includes('search')) {
+                    input.value = '';
+                }
+            });
         }
 
         saveLensOptions() {
@@ -4978,7 +5862,9 @@
                 selectedMetrics: [...this.selectedMetrics],
                 metricAggregations: { ...this.metricAggregations },
                 chartType: this.chartType,
-                filters: { ...this.filters },
+                selectedFilters: [...this.selectedFilters],
+                dimensionFilters: { ...this.dimensionFilters },
+                currentFilters: { ...this.currentFilters },
                 dateTimeFilters: { ...this.dateTimeFilters },
                 sortColumn: this.sortColumn,
                 sortDirection: this.sortDirection,
@@ -5011,15 +5897,34 @@
                 return;
             }
 
+            // Clear existing filters first
+            this.selectedDimensions = [];
+            this.selectedMetrics = [];
+            this.metricAggregations = {};
+            this.selectedFilters = [];
+            this.dimensionFilters = {};
+            this.currentFilters = {};
+            this.dateTimeFilters = {};
+            this.ignoredRows.clear();
+            this.sortedGroups = null;
+            this.sortColumn = null;
+            this.sortDirection = 'asc';
+            this.filteredData = [...this.parsedData];
+
+            // Clear all DOM filter selections
+            this.clearAllDOMFilterSelections();
+
             // Restore lens configuration
-            this.selectedDimensions = [...lens.selectedDimensions];
-            this.selectedMetrics = [...lens.selectedMetrics];
-            this.metricAggregations = { ...lens.metricAggregations };
+            this.selectedDimensions = [...(lens.selectedDimensions || [])];
+            this.selectedMetrics = [...(lens.selectedMetrics || [])];
+            this.metricAggregations = { ...(lens.metricAggregations || {}) };
             this.chartType = lens.chartType || 'bar';
-            this.filters = { ...lens.filters };
-            this.dateTimeFilters = { ...lens.dateTimeFilters };
+            this.selectedFilters = [...(lens.selectedFilters || [])];
+            this.dimensionFilters = { ...(lens.dimensionFilters || {}) };
+            this.currentFilters = { ...(lens.currentFilters || {}) };
+            this.dateTimeFilters = { ...(lens.dateTimeFilters || {}) };
             this.sortColumn = lens.sortColumn;
-            this.sortDirection = lens.sortDirection;
+            this.sortDirection = lens.sortDirection || 'asc';
             this.ignoredRows = new Set(lens.ignoredRows || []); // Restore ignored rows
 
             // Update UI
@@ -5217,10 +6122,116 @@
         }
 
         formatValue(value) {
-            if (typeof value === 'number') {
-                return value.toFixed(2);
+            // Handle both number and string timestamps
+            let numericValue = value;
+            if (typeof value === 'string') {
+                numericValue = parseFloat(value);
+            }
+            
+            if (typeof numericValue === 'number' && !isNaN(numericValue)) {
+                // Check if this is a timestamp (epoch) - typically large numbers representing milliseconds since 1970
+                if (numericValue > 1000000000000 && numericValue < 4102444800000) { // Between 2001 and 2100
+                    const date = new Date(numericValue);
+                    if (!isNaN(date.getTime())) {
+                        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                                          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                        const month = monthNames[date.getMonth()];
+                        const day = date.getDate();
+                        const dayOfWeek = dayNames[date.getDay()];
+                        return month + ' ' + day + this.getOrdinalSuffix(day) + ' (' + dayOfWeek + ')';
+                    }
+                }
+                return numericValue.toFixed(2);
             }
             return value || '';
+        }
+
+        getOrdinalSuffix(day) {
+            if (day >= 11 && day <= 13) {
+                return 'th';
+            }
+            switch (day % 10) {
+                case 1: return 'st';
+                case 2: return 'nd';
+                case 3: return 'rd';
+                default: return 'th';
+            }
+        }
+
+        formatValueForTable(value) {
+            // Handle both number and string timestamps
+            let numericValue = value;
+            if (typeof value === 'string') {
+                numericValue = parseFloat(value);
+            }
+            
+            if (typeof numericValue === 'number' && !isNaN(numericValue)) {
+                // Check if this is a timestamp (epoch) - typically large numbers representing milliseconds since 1970
+                // Expanded range to catch more timestamp formats
+                if (numericValue > 1000000000000 && numericValue < 5000000000000) { // Between 2001 and 2128
+                    const date = new Date(numericValue);
+                    if (!isNaN(date.getTime())) {
+                        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                                          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                        const month = monthNames[date.getMonth()];
+                        const day = date.getDate();
+                        const dayOfWeek = dayNames[date.getDay()];
+                        return month + ' ' + day + this.getOrdinalSuffix(day) + ' (' + dayOfWeek + ')';
+                    }
+                }
+                return numericValue.toFixed(2);
+            }
+            return value || '';
+        }
+
+        formatValueForTooltip(value) {
+            // Handle both number and string timestamps
+            let numericValue = value;
+            if (typeof value === 'string') {
+                numericValue = parseFloat(value);
+            }
+            
+            if (typeof numericValue === 'number' && !isNaN(numericValue)) {
+                // Check if this is a timestamp (epoch) - typically large numbers representing milliseconds since 1970
+                if (numericValue > 1000000000000 && numericValue < 4102444800000) { // Between 2001 and 2100
+                    const date = new Date(numericValue);
+                    if (!isNaN(date.getTime())) {
+                        // Use normal datetime string format for tooltips (without year)
+                        return date.toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true
+                        });
+                    }
+                }
+                return numericValue.toFixed(2);
+            }
+            return value || '';
+        }
+
+        formatGroupKeyForDisplay(groupKey) {
+            // Handle multi-dimensional group keys (e.g., "timestamp | dimension")
+            if (groupKey && groupKey.includes(' | ')) {
+                const parts = groupKey.split(' | ');
+                const formattedParts = parts.map(part => this.formatValueForTable(part));
+                return formattedParts.join(' | ');
+            }
+            return this.formatValueForTable(groupKey);
+        }
+
+        formatGroupKeyForTooltip(groupKey) {
+            // Handle multi-dimensional group keys for tooltips (e.g., "timestamp | dimension")
+            if (groupKey && groupKey.includes(' | ')) {
+                const parts = groupKey.split(' | ');
+                const formattedParts = parts.map(part => this.formatValueForTooltip(part));
+                return formattedParts.join(' | ');
+            }
+            return this.formatValueForTooltip(groupKey);
         }
 
         truncateText(text, maxWidth) {
@@ -5433,7 +6444,8 @@
                                 point.setAttribute('stroke', 'white');
                                 point.setAttribute('stroke-width', '2');
                                 
-                                const groupName = group.toString() || 'Unknown';
+                                // Handle group name formatting for multi-dimensional groups
+                                const groupName = this.formatGroupKeyForTooltip(group) || 'Unknown';
                                 const formattedMetric = this.formatHeader(metricName);
                                 const formattedAggregation = aggregationType.charAt(0).toUpperCase() + aggregationType.slice(1);
                                 
@@ -5704,7 +6716,8 @@
                                     bar.setAttribute('stroke-width', '2');
                                     bar.setAttribute('opacity', '0.8');
                                     
-                                    const groupName = group.toString() || 'Unknown';
+                                    // Handle group name formatting for multi-dimensional groups
+                                const groupName = this.formatGroupKeyForTooltip(group) || 'Unknown';
                                     const formattedMetric = this.formatHeader(metricName);
                                     const formattedAggregation = aggregationType.charAt(0).toUpperCase() + aggregationType.slice(1);
                                     
@@ -5865,7 +6878,8 @@
                                     bar.setAttribute('stroke-width', '2');
                                     bar.setAttribute('opacity', '0.8');
                                     
-                                    const groupName = group.toString() || 'Unknown';
+                                    // Handle group name formatting for multi-dimensional groups
+                                const groupName = this.formatGroupKeyForTooltip(group) || 'Unknown';
                                     const formattedMetric = this.formatHeader(metricName);
                                     const formattedAggregation = aggregationType.charAt(0).toUpperCase() + aggregationType.slice(1);
                                     
@@ -5950,6 +6964,11 @@
             }
             
             console.log('Handled panel collapse - containers expanded');
+            
+            // Update floating controls position after panel collapse
+            setTimeout(() => {
+                this.updateFloatingControlsPosition();
+            }, 1000);
         }
 
         handlePanelExpand() {
@@ -5977,6 +6996,11 @@
             }
             
             console.log('Handled panel expand - containers reset');
+            
+            // Update floating controls position after panel expand
+            setTimeout(() => {
+                this.updateFloatingControlsPosition();
+            }, 1000);
         }
 
         // Initialize collapse functionality for categories panel
@@ -6043,6 +7067,8 @@
                                         console.log('Re-rendering chart after transition completed...');
                                         this.renderLensChart();
                                     }
+                                    // Update floating controls position after transition
+                                    this.updateFloatingControlsPosition();
                                     currentFieldPalette.removeEventListener('transitionend', handleTransitionEnd);
                                 };
                                 
@@ -6100,6 +7126,8 @@
                                     this.renderLensChart();
                                 }, 50);
                             }
+                            // Update floating controls position
+                            this.updateFloatingControlsPosition();
                         }, 150);
                     });
                     
@@ -6136,9 +7164,9 @@
         }
         
         .wave-header {
+            position: relative;
             background: transparent;
             color: #333;
-            padding: 10px 0;
             display: flex;
             justify-content: flex-end;
             align-items: center;
@@ -6404,6 +7432,7 @@
             max-width: 100%;
             box-sizing: border-box;
             overflow: hidden;
+            position: relative; /* Enable absolute positioning for floating controls */
         }
         
         .lens-builder {
@@ -6677,6 +7706,12 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            position: relative;
+        }
+        
+        .lens-display {
+            position: relative;
+            z-index: 1;
         }
         
         .drop-zones {
@@ -6685,13 +7720,15 @@
             align-items: stretch;
             max-height: 200px;
             overflow-y: auto;
+            position: relative;
+            z-index: 100;
         }
         
         .drop-zone {
             flex: 1;
             background: #f8f9fa;
             border-radius: 6px;
-            padding: 6px;
+            padding: 3px;
             min-height: 74px;
             max-height: 180px;
             display: flex;
@@ -6703,9 +7740,9 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             cursor: pointer;
-            padding: 2px;
+            padding: 1px;
             border-radius: 3px;
             transition: background-color 0.2s ease;
         }
@@ -6785,7 +7822,7 @@
             min-height: 45px;
             border: 2px dashed #dddbda;
             border-radius: 4px;
-            padding: 6px;
+            padding: 3px;
             display: flex;
             flex-wrap: wrap;
             gap: 3px;
@@ -6929,13 +7966,14 @@
             flex: 1;
             background: white;
             border-radius: 6px;
-            border: 1px solid #dddbda;
             padding: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 0;
             overflow: hidden;
+            position: relative;
+            z-index: 1;
         }
         
         .chart-placeholder {
@@ -6950,13 +7988,18 @@
         }
         
         .table-wrapper {
-            overflow-x: auto;
+            overflow: auto;
             border-radius: 3px;
             border: 1px solid #dddbda;
+            max-height: 500px;
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: auto;
         }
         
         .wave-table {
-            width: 100%;
+            width: auto;
+            min-width: 100%;
             border-collapse: collapse;
             background: white;
         }
@@ -6971,6 +8014,7 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             font-size: 12px;
+            white-space: nowrap;
         }
         
         .wave-table td {
@@ -6978,6 +8022,7 @@
             border-bottom: 1px solid #dddbda;
             font-size: 11px;
             color: #3e3e3c;
+            white-space: nowrap;
         }
         
         .wave-table tbody tr:hover {
@@ -6987,6 +8032,7 @@
         .wave-table tbody tr:nth-child(even) {
             background: #fafbfc;
         }
+        
         
         .charts-grid {
             display: grid;
@@ -7014,6 +8060,8 @@
             align-items: center;
             width: 100%;
             overflow: auto;
+            position: relative;
+            z-index: 1;
         }
         
         .chart-container canvas {
@@ -7022,11 +8070,22 @@
             display: block;
             margin: 0 auto;
         }
+        
+        
+        .chart-container.expanded {
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+        
+        .chart-container.expanded #lensChartCanvas {
+            min-width: 100%;
+        }
 
         .lens-display {
             flex: 1;
             background: white;
             border-radius: 6px;
+            border: 1px solid #dddbda;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
             min-height: 300px;
             max-height: 600px;
@@ -7035,6 +8094,12 @@
             flex-direction: column;
             width: 100%;
             min-width: 0;
+        }
+        
+        /* Horizontal scrolling for expanded charts */
+        .lens-display[style*="overflow-x: auto"] {
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
         }
         
         /* Only apply max-width when panel is NOT collapsed */
@@ -7047,7 +8112,7 @@
             width: 100%;
             max-width: 100%;
             padding: 12px;
-            overflow: visible;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             min-width: 0;
@@ -7061,7 +8126,7 @@
 
         .table-container {
             height: 500px;
-            overflow: visible;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
         }
@@ -7078,6 +8143,8 @@
             background: white;
             min-height: 0;
             position: relative;
+            /* Force horizontal scrolling to be visible */
+            overflow: auto !important;
         }
 
         /* Force scrollbars to be visible */
@@ -7102,6 +8169,7 @@
 
         .wave-table {
             width: auto;
+            min-width: 100%;
             border-collapse: collapse;
             font-size: 14px;
             background: white;
@@ -7137,6 +8205,56 @@
 
         .wave-table tbody tr:nth-child(even):hover {
             background: #f1f3f4;
+        }
+
+        /* Focus only on table wrapper and children to prevent lens-canvas expansion */
+        .table-wrapper {
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow-x: auto !important;
+            overflow-y: auto !important;
+            box-sizing: border-box !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+        }
+
+        .wave-table {
+            width: max-content !important;
+            min-width: 100% !important;
+            table-layout: auto !important;
+            box-sizing: border-box !important;
+        }
+
+        .wave-table th,
+        .wave-table td {
+            white-space: nowrap !important;
+            padding: 4px 6px !important;
+        }
+
+
+        .table-more-rows-message {
+            background: #f8f9fa;
+            border: 1px solid #dddbda;
+            border-top: none;
+            padding: 12px 16px;
+            text-align: center;
+            color: #3e3e3c;
+            font-size: 12px;
+        }
+
+        .table-more-rows-message p {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .table-more-rows-message i {
+            color: #0070d2;
         }
 
         .ignore-header {
@@ -7201,6 +8319,51 @@
             display: flex;
             gap: 8px;
             align-items: center;
+        }
+        
+        .floating-chart-controls {
+            position: fixed;
+            top: 187px; /* Position below Load Lens dropdown */
+            left: 229px; /* Align with Load Lens dropdown */
+            display: flex;
+            gap: 4px; /* Reduced spacing between icons */
+            align-items: center;
+            z-index: 1000; /* High z-index to float on top of chart */
+            
+            padding: 2px 4px; /* Reduced padding */
+            border-radius: 6px;
+           
+        }
+        
+        .floating-chart-controls .wave-btn {
+            border: none; /* Remove borders from buttons */
+            width: 20px; /* Further reduce button width */
+            height: 20px; /* Further reduce button height */
+            padding: 0;
+        }
+        
+        .floating-chart-controls .wave-btn i {
+            font-size: 12px; /* Reduce icon size */
+        }
+        
+        .floating-chart-controls .width-multiplier-container {
+            padding: 0 !important; /* Remove padding from multiplier container */
+            margin: 0 !important; /* Remove margin from multiplier container */
+        }
+        
+        .floating-chart-controls .width-multiplier-select {
+            border: none !important; /* Remove borders from select dropdown */
+            width: 40px !important; /* Reduce dropdown width */
+            height: 24px !important; /* Reduce dropdown height */
+            padding: 0 !important; /* Remove padding from select */
+            margin: 0 !important; /* Remove margin from select */
+            font-size: 10px !important;
+            border-radius: 0 !important; /* Remove border radius */
+        }
+        
+        /* Hide floating chart controls in table view */
+        .lens-display.table-view ~ .floating-chart-controls {
+            display: none !important;
         }
 
         .metric-item {

@@ -143,6 +143,8 @@ border-collapse: collapse;
     <script src="/plugins/jquery.datetimepicker.full.min.js"></script>
     <link rel="stylesheet" href="/plugins/jquery.datetimepicker.min.css">
     <script src="/js/SFDataTable.js"></script>
+    <script src="/js/timeseries-component.js"></script>
+    <script src="/js/time-range-filter.js"></script>
     <script src="/js/utils.js"></script>
     <script type="text/javascript" src="/plugins/toastify/toastify.js"></script>
     <link rel="stylesheet" href="/plugins/toastify/toastify.css">

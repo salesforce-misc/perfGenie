@@ -9,17 +9,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.DecimalFormat;
 import java.time.*;
 import java.util.*;
 
-import static java.awt.Color.blue;
 import static perfgenie.utils.ArgusQueries.*;
 
-public class Canary {
+public class Canary_deprecate {
     public static HashMap<String, String> podsInstance = new HashMap<>();
     public static HashMap<String, Integer[]> podsList = new HashMap<>();
     public static HashMap<String, String> podsDomain = new HashMap<>();
