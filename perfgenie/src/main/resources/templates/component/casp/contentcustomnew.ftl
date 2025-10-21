@@ -12,20 +12,7 @@
                    type="text"
                    value=""/>
         </td>
-        <td style="border: none;"><label for="instance-input1" id="instance-label1"
-                                         class="fieldlable">Instance: </label></td>
-        <td style="border: none;">
-            <input style="height:30px;text-align: center;" class="filterinput" id="instance-input1" name="instance1"
-                   type="text"
-                   value=""/>
-        </td>
-        <td style="border: none;"><label for="domain-input1" id="domain-label1" class="fieldlable">Domain: </label></td>
-        <td style="border: none;">
-            <input style="width:60px;height:30px;text-align: center;" class="filterinput" id="domain-input1"
-                   name="domain1"
-                   type="text"
-                   value=""/>
-        </td>
+
         <td style="padding: 10px;border: none;align-items:center;">
             <button onclick="processCanary()" id="submit-canary-input" style="alignment:center;height:30px"
                     class="ui-button ui-widget ui-corner-all">Process
@@ -48,15 +35,15 @@
 <script type="text/javascript" class="init">
 
     function processCanary() {
-        let info = " start: " + moment.utc($("#startpicker3").val()).valueOf() + " end: " + moment.utc($("#endpicker3").val()).valueOf() + " cell: '" + $('#cell-input1').val() + "' instance: '" + $('#instance-input1').val() + "' domain: '" + $('#domain-input1').val() + "'";
+        let info = " start: " + moment.utc($("#startpicker3").val()).format('ddd, MMM D YYYY HH:mm:ss [UTC]') + " end: " + moment.utc($("#endpicker3").val()).format('ddd, MMM D YYYY HH:mm:ss [UTC]') + " cell: '" + $('#cell-input1').val()  + "'";
 
-        if ($("#startpicker3").val() != "" && $("#endpicker3").val() != "" && $('#cell-input1').val() != "" && $('#instance-input1').val() != "" && $('#domain-input1').val() != "") {
+        if ($("#startpicker3").val() != "" && $("#endpicker3").val() != "" && $('#cell-input1').val() != undefined && $('#cell-input1').val() != "" ) {
             let duration = (moment.utc($("#endpicker3").val()).valueOf() - moment.utc($("#startpicker3").val()).valueOf());
             $("#canary-input-info").css("display", "block");
             if (duration <= 4 * 60 * 60 * 1000) {
                 $("#submit-canary-input").attr("disabled", true);
                 $('#canary-input-info-text').html("Processing " + info + " This may take couple of munutes ...");
-                processCustomCanaryData(moment.utc($("#startpicker3").val()).valueOf(), moment.utc($("#endpicker3").val()).valueOf(), $('#cell-input1').val(), $('#instance-input1').val(), $('#domain-input1').val());
+                processCustomCanaryData(moment.utc($("#startpicker3").val()).valueOf(), moment.utc($("#endpicker3").val()).valueOf(), $('#cell-input1').val());
             } else {
                 $('#canary-input-info-text').html("Invalid input: time range " + duration / (60 * 1000) + " min is more than 4 hours");
             }
@@ -67,8 +54,8 @@
         }
     }
 
-    function processCustomCanaryData(start, end, cell, instance, domain) {
-        URL = "v1/processcustomcanary/" + dataHost + "/?start=" + start + "&end=" + end + "&cell=" + cell + "&instance=" + instance + "&domain=" + domain;
+    function processCustomCanaryData(start, end, cell) {
+        URL = "v1/processcustomcanary/" + dataHost + "/?start=" + start + "&end=" + end + "&cell=" + cell;
         showSpinner("spinnerzingcustom");
         $.ajax({
             url: URL, success: function (result) {

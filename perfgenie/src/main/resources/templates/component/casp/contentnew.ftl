@@ -75,7 +75,7 @@
         $.ajax({
             url: URL, success: function (result) {
                 if (result != undefined) {
-                    canaryContextViewHeader = result.header;
+                    canaryContextViewHeaderConfig = result.header;
                     viewCanaryData();
                 }
             },
@@ -222,7 +222,8 @@
             showCustomLegend: false, // Set to false to hide the custom legend div (default: hidden)
             showTooltip: true,
             showGrid: true,
-            animate: false
+            animate: false,
+            useUTC: true
         });
     }
     function  getTimeSeriesDataAndLoad(cell,startEpoch,endEpoch){
@@ -257,7 +258,11 @@
     function showCanaryTable(result,divId,type) {
         console.log("showCanaryTable " + type);
         tableHeader = [];
+        headerTypeMap = {};
+        headerLableMap = {};
+        headerExtraTypeMap = {};
         canaryviewtable.addContextTableHeader(tableHeader, "Cmt", -1, "");
+        let canaryContextViewHeader = JSON.parse(JSON.stringify(canaryContextViewHeaderConfig));
         //create table header
         for (let i = 0; i < canaryContextViewHeader.length; i++) {
             let tokens = canaryContextViewHeader[i].split(":");
@@ -346,7 +351,7 @@
                 }
                 //do not show data type
             }
-            extraHeadersHandled=true;
+            //extraHeadersHandled=true;
         }
 
         let rowIndex = -1;

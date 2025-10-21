@@ -363,6 +363,7 @@ public class WeekOverWeek {
                     }
                 }
                 futures.clear();
+                TimeseriesSorter.sortByTimestampsIfNeeded(values,timestamps);
                 data.put("x", timestamps);
                 data.put("v", values);
                 if(success) {
@@ -370,10 +371,10 @@ public class WeekOverWeek {
                     addTimeSeriesEvent(data, timestampEnd, cell, host, metric);
                 }
             }else{
+                if(doPerc) {
                     System.out.println("fetchLast24HrTimeSeriesData time series event exists " + cell + ":" + timestampEnd);
                     //fetch event and calculate percentiles
                     Object res = Utils.readValue(fetchTimeSeriesEvent(timestampEnd,cell,host, metric),HashMap.class);
-                if(doPerc) {
                     data = (HashMap<String, List>) res;
                     List<Long> x = data.get("x");
                     List<Double> v = data.get("v");
@@ -384,7 +385,19 @@ public class WeekOverWeek {
                             v2.add(v.get(i));
                         }
                     }
-                    return Utils.getPercentiles(v2);
+                    Map<String,Double> percentiles = Utils.getPercentiles(v2);
+
+                    if(metric.equals("PA")){
+                        int startIndex = getPeakIndexIfExists(x,peakStart);
+                        int index = getPAKickinIndexIfExists(v,startIndex);
+                        long offset = x.get(index) - peakStart;
+                        if(offset < 0){
+                            offset = 0;
+                        }
+                        System.out.println("---> PAStartOfset2 time:" + offset + ":" +peakStart+":"+x.get(index) + ":"+ Utils.convertEpochToUTCString(x.get(index)));
+                        percentiles.put("PAStartOfset", offset*1.0);
+                    }
+                    return percentiles;
                 }
                 return null;
             }
@@ -399,9 +412,43 @@ public class WeekOverWeek {
                     v2.add(values.get(i));
                 }
             }
-            return Utils.getPercentiles(v2);
+            Map<String,Double> percentiles = Utils.getPercentiles(v2);
+            if(metric.equals("PA")){
+                int startIndex = getPeakIndexIfExists(timestamps,peakStart);
+                int index = getPAKickinIndexIfExists(values,startIndex);
+                long offset = timestamps.get(index) - peakStart;
+                if(offset < 0){
+                    offset = 0;
+                }
+                System.out.println("---> PAStartOfset1 time:" + offset + ":" + peakStart+":"+timestamps.get(index) + ":" + Utils.convertEpochToUTCString(timestamps.get(index)));
+                percentiles.put("PAStartOfset", 1.0*offset);
+            }
+            return percentiles;
         }
         return null;
+    }
+
+    private static int getPeakIndexIfExists(final List<Long> timestamps, long peakStart){
+        for (int i = 0; i < timestamps.size(); i++) {
+            if(timestamps.get(i) >= peakStart){
+                return i;
+            }
+        }
+        return 0;//default first
+    }
+
+    private static int getPAKickinIndexIfExists(final List<Double> values, int startIndex){
+        Double startPA = 0.0;
+        for (int i = 0; i < values.size(); i++) {
+            if(i == 0 || values.get(i) < startPA){
+                startPA = values.get(i);
+            }else{
+                if(values.get(i) > startPA){//PA shift
+                    return i;
+                }
+            }
+        }
+        return 0;//default first
     }
 
     private static CanaryResponse getCanaryResponseWeekOverWeek(final long timestampStart11, final long timestampEnd11, final String instance1, final String domain1, final String cell1, final long timestampStart21, final long timestampEnd21, final String instance2, final String domain2, final String cell2, final int type, String host) {
@@ -473,7 +520,7 @@ public class WeekOverWeek {
                 List<Object> record = new ArrayList<>();
                 List<String> header = new ArrayList<>();
 
-                List<String> metricList = new ArrayList(Arrays.asList("rCpuT", "jCpuT", "cCpuT", "cCpuR", "sfPt", "5xx", "4xx"));
+                List<String> metricList = new ArrayList(Arrays.asList("rCpuT", "jCpuT", "cCpuT","cCpuTPeak", "cCpuR", "sfPt", "5xx", "4xx"));
 
                 record.add("timestamp:timestamp");
                 if (type == 3) {
@@ -560,9 +607,27 @@ public class WeekOverWeek {
                     return null;
                 }
 
-                String metric = "cCpuT";
+                String metric = "kpodC";
                 Map<String,Double> percentiles1 = fetchLast24HrTimeSeriesData(timestampStart1, timestampEnd1, cell1,instance1,domain1,host,metric,true);
                 Map<String,Double> percentiles2 = fetchLast24HrTimeSeriesData(timestampStart2, timestampEnd2, cell2,instance2,domain2,host, metric,true);
+                if(percentiles1 != null && percentiles2 != null && percentiles1.size() == percentiles2.size()) {
+                    for (String key : percentiles1.keySet()) {
+                        if(key.equals("P50")) {
+                            Double percentileChange = 100.0 * (percentiles1.get(key) - percentiles2.get(key)) / percentiles1.get(key);
+                            record.add(key + metric + " %c:number");
+                            record.add(percentileChange);//jvmCpuPercentPerReqPercentChange
+                            header.add(key + metric + " %c:number");
+
+                            record.add(key + metric + " diff:number");
+                            record.add(percentiles1.get(key) - percentiles2.get(key));//jvmCpuPercentPerReqPercentChange
+                            header.add(key + metric + " diff:number");
+                        }
+                    }
+                }
+
+                metric = "cCpuT";
+                percentiles1 = fetchLast24HrTimeSeriesData(timestampStart1, timestampEnd1, cell1,instance1,domain1,host,metric,true);
+                percentiles2 = fetchLast24HrTimeSeriesData(timestampStart2, timestampEnd2, cell2,instance2,domain2,host, metric,true);
 
                 if(percentiles1 != null && percentiles2 != null && percentiles1.size() == percentiles2.size()) {
                     for (String key : percentiles1.keySet()) {
@@ -621,11 +686,17 @@ public class WeekOverWeek {
                 percentiles1 = fetchLast24HrTimeSeriesData(timestampStart1, timestampEnd1, cell1,instance1,domain1,host,metric,false);
                 percentiles2 = fetchLast24HrTimeSeriesData(timestampStart2, timestampEnd2, cell2,instance2,domain2,host, metric,false);
                 metric = "PA";
-                percentiles1 = fetchLast24HrTimeSeriesData(timestampStart1, timestampEnd1, cell1,instance1,domain1,host,metric,false);
+                percentiles1 = fetchLast24HrTimeSeriesData(timestampStart1, timestampEnd1, cell1,instance1,domain1,host,metric,true);
                 percentiles2 = fetchLast24HrTimeSeriesData(timestampStart2, timestampEnd2, cell2,instance2,domain2,host, metric,false);
-                metric = "kpodC";
-                percentiles1 = fetchLast24HrTimeSeriesData(timestampStart1, timestampEnd1, cell1,instance1,domain1,host,metric,false);
-                percentiles2 = fetchLast24HrTimeSeriesData(timestampStart2, timestampEnd2, cell2,instance2,domain2,host, metric,false);
+                long PAStartOfset = 0;
+                if(percentiles1 != null) {
+                    for (String key : percentiles1.keySet()) {
+                        if(key.equals("PAStartOfset")) {
+                            PAStartOfset = percentiles1.get(key).longValue();
+                            System.out.println(cell1 +"PA ofset -------->" + PAStartOfset);
+                        }
+                    }
+                }
 
                 //get canary type series with values 1 for zing, 2 for zulu
                 metric = "CanaryType";
@@ -762,8 +833,19 @@ public class WeekOverWeek {
                     }
                     //ArgusQueryT.QueryResponse res1 = ArgusQueryT.getArgusMetric(metricList.get(i), timestampStart1, timestampEnd1, instance1, domain1, cell1, pods1);
                     //ArgusQueryT.QueryResponse res2 = ArgusQueryT.getArgusMetric(metricList.get(i), timestampStart2, timestampEnd2, instance2, domain2, cell2, pods2);
-                    futures2.add(pool.submitTask(() -> ArgusQueryT.getArgusMetric(m, timestampStart1, timestampEnd1, instance1, domain1, cell1, pods1)));
-                    futures2.add(pool.submitTask(() -> ArgusQueryT.getArgusMetric(m, timestampStart2, timestampEnd2, instance2, domain2, cell2, pods2)));
+                    if(m.equals("cCpuTPeak")){
+                        final long PAofset = PAStartOfset + 3 * 60 * 60 * 1000;//ignore first 3 hours after PA
+                        final String tmpm = "cCpuT";
+                        final long startTimeoffset1 = timestampStart1+PAofset;
+                        final long startTimeoffset2 = timestampStart2+PAofset;
+                        System.out.println(instance1 + ":" + domain1 + ":" + cell1 + ": ---> " + PAofset + ":"+timestampStart1+": new start:" + Utils.convertEpochToUTCString(startTimeoffset1) + ": old start"+ Utils.convertEpochToUTCString(timestampStart1) + " end:" + Utils.convertEpochToUTCString(timestampEnd1));
+                        futures2.add(pool.submitTask(() -> ArgusQueryT.getArgusMetric(tmpm, startTimeoffset1, timestampEnd1, instance1, domain1, cell1, pods1)));
+                        futures2.add(pool.submitTask(() -> ArgusQueryT.getArgusMetric(tmpm, startTimeoffset2, timestampEnd2, instance2, domain2, cell2, pods2)));
+                    }else {
+                        futures2.add(pool.submitTask(() -> ArgusQueryT.getArgusMetric(m, timestampStart1, timestampEnd1, instance1, domain1, cell1, pods1)));
+                        futures2.add(pool.submitTask(() -> ArgusQueryT.getArgusMetric(m, timestampStart2, timestampEnd2, instance2, domain2, cell2, pods2)));
+                    }
+
                     ArgusQueryT.QueryResponse res1 = futures2.get(0).get();
                     ArgusQueryT.QueryResponse res2 = futures2.get(1).get();
                     futures2.clear();
@@ -779,7 +861,7 @@ public class WeekOverWeek {
                         record.add(metricList.get(i) + "/r %c:number");
                         record.add(metricPercentChange);
                         header.add(metricList.get(i) + "/r %c:number");
-                    } else if (metricList.get(i).equals("cCpuT") || metricList.get(i).equals("cCpuR")) {
+                    } else if (metricList.get(i).equals("cCpuT") || metricList.get(i).equals("cCpuR") || metricList.get(i).equals("cCpuTPeak")) {
                         //try incremental
                         long window = 3 * 60 * 60 * 1000;
                         Double cCpuTime1Total = 0.0;
@@ -787,21 +869,26 @@ public class WeekOverWeek {
                         Boolean success = true;
 
                         long currentStart = timestampStart1;
+                        if(m.equals("cCpuTPeak")){
+                            final long PAofset = PAStartOfset + 3 * 60 * 60 * 1000;//ignore first 3 hours after PA
+                            currentStart = currentStart+PAofset;
+                        }
                         while (currentStart <= timestampEnd1 && success) {
                             long currentEnd = currentStart + window;
                             if (currentEnd > timestampEnd1) {
                                 currentEnd = timestampEnd1; // handle last partial window
                             }
+
                             System.out.println("Looping for 1:" + instance1 + ":" + domain1 + ":" + cell1 + ":" + Utils.convertEpochToUTCString(currentStart) + ":" + Utils.convertEpochToUTCString(currentEnd));
                             // ArgusQueryT.QueryResponse res = ArgusQueryT.getArgusMetric(metricList.get(i), currentStart, currentEnd, instance1, domain1, cell1, pods1);
                             final long currentStarttmp = currentStart;
                             final long currentEndtmp = currentEnd;
-                            futures2.add(pool.submitTask(() -> ArgusQueryT.getArgusMetric(m, currentStarttmp, currentEndtmp, instance1, domain1, cell1, pods1)));
-                            /*if (res != null) {
-                                cCpuTime1Total += res.getMetric();
-                            } else {
-                                success = false;
-                            }*/
+                            if(m.equals("cCpuTPeak")) {
+                                final String tmpm = "cCpuT";
+                                futures2.add(pool.submitTask(() -> ArgusQueryT.getArgusMetric(tmpm, currentStarttmp, currentEndtmp, instance1, domain1, cell1, pods1)));
+                            }else {
+                                futures2.add(pool.submitTask(() -> ArgusQueryT.getArgusMetric(m, currentStarttmp, currentEndtmp, instance1, domain1, cell1, pods1)));
+                            }
                             currentStart = currentEnd + 1;
                         }
                         for (Future<ArgusQueryT.QueryResponse> future : futures2) {
@@ -816,6 +903,10 @@ public class WeekOverWeek {
                         if (success) {
                             System.out.println("Looping success for1:" + instance2 + ":" + domain2 + ":" + cell2);
                             currentStart = timestampStart2;
+                            if(m.equals("cCpuTPeak")){
+                                final long PAofset = PAStartOfset + 3 * 60 * 60 * 1000;//ignore first 3 hours after PA
+                                currentStart = currentStart+PAofset;
+                            }
                             while (currentStart <= timestampEnd2 && success) {
                                 long currentEnd = currentStart + window;
                                 if (currentEnd > timestampEnd2) {
@@ -825,12 +916,12 @@ public class WeekOverWeek {
                                 //ArgusQueryT.QueryResponse res = ArgusQueryT.getArgusMetric(metricList.get(i), currentStart, currentEnd, instance2, domain2, cell2, pods2);
                                 final long currentStarttmp = currentStart;
                                 final long currentEndtmp = currentEnd;
-                                futures2.add(pool.submitTask(() -> ArgusQueryT.getArgusMetric(m, currentStarttmp, currentEndtmp, instance2, domain2, cell2, pods2)));
-                                /*if (res != null) {
-                                    cCpuTime2Total += res.getMetric();
-                                } else {
-                                    success = false;
-                                }*/
+                                if(m.equals("cCpuTPeak")) {
+                                    final String tmpm = "cCpuT";
+                                    futures2.add(pool.submitTask(() -> ArgusQueryT.getArgusMetric(tmpm, currentStarttmp, currentEndtmp, instance2, domain2, cell2, pods2)));
+                                }else {
+                                    futures2.add(pool.submitTask(() -> ArgusQueryT.getArgusMetric(m, currentStarttmp, currentEndtmp, instance2, domain2, cell2, pods2)));
+                                }
                                 currentStart = currentEnd + 1;
                             }
                             for (Future<ArgusQueryT.QueryResponse> future : futures2) {

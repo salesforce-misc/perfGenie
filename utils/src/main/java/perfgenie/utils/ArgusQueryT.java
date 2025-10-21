@@ -1127,7 +1127,13 @@ public class ArgusQueryT {
 
         String metric = "";
         if (accessToken != null) {
-            metric = "{\"array\":" + executeCurlCommand(metricCommand) + "}";
+            //request timeout
+            String output = executeCurlCommand(metricCommand);
+            if(output.contains("request timeout")){
+                System.out.println("retry: " + response.query);
+                output = executeCurlCommand(metricCommand);
+            }
+            metric = "{\"array\":" + output + "}";
         } else {
             try {
                 if (substrate == null) {

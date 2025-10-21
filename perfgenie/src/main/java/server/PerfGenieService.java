@@ -1143,7 +1143,7 @@ public class PerfGenieService implements IPerfGenieService {
         final Map<String, Double> dimMap = new HashMap<>();
         final Map<String, String> queryMap = new HashMap<>();
         queryMap.put("source", canarySource);
-        queryMap.put("tenant-id", "lense");
+        queryMap.put("tenant-id", "lenses");
         queryMap.put("instance-id", host);//TODO this shold be input
         queryMap.put("host", host);
         queryMap.put("source-file", "lense");
@@ -1230,6 +1230,10 @@ public class PerfGenieService implements IPerfGenieService {
             List<Long> timestamps_canary = new ArrayList<>();
             HashMap<String,String> colors = new HashMap<>();
             long curStart = start;
+            long metricStartTime = 0;
+            int metricSeriesCount = 0;
+            long canaryMetricStartTime = 0;
+            long interval = 0;
             while (curStart<=end) {
                 long curEnd = curStart + 5 * 24 * 60 * 60 * 1000;
                 if(curEnd > end){
@@ -1237,11 +1241,35 @@ public class PerfGenieService implements IPerfGenieService {
                 }
                 List<String> lenses = eventStore.getCanaryComments(config.getTenant(), curStart, curEnd, queryMap, dimMap, true);
                 if(lenses != null) {
+
                     for (String lense : lenses) {
                         SeriesData map = (SeriesData) Utils.readValue(lense, SeriesData.class);
                         ArrayList<Double> tmp_values = map.getV();
                         ArrayList<Long> tmp_timestamps = map.getX();
                         TimeseriesSorter.sortByTimestampsIfNeeded(tmp_values, tmp_timestamps);
+
+                        if(interval == 0){
+                            interval = TimeseriesSorter.findInterval(tmp_timestamps);
+                            System.out.println(interval);
+                        }else{
+                            //fill gaps with null values
+                            long lastTimestamp = timestamps.get(timestamps.size()-1);
+                            if((tmp_timestamps.get(0) - lastTimestamp) > interval){
+                                long curStartTimestamp = tmp_timestamps.get(0);
+                                while(curStartTimestamp > lastTimestamp) {
+                                    lastTimestamp = lastTimestamp + interval;
+                                    timestamps.add(lastTimestamp);
+                                    values_canary.add(null);
+                                    values.add(null);
+                                }
+                            }
+                            System.out.println(lastTimestamp);
+                        }
+
+                        if(metricStartTime == 0){
+                            canaryMetricStartTime = tmp_timestamps.get(0);
+                            metricStartTime = canaryMetricStartTime + 7 * 24 * 60 * 60 * 1000;
+                        }
                         if(timestamps_canaryType != null && values_canaryType != null) {
                             long typeEnd = timestamps_canaryType.get(0);
                             Double typeValue = values_canaryType.get(0);
@@ -1253,18 +1281,28 @@ public class PerfGenieService implements IPerfGenieService {
                                     curTypeIndex++;
                                 }
                                 while(curSeriesIndex < tmp_timestamps.size() && (tmp_timestamps.get(curSeriesIndex) < typeEnd || curTypeIndex == values_canaryType.size()) ){
-                                    timestamps.add(tmp_timestamps.get(curSeriesIndex));
+                                    //if(tmp_timestamps.get(curSeriesIndex) >= metricStartTime) {
+                                        timestamps.add(tmp_timestamps.get(curSeriesIndex));
+                                    //    metricSeriesCount++;
+                                    //}
                                     //timestamps_canary.add(tmp_timestamps.get(curSeriesIndex));
                                     if(metric.equals("rCpuT")) {
-                                        if(typeValue == 2) {
+                                        if (typeValue == null) {
+                                            values_canary.add(null);
+                                            values.add(null);
+                                        } else if (typeValue == 2) {
                                             values.add(tmp_values.get(curSeriesIndex) / 60000.0);
                                             values_canary.add(null);
-                                        }else {
-                                            values_canary.add(tmp_values.get(curSeriesIndex) / 60000.0);
+                                        } else {
                                             values.add(null);
+                                            values_canary.add(tmp_values.get(curSeriesIndex) / 60000.0);
                                         }
+
                                     }else{
-                                        if(typeValue == 2) {
+                                        if (typeValue == null) {
+                                            values_canary.add(null);
+                                            values.add(null);
+                                        } else if(typeValue == 2) {
                                             values.add(tmp_values.get(curSeriesIndex));
                                             values_canary.add(null);
                                         }else {
@@ -1297,10 +1335,28 @@ public class PerfGenieService implements IPerfGenieService {
                 curStart = curEnd+1;
             }
             if(timestamps_canaryType != null && values_canaryType != null) {
-                metrics.put("zing-"+metric, values_canary);
-                metrics.put("zulu-"+metric, values);
-                colors.put("zing-"+metric,"orange");
-                colors.put("zulu-"+metric,"blue");
+                if(timestamps.size() != 0) {
+                    canaryMetricStartTime = timestamps.get(0)+ 7 * 24 * 60 * 60 * 1000;
+                    metricSeriesCount = 0;
+                    for(int i =0; i<timestamps.size(); i++){
+                        if(timestamps.get(i) >= canaryMetricStartTime){
+                            metricSeriesCount++;
+                        }
+                    }
+                    List<Double> values_canary_p = values_canary.subList(0,metricSeriesCount);
+                    List<Double> values_p = values.subList(0,metricSeriesCount);
+                    timestamps = timestamps.subList(timestamps.size()-metricSeriesCount,timestamps.size());
+                    values = values.subList(values.size()-metricSeriesCount,values.size());
+                    values_canary = values_canary.subList(values_canary.size()-metricSeriesCount,values_canary.size());
+                    metrics.put("zing-" + metric, values_canary);
+                    metrics.put("zulu-" + metric, values);
+                    metrics.put("zing-lastweek-" + metric, values_canary_p);
+                    metrics.put("zulu-lastweek-" + metric, values_p);
+                    colors.put("zing-" + metric, "#FF5F1F");
+                    colors.put("zulu-" + metric, "#1F51FF");
+                    colors.put("zing-lastweek-" + metric, "#EC5800");
+                    colors.put("zulu-lastweek-" + metric, "#4169E1");
+                }
             }else{
                 metrics.put(metric, values);
                 colors.put(metric,"blue");
@@ -1349,7 +1405,7 @@ public class PerfGenieService implements IPerfGenieService {
 
         final Map<String, String> dimMap = new HashMap<>();
         queryMap.put("source", canarySource);
-        queryMap.put("tenant-id", "lense");
+        queryMap.put("tenant-id", "lenses");
         queryMap.put("instance-id", host);//TODO this shold be input
         queryMap.put("host", host);
         queryMap.put("source-file", "lense");
@@ -1887,7 +1943,7 @@ public class PerfGenieService implements IPerfGenieService {
             if (substrate != null) {
                 host = "perf-genie-test13";
             }
-            host = "perf-genie-test34";
+            host = "perf-genie-test40";
             if (args[0].equals("week")) {
                 long startTime = Long.parseLong(args[1]);
                 long endTime = Long.parseLong(args[2]);

@@ -421,7 +421,10 @@ class WaveAnalytics {
                 }
                 // Try to parse numeric values
                 else if (!isNaN(value) && value !== '' && value !== '-1000000') {
-                    value = parseFloat(value);
+                    value = this.safeParseFloat(value);
+                    if (isNaN(value)) {
+                        value = originalValue; // Keep original if not a valid number
+                    }
                 }
                 row[header] = value;
             });
@@ -641,7 +644,7 @@ class WaveAnalytics {
     }
 
     isValidTimestamp(timestamp) {
-        const num = parseFloat(timestamp);
+        const num = this.safeParseFloat(timestamp);
         if (isNaN(num)) return false;
         
         // Check if it's a reasonable timestamp (between 1970 and 2100)
@@ -2445,8 +2448,24 @@ class WaveAnalytics {
             return;
         }
         
-        // Analyze column types based on the data being displayed
-        this.analyzeColumnTypes(data);
+        // For aggregated data, we need to analyze the actual columns in the data
+        // since they might be different from the original dimensions/metrics
+        if (data && data.data) {
+            // Analyze column types based on the aggregated data
+            console.log('=== RENDER LENS TABLE - AGGREGATED DATA ===');
+            console.log('Data structure:', Object.keys(data.data));
+            console.log('First group data:', data.data[Object.keys(data.data)[0]]);
+            this.analyzeColumnTypes(data);
+            console.log('Column types after analysis:', this.columnTypes);
+        } else {
+            // Use pre-determined column types for raw data
+            console.log('=== RENDER LENS TABLE - RAW DATA ===');
+            console.log('Pre-determined dimensions:', this.dimensions);
+            console.log('Pre-determined metrics:', this.metrics);
+            console.log('Pre-determined timestamp dimensions:', this.timestampDimensions);
+            this.initializeColumnTypesIfNeeded();
+            console.log('Column types after initialization:', this.columnTypes);
+        }
         
         // Create table HTML
         let tableHTML = '<div class="table-wrapper"><table class="wave-table">';
@@ -2526,8 +2545,14 @@ class WaveAnalytics {
         // Get all available columns from the first row
         const allColumns = Object.keys(this.filteredData[0] || {});
         
-        // Analyze column types for raw data
-        this.analyzeColumnTypes(null);
+        // Use pre-determined column types instead of recalculating
+        console.log('=== RENDER ALL DATA TABLE ===');
+        console.log('Available columns:', allColumns);
+        console.log('Pre-determined dimensions:', this.dimensions);
+        console.log('Pre-determined metrics:', this.metrics);
+        console.log('Pre-determined timestamp dimensions:', this.timestampDimensions);
+        this.initializeColumnTypesIfNeeded();
+        console.log('Column types after initialization:', this.columnTypes);
         
         // Create table HTML
         let tableHTML = '<div class="table-wrapper"><table class="wave-table">';
@@ -2884,33 +2909,120 @@ class WaveAnalytics {
         }
     }
 
-    // Analyze column data types when table is loaded
+    // Initialize column types using pre-determined data structure analysis
+    initializeColumnTypesIfNeeded() {
+        if (this.columnTypes && Object.keys(this.columnTypes).length > 0) {
+            // Column types already initialized, no need to recalculate
+            return;
+        }
+        
+        this.columnTypes = {};
+        
+        // First, use the pre-determined dimensions, metrics, and timestamp dimensions
+        // from the initial data structure analysis
+        if (this.dimensions && this.dimensions.length > 0) {
+            this.dimensions.forEach(dimension => {
+                if (this.timestampDimensions.includes(dimension)) {
+                    this.columnTypes[dimension] = 'timestamp';
+                } else {
+                    this.columnTypes[dimension] = 'dimension';
+                }
+            });
+        }
+        
+        if (this.metrics && this.metrics.length > 0) {
+            this.metrics.forEach(metric => {
+                this.columnTypes[metric] = 'metric';
+            });
+        }
+        
+        // For any additional columns that might exist in the data but weren't
+        // in the original dimensions/metrics, analyze them from the actual data
+        if (this.filteredData && this.filteredData.length > 0) {
+            const allColumns = Object.keys(this.filteredData[0] || {});
+            const sampleSize = Math.min(10, this.filteredData.length);
+            const sampleData = this.filteredData.slice(0, sampleSize);
+            
+            console.log('Additional columns to analyze:', allColumns);
+            console.log('Already classified columns:', Object.keys(this.columnTypes));
+            
+            allColumns.forEach(column => {
+                // Only analyze columns that weren't already classified
+                if (!this.columnTypes[column]) {
+                    const values = sampleData.map(row => row[column]).filter(val => 
+                        val !== null && val !== undefined && val !== ''
+                    );
+                    if (values.length > 0) {
+                        const detectedType = this.detectValueType(values[0]);
+                        this.columnTypes[column] = detectedType;
+                        console.log(`Additional column '${column}': sample_value='${values[0]}', type='${detectedType}'`);
+                    }
+                } else {
+                    console.log(`Column '${column}' already classified as: ${this.columnTypes[column]}`);
+                }
+            });
+        }
+        
+        console.log('Column types initialized from pre-determined structure and data analysis:', this.columnTypes);
+    }
+
+    // Analyze column data types when table is loaded (kept for backward compatibility)
     analyzeColumnTypes(data) {
+        console.log('=== ANALYZE COLUMN TYPES ===');
         this.columnTypes = {};
         
         if (data && data.data) {
             // For aggregated data, analyze the first group's values
             const firstGroup = Object.keys(data.data)[0];
+            console.log('Analyzing aggregated data, first group:', firstGroup);
             if (firstGroup && data.data[firstGroup]) {
-                Object.keys(data.data[firstGroup]).forEach(column => {
+                const groupColumns = Object.keys(data.data[firstGroup]);
+                console.log('Group columns:', groupColumns);
+                groupColumns.forEach(column => {
                     const value = data.data[firstGroup][column];
-                    this.columnTypes[column] = this.detectValueType(value);
+                    const detectedType = this.detectValueType(value);
+                    this.columnTypes[column] = detectedType;
+                    console.log(`Column '${column}': value='${value}', type='${detectedType}'`);
                 });
             }
         } else if (this.filteredData && this.filteredData.length > 0) {
             // For raw data, analyze sample values
             const sampleSize = Math.min(10, this.filteredData.length);
             const sampleData = this.filteredData.slice(0, sampleSize);
+            console.log('Analyzing raw data, sample size:', sampleSize);
             
-            Object.keys(sampleData[0] || {}).forEach(column => {
+            const allColumns = Object.keys(sampleData[0] || {});
+            console.log('All columns in raw data:', allColumns);
+            allColumns.forEach(column => {
                 const values = sampleData.map(row => row[column]).filter(val => 
                     val !== null && val !== undefined && val !== ''
                 );
-                this.columnTypes[column] = this.detectValueType(values[0]);
+                if (values.length > 0) {
+                    const detectedType = this.detectValueType(values[0]);
+                    this.columnTypes[column] = detectedType;
+                    console.log(`Column '${column}': sample_value='${values[0]}', type='${detectedType}'`);
+                }
             });
         }
         
-        console.log('Column types detected:', this.columnTypes);
+        console.log('Final column types detected:', this.columnTypes);
+    }
+
+    // Safe parseFloat wrapper that only converts pure numeric strings
+    safeParseFloat(value) {
+        if (value === null || value === undefined || value === '') {
+            return NaN;
+        }
+        
+        const strValue = String(value).trim();
+        const isPureNumber = /^-?\d+(\.\d+)?$/.test(strValue);
+        
+        if (isPureNumber) {
+            const num = parseFloat(strValue);
+            return !isNaN(num) && isFinite(num) ? num : NaN;
+        }
+        
+        return NaN;
     }
 
     // Detect the type of a single value
@@ -2924,8 +3036,8 @@ class WaveAnalytics {
             return 'timestamp';
         }
         
-        // Try to parse as number
-        const num = parseFloat(value);
+        // Check if it's a valid number using safe parseFloat
+        const num = this.safeParseFloat(value);
         if (!isNaN(num)) {
             return Number.isInteger(num) ? 'integer' : 'float';
         }
@@ -4195,7 +4307,7 @@ class WaveAnalytics {
         
         if (typeof value === 'string') {
             // Check if it's a numeric string that could be a timestamp
-            const numericValue = parseFloat(value);
+            const numericValue = this.safeParseFloat(value);
             return !isNaN(numericValue) && numericValue > 0 && numericValue < 4102444800000;
         }
         
@@ -4284,7 +4396,7 @@ class WaveAnalytics {
         }
         
         // Try to parse as a number first (in case it's a string representation of epoch)
-        const numericTimestamp = parseFloat(timestamp);
+        const numericTimestamp = this.safeParseFloat(timestamp);
         if (!isNaN(numericTimestamp)) {
             return numericTimestamp;
         }
@@ -6535,7 +6647,7 @@ class WaveAnalytics {
         // Handle both number and string timestamps
         let numericValue = value;
         if (typeof value === 'string') {
-            numericValue = parseFloat(value);
+            numericValue = this.safeParseFloat(value);
         }
         
         if (typeof numericValue === 'number' && !isNaN(numericValue)) {
@@ -6573,7 +6685,7 @@ class WaveAnalytics {
         // Handle both number and string timestamps
         let numericValue = value;
         if (typeof value === 'string') {
-            numericValue = parseFloat(value);
+            numericValue = this.safeParseFloat(value);
         }
         
         if (typeof numericValue === 'number' && !isNaN(numericValue)) {
@@ -6582,13 +6694,17 @@ class WaveAnalytics {
             if (numericValue > 1000000000000 && numericValue < 5000000000000) { // Between 2001 and 2128
                 const date = new Date(numericValue);
                 if (!isNaN(date.getTime())) {
-                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    // Format: yyyy-mm-dd hr:mm:ss SSS UTC (ddd)
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const hours = String(date.getHours()).padStart(2, '0');
+                    const minutes = String(date.getMinutes()).padStart(2, '0');
+                    const seconds = String(date.getSeconds()).padStart(2, '0');
+                    const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
                     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                    const month = monthNames[date.getMonth()];
-                    const day = date.getDate();
                     const dayOfWeek = dayNames[date.getDay()];
-                    return month + ' ' + day + this.getOrdinalSuffix(day) + ' (' + dayOfWeek + ')';
+                    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} ${milliseconds} UTC (${dayOfWeek})`;
                 }
             }
             return numericValue.toFixed(2);
@@ -6600,7 +6716,7 @@ class WaveAnalytics {
         // Handle both number and string timestamps
         let numericValue = value;
         if (typeof value === 'string') {
-            numericValue = parseFloat(value);
+            numericValue = this.safeParseFloat(value);
         }
         
         if (typeof numericValue === 'number' && !isNaN(numericValue)) {

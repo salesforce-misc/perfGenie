@@ -59,4 +59,92 @@ public class TimeseriesSorter {
             }
         }
     }
+
+    public static long findInterval(List<Long> timestamps){
+        int sampleSize = Math.min(10, timestamps.size());
+        Map<Long, Integer> intervalCounts = new HashMap<>();
+
+        for (int i = 1; i < sampleSize; i++) {
+            long interval = timestamps.get(i) - timestamps.get(i - 1);
+            intervalCounts.put(interval, intervalCounts.getOrDefault(interval, 0) + 1);
+        }
+
+        long intervalMillis = intervalCounts.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .orElseThrow(() -> new IllegalStateException("Unable to determine interval"))
+                .getKey();
+
+        return intervalMillis;
+    }
+
+    public static Map<String, List<?>> fillMissing(Map<String, List<?>> input) {
+        // Step 1: Extract timestamps
+        if (!input.containsKey("timestamps")) {
+            throw new IllegalArgumentException("Input map must contain a 'timestamps' key.");
+        }
+
+        List<Long> timestamps = (List<Long>) input.get("timestamps");
+
+        if (timestamps == null || timestamps.size() < 2) {
+            throw new IllegalArgumentException("At least two timestamps are needed to infer interval.");
+        }
+
+        // Step 2: Detect interval from first 10 timestamps
+        int sampleSize = Math.min(10, timestamps.size());
+        Map<Long, Integer> intervalCounts = new HashMap<>();
+
+        for (int i = 1; i < sampleSize; i++) {
+            long interval = timestamps.get(i) - timestamps.get(i - 1);
+            intervalCounts.put(interval, intervalCounts.getOrDefault(interval, 0) + 1);
+        }
+
+        long intervalMillis = intervalCounts.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .orElseThrow(() -> new IllegalStateException("Unable to determine interval"))
+                .getKey();
+
+        System.out.println("Interval to fill:" + intervalMillis);
+        // Step 3: Prepare result map
+        Map<String, List<?>> result = new HashMap<>();
+        List<Long> filledTimestamps = new ArrayList<>();
+        result.put("timestamps", filledTimestamps);
+
+        // Prepare result lists for value keys
+        Map<String, List<Double>> originalValueLists = new HashMap<>();
+        Map<String, List<Double>> filledValueLists = new HashMap<>();
+
+        for (String key : input.keySet()) {
+            if (key.equals("timestamps")) continue;
+            List<Double> list = (List<Double>) input.get(key);
+            originalValueLists.put(key, list);
+            filledValueLists.put(key, new ArrayList<>());
+            result.put(key, filledValueLists.get(key));
+        }
+
+        // Step 4: Fill data
+        int index = 0;
+        long current = timestamps.get(0);
+        long end = timestamps.get(timestamps.size() - 1);
+
+        while (current <= end) {
+            filledTimestamps.add(current);
+
+            if (index < timestamps.size() && timestamps.get(index).equals(current)) {
+                // Copy actual values
+                for (String key : originalValueLists.keySet()) {
+                    filledValueLists.get(key).add(originalValueLists.get(key).get(index));
+                }
+                index++;
+            } else {
+                // Fill nulls for missing timestamp
+                for (String key : originalValueLists.keySet()) {
+                    filledValueLists.get(key).add(null);
+                }
+            }
+
+            current += intervalMillis;
+        }
+
+        return result;
+    }
 }

@@ -131,36 +131,28 @@ public class PerfGenieController {
     }*/
 
     @GetMapping(path = {"/component/casp/v1/processcustomcanary","/component/casp/v1/processcustomcanary/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String canaryview(
+    public String processcustomcanary(
             @PathVariable(required = false, name = "host") String host,
             @RequestParam(required = false, name = "start") final long start,
             @RequestParam(required = false, name = "end") final long end,
-            @RequestParam(required = false, name = "cell") final String cell,
-            @RequestParam(required = false, name = "instance") final String instance,
-            @RequestParam(required = false, name = "domain") final String domain
+            @RequestParam(required = false, name = "cell") final String cell
             ) throws IOException {
         //creates duplicates
-        String res = service.processSideBySideCanaryTask(start,end,cell,host);
-        return res;
+        return service.processSideBySideCanaryTask(start,end,cell,host);
     }
 
     @GetMapping(path = {"/component/casp/v1/processperfswat","/component/casp/v1/processperfswat/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String canaryview(
+    public String processperfswat(
             @PathVariable(required = false, name = "host") String host,
             @RequestParam(required = false, name = "start1") final long start1,
             @RequestParam(required = false, name = "end1") final long end1,
             @RequestParam(required = false, name = "cell1") final String cell1,
-            @RequestParam(required = false, name = "instance1") final String instance1,
-            @RequestParam(required = false, name = "domain1") final String domain1,
             @RequestParam(required = false, name = "start2") final long start2,
             @RequestParam(required = false, name = "end2") final long end2,
-            @RequestParam(required = false, name = "cell2") final String cell2,
-            @RequestParam(required = false, name = "instance2") final String instance2,
-            @RequestParam(required = false, name = "domain2") final String domain2
+            @RequestParam(required = false, name = "cell2") final String cell2
     ) throws IOException {
         //creates duplicates
-        String res = service.processWeekOverWeekCanaryTask(start1,end1,cell1,start2,end2,cell2,host);
-        return res;
+        return service.processWeekOverWeekCanaryTask(start1,end1,cell1,start2,end2,cell2,host);
     }
 
     @GetMapping(path = {"/component/casp/v1/canarybackup"}, produces = MediaType.APPLICATION_JSON_VALUE)
