@@ -1889,6 +1889,10 @@ class TimeSeriesChart {
             this.isReverting = false;
         }
         
+        // Update slider values to reflect the restored data
+        this.updateSliderValues();
+        this.updateRangeIndicator();
+        
         console.log('Reverted to original time series data');
     }
     setAggregation(aggregation) {
@@ -4330,7 +4334,7 @@ TimeSeriesChart.prototype.setupLegendClickHandler = function(chart) {
                 }
             });
             
-            console.log('Legend click handlers attached to', legendItems.size(), 'items');
+            //console.log('Legend click handlers attached to', legendItems.size(), 'items');
         } else {
             console.warn('No legend items found to attach click handlers');
         }
