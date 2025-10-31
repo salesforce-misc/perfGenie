@@ -21,12 +21,14 @@ class SFDataTable {
     #sfDataTableID = "SFDataTable";
     #sfPaginationID = "pagination";
     #sfSearchID = "SFSearch";
+    #sfDownloadID = "SFDownload";
     #sfShowToolBar = true;
     constructor(instanceVariableName) {
         if(instanceVariableName != undefined){
             this.#sfDataTableID = instanceVariableName+"SFDataTable";
             this.#sfPaginationID = instanceVariableName+"pagination";
             this.#sfSearchID = instanceVariableName+"SFSearch";
+            this.#sfDownloadID = instanceVariableName+"SFDownload";
             this.#instanceName = instanceVariableName;
         }else{
 
@@ -185,6 +187,8 @@ class SFDataTable {
             return "";
         }
         let toolbar = "<div class='ui-widget' style='padding-top: 5px !important;'>";
+        toolbar += "<a title='Download as csv' id='" + this.#sfDownloadID + "table' href='javascript:" + this.#instanceName + ".downloadTableAsCSV()'><i style=\"font-size:18px;\" class=\"fa fa-download\" aria-hidden=\"true\"></i></a>";
+
         toolbar += " Search: <input type='text' style='border: 1px solid #E8EAEC;' id='" + this.#sfSearchID + "' class='ui-widget' name='SFSearch'  value='" + (this.#SFDataTableSearchStr == undefined ? "" : this.#SFDataTableSearchStr) + "'onkeypress='if(event.keyCode == 13) javascript:" + this.#instanceName + ".SFSearch()'>";
 
         toolbar += "<a title='Search' id='" + this.#sfSearchID + "table' href='javascript:" + this.#instanceName + ".SFSearch()'><i style=\"font-size:18px;\" class=\"fa fa-search\" aria-hidden=\"true\"></i></a>";
@@ -384,4 +388,117 @@ class SFDataTable {
             row.push({"v": val, "s": o});
         }
     }
+
+
+//Temporary code below
+    transform(value) {
+        if(typeof value === 'string'){
+            if(value == "na" || value == "NA" || value.includes("Infinity") || value.includes("NaN")) {
+                return -1000000;
+            }
+        }
+        return value;
+    }
+
+    getTableAsCSV() {
+        let filename = 'datatable.csv'
+        const table = document.getElementById(this.#SFDataTableID);
+        if (!table) {
+            console.error(`Table with ID not found.`);
+            return "";
+        }
+        let csvData = "";
+        let coma = "";
+        for (let j = 0; j < this.#SFDataTableHeader.length; j++) {
+            csvData = csvData + coma + this.#SFDataTableHeader[j]['v'];
+            if (j == 0) {
+                coma = ",";
+            }
+        }
+        csvData = csvData = csvData + ",location" + "\n";//header
+        for (let i = 0; i < this.#SFDataTableRows.length; i++) {
+            let coma = "";
+            let type = "";
+            for (let j = 0; j < this.#SFDataTableRows[i].length; j++) {
+                if (j == 2) {
+                    if (typeof this.#SFDataTableRows[i][j]['v'] === 'string') {
+                        if (this.#SFDataTableRows[i][j]['v'].charAt(this.#SFDataTableRows[i][j]['v'].length - 1) === 's') {
+                            type = "sb";
+                        } else {
+                            type = "prod";
+                        }
+                    }
+                }
+                csvData = csvData + coma + this.extractTextFromHTML(this.transform(this.#SFDataTableRows[i][j]['v']));
+                if (j == 0) {
+                    coma = ",";
+                }
+            }
+            csvData = csvData + "," + type + "\n";//value
+        }
+        return csvData;
+    }
+//Temporary code above
+
+
+    downloadTableAsCSV() {
+        let filename = 'datatable.csv'
+        const table = document.getElementById(this.#SFDataTableID);
+        if (!table) {
+            console.error(`Table with ID "${tableId}" not found.`);
+            return;
+        }
+        let csvData="";
+        let coma = "";
+        for(let j=0; j<this.#SFDataTableHeader.length; j++) {
+            csvData = csvData+coma+this.#SFDataTableHeader[j]['v'];
+            if(j == 0){coma=",";}
+        }
+        csvData = csvData = csvData + ",location" + "\n";//header
+        for(let i = 0; i<this.#SFDataTableRows.length; i++){
+            let coma = "";
+            let type = "";
+            for(let j=0; j<this.#SFDataTableRows[i].length; j++) {
+                if(j == 2){
+                    if(this.#SFDataTableRows[i][j]['v'].charAt(this.#SFDataTableRows[i][j]['v'].length - 1) === 's'){
+                        type = "sb";
+                    }else{
+                        type = "prod";
+                    }
+                }
+                csvData = csvData+coma+this.extractTextFromHTML(this.transform(this.#SFDataTableRows[i][j]['v']));
+                if(j == 0){coma=",";}
+            }
+            csvData = csvData + "," + type + "\n";//value
+        }
+
+        const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+
+        // Check if URL.createObjectURL is available
+        const createObjectURL = window.URL?.createObjectURL || window.webkitURL?.createObjectURL;
+        if (typeof createObjectURL !== 'function') {
+            console.error('Your browser does not support Blob URL creation.');
+            return;
+        }
+
+        const url = createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.display = 'none';
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        // Optional: Revoke the object URL to free memory
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+    }
+
+    extractTextFromHTML(htmlString) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlString;
+        return tempDiv.textContent || tempDiv.innerText || '';
+    }
+
 }
