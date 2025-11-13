@@ -5,7 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 
-package server;
+package server.profiler;
 
 import com.google.common.base.Strings;
 import com.google.common.io.Resources;
@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import perfgenie.utils.ArgusQueryT;
 import perfgenie.utils.Utils;
+import server.profiler.PerfGenieService;
 
 import java.io.File;
 import java.io.IOException;

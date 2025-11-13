@@ -5,7 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 
-package server;
+package server.profiler;
 
 import java.io.IOException;
 import java.io.InputStream;

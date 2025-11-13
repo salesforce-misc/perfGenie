@@ -5,7 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 
-package server;
+package server.profiler;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
@@ -13,7 +13,6 @@ import com.salesforce.cantor.Cantor;
 import com.salesforce.cantor.grpc.CantorOnGrpc;
 import com.salesforce.cantor.h2.CantorOnH2;
 import com.salesforce.cantor.mysql.CantorOnMysql;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import perfgenie.ParsePidStat;
@@ -25,7 +24,6 @@ import java.net.InetAddress;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.text.SimpleDateFormat;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;

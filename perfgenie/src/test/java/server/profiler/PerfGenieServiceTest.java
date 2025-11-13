@@ -1,4 +1,4 @@
-/*
+package server.profiler;/*
  * Copyright (c) 2022, Salesforce.com, Inc.
  * All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause

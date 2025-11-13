@@ -40,7 +40,9 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
    @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.csrf().disable().authorizeRequests().requestMatchers("/component/casp/v1/comment").permitAll().anyRequest().authenticated()
+        http.csrf().disable()
+                .cors().and() // Enable CORS
+                .authorizeRequests().requestMatchers("/component/casp/v1/comment").permitAll().anyRequest().authenticated()
                 .and()
                 .formLogin().permitAll() // Optionally configure form login
                 .and()

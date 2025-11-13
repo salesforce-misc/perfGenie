@@ -777,7 +777,7 @@
                 if($('#other-event-input')[0].children.length == 1){
                     genRequestTable();
                 }
-                toastMessage(toastType.INFO, customevent + " data loaded");
+                //toastMessage(toastType.INFO, customevent + " data loaded");
                 //$("#cct-panel").css("height", "100%");//expand context table view
             }
         }
