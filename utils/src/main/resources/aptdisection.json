@@ -1,0 +1,611 @@
+{
+  "id": 8,
+  "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 11
+  },
+  "type": "timeseries",
+  "title": "APT Dissection (ms / request)",
+  "stats": ["avg", "max", "min", "p90", "p95", "p99"],
+  "datasource": {
+    "type": "argus",
+    "uid": "000000001"
+  },
+  "pluginVersion": "8.1.8",
+  "description": "Overall APT broken down by time spent in different subsystems.",
+  "fieldConfig": {
+    "defaults": {
+      "custom": {
+        "drawStyle": "line",
+        "lineInterpolation": "linear",
+        "barAlignment": 0,
+        "lineWidth": 1,
+        "fillOpacity": 0,
+        "gradientMode": "none",
+        "spanNulls": false,
+        "showPoints": "never",
+        "pointSize": 5,
+        "stacking": {
+          "mode": "none",
+          "group": "A"
+        },
+        "axisPlacement": "auto",
+        "axisLabel": "",
+        "axisColorMode": "text",
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "axisCenteredZero": false,
+        "hideFrom": {
+          "tooltip": false,
+          "viz": false,
+          "legend": false
+        },
+        "thresholdsStyle": {
+          "mode": "area"
+        },
+        "axisSoftMin": 0
+      },
+      "color": {
+        "mode": "palette-classic"
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "transparent",
+            "value": null
+          },
+          {
+            "color": "orange",
+            "value": 500
+          },
+          {
+            "color": "red",
+            "value": 3000
+          }
+        ]
+      },
+      "unit": "ms"
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/wall_time/"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "Wall Clock Time"
+          },
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "dark-green",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/app_cpu_time/"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "App CPU Time"
+          },
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "dark-orange",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/db_total_time/"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "DB Total Time"
+          },
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "dark-red",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/ora_db_time/"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "Oracle DB Time"
+          },
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "super-light-red",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/transactional_cache/"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "Transactional Cache"
+          },
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "semi-dark-blue",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/memcached/"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "Memcached / Redis / CaaS"
+          },
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "light-blue",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/apex_callout/"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "Apex Callout"
+          },
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "#0c867c",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/redis/"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "Redis (Unused)"
+          },
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "light-green",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/phoenix_hbase_query/"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "HBase / Phoenix"
+          },
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "light-yellow",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/search_query/"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "Search Query"
+          },
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "light-red",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/safepoint/"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "JVM Safepoint"
+          },
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "#7a3913ba",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/gc_pause/"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "GC Pause"
+          },
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "#510e72",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/ora_db_time/"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "#FFA6B0",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/transactional_cache/"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "#1F60C4",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/memcached/"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "rgb(78, 155, 166)",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/apex_callout/"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "rgb(89, 77, 77)",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/redis/"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "#96D98D",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/phoenix_hbase_query/"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "#8AB8FF",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/search_query/"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "#FF7383",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/safepoint/"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "rgb(112, 85, 17)",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byRegexp",
+          "options": "/gc_pause/"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "#8F3BB8",
+              "mode": "fixed"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "options": {
+    "tooltip": {
+      "mode": "multi",
+      "sort": "desc"
+    },
+    "legend": {
+      "showLegend": true,
+      "displayMode": "list",
+      "placement": "bottom",
+      "calcs": []
+    }
+  },
+  "targets": [
+    {
+      "aggregator": "avg",
+      "datasource": {
+        "type": "argus",
+        "uid": "000000001"
+      },
+      "downsampleAggregator": "avg",
+      "hide": false,
+      "queryMode": "expression",
+      "rawSql": "ALIAS(\n  DOWNSAMPLE(\n    DIVIDE(\n      SUM(\n        CULL_BELOW(\n          RATE(\n            $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.LogMetric-WALL_TIME{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n          ),\n          #0#,#value#\n        ),\n        #union#\n      ),\n      CULL_BELOW(\n        SUM(\n          CULL_BELOW(\n            RATE(\n              $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.LogMetric-COUNT{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n            ),\n            #0#,#value#\n          ),\n          #union#\n        ),\n        #1#,#value#\n      ),\n      #union#,#0#\n    ),\n    #$interval-$agg#\n  ),\n  #wall_time#,#literal#\n)",
+      "refId": "A",
+      "target": "select metric",
+      "type": "timeserie"
+    },
+    {
+      "aggregator": "avg",
+      "datasource": {
+        "type": "argus",
+        "uid": "000000001"
+      },
+      "downsampleAggregator": "avg",
+      "queryMode": "expression",
+      "rawSql": "ALIAS(\n  DOWNSAMPLE(\n    DIVIDE(\n      SUM(\n        CULL_BELOW(\n          RATE(\n            $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.LogMetric-APP_CPU_TIME{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n          ),\n          #0#,#value#\n        ),\n        #union#\n      ),\n      CULL_BELOW(\n        SUM(\n          CULL_BELOW(\n            RATE(\n              $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.LogMetric-COUNT{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n            ),\n            #0#,#value#\n          ),\n          #union#\n        ),\n        #1#,#value#\n      ),\n      #union#,#0#\n    ),\n    #$interval-$agg#\n  ),\n  #app_cpu_time#,#literal#\n)",
+      "refId": "B",
+      "target": "select metric",
+      "type": "timeserie"
+    },
+    {
+      "aggregator": "avg",
+      "datasource": {
+        "type": "argus",
+        "uid": "000000001"
+      },
+      "downsampleAggregator": "avg",
+      "queryMode": "expression",
+      "rawSql": "ALIAS(\n  DOWNSAMPLE(\n    DIVIDE(\n      SUM(\n        CULL_BELOW(\n          RATE(\n            SCALE($start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.TimeEvent-DB_TOTAL_TIME{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max,#0.000001#)\n          ),\n          #0#,#value#\n        ),\n        #union#\n      ),\n      CULL_BELOW(\n        SUM(\n          CULL_BELOW(\n            RATE(\n              $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.LogMetric-COUNT{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n            ),\n            #0#,#value#\n          ),\n          #union#\n        ),\n        #1#,#value#\n      ),\n      #union#,#0#\n    ),\n    #$interval-$agg#\n  ),\n  #db_total_time#,#literal#\n)",
+      "refId": "C",
+      "target": "select metric",
+      "type": "timeserie"
+    },
+    {
+      "aggregator": "avg",
+      "datasource": {
+        "type": "argus",
+        "uid": "000000001"
+      },
+      "downsampleAggregator": "avg",
+      "queryMode": "expression",
+      "rawSql": "ALIAS(\n  DOWNSAMPLE(\n    DIVIDE(\n      SUM(\n        CULL_BELOW(\n          RATE(\n            $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.OracleStat-DB_TIME{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n          ),\n          #0#,#value#\n        ),\n        #union#\n      ),\n      CULL_BELOW(\n        SUM(\n          CULL_BELOW(\n            RATE(\n              $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.LogMetric-COUNT{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n            ),\n            #0#,#value#\n          ),\n          #union#\n        ),\n        #1#,#value#\n      ),\n      #union#,#0#\n    ),\n    #$interval-$agg#\n  ),\n  #ora_db_time#,#literal#\n)",
+      "refId": "D",
+      "target": "select metric",
+      "type": "timeserie"
+    },
+    {
+      "aggregator": "avg",
+      "datasource": {
+        "type": "argus",
+        "uid": "000000001"
+      },
+      "downsampleAggregator": "avg",
+      "queryMode": "expression",
+      "rawSql": "ALIAS(\n  DOWNSAMPLE(\n    DIVIDE(\n      SUM(\n        CULL_BELOW(\n          RATE(\n            SCALE($start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.TimeEvent-TRANSACTIONAL_CACHE{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max,#0.000001#)\n          ),\n          #0#,#value#\n        ),\n        #union#\n      ),\n      CULL_BELOW(\n        SUM(\n          CULL_BELOW(\n            RATE(\n              $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.LogMetric-COUNT{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n            ),\n            #0#,#value#\n          ),\n          #union#\n        ),\n        #1#,#value#\n      ),\n      #union#,#0#\n    ),\n    #$interval-$agg#\n  ),\n  #transactional_cache#,#literal#\n)",
+      "refId": "E",
+      "target": "select metric",
+      "type": "timeserie"
+    },
+    {
+      "aggregator": "avg",
+      "datasource": {
+        "type": "argus",
+        "uid": "000000001"
+      },
+      "downsampleAggregator": "avg",
+      "queryMode": "expression",
+      "rawSql": "ALIAS(\n  DOWNSAMPLE(\n    DIVIDE(\n      SUM(\n        CULL_BELOW(\n          RATE(\n            SCALE($start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.TimeEvent-MEMCACHED{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max,#0.000001#)\n          ),\n          #0#,#value#\n        ),\n        #union#\n      ),\n      CULL_BELOW(\n        SUM(\n          CULL_BELOW(\n            RATE(\n              $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.LogMetric-COUNT{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n            ),\n            #0#,#value#\n          ),\n          #union#\n        ),\n        #1#,#value#\n      ),\n      #union#,#0#\n    ),\n    #$interval-$agg#\n  ),\n  #memcached#,#literal#\n)",
+      "refId": "F",
+      "target": "select metric",
+      "type": "timeserie"
+    },
+    {
+      "aggregator": "avg",
+      "datasource": {
+        "type": "argus",
+        "uid": "000000001"
+      },
+      "downsampleAggregator": "avg",
+      "queryMode": "expression",
+      "rawSql": "ALIAS(\n  DOWNSAMPLE(\n    DIVIDE(\n      SUM(\n        CULL_BELOW(\n          RATE(\n            $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.ApexLogMetric-CALLOUT_TIME{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n          ),\n          #0#,#value#\n        ),\n        #union#\n      ),\n      CULL_BELOW(\n        SUM(\n          CULL_BELOW(\n            RATE(\n              $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.LogMetric-COUNT{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n            ),\n            #0#,#value#\n          ),\n          #union#\n        ),\n        #1#,#value#\n      ),\n      #union#,#0#\n    ),\n    #$interval-$agg#\n  ),\n  #apex_callout#,#literal#\n)",
+      "refId": "G",
+      "target": "select metric",
+      "type": "timeserie"
+    },
+    {
+      "aggregator": "avg",
+      "datasource": {
+        "type": "argus",
+        "uid": "000000001"
+      },
+      "downsampleAggregator": "avg",
+      "queryMode": "expression",
+      "rawSql": "ALIAS(\n  DOWNSAMPLE(\n    DIVIDE(\n      SUM(\n        CULL_BELOW(\n          RATE(\n            SCALE($start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.TimeEvent-REDIS{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max,#0.000001#)\n          ),\n          #0#,#value#\n        ),\n        #union#\n      ),\n      CULL_BELOW(\n        SUM(\n          CULL_BELOW(\n            RATE(\n              $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.LogMetric-COUNT{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n            ),\n            #0#,#value#\n          ),\n          #union#\n        ),\n        #1#,#value#\n      ),\n      #union#,#0#\n    ),\n    #$interval-$agg#\n  ),\n  #redis#,#literal#\n)",
+      "refId": "H",
+      "target": "select metric",
+      "type": "timeserie"
+    },
+    {
+      "aggregator": "avg",
+      "datasource": {
+        "type": "argus",
+        "uid": "000000001"
+      },
+      "downsampleAggregator": "avg",
+      "queryMode": "expression",
+      "rawSql": "ALIAS(\n  DOWNSAMPLE(\n    DIVIDE(\n      SUM(\n        CULL_BELOW(\n          RATE(\n            SCALE($start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.TimeEvent-PHOENIX_EXEC_TIME{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max,#0.000001#)\n          ),\n          #0#,#value#\n        ),\n        #union#\n      ),\n      CULL_BELOW(\n        SUM(\n          CULL_BELOW(\n            RATE(\n              $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.LogMetric-COUNT{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n            ),\n            #0#,#value#\n          ),\n          #union#\n        ),\n        #1#,#value#\n      ),\n      #union#,#0#\n    ),\n    #$interval-$agg#\n  ),\n  #phoenix_hbase_query#,#literal#\n)",
+      "refId": "I",
+      "target": "select metric",
+      "type": "timeserie"
+    },
+    {
+      "aggregator": "avg",
+      "datasource": {
+        "type": "argus",
+        "uid": "000000001"
+      },
+      "downsampleAggregator": "avg",
+      "queryMode": "expression",
+      "rawSql": "ALIAS(\n  DOWNSAMPLE(\n    DIVIDE(\n      SUM(\n        CULL_BELOW(\n          RATE(\n            $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.LogMetric-SEARCH_QUERY_TIME{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n          ),\n          #0#,#value#\n        ),\n        #union#\n      ),\n      CULL_BELOW(\n        SUM(\n          CULL_BELOW(\n            RATE(\n              $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.LogMetric-COUNT{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n            ),\n            #0#,#value#\n          ),\n          #union#\n        ),\n        #1#,#value#\n      ),\n      #union#,#0#\n    ),\n    #$interval-$agg#\n  ),\n  #search_query#,#literal#\n)",
+      "refId": "J",
+      "target": "select metric",
+      "type": "timeserie"
+    },
+    {
+      "aggregator": "avg",
+      "datasource": {
+        "type": "argus",
+        "uid": "000000001"
+      },
+      "downsampleAggregator": "avg",
+      "queryMode": "expression",
+      "rawSql": "ALIAS(\n  DOWNSAMPLE(\n    DIVIDE(\n      SUM(\n        CULL_BELOW(\n          RATE(\n            $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.LogMetric-SAFEPOINT_TIME{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n          ),\n          #0#,#value#\n        ),\n        #union#\n      ),\n      CULL_BELOW(\n        SUM(\n          CULL_BELOW(\n            RATE(\n              $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.LogMetric-COUNT{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n            ),\n            #0#,#value#\n          ),\n          #union#\n        ),\n        #1#,#value#\n      ),\n      #union#,#0#\n    ),\n    #$interval-$agg#\n  ),\n  #safepoint#,#literal#\n)",
+      "refId": "K",
+      "target": "select metric",
+      "type": "timeserie"
+    },
+    {
+      "aggregator": "avg",
+      "datasource": {
+        "type": "argus",
+        "uid": "000000001"
+      },
+      "downsampleAggregator": "avg",
+      "queryMode": "expression",
+      "rawSql": "ALIAS(\n  DOWNSAMPLE(\n    DIVIDE(\n      SUM(\n        CULL_BELOW(\n          RATE(\n            $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.LogMetric-GC_TIME{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n          ),\n          #0#,#value#\n        ),\n        #union#\n      ),\n      CULL_BELOW(\n        SUM(\n          CULL_BELOW(\n            RATE(\n              $start:$end:core.$substrate.$fi.$fd:SFDC_type-ServerMetrics.LogMetric-COUNT{role=app,cell=$cell,k8s_pod_name=*}:none:1m-max\n            ),\n            #0#,#value#\n          ),\n          #union#\n        ),\n        #1#,#value#\n      ),\n      #union#,#0#\n    ),\n    #$interval-$agg#\n  ),\n  #gc_pause#,#literal#\n)",
+      "refId": "L",
+      "target": "select metric",
+      "type": "timeserie"
+    }
+  ]
+}

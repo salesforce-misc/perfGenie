@@ -1,0 +1,7 @@
+{
+    "argus": "/v1/geniequery/?query=QEURY",
+    "$start": 1234,
+    "$end": 34556,
+    "stats": ["avg", "max", "min", "p90", "p95", "p99"],
+    "previous": "none,1d,7d,14d,21d,28d"
+}
