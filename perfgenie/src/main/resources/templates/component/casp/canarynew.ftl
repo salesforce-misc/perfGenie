@@ -124,6 +124,8 @@ border-collapse: collapse;
 <head>
     <meta charset="UTF-8">
     <title>Perf Genie canary</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="alternate icon" href="/favicon.ico">
     <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Tangerine" />
 
     <#--    https://github.com/twbs/bootstrap/releases/download/v4.2.1/bootstrap-4.2.1-dist.zip-->
@@ -145,7 +147,10 @@ border-collapse: collapse;
     <script src="/js/SFDataTable.js"></script>
     <script src="/js/timeseries-component.js"></script>
     <script src="/js/time-range-filter.js"></script>
+    <script src="/js/progressbar.js"></script>
     <script src="/js/utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="/js/genieDashboard.js"></script>
     <script type="text/javascript" src="/plugins/toastify/toastify.js"></script>
     <link rel="stylesheet" href="/plugins/toastify/toastify.css">
     <link href="/plugins/font-awesome-4.7.0/css/font-awesome.min.css" rel="stylesheet">

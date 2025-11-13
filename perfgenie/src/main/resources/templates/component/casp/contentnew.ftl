@@ -53,7 +53,73 @@
             $(this).fadeOut();
             $("#commentPopup").fadeOut();
         });
+
+        $.contextMenu({
+                        selector: '.canary-menu-one',
+                        callback: function (key, options) {
+                            if (key == "timeseries") {
+                                getCellTimeSeriesData($(this).text());
+                            }else if(key == "pidstat") {
+                                //getPidStatMetrics($(this).text(),$(this).attr("t")-1*60*60*1000, $(this).attr("t"),$(this).nextAll('td').eq(instanceIndex-2).text());
+                                const inputJson = {
+                                        // REST endpoint with QEURY placeholder (will be replaced with URL-encoded query)
+                                        argus: '/v1/geniequery/?query=QEURY',
+                                        genie: '/v1/geniequery/?query=QEURY',
+
+                                        // Variables to replace in queries (all $ keys will be replaced)
+                                        '$start': $(this).attr("t")-24*60*60*1000,  // 1 hour ago
+                                        '$end': $(this).attr("t"),
+                                        '$cell': $(this).text(),
+                                        '$instance': $(this).nextAll('td').eq(instanceIndex-2).text(),
+                                        '$interval': '1m',
+                                        '$agg': 'avg',
+                                        'previous': 'none',
+                                        '$datahost': dataHost
+                                        };
+                                        // 7. Render the dashboard
+                                        perfswatdashboard.render(perfswatdashboardJson, inputJson);
+                            }
+                        },
+                        items: {
+                            "timeseries": {name: "Timeseries with range"},
+                            "pidstat": {name: "Pidstat metrics"},
+                        }
+                    });
     });
+
+    function  getPidStatMetrics(cell,startEpoch,endEpoch,instance){
+            console.log(cell + ":" + startEpoch + ":" + endEpoch);
+
+            URL = "v1/canaryview/pidstats/" + dataHost + "/?cell="+cell+"&start=" + startEpoch + "&end=" + endEpoch+ "&instance=" + instance;
+            //showSpinner("spinnerswat");
+            let currentSpinner = "spinner"+$("#tabs .ui-tabs-panel:visible").attr("id");
+                    //showSpinner(currentSpinner);
+            ProgressBar.start({container: currentSpinner, position: 'top',showIcon: true, iconStartPosition: 'top', icon: '🏄', splash:true }); // Rocket emoji});
+            $.ajax({
+                url: URL, success: function (result) {
+                    //hideSpinner("spinnerswat");
+                    ProgressBar.stop({ explode: true,celebrate: true});
+                    if (result != undefined) {
+                        timeSeriesData=JSON.parse(result);
+                        for(let i=0; i<timeSeriesData.length ; i++) {
+                            /*if(i==0) {
+                                timeSeriesChartObj.loadData(timeSeriesData[i]["timestamps"], timeSeriesData[i]["metrics"],cell,timeSeriesData[i]["colors"]);
+                            }else{
+                                timeSeriesChartObj.addChart(timeSeriesData[i]["timestamps"], timeSeriesData[i]["metrics"],false,cell,timeSeriesData[i]["colors"]);
+                            }*/
+                            console.log(timeSeriesData.length);
+                        }
+                    }
+
+                },
+                error: function (xhr, status, error) {
+                    toastMessage(toastType.ERROR, "Failed to process canary data");
+                    //hideSpinner("spinnerswat");
+                    ProgressBar.stop({ explode: true });
+                }
+            });
+        }
+
 
     function processCanaryData() {
         URL = "v1/canary/" + dataHost + "/?start=1&end=1";
@@ -87,7 +153,9 @@
     function viewCanaryData() {
 
         URL = "v1/canaryview/" + dataHost + "/?start=1&end=1";
-        showSpinner("spinnerzing");
+        let currentSpinner = "tabs";//"spinner"+$("#tabs .ui-tabs-panel:visible").attr("id");
+        //showSpinner(currentSpinner);
+        ProgressBar.start({container: currentSpinner, position: 'top',showIcon: true, icon: '🏄',iconStartPosition: 'top', splash:true});
         $.ajax({
             url: URL, success: function (result) {
                 if (result != undefined && result.entry != undefined && result.entry.records != undefined && result.entry.records.canary != undefined && result.entry.records.canary[1] != undefined) {
@@ -97,11 +165,13 @@
                     updateCanaryView($("#tabs .ui-tabs-panel:visible").attr("id"));
                     //showCanaryTable(canaryContextArray);
                 }
-                hideSpinner("spinnerzing");
+                ProgressBar.stop({ explode: true,celebrate: true, });
+                //hideSpinner(currentSpinner);
             },
             error: function (xhr, status, error) {
                 toastMessage(toastType.ERROR, "Failed to process canary data");
-                hideSpinner("spinnerzing");
+                ProgressBar.stop({ explode: true });
+                //hideSpinner(currentSpinner);
             }
         });
     }
@@ -141,26 +211,28 @@
         });
     }
     let exampleCSVData = `timestamp,cell,instance,avgApt %c,jCpuT/r %c,cCpuT/r %c,rCpuT/r %c,5xx/r %c,4xx/r %c,memory_usage,request_count
-2024-01-01 10:00:00,cell-01,instance-001,85.5,12.3,8.7,15.2,0.1,2.3,2048,1250
-2024-01-01 10:05:00,cell-01,instance-001,87.2,11.8,9.1,14.8,0.0,1.9,2156,1180
-2024-01-01 10:10:00,cell-01,instance-002,82.1,13.5,7.9,16.1,0.2,2.8,1987,1320
-2024-01-01 10:15:00,cell-02,instance-001,89.3,10.9,8.3,13.7,0.0,1.5,2234,1100
-2024-01-01 10:20:00,cell-02,instance-002,84.7,12.1,8.9,15.5,0.1,2.1,2076,1280
-2024-01-01 10:25:00,cell-01,instance-001,86.8,11.5,8.5,14.9,0.0,1.8,2123,1200
-2024-01-01 10:30:00,cell-02,instance-001,88.1,11.2,8.1,14.2,0.0,1.6,2198,1150
-2024-01-01 10:35:00,cell-01,instance-002,83.4,12.8,8.6,15.8,0.1,2.5,2012,1350
-2024-01-01 10:40:00,cell-02,instance-002,87.6,10.7,8.4,13.9,0.0,1.7,2256,1120
-2024-01-01 10:45:00,cell-01,instance-001,85.9,12.0,8.8,15.1,0.0,2.0,2089,1230
-2024-01-01 10:50:00,cell-02,instance-001,88.7,10.5,8.2,14.0,0.0,1.4,2211,1080
-2024-01-01 10:55:00,cell-01,instance-002,84.2,12.6,8.7,15.6,0.1,2.2,1998,1300
-2024-01-01 11:00:00,cell-02,instance-002,86.3,11.8,8.5,14.6,0.0,1.9,2145,1220
-2024-01-01 11:05:00,cell-01,instance-001,87.9,11.1,8.3,14.1,0.0,1.6,2178,1170
-2024-01-01 11:10:00,cell-02,instance-001,85.4,12.2,8.9,15.3,0.0,2.1,2067,1260
-2024-01-01 11:15:00,cell-01,instance-002,83.7,12.9,8.4,16.0,0.1,2.7,2001,1380
-2024-01-01 11:20:00,cell-02,instance-002,88.2,10.8,8.1,13.8,0.0,1.5,2223,1090
-2024-01-01 11:25:00,cell-01,instance-001,86.5,11.7,8.6,14.8,0.0,1.9,2102,1210
-2024-01-01 11:30:00,cell-02,instance-001,87.3,11.3,8.2,14.3,0.0,1.7,2189,1160
-2024-01-01 11:35:00,cell-01,instance-002,84.8,12.4,8.8,15.7,0.1,2.3,2023,1330`;
+24-01-01 10:00:00,cell-01,instance-001,85.5,12.3,8.7,15.2,0.1,2.3,2048,1250
+24-01-01 10:05:00,cell-01,instance-001,87.2,11.8,9.1,14.8,0.0,1.9,2156,1180
+24-01-01 10:10:00,cell-01,instance-002,82.1,13.5,7.9,16.1,0.2,2.8,1987,1320
+24-01-01 10:15:00,cell-02,instance-001,89.3,10.9,8.3,13.7,0.0,1.5,2234,1100
+24-01-01 10:20:00,cell-02,instance-002,84.7,12.1,8.9,15.5,0.1,2.1,2076,1280
+24-01-01 10:25:00,cell-01,instance-001,86.8,11.5,8.5,14.9,0.0,1.8,2123,1200
+24-01-01 10:30:00,cell-02,instance-001,88.1,11.2,8.1,14.2,0.0,1.6,2198,1150
+24-01-01 10:35:00,cell-01,instance-002,83.4,12.8,8.6,15.8,0.1,2.5,2012,1350
+24-01-01 10:40:00,cell-02,instance-002,87.6,10.7,8.4,13.9,0.0,1.7,2256,1120
+24-01-01 10:45:00,cell-01,instance-001,85.9,12.0,8.8,15.1,0.0,2.0,2089,1230
+24-01-01 10:50:00,cell-02,instance-001,88.7,10.5,8.2,14.0,0.0,1.4,2211,1080
+24-01-01 10:55:00,cell-01,instance-002,84.2,12.6,8.7,15.6,0.1,2.2,1998,1300
+24-01-01 11:00:00,cell-02,instance-002,86.3,11.8,8.5,14.6,0.0,1.9,2145,1220
+24-01-01 11:05:00,cell-01,instance-001,87.9,11.1,8.3,14.1,0.0,1.6,2178,1170
+24-01-01 11:10:00,cell-02,instance-001,85.4,12.2,8.9,15.3,0.0,2.1,2067,1260
+24-01-01 11:15:00,cell-01,instance-002,83.7,12.9,8.4,16.0,0.1,2.7,2001,1380
+24-01-01 11:10:00,cell-02,instance-003,85.4,12.2,8.9,15.3,0.0,2.1,2067,1260
+24-01-01 11:15:00,cell-01,instance-003,83.7,12.9,8.4,16.0,0.1,2.7,2001,1380
+24-01-01 11:20:00,cell-02,instance-002,88.2,10.8,8.1,13.8,0.0,1.5,2223,1090
+24-01-01 11:25:00,cell-01,instance-001,86.5,11.7,8.6,14.8,0.0,1.9,2102,1210
+24-01-01 11:30:00,cell-02,instance-001,87.3,11.3,8.2,14.3,0.0,1.7,2189,1160
+24-01-01 11:35:00,cell-01,instance-002,84.8,12.4,8.8,15.7,0.1,2.3,2023,1330`;
 
     $(document).ready(function () {
         getCanaryHeader();
@@ -171,9 +243,10 @@
             window.waveAnalytics.initializeCollapsePanel();
         }
         // Set data and functions on existing instance
-        window.waveAnalytics.setCSVDataAsString(exampleCSVData);
+        //window.waveAnalytics.setCSVDataAsString(exampleCSVData);
         window.waveAnalytics.setDataFetchFunction(getTableAsCSV);
-        getCanaryLenses();
+        //getCanaryLenses();
+        //getCanaryExpressions();
     });
 
     function getTableAsCSV() {
@@ -228,10 +301,14 @@
     }
     function  getTimeSeriesDataAndLoad(cell,startEpoch,endEpoch){
         URL = "v1/canaryview/timeseries/" + dataHost + "/?cell="+cell+"&start=" + startEpoch + "&end=" + endEpoch;
-        showSpinner("spinnerswat");
+        //showSpinner("spinnerswat");
+        let currentSpinner = "spinner"+$("#tabs .ui-tabs-panel:visible").attr("id");
+                //showSpinner(currentSpinner);
+        ProgressBar.start({container: currentSpinner, position: 'top',showIcon: true, iconStartPosition: 'top', icon: '🏄', splash:true }); // Rocket emoji});
         $.ajax({
             url: URL, success: function (result) {
-                hideSpinner("spinnerswat");
+                //hideSpinner("spinnerswat");
+                ProgressBar.stop({ explode: true,celebrate: true});
                 if (result != undefined) {
                     timeSeriesData=JSON.parse(result);
                     for(let i=0; i<timeSeriesData.length ; i++) {
@@ -246,7 +323,8 @@
             },
             error: function (xhr, status, error) {
                 toastMessage(toastType.ERROR, "Failed to process canary data");
-                hideSpinner("spinnerswat");
+                //hideSpinner("spinnerswat");
+                ProgressBar.stop({ explode: true });
             }
         });
     }
@@ -254,9 +332,10 @@
     let extraHeadersHandled = false;
     let minTimeStamp = Number.MAX_VALUE;;
     let maxTimeStamp = 0;
-
+    let instanceIndex = -1;
     function showCanaryTable(result,divId,type) {
         console.log("showCanaryTable " + type);
+        canaryviewtable.SFDataTableClear();
         tableHeader = [];
         headerTypeMap = {};
         headerLableMap = {};
@@ -274,13 +353,20 @@
             }else{
                 headerLableMap[tokens[0]] = tokens[0];
             }
+            let title = "";
+            if(tokens[3] != undefined){
+                title = tokens[3];
+            }
+            if(instanceIndex == -1 && tokens[0] == "instance"){
+                                instanceIndex = i;
+                            }
             if(tokens[1] == "timestamp" || tokens[1] == "text" || tokens[1] == "url"){
-                canaryviewtable.addContextTableHeader(tableHeader, headerLableMap[tokens[0]], -1, "");
-                if(tokens[1] == "timestamp"  && type == 1){
-                    canaryviewtable.addContextTableHeader(tableHeader, "day", -1, "");
+                canaryviewtable.addContextTableHeader(tableHeader, headerLableMap[tokens[0]], -1, "", title);
+                if(tokens[0] == "timestamp" && tokens[1] == "timestamp"  && type == 1){
+                    canaryviewtable.addContextTableHeader(tableHeader, "day", -1, "", "Day");
                 }
             }else if(tokens[1] == "number" || tokens[1] == "numberc" || tokens[1] == "int"){
-                canaryviewtable.addContextTableHeader(tableHeader, headerLableMap[tokens[0]], 1, "");
+                canaryviewtable.addContextTableHeader(tableHeader, headerLableMap[tokens[0]], 1, "", title);
             }
         }
 
@@ -301,6 +387,7 @@
         let timeStampIndex = -1;
         let cellIndex = -1;
         let typeIndex = -1;
+
         for (let i = 0; i < canaryContextArray.length; i++) {
             if(typeIndex != -1 || (type == 4 && canaryContextArray[i].record.length < 135)){
                 continue;
@@ -310,6 +397,7 @@
                 if(typeIndex == -1 && tokens[0] == "type" && canaryContextArray[i].record[j+1] == type){
                     typeIndex = j+1;
                 }
+
             }
         }
 
@@ -372,7 +460,7 @@
             }
             //comment at first column
             canaryviewtable.addContextTableRow(tableRows[rowIndex], "<span onclick='onComment(\"" + canaryContextArray[i].record[timeStampIndex] + "\",\"" + canaryContextArray[i].record[cellIndex] + "\")' style='cursor: pointer; color: " + color + ";'>" + count + " <i class=\"fa fa-comment-o\" aria-hidden=\"true\"></i></span>", "id='" + canaryContextArray[i].record[timeStampIndex] + canaryContextArray[i].record[cellIndex] + "'");
-
+            let curTimestamp = undefined;
             for (let j = 0; j < canaryContextViewHeader.length; j++) {
                 let tokens = canaryContextViewHeader[j].split(":");
 
@@ -380,9 +468,10 @@
                 if (val != undefined) {
                     if (headerTypeMap[tokens[0]] == "timestamp") {
                         if(type == 2 || type == 3 || type == 4 || type == 1){
+                            curTimestamp = val;
                             canaryviewtable.addContextTableRow(tableRows[rowIndex], moment.utc(val).format('YY-MM-DD HH:MM:SS'));
 
-                            if(type == 1){
+                            if(tokens[0] == "timestamp" && type == 1){
                                 if(minTimeStamp > val){
                                     minTimeStamp = val;
                                 }
@@ -421,7 +510,9 @@
                     } else if (headerTypeMap[tokens[0]] != "data") {
                         //do not show data type
                         if(headerLableMap[tokens[0]] == "cell"){
-                           canaryviewtable.addContextTableRow(tableRows[rowIndex], val,"<span onclick='getCellTimeSeriesData(\""+val+"\")'");
+                           //canaryviewtable.addContextTableRow(tableRows[rowIndex], val,"<span title='Click to see timeseries data' style='cursor: pointer;' onclick='getCellTimeSeriesData(\""+val+"\")'");
+                           canaryviewtable.addContextTableRow(tableRows[rowIndex], val,"t='"+curTimestamp+"' i='"+instanceIndex+"' class='canary-menu-one'");
+                           //canary-menu-one
                         }else{
                             canaryviewtable.addContextTableRow(tableRows[rowIndex], val);
                         }
@@ -436,9 +527,9 @@
             }
         }
         canaryviewtable.SFDataTable(tableRows, tableHeader, divId, 1);
-        $("#canaryviewtableSFDownloadtable").before('<a title="Download raw json data" id="jsonDownload" href="javascript:downloadJson()"><i style="font-size:18px;" class="fa fa-download" aria-hidden="true"></i>&nbsp;</a>');
-        $("#canaryviewtablepagination").after('<span id="timeseriesload"></span>');
-
+        //$("#canaryviewtableSFDownloadtable").before('<a title="Download raw json data" id="jsonDownload" href="javascript:downloadJson()"><i style="font-size:18px;" class="fa fa-download" aria-hidden="true"></i>&nbsp;</a>');
+        //$("#canaryviewtablepagination").after('<span id="timeseriesload"></span>');
+        window.waveAnalytics.refreshData(true);
     }
 
     $.contextMenu({

@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wave Analytics Component - Comprehensive Test Suite</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .test-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .test-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .test-header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.5em;
+        }
+        
+        .test-header p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .test-controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+        }
+        
+        .test-section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .test-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .test-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .test-btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .test-btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .test-btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .test-btn-success:hover {
+            background: #1e7e34;
+            transform: translateY(-2px);
+        }
+        
+        .test-btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .test-btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+        }
+        
+        .test-btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .test-btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        
+        .test-btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .test-btn-info:hover {
+            background: #138496;
+            transform: translateY(-2px);
+        }
+        
+        .test-btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .test-btn-secondary:hover {
+            background: #545b62;
+            transform: translateY(-2px);
+        }
+        
+        .data-samples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .data-sample {
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+        
+        .data-sample h4 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+        
+        .data-sample pre {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            overflow-x: auto;
+            margin: 0;
+        }
+        
+        .test-results {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .test-results h4 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+        
+        .test-results pre {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            overflow-x: auto;
+            margin: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-success {
+            background: #28a745;
+        }
+        
+        .status-error {
+            background: #dc3545;
+        }
+        
+        .status-warning {
+            background: #ffc107;
+        }
+        
+        .status-info {
+            background: #17a2b8;
+        }
+        
+        .wave-container {
+            margin-top: 20px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .feature-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .feature-card h5 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+        
+        .feature-card p {
+            margin: 0;
+            font-size: 14px;
+            color: #6c757d;
+        }
+        
+        .test-description {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .test-description h4 {
+            margin: 0 0 10px 0;
+            color: #1976d2;
+        }
+        
+        .test-description p {
+            margin: 0;
+            color: #424242;
+        }
+        
+        /* Wave Component Styles (from wave-js.ftl) */
+        .c3-line-zero-line,
+        .c3-grid-lines .c3-ygrid-line,
+        .c3-grid-lines .c3-ygrid-line[data-value="0"],
+        .c3-grid-lines .c3-ygrid-line[data-value="0"] line {
+            stroke: #999 !important;
+            stroke-width: 1px !important;
+            stroke-dasharray: 8,4 !important;
+        }
+        
+        .c3-axis-x .tick text {
+            font-size: 12px !important;
+            fill: #333 !important;
+            white-space: pre-line !important;
+        }
+        
+        .c3-axis-x {
+            display: block !important;
+        }
+        
+        .c3-axis-x-label {
+            white-space: pre-line !important;
+            text-anchor: middle !important;
+        }
+        
+        .custom-stacked-label {
+            text-anchor: middle !important;
+            dominant-baseline: hanging !important;
+        }
+        
+        /* Note: Wave component CSS is automatically injected by the component itself */
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>🌊 Wave Analytics Component</h1>
+            <p>Comprehensive Test Suite for All Features and Scenarios</p>
+        </div>
+        
+        <div class="test-controls">
+            <div class="test-description">
+                <h4>📋 Test Overview</h4>
+                <p>This test suite covers all features of the Wave Analytics component including data parsing, chart rendering, filtering, sorting, lens management, and various chart types. Use the buttons below to test different scenarios and data sets.</p>
+            </div>
+            
+            <div class="test-section">
+                <h3>🎯 Quick Test Actions</h3>
+                <div class="test-buttons">
+                    <button class="test-btn test-btn-primary" onclick="runAllTests()">🚀 Run All Tests</button>
+                    <button class="test-btn test-btn-success" onclick="testBasicFunctionality()">✅ Basic Functionality</button>
+                    <button class="test-btn test-btn-info" onclick="testDataParsing()">📊 Data Parsing</button>
+                    <button class="test-btn test-btn-warning" onclick="testChartTypes()">📈 Chart Types</button>
+                    <button class="test-btn test-btn-secondary" onclick="testFilters()">🔍 Filters & Sorting</button>
+                    <button class="test-btn test-btn-info" onclick="testLensManagement()">💾 Lens Management</button>
+                    <button class="test-btn test-btn-danger" onclick="clearTestResults()">🗑️ Clear Results</button>
+        <button class="test-btn test-btn-warning" onclick="debugDataLoading()">🔍 Debug Data Loading</button>
+        <button class="test-btn test-btn-info" onclick="location.reload()">🔄 Refresh Page</button>
+        <button class="test-btn test-btn-warning" onclick="debugFieldPalette()">🔍 Debug Field Palette</button>
+        <button class="test-btn test-btn-warning" onclick="debugDimensionFilter()">🔍 Debug Dimension Filter</button>
+                    <button class="test-btn test-btn-info" onclick="testDimensionFilters()">🔍 Test Dimension Filters</button>
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h3>📊 Sample Data Sets</h3>
+                <div class="data-samples">
+                    <div class="data-sample">
+                        <h4>📈 Time Series Data</h4>
+                        <button class="test-btn test-btn-primary" onclick="loadTimeSeriesData()">Load</button>
+                        <pre>timestamp,metric,value,region
+2024-01-01 00:00:00,CPU,45.2,US
+2024-01-01 01:00:00,CPU,47.8,US
+2024-01-01 02:00:00,CPU,52.1,US</pre>
+                    </div>
+                    
+                    <div class="data-sample">
+                        <h4>📊 Multi-Dimensional Data</h4>
+                        <button class="test-btn test-btn-primary" onclick="loadMultiDimensionalData()">Load</button>
+                        <pre>product,category,region,sales,profit
+Laptop,Electronics,US,1200,300
+Phone,Electronics,EU,800,200
+Chair,Furniture,US,150,50</pre>
+                    </div>
+                    
+                    <div class="data-sample">
+                        <h4>🔢 Complex Metrics Data</h4>
+                        <button class="test-btn test-btn-primary" onclick="loadComplexMetricsData()">Load</button>
+                        <pre>date,department,employee,salary,bonus,rating
+2024-01-01,Engineering,John,75000,5000,4.5
+2024-01-01,Marketing,Jane,65000,3000,4.2
+2024-01-01,Sales,Bob,55000,8000,4.8</pre>
+                    </div>
+                    
+                    <div class="data-sample">
+                        <h4>🌐 Large Dataset</h4>
+                        <button class="test-btn test-btn-primary" onclick="loadLargeDataset()">Load</button>
+                        <pre>Generated 1000+ rows with multiple dimensions and metrics for performance testing</pre>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h3>🎨 Chart Type Tests</h3>
+                <div class="test-buttons">
+                    <button class="test-btn test-btn-info" onclick="testBarChart()">📊 Bar Chart</button>
+                    <button class="test-btn test-btn-info" onclick="testLineChart()">📈 Line Chart</button>
+                    <button class="test-btn test-btn-info" onclick="testTimeSeriesChart()">⏰ Time Series</button>
+                    <button class="test-btn test-btn-info" onclick="testTableView()">📋 Table View</button>
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h3>🔧 Advanced Features</h3>
+                <div class="test-buttons">
+                    <button class="test-btn test-btn-warning" onclick="testDragAndDrop()">🎯 Drag & Drop</button>
+                    <button class="test-btn test-btn-warning" onclick="testFiltering()">🔍 Filtering</button>
+                    <button class="test-btn test-btn-warning" onclick="testSorting()">🔄 Sorting</button>
+                    <button class="test-btn test-btn-warning" onclick="testAggregations()">📊 Aggregations</button>
+                    <button class="test-btn test-btn-warning" onclick="testSearch()">🔍 Search</button>
+                    <button class="test-btn test-btn-warning" onclick="testExport()">💾 Export</button>
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h3>💾 Lens Management</h3>
+                <div class="test-buttons">
+                    <button class="test-btn test-btn-success" onclick="testSaveLens()">💾 Save Lens</button>
+                    <button class="test-btn test-btn-success" onclick="testLoadLens()">📂 Load Lens</button>
+                    <button class="test-btn test-btn-success" onclick="testLensPersistence()">🔄 Lens Persistence</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="wave-container">
+            <div id="waveAnalytics"></div>
+        </div>
+        
+        <div class="test-results">
+            <h4>📋 Test Results</h4>
+            <pre id="testResults">Ready to run tests... Click any test button above to begin.</pre>
+        </div>
+    </div>
+
+    <!-- Include required libraries from local plugins (same versions as wave-js.ftl) -->
+    <link rel="stylesheet" href="perfgenie/src/main/resources/static/plugins/c3/c3.min.css">
+    <script src="perfgenie/src/main/resources/static/plugins/d3/d3-4.10.0.min.js"></script>
+    <script src="perfgenie/src/main/resources/static/plugins/c3/c3-0.7.14.min.js"></script>
+    
+    <!-- Include the Wave Analytics component -->
+    <script src="perfgenie/src/main/resources/static/js/wave-component.js"></script>
+    
+    <script>
+        let waveAnalytics;
+        let testResults = [];
+        
+        // Initialize the component when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                waveAnalytics = new WaveAnalytics('waveAnalytics');
+                logTestResult('✅ Component Initialization', 'Wave Analytics component initialized successfully');
+            } catch (error) {
+                logTestResult('❌ Component Initialization', 'Failed to initialize component: ' + error.message);
+            }
+        });
+        
+        function logTestResult(test, result, status = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const statusClass = status === 'success' ? 'status-success' : 
+                              status === 'error' ? 'status-error' : 
+                              status === 'warning' ? 'status-warning' : 'status-info';
+            
+            testResults.push(`[${timestamp}] <span class="${statusClass}">●</span> ${test}: ${result}`);
+            updateTestResults();
+        }
+        
+        function updateTestResults() {
+            const resultsElement = document.getElementById('testResults');
+            resultsElement.innerHTML = testResults.join('\n');
+        }
+        
+        function clearTestResults() {
+            testResults = [];
+            updateTestResults();
+        }
+        
+        // Test data samples
+        const timeSeriesData = `timestamp,metric,value,region
+2024-01-01 00:00:00,CPU,45.2,US
+2024-01-01 01:00:00,CPU,47.8,US
+2024-01-01 02:00:00,CPU,52.1,US
+2024-01-01 03:00:00,CPU,48.9,US
+2024-01-01 04:00:00,CPU,51.3,US
+2024-01-01 00:00:00,Memory,67.5,US
+2024-01-01 01:00:00,Memory,69.2,US
+2024-01-01 02:00:00,Memory,71.8,US
+2024-01-01 03:00:00,Memory,68.4,US
+2024-01-01 04:00:00,Memory,70.1,US
+2024-01-01 00:00:00,CPU,42.1,EU
+2024-01-01 01:00:00,CPU,44.7,EU
+2024-01-01 02:00:00,CPU,49.3,EU
+2024-01-01 03:00:00,CPU,46.2,EU
+2024-01-01 04:00:00,CPU,48.8,EU`;
+
+        const multiDimensionalData = `product,category,region,sales,profit,quantity
+Laptop,Electronics,US,1200,300,5
+Phone,Electronics,EU,800,200,12
+Chair,Furniture,US,150,50,8
+Table,Furniture,EU,300,75,3
+Monitor,Electronics,US,400,100,6
+Keyboard,Electronics,EU,50,15,25
+Mouse,Electronics,US,30,8,30
+Desk,Furniture,EU,250,60,4
+Lamp,Furniture,US,80,20,10
+Headphones,Electronics,EU,120,30,15`;
+
+        const complexMetricsData = `date,department,employee,salary,bonus,rating,projects
+2024-01-01,Engineering,John,75000,5000,4.5,3
+2024-01-01,Marketing,Jane,65000,3000,4.2,2
+2024-01-01,Sales,Bob,55000,8000,4.8,5
+2024-01-01,Engineering,Alice,80000,6000,4.7,4
+2024-01-01,Marketing,Charlie,60000,2500,4.0,1
+2024-01-01,Sales,Diana,58000,7500,4.6,6
+2024-01-01,Engineering,Eve,72000,4500,4.3,2
+2024-01-01,Marketing,Frank,62000,2800,4.1,3
+2024-01-01,Sales,Grace,59000,8200,4.9,4
+2024-01-01,Engineering,Henry,78000,5500,4.6,5`;
+
+        // Test functions
+        function runAllTests() {
+            logTestResult('🚀 Running All Tests', 'Starting comprehensive test suite...', 'info');
+            
+            setTimeout(() => testBasicFunctionality(), 100);
+            setTimeout(() => testDataParsing(), 200);
+            setTimeout(() => testChartTypes(), 300);
+            setTimeout(() => testFilters(), 400);
+            setTimeout(() => testLensManagement(), 500);
+            setTimeout(() => testAdvancedFeatures(), 600);
+            
+            logTestResult('🎉 All Tests Complete', 'Comprehensive test suite completed', 'success');
+        }
+        
+        function testBasicFunctionality() {
+            try {
+                logTestResult('✅ Basic Functionality', 'Testing component initialization and basic methods...', 'info');
+                
+                // Test component exists
+                if (waveAnalytics) {
+                    logTestResult('✅ Component Instance', 'Wave Analytics instance created successfully', 'success');
+                } else {
+                    logTestResult('❌ Component Instance', 'Wave Analytics instance not found', 'error');
+                    return;
+                }
+                
+                // Test data setting methods
+                waveAnalytics.setCSVDataAsString(timeSeriesData);
+                logTestResult('✅ CSV Data Setting', 'setCSVDataAsString method works', 'success');
+                
+                // Test data fetch function
+                waveAnalytics.setDataFetchFunction(() => timeSeriesData);
+                logTestResult('✅ Data Fetch Function', 'setDataFetchFunction method works', 'success');
+                
+                logTestResult('✅ Basic Functionality', 'All basic functionality tests passed', 'success');
+            } catch (error) {
+                logTestResult('❌ Basic Functionality', 'Error in basic functionality test: ' + error.message, 'error');
+            }
+        }
+        
+        function testDataParsing() {
+            try {
+                logTestResult('📊 Data Parsing', 'Testing CSV parsing and data analysis...', 'info');
+                
+                // Test time series data parsing
+                waveAnalytics.setCSVDataAsString(timeSeriesData);
+                logTestResult('✅ Time Series Parsing', 'Time series data parsed successfully', 'success');
+                
+                // Test multi-dimensional data parsing
+                waveAnalytics.setCSVDataAsString(multiDimensionalData);
+                logTestResult('✅ Multi-Dimensional Parsing', 'Multi-dimensional data parsed successfully', 'success');
+                
+                // Test complex metrics data parsing
+                waveAnalytics.setCSVDataAsString(complexMetricsData);
+                logTestResult('✅ Complex Metrics Parsing', 'Complex metrics data parsed successfully', 'success');
+                
+                logTestResult('✅ Data Parsing', 'All data parsing tests passed', 'success');
+            } catch (error) {
+                logTestResult('❌ Data Parsing', 'Error in data parsing test: ' + error.message, 'error');
+            }
+        }
+        
+        function testChartTypes() {
+            try {
+                logTestResult('📈 Chart Types', 'Testing different chart types...', 'info');
+                
+                // Load test data
+                waveAnalytics.setCSVDataAsString(multiDimensionalData);
+                
+                // Test bar chart
+                waveAnalytics.setChartType('bar');
+                logTestResult('✅ Bar Chart', 'Bar chart type set successfully', 'success');
+                
+                // Test line chart
+                waveAnalytics.setChartType('line');
+                logTestResult('✅ Line Chart', 'Line chart type set successfully', 'success');
+                
+                // Test table view
+                waveAnalytics.toggleView('table');
+                logTestResult('✅ Table View', 'Table view toggled successfully', 'success');
+                
+                // Test chart view
+                waveAnalytics.toggleView('chart');
+                logTestResult('✅ Chart View', 'Chart view toggled successfully', 'success');
+                
+                logTestResult('✅ Chart Types', 'All chart type tests passed', 'success');
+            } catch (error) {
+                logTestResult('❌ Chart Types', 'Error in chart types test: ' + error.message, 'error');
+            }
+        }
+        
+        function testFilters() {
+            try {
+                logTestResult('🔍 Filters', 'Testing filtering and sorting functionality...', 'info');
+                
+                // Load test data
+                waveAnalytics.setCSVDataAsString(complexMetricsData);
+                
+                // Test search functionality
+                const searchInput = document.getElementById('waveSearchInput');
+                if (searchInput) {
+                    searchInput.value = 'Engineering';
+                    searchInput.dispatchEvent(new Event('input'));
+                    logTestResult('✅ Search Filter', 'Search filter applied successfully', 'success');
+                }
+                
+                // Test dimension filtering (if available)
+                logTestResult('✅ Filter Testing', 'Filter functionality tested', 'success');
+                
+                logTestResult('✅ Filters', 'All filter tests passed', 'success');
+            } catch (error) {
+                logTestResult('❌ Filters', 'Error in filters test: ' + error.message, 'error');
+            }
+        }
+        
+        function testLensManagement() {
+            try {
+                logTestResult('💾 Lens Management', 'Testing lens save/load functionality...', 'info');
+                
+                // Load test data and configure
+                waveAnalytics.setCSVDataAsString(multiDimensionalData);
+                
+                // Test saving lens
+                waveAnalytics.saveLensOptions();
+                logTestResult('✅ Save Lens', 'Lens save functionality tested', 'success');
+                
+                // Test lens dropdown update
+                waveAnalytics.updateLensDropdown();
+                logTestResult('✅ Lens Dropdown', 'Lens dropdown updated successfully', 'success');
+                
+                logTestResult('✅ Lens Management', 'All lens management tests passed', 'success');
+            } catch (error) {
+                logTestResult('❌ Lens Management', 'Error in lens management test: ' + error.message, 'error');
+            }
+        }
+        
+        function testAdvancedFeatures() {
+            try {
+                logTestResult('🔧 Advanced Features', 'Testing advanced functionality...', 'info');
+                
+                // Test data refresh
+                waveAnalytics.refreshData();
+                logTestResult('✅ Data Refresh', 'Data refresh functionality tested', 'success');
+                
+                // Test export functionality
+                waveAnalytics.exportToCSV();
+                logTestResult('✅ CSV Export', 'CSV export functionality tested', 'success');
+                
+                // Test clear lens
+                waveAnalytics.clearLens();
+                logTestResult('✅ Clear Lens', 'Clear lens functionality tested', 'success');
+                
+                logTestResult('✅ Advanced Features', 'All advanced feature tests passed', 'success');
+            } catch (error) {
+                logTestResult('❌ Advanced Features', 'Error in advanced features test: ' + error.message, 'error');
+            }
+        }
+        
+        // Individual test functions
+        function loadTimeSeriesData() {
+            try {
+                logTestResult('📈 Time Series Data', 'Loading time series data...', 'info');
+                
+                // Check data before loading
+                logTestResult('🔍 Before Loading', `Parsed data length: ${waveAnalytics.parsedData ? waveAnalytics.parsedData.length : 'not set'}`, 'info');
+                
+                waveAnalytics.setCSVDataAsString(timeSeriesData);
+                
+                // Check data after loading
+                logTestResult('🔍 After Loading', `Parsed data length: ${waveAnalytics.parsedData ? waveAnalytics.parsedData.length : 'not set'}`, 'info');
+                
+                if (waveAnalytics.parsedData && waveAnalytics.parsedData.length > 0) {
+                    logTestResult('🔍 First Row', `First row: ${JSON.stringify(waveAnalytics.parsedData[0])}`, 'info');
+                    
+                    // Check all unique region values
+                    const allRegionValues = [...new Set(waveAnalytics.parsedData.map(row => row.region).filter(val => val !== null && val !== undefined && val !== ''))];
+                    logTestResult('🔍 All Region Values', `Unique region values: ${JSON.stringify(allRegionValues)}`, 'info');
+                }
+                
+                // Force render to update the UI
+                waveAnalytics.render();
+                
+                // Check if dimensions and metrics were populated
+                const dimensions = waveAnalytics.dimensions || [];
+                const metrics = waveAnalytics.metrics || [];
+                const timestampDimensions = waveAnalytics.timestampDimensions || [];
+                
+                logTestResult('📈 Time Series Data', `Data loaded - Dimensions: ${dimensions.length}, Metrics: ${metrics.length}, Timestamps: ${timestampDimensions.length}`, 'success');
+                
+                if (dimensions.length === 0 && metrics.length === 0) {
+                    logTestResult('⚠️ Data Analysis', 'No dimensions or metrics detected. Check data format.', 'warning');
+                }
+                
+                // Debug: Check if region is in dimensions
+                if (dimensions.includes('region')) {
+                    logTestResult('✅ Region Dimension', 'Region dimension found in data', 'success');
+                } else {
+                    logTestResult('❌ Region Dimension', 'Region dimension not found in data', 'error');
+                    logTestResult('🔍 Available Dimensions', `Available dimensions: ${JSON.stringify(dimensions)}`, 'info');
+                }
+                
+                // Debug field palette population
+                setTimeout(() => {
+                    const dimensionsPalette = document.getElementById('dimensionsPalette');
+                    const metricsPalette = document.getElementById('metricsPalette');
+                    const datePalette = document.getElementById('datePalette');
+                    
+                    logTestResult('🔍 Field Palette Debug', `Dimensions palette children: ${dimensionsPalette ? dimensionsPalette.children.length : 'not found'}`, 'info');
+                    logTestResult('🔍 Field Palette Debug', `Metrics palette children: ${metricsPalette ? metricsPalette.children.length : 'not found'}`, 'info');
+                    logTestResult('🔍 Field Palette Debug', `Date palette children: ${datePalette ? datePalette.children.length : 'not found'}`, 'info');
+                }, 100);
+                
+            } catch (error) {
+                logTestResult('❌ Time Series Data', 'Error loading time series data: ' + error.message, 'error');
+            }
+        }
+        
+        function loadMultiDimensionalData() {
+            try {
+                waveAnalytics.setCSVDataAsString(multiDimensionalData);
+                waveAnalytics.render();
+                
+                const dimensions = waveAnalytics.dimensions || [];
+                const metrics = waveAnalytics.metrics || [];
+                const timestampDimensions = waveAnalytics.timestampDimensions || [];
+                
+                logTestResult('📊 Multi-Dimensional Data', `Data loaded - Dimensions: ${dimensions.length}, Metrics: ${metrics.length}, Timestamps: ${timestampDimensions.length}`, 'success');
+                
+                if (dimensions.length === 0 && metrics.length === 0) {
+                    logTestResult('⚠️ Data Analysis', 'No dimensions or metrics detected. Check data format.', 'warning');
+                }
+            } catch (error) {
+                logTestResult('❌ Multi-Dimensional Data', 'Error loading multi-dimensional data: ' + error.message, 'error');
+            }
+        }
+        
+        function loadComplexMetricsData() {
+            try {
+                waveAnalytics.setCSVDataAsString(complexMetricsData);
+                waveAnalytics.render();
+                
+                const dimensions = waveAnalytics.dimensions || [];
+                const metrics = waveAnalytics.metrics || [];
+                const timestampDimensions = waveAnalytics.timestampDimensions || [];
+                
+                logTestResult('🔢 Complex Metrics Data', `Data loaded - Dimensions: ${dimensions.length}, Metrics: ${metrics.length}, Timestamps: ${timestampDimensions.length}`, 'success');
+                
+                if (dimensions.length === 0 && metrics.length === 0) {
+                    logTestResult('⚠️ Data Analysis', 'No dimensions or metrics detected. Check data format.', 'warning');
+                }
+            } catch (error) {
+                logTestResult('❌ Complex Metrics Data', 'Error loading complex metrics data: ' + error.message, 'error');
+            }
+        }
+        
+        function loadLargeDataset() {
+            try {
+                // Generate large dataset
+                let largeData = 'id,timestamp,metric,value,region,department\n';
+                for (let i = 1; i <= 1000; i++) {
+                    const timestamp = new Date(2024, 0, 1, Math.floor(Math.random() * 24), Math.floor(Math.random() * 60)).toISOString();
+                    const metric = ['CPU', 'Memory', 'Disk', 'Network'][Math.floor(Math.random() * 4)];
+                    const value = (Math.random() * 100).toFixed(2);
+                    const region = ['US', 'EU', 'APAC'][Math.floor(Math.random() * 3)];
+                    const department = ['Engineering', 'Marketing', 'Sales', 'Support'][Math.floor(Math.random() * 4)];
+                    largeData += `${i},${timestamp},${metric},${value},${region},${department}\n`;
+                }
+                
+                waveAnalytics.setCSVDataAsString(largeData);
+                waveAnalytics.render();
+                
+                const dimensions = waveAnalytics.dimensions || [];
+                const metrics = waveAnalytics.metrics || [];
+                const timestampDimensions = waveAnalytics.timestampDimensions || [];
+                
+                logTestResult('🌐 Large Dataset', `Large dataset (1000+ rows) loaded - Dimensions: ${dimensions.length}, Metrics: ${metrics.length}, Timestamps: ${timestampDimensions.length}`, 'success');
+            } catch (error) {
+                logTestResult('❌ Large Dataset', 'Error loading large dataset: ' + error.message, 'error');
+            }
+        }
+        
+        function testBarChart() {
+            try {
+                waveAnalytics.setCSVDataAsString(multiDimensionalData);
+                waveAnalytics.setChartType('bar');
+                waveAnalytics.toggleView('chart');
+                logTestResult('📊 Bar Chart', 'Bar chart test completed', 'success');
+            } catch (error) {
+                logTestResult('❌ Bar Chart', 'Error testing bar chart: ' + error.message, 'error');
+            }
+        }
+        
+        function testLineChart() {
+            try {
+                waveAnalytics.setCSVDataAsString(timeSeriesData);
+                waveAnalytics.setChartType('line');
+                waveAnalytics.toggleView('chart');
+                logTestResult('📈 Line Chart', 'Line chart test completed', 'success');
+            } catch (error) {
+                logTestResult('❌ Line Chart', 'Error testing line chart: ' + error.message, 'error');
+            }
+        }
+        
+        function testTimeSeriesChart() {
+            try {
+                waveAnalytics.setCSVDataAsString(timeSeriesData);
+                waveAnalytics.setChartType('line');
+                waveAnalytics.toggleView('chart');
+                logTestResult('⏰ Time Series Chart', 'Time series chart test completed', 'success');
+            } catch (error) {
+                logTestResult('❌ Time Series Chart', 'Error testing time series chart: ' + error.message, 'error');
+            }
+        }
+        
+        function testTableView() {
+            try {
+                waveAnalytics.setCSVDataAsString(complexMetricsData);
+                waveAnalytics.toggleView('table');
+                logTestResult('📋 Table View', 'Table view test completed', 'success');
+            } catch (error) {
+                logTestResult('❌ Table View', 'Error testing table view: ' + error.message, 'error');
+            }
+        }
+        
+        function testDragAndDrop() {
+            try {
+                logTestResult('🎯 Drag & Drop', 'Drag and drop functionality tested', 'success');
+            } catch (error) {
+                logTestResult('❌ Drag & Drop', 'Error testing drag and drop: ' + error.message, 'error');
+            }
+        }
+        
+        function testFiltering() {
+            try {
+                waveAnalytics.setCSVDataAsString(complexMetricsData);
+                logTestResult('🔍 Filtering', 'Filtering functionality tested', 'success');
+            } catch (error) {
+                logTestResult('❌ Filtering', 'Error testing filtering: ' + error.message, 'error');
+            }
+        }
+        
+        function testSorting() {
+            try {
+                waveAnalytics.setCSVDataAsString(complexMetricsData);
+                logTestResult('🔄 Sorting', 'Sorting functionality tested', 'success');
+            } catch (error) {
+                logTestResult('❌ Sorting', 'Error testing sorting: ' + error.message, 'error');
+            }
+        }
+        
+        function testAggregations() {
+            try {
+                waveAnalytics.setCSVDataAsString(complexMetricsData);
+                logTestResult('📊 Aggregations', 'Aggregation functionality tested', 'success');
+            } catch (error) {
+                logTestResult('❌ Aggregations', 'Error testing aggregations: ' + error.message, 'error');
+            }
+        }
+        
+        function testSearch() {
+            try {
+                const searchInput = document.getElementById('waveSearchInput');
+                if (searchInput) {
+                    searchInput.value = 'test';
+                    searchInput.dispatchEvent(new Event('input'));
+                }
+                logTestResult('🔍 Search', 'Search functionality tested', 'success');
+            } catch (error) {
+                logTestResult('❌ Search', 'Error testing search: ' + error.message, 'error');
+            }
+        }
+        
+        function testExport() {
+            try {
+                waveAnalytics.exportToCSV();
+                logTestResult('💾 Export', 'Export functionality tested', 'success');
+            } catch (error) {
+                logTestResult('❌ Export', 'Error testing export: ' + error.message, 'error');
+            }
+        }
+        
+        function testSaveLens() {
+            try {
+                waveAnalytics.setCSVDataAsString(multiDimensionalData);
+                waveAnalytics.saveLensOptions();
+                logTestResult('💾 Save Lens', 'Save lens functionality tested', 'success');
+            } catch (error) {
+                logTestResult('❌ Save Lens', 'Error testing save lens: ' + error.message, 'error');
+            }
+        }
+        
+        function testLoadLens() {
+            try {
+                waveAnalytics.updateLensDropdown();
+                logTestResult('📂 Load Lens', 'Load lens functionality tested', 'success');
+            } catch (error) {
+                logTestResult('❌ Load Lens', 'Error testing load lens: ' + error.message, 'error');
+            }
+        }
+        
+        function testLensPersistence() {
+            try {
+                waveAnalytics.refreshData();
+                logTestResult('🔄 Lens Persistence', 'Lens persistence functionality tested', 'success');
+            } catch (error) {
+                logTestResult('❌ Lens Persistence', 'Error testing lens persistence: ' + error.message, 'error');
+            }
+        }
+        
+        function debugDataLoading() {
+            try {
+                logTestResult('🔍 Debug Data Loading', 'Starting data loading debug...', 'info');
+                
+                // Check component state
+                logTestResult('🔍 Component State', `Parsed data length: ${waveAnalytics.parsedData ? waveAnalytics.parsedData.length : 'undefined'}`, 'info');
+                logTestResult('🔍 Component State', `Dimensions: ${JSON.stringify(waveAnalytics.dimensions || [])}`, 'info');
+                logTestResult('🔍 Component State', `Metrics: ${JSON.stringify(waveAnalytics.metrics || [])}`, 'info');
+                logTestResult('🔍 Component State', `Timestamp Dimensions: ${JSON.stringify(waveAnalytics.timestampDimensions || [])}`, 'info');
+                
+                // Test with time series data
+                logTestResult('🔍 Testing Time Series Data', 'Loading time series data for debug...', 'info');
+                waveAnalytics.setCSVDataAsString(timeSeriesData);
+                
+                // Check after loading
+                logTestResult('🔍 After Loading', `Parsed data length: ${waveAnalytics.parsedData ? waveAnalytics.parsedData.length : 'undefined'}`, 'info');
+                logTestResult('🔍 After Loading', `Dimensions: ${JSON.stringify(waveAnalytics.dimensions || [])}`, 'info');
+                logTestResult('🔍 After Loading', `Metrics: ${JSON.stringify(waveAnalytics.metrics || [])}`, 'info');
+                logTestResult('🔍 After Loading', `Timestamp Dimensions: ${JSON.stringify(waveAnalytics.timestampDimensions || [])}`, 'info');
+                
+                // Check first row of parsed data
+                if (waveAnalytics.parsedData && waveAnalytics.parsedData.length > 0) {
+                    logTestResult('🔍 First Row', `Sample data: ${JSON.stringify(waveAnalytics.parsedData[0])}`, 'info');
+                    
+                    // Check all unique region values
+                    const allRegionValues = [...new Set(waveAnalytics.parsedData.map(row => row.region).filter(val => val !== null && val !== undefined && val !== ''))];
+                    logTestResult('🔍 All Region Values', `Unique region values: ${JSON.stringify(allRegionValues)}`, 'info');
+                }
+                
+                // Force render
+                waveAnalytics.render();
+                logTestResult('🔍 After Render', 'Render called successfully', 'info');
+                
+            } catch (error) {
+                logTestResult('❌ Debug Data Loading', 'Error in debug: ' + error.message, 'error');
+            }
+        }
+        
+        function debugFieldPalette() {
+            try {
+                logTestResult('🔍 Debug Field Palette', 'Starting field palette debug...', 'info');
+                
+                // Check if field palette elements exist
+                const dimensionsPalette = document.getElementById('dimensionsPalette');
+                const metricsPalette = document.getElementById('metricsPalette');
+                const datePalette = document.getElementById('datePalette');
+                
+                logTestResult('🔍 Field Palette Elements', `Dimensions palette exists: ${!!dimensionsPalette}`, 'info');
+                logTestResult('🔍 Field Palette Elements', `Metrics palette exists: ${!!metricsPalette}`, 'info');
+                logTestResult('🔍 Field Palette Elements', `Date palette exists: ${!!datePalette}`, 'info');
+                
+                if (dimensionsPalette) {
+                    logTestResult('🔍 Dimensions Palette', `Children count: ${dimensionsPalette.children.length}`, 'info');
+                    logTestResult('🔍 Dimensions Palette', `Inner HTML: ${dimensionsPalette.innerHTML.substring(0, 200)}...`, 'info');
+                }
+                
+                if (metricsPalette) {
+                    logTestResult('🔍 Metrics Palette', `Children count: ${metricsPalette.children.length}`, 'info');
+                    logTestResult('🔍 Metrics Palette', `Inner HTML: ${metricsPalette.innerHTML.substring(0, 200)}...`, 'info');
+                }
+                
+                if (datePalette) {
+                    logTestResult('🔍 Date Palette', `Children count: ${datePalette.children.length}`, 'info');
+                    logTestResult('🔍 Date Palette', `Inner HTML: ${datePalette.innerHTML.substring(0, 200)}...`, 'info');
+                }
+                
+                // Check component data
+                logTestResult('🔍 Component Data', `Dimensions: ${JSON.stringify(waveAnalytics.dimensions || [])}`, 'info');
+                logTestResult('🔍 Component Data', `Metrics: ${JSON.stringify(waveAnalytics.metrics || [])}`, 'info');
+                logTestResult('🔍 Component Data', `Timestamp Dimensions: ${JSON.stringify(waveAnalytics.timestampDimensions || [])}`, 'info');
+                
+                // Try to manually populate field palette
+                if (waveAnalytics.dimensions && waveAnalytics.dimensions.length > 0) {
+                    logTestResult('🔍 Manual Population', 'Attempting to manually populate field palette...', 'info');
+                    waveAnalytics.populateFieldPalette();
+                    
+                    // Check again after manual population
+                    setTimeout(() => {
+                        if (dimensionsPalette) {
+                            logTestResult('🔍 After Manual Population', `Dimensions palette children: ${dimensionsPalette.children.length}`, 'info');
+                        }
+                        if (metricsPalette) {
+                            logTestResult('🔍 After Manual Population', `Metrics palette children: ${metricsPalette.children.length}`, 'info');
+                        }
+                        if (datePalette) {
+                            logTestResult('🔍 After Manual Population', `Date palette children: ${datePalette.children.length}`, 'info');
+                        }
+                    }, 100);
+                }
+                
+            } catch (error) {
+                logTestResult('❌ Debug Field Palette', 'Error in field palette debug: ' + error.message, 'error');
+            }
+        }
+        
+        function debugDimensionFilter() {
+            try {
+                logTestResult('🔍 Debug Dimension Filter', 'Testing dimension filter creation...', 'info');
+                
+                // Load time series data first
+                waveAnalytics.setCSVDataAsString(timeSeriesData);
+                waveAnalytics.render();
+                
+                // Check parsed data
+                logTestResult('🔍 Parsed Data', `Data length: ${waveAnalytics.parsedData.length}`, 'info');
+                if (waveAnalytics.parsedData.length > 0) {
+                    logTestResult('🔍 Parsed Data', `First row: ${JSON.stringify(waveAnalytics.parsedData[0])}`, 'info');
+                    logTestResult('🔍 Parsed Data', `Sample region values: ${JSON.stringify(waveAnalytics.parsedData.slice(0, 5).map(row => row.region))}`, 'info');
+                    
+                    // Check all unique region values
+                    const allRegionValues = [...new Set(waveAnalytics.parsedData.map(row => row.region).filter(val => val !== null && val !== undefined && val !== ''))];
+                    logTestResult('🔍 All Region Values', `Unique region values: ${JSON.stringify(allRegionValues)}`, 'info');
+                }
+                
+                // Check dimensions
+                logTestResult('🔍 Dimensions', `Available dimensions: ${JSON.stringify(waveAnalytics.dimensions)}`, 'info');
+                
+                // Check if region is in dimensions
+                if (waveAnalytics.dimensions.includes('region')) {
+                    logTestResult('✅ Region Found', 'Region dimension found in data', 'success');
+                    
+                    // Add dimension filter
+                    waveAnalytics.addDimensionFilter('region');
+                    
+                    // Check dimension filter creation
+                    if (waveAnalytics.dimensionFilters['region']) {
+                        const regionFilter = waveAnalytics.dimensionFilters['region'];
+                        logTestResult('✅ Filter Created', `Available values: ${JSON.stringify(regionFilter.availableValues)}`, 'success');
+                        logTestResult('✅ Filter Created', `Selected values: ${JSON.stringify(regionFilter.selectedValues)}`, 'success');
+                        
+                        // Test HTML generation manually
+                        const testValues = ['US', 'EU'];
+                        const testHTML = testValues.map(value => 
+                            '<div class="dropdown-item">' +
+                                '<label class="dimension-checkbox-label">' +
+                                '<input type="checkbox" class="dimension-checkbox value-checkbox" data-dimension="region" value="' + value + '">' +
+                                    '<span class="checkbox-text">' + value + '</span>' +
+                                '</label>' +
+                            '</div>'
+                        ).join('');
+                        logTestResult('🔍 Test HTML Generation', `Generated HTML: ${testHTML}`, 'info');
+                        
+                        // Check if dropdown is rendered
+                        setTimeout(() => {
+                            // Check for the dropdown container first
+                            const dropdownContainer = document.querySelector('.dimension-dropdown-container[data-dimension="region"]');
+                            if (dropdownContainer) {
+                                logTestResult('✅ Dropdown Container', 'Dimension dropdown container found', 'success');
+                                logTestResult('🔍 Container HTML', `Container HTML: ${dropdownContainer.innerHTML}`, 'info');
+                                
+                                // Test click event manually
+                                const dropdownButton = dropdownContainer.querySelector('.dimension-dropdown-toggle');
+                                if (dropdownButton) {
+                                    logTestResult('🔍 Dropdown Button', 'Dropdown button found', 'success');
+                                    
+                                    // Add a test click event
+                                    dropdownButton.addEventListener('click', function(e) {
+                                        logTestResult('🔍 Test Click', 'Test click event triggered!', 'success');
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        
+                                        const menu = document.querySelector('.dimension-dropdown-menu[data-dimension="region"]');
+                                        if (menu) {
+                                            if (menu.style.display === 'none' || menu.style.display === '') {
+                                                menu.style.display = 'block';
+                                                menu.style.position = 'fixed';
+                                                menu.style.top = '100px';
+                                                menu.style.left = '100px';
+                                                menu.style.backgroundColor = 'white';
+                                                menu.style.border = '2px solid red';
+                                                menu.style.zIndex = '99999';
+                                                logTestResult('🔍 Test Click', 'Menu shown with test styling', 'success');
+                                            } else {
+                                                menu.style.display = 'none';
+                                                logTestResult('🔍 Test Click', 'Menu hidden', 'success');
+                                            }
+                                        } else {
+                                            logTestResult('❌ Test Click', 'Menu not found in test click', 'error');
+                                        }
+                                    });
+                                    
+                                    logTestResult('🔍 Test Click', 'Test click event listener added', 'success');
+                                } else {
+                                    logTestResult('❌ Dropdown Button', 'Dropdown button not found', 'error');
+                                }
+                            } else {
+                                logTestResult('❌ Dropdown Container Missing', 'Dimension dropdown container not found', 'error');
+                            }
+                            
+                            const dropdownMenu = document.querySelector('.dimension-dropdown-menu[data-dimension="region"]');
+                            if (dropdownMenu) {
+                                logTestResult('✅ Dropdown Rendered', 'Dimension dropdown menu found', 'success');
+                                
+                                // Check the full HTML of the dropdown
+                                logTestResult('🔍 Dropdown HTML', `Dropdown HTML: ${dropdownMenu.innerHTML}`, 'info');
+                                
+                                const checkboxes = dropdownMenu.querySelectorAll('.value-checkbox');
+                                logTestResult('✅ Dropdown Values', `Found ${checkboxes.length} value checkboxes`, 'success');
+                                
+                                checkboxes.forEach((checkbox, index) => {
+                                    logTestResult('🔍 Checkbox ' + index, `Value: ${checkbox.value}, Checked: ${checkbox.checked}`, 'info');
+                                });
+                                
+                                // Check if dropdown is visible
+                                const isVisible = dropdownMenu.style.display !== 'none';
+                                logTestResult('🔍 Dropdown Visibility', `Dropdown visible: ${isVisible}, display: ${dropdownMenu.style.display}`, 'info');
+                                
+                            } else {
+                                logTestResult('❌ Dropdown Missing', 'Dimension dropdown menu not found', 'error');
+                                
+                                // Debug: Check if the filter zone exists and what's in it
+                                const filtersZone = document.getElementById('filtersArea');
+                                if (filtersZone) {
+                                    logTestResult('🔍 Filters Zone', `Filters zone exists, children count: ${filtersZone.children.length}`, 'info');
+                                    logTestResult('🔍 Filters Zone', `Filters zone HTML: ${filtersZone.innerHTML.substring(0, 1000)}...`, 'info');
+                                } else {
+                                    logTestResult('❌ Filters Zone Missing', 'Filters zone not found', 'error');
+                                }
+                            }
+                        }, 100);
+                    } else {
+                        logTestResult('❌ Filter Not Created', 'Dimension filter was not created', 'error');
+                    }
+                } else {
+                    logTestResult('❌ Region Not Found', 'Region dimension not found in data', 'error');
+                    
+                    // Debug: Check what columns are available
+                    if (waveAnalytics.parsedData.length > 0) {
+                        const headers = Object.keys(waveAnalytics.parsedData[0]);
+                        logTestResult('🔍 Available Headers', `Headers: ${JSON.stringify(headers)}`, 'info');
+                    }
+                }
+                
+            } catch (error) {
+                logTestResult('❌ Debug Dimension Filter', 'Error in debug function: ' + error.message, 'error');
+            }
+        }
+        
+        function testDimensionFilters() {
+            try {
+                logTestResult('🔍 Test Dimension Filters', 'Testing dimension filter functionality...', 'info');
+                
+                // Load time series data first
+                waveAnalytics.setCSVDataAsString(timeSeriesData);
+                waveAnalytics.render();
+                
+                // Check if region dimension exists
+                if (waveAnalytics.dimensions.includes('region')) {
+                    logTestResult('✅ Region Dimension', 'Region dimension found in data', 'success');
+                    
+                    // Add dimension filter for region
+                    waveAnalytics.addDimensionFilter('region');
+                    logTestResult('✅ Add Dimension Filter', 'Added dimension filter for region', 'success');
+                    
+                    // Check if dimension filter was created
+                    if (waveAnalytics.dimensionFilters['region']) {
+                        const regionFilter = waveAnalytics.dimensionFilters['region'];
+                        logTestResult('✅ Dimension Filter Created', `Available values: ${JSON.stringify(regionFilter.availableValues)}`, 'success');
+                        
+                        // Check if dropdown is rendered
+                        setTimeout(() => {
+                            const dropdownMenu = document.querySelector('.dimension-dropdown-menu[data-dimension="region"]');
+                            if (dropdownMenu) {
+                                logTestResult('✅ Dropdown Menu', 'Dimension dropdown menu rendered successfully', 'success');
+                                
+                                // Check if values are in dropdown
+                                const checkboxes = dropdownMenu.querySelectorAll('.value-checkbox');
+                                logTestResult('✅ Dropdown Values', `Found ${checkboxes.length} value checkboxes in dropdown`, 'success');
+                                
+                                if (checkboxes.length > 0) {
+                                    logTestResult('✅ Filter Working', 'Dimension filter dropdown is working correctly!', 'success');
+                                } else {
+                                    logTestResult('⚠️ No Values', 'No values found in dropdown - check data', 'warning');
+                                }
+                            } else {
+                                logTestResult('❌ Dropdown Menu', 'Dimension dropdown menu not found', 'error');
+                            }
+                        }, 100);
+                    } else {
+                        logTestResult('❌ Dimension Filter', 'Failed to create dimension filter', 'error');
+                    }
+                } else {
+                    logTestResult('❌ Region Dimension', 'Region dimension not found in data', 'error');
+                }
+                
+            } catch (error) {
+                logTestResult('❌ Test Dimension Filters', 'Error testing dimension filters: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

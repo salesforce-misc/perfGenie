@@ -372,8 +372,11 @@
         let start = performance.now();
         if(getEventType() === eventType) {
             resetTreeHeader("<div style='padding-left: 10px; padding-right: 10px'>Retrieving profile data, <span style='color:darkorange'>this may take few sec ...</span> <span style='float: right;' class='spinner' id='profilespinner'></span></div>");
-            showSpinner('profilespinner');
+            //showSpinner('profilespinner');
+            //ProgressBar.start({id: 'profilespinner',container: 'tabs',position: 'top'});
         }
+        //ProgressBar.start({id: 'profilespinner',container: 'tabs',position: 'top'});
+        ProgressBar.start({id: 'profilespinner',container: 'tabs', position: 'top',showIcon: true, iconStartPosition: 'top', icon: '🏄', splash:true });
         let isJstackEvent = false;
         if(eventType == "Jstack" || eventType == "json-jstack"){
             isJstackEvent=true;
@@ -383,10 +386,11 @@
             let end = performance.now();
             console.log("retrievAndcreateContextTree 0 time:" + (end - start) + " event:" + eventType);
             resetTreeHeader("<div style='padding-right: 10px'>Failed to retrieve profile data of "+eventType+"<span style='float: right;' class='spinner' id='profilespinner'></span></div>");
-            hideSpinner('profilespinner');
+            //hideSpinner('profilespinner');
+            ProgressBar.stop({ id:'profilespinner', explode: true });
             return;
         }
-        spinnerToggle('spinnerId');
+        //spinnerToggle('spinnerId');
 
         queryResults.then(contextTrees => {
 
@@ -428,8 +432,10 @@
                     let end = performance.now();
                     console.log("retrievAndcreateContextTree 1 time:" + (end - start) + " event:" + eventType);
                 }
-                spinnerToggle('spinnerId');
-                hideSpinner('profilespinner');
+                //spinnerToggle('spinnerId');
+                //hideSpinner('profilespinner');
+                //ProgressBar.stop('profilespinner');
+                ProgressBar.stop({ id:'profilespinner', explode: true});
                 resetTreeHeader("<div style='padding-right: 10px'>Failed to retrieve profile data of "+eventType+"<span style='float: right;' class='spinner' id='profilespinner'></span></div>");
                 return;
             }
@@ -438,6 +444,8 @@
                 toastr_error("Failed to get both context trees.");
                 let end = performance.now();
                 console.log("retrievAndcreateContextTree 2 time:" + (end - start) + " event:" + eventType);
+                //ProgressBar.stop('profilespinner');
+                ProgressBar.stop({ id:'profilespinner', explode: true});
                 return;
             }
 
@@ -522,7 +530,9 @@
                     updateProfilerView();
                 }
             }
-            spinnerToggle('spinnerId');
+            //spinnerToggle('spinnerId');
+            //ProgressBar.stop('profilespinner');
+            ProgressBar.stop({ id:'profilespinner', explode: true,celebrate: true});
         }).catch(error => {
             let end = performance.now();
             console.log("retrievAndcreateContextTree 4 time:" + (end - start) + " event:" + eventType);
@@ -533,7 +543,9 @@
                 console.error(error);
                 toastr_error("Failed to load data for the calling context tree:" + eventType);
             }
-            spinnerToggle('spinnerId');
+            //spinnerToggle('spinnerId');
+            //ProgressBar.stop('profilespinner');
+            ProgressBar.stop({ id:'profilespinner', explode: true});
         });
         let end = performance.now();
         console.log("retrievAndcreateContextTree 5 time:" + (end - start) + " event:" + eventType);
@@ -624,12 +636,16 @@
 
         unhideFilterViewStatus();
         updateFilterViewStatus("<div style='padding-right: 0px' >Retrieving request context of profile, <span style='color:darkorange'>this may take few sec  ... </span><span style='float: right;' class='spinner' id='contextspinner'></span></div>");
-        showSpinner('contextspinner');
+        //showSpinner('contextspinner');
+        //ProgressBar.start({id: 'contextspinner',container: 'tabs',position: 'top'});
+        ProgressBar.start({id: 'contextspinner',container: 'tabs', position: 'top',showIcon: true, iconStartPosition: 'top', icon: '🏄', splash:true });
 
         let queryResults = fetchContextData(dateRanges, pods, queries, profilers, tenants, profiles, hosts, uploads, fileIds, uploadTimes, aggregates, customEvent);
         if (queryResults === undefined) {
             let end = performance.now();
             console.log("getLogContext 0 time:" + (end - start) + " event:" + customEvent);
+             //ProgressBar.stop('contextspinner');
+             ProgressBar.stop({ id: 'contextspinner', explode: true});
             return;
         }
         console.log("getLogContext done");
@@ -698,8 +714,13 @@
                     }
                 }
             }
+            //ProgressBar.stop('contextspinner');
+            ProgressBar.stop({ id:'contextspinner', explode: true, celebrate:true});
+
 
             }).catch(error => {
+                //ProgressBar.stop('contextspinner');
+                ProgressBar.stop({ id:'contextspinner', explode: true});
                 setContextData({"records": {}, "tidlist": [], "header": {}},1);
                 fetchOtherEvents(dateRanges[0], tenants[0], hosts[0], 1);
                 updateFilterViewStatus("<span style='color:darkorange'>Warning:</span> Failed to get Request context.");

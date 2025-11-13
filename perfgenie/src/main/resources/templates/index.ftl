@@ -14,6 +14,8 @@
 
     <meta charset="UTF-8">
     <title>perf-genie</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="alternate icon" href="/favicon.ico">
 
     <#--    https://momentjs.com-->
     <script src="/plugins/moment.min.js"></script>
@@ -35,10 +37,11 @@
     <script src="/plugins/bootstrap-4.2.1/js/bootstrap.min.js"></script>
 
     <link rel="stylesheet" href="/css/profiler.css">
-    <script src="/js/input.js"></script>
     <script src="/js/utils.js"></script>
     <script src="/js/SFlameGraph.js"></script>
+    <script src="/js/progressbar.js"></script>
     <script src="/js/SFDataTable.js"></script>
+    <script src="/js/input.js"></script>
     <link rel="stylesheet" href="/css/SFlameGraph.css">
 
     <link rel="stylesheet" type="text/css" href="/plugins/dataTables.jqueryui.min.css"/>

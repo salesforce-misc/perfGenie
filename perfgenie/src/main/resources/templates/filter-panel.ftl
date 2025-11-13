@@ -158,6 +158,8 @@
     }
     .statetable {
         overflow: auto;
+        padding-right: 3px !important;
+        padding-top: 6px !important;
     }
     div.dataTables_info {
         position: absolute
@@ -2700,14 +2702,15 @@
         }
 
         for (dim in dimIndexMap) {
-            if (dim === "tid" || dim === "timestamp") {
-                if (!(filterMap[dim] == undefined || record[dimIndexMap[dim]] == filterMap[dim])) {
+            if(filterMap[dim] == undefined){
+                continue;
+            }
+            if (typeof record[dimIndexMap[dim]]?.includes === "function") {
+                if (!(record[dimIndexMap[dim]]?.includes(filterMap[dim]))) {
                     return false;
                 }
-            } else {
-                if (!(filterMap[dim] == undefined || record[dimIndexMap[dim]]?.includes(filterMap[dim]))) {
-                    return false;
-                }
+            }else if (record[dimIndexMap[dim]] != filterMap[dim]) {
+                return false;
             }
         }
         return true;
@@ -3262,14 +3265,14 @@
         //t.children().length
         //<td style="padding: 0px;border: none;align-items:center;" rowspan="2">
         if($("#diageventnn").length == 0) {
-            let firstRow = $("#sfContextDataTableSFDataTable  tr:nth-child(1)");
+            let firstRow = $("#statetable-table  tr:nth-child(1)");
             if(firstRow != undefined){
                 let lastTd = firstRow.children()[firstRow.children().length - 1];
-                let tmpHeight = $("#sfContextDataTableSFDataTable").innerHeight()-$(firstRow).innerHeight();
+                let tmpHeight = $("#statetable-table").innerHeight()-$(firstRow).innerHeight();
                 if(tmpHeight < 250){
                     tmpHeight = 250;
                 }
-                $("<td  id='checkresize' style='padding: 0px;border: none;align-items:center;' rowspan='10'>" + "<div id='diageventnn' style='width:"+(window.innerWidth - $("#sfContextDataTableSFDataTable").innerWidth() - 70)+";height: "+tmpHeight +"px; overflow: auto; border-style: dotted hidden; padding: 10px;' class='ui-widget-content col-lg-12'> </div></td>").insertAfter(lastTd);
+                $("<td  id='checkresize' style='padding: 0px;border: none;align-items:center;' rowspan='10'>" + "<div id='diageventnn' style='width:"+(window.innerWidth - $("#statetable-table").innerWidth() - 70)+";height: "+tmpHeight +"px; overflow: auto; border-style: dotted hidden; padding: 10px;' class='ui-widget-content col-lg-12'> </div></td>").insertAfter(lastTd);
                 $( "#diageventnn" ).resizable();
             }
         }
@@ -4158,7 +4161,7 @@
         }
 
         if(tableFormat == 0) {//table
-            if(otherEvent == "diagnostics(raw)"){//raw
+            if(otherEvent == "diagnostics(raw)" || otherEvent == "cellmetrics"){//raw
                 addAllRows = true;
                 addDim = false;
                 groupBy="All records";
@@ -6200,6 +6203,9 @@
             if(compareTree){
                 sfContextDataTable.SFDataTable(tableRows, tableHeader, "statetable", 2);
             }else {
+                sfContextDataTable.setSFDataTablePercentMetric('runTime'); // Set base metric
+                sfContextDataTable.setMetricsToShowPercent(['runTime','cpuTime', 'dbTime', 'apexTime','gcTime','spTime','safepointTime','cacheTime','apexCalloutTime','waitTime','blockedTime']); // Only show % for these metrics
+                sfContextDataTable.setSFDataTableEnablePercent(true);
                 sfContextDataTable.SFDataTable(tableRows, tableHeader, "statetable", order);
             }
             if(!isContextViewFiltered) {
@@ -6239,10 +6245,12 @@
             $("#diageventval").html("");
             $("#diageventheader").html( moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event"+count+":" + otherEvent +  ", Name:" + name);
         }
-        showSpinner("spinner2");
+        //showSpinner("spinner2");
+        ProgressBar.start({id: 'spinner2',container: 'statetable',position: 'bottom'});
 
         let request = stackDigVizAjax(tenant1, "GET", callTreeUrl, function (response) { // success function
-            hideSpinner("spinner2");
+            //hideSpinner("spinner2");
+            ProgressBar.stop('spinner2');
             console.log("getDiagEvent done");
             if(response == undefined || response === "") {
                 console.log("Warn: unable to fetch diag event " + name);
@@ -6255,7 +6263,8 @@
             if(error.status == 401){
                 location.reload();
             }
-            hideSpinner("spinner2");
+            //hideSpinner("spinner2");
+             ProgressBar.stop('spinner2');
             console.log("Warn: unable to fetch diag event" + name);
         });
     }
@@ -6276,9 +6285,11 @@
         $("#diageventnn").html("<div id='diageventn'>" +
             "<div style='float:right;cursor: pointer;' onclick='closePin(\"diageventn\", this)'>Close</div><div id='diageventheadern'>" + moment.utc(timestamp).format('YYYY-MM-DD HH:mm:ss.SSS') + ", Event" + count + ":" + otherEvent + ", Name:" + name + "</div>" +
             "<span style='float:right;' class='spinner' id='spinner3'></span>" + "<pre id=\"diageventvaln\"  style=\"padding-top: 5px; padding-left: 0px;padding-right: 0px;\" class=\"popupdiagview col-lg-12\" >" + "</div>");
-        showSpinner("spinner3");
+        //showSpinner("spinner3");
+        ProgressBar.start({id: 'spinner3',container: 'diageventnn',position: 'top'});
         let request = stackDigVizAjax(tenant1, "GET", callTreeUrl, function (response) { // success function
-            hideSpinner("spinner3");
+            //hideSpinner("spinner3");
+            ProgressBar.stop('spinner3');
             console.log("getDiagEvent done");
             if (response == undefined || response === "") {
                 console.log("Warn: unable to fetch diag event " + name);
@@ -6292,7 +6303,8 @@
             if (error.status == 401) {
                 location.reload();
             }
-            hideSpinner("spinner3");
+            //hideSpinner("spinner3");
+            ProgressBar.stop('spinner3');
             $("#diageventvaln").html("unable to fetch diag event " + name);
             console.log("Warn: unable to fetch diag event" + name);
         });
@@ -6617,7 +6629,6 @@
                                     sfContextDataTable.addContextTableRow(tableRows[rowIndex], record[4]);
                                 }else {
                                     for (let field in record) {
-
                                             if (field == timestampIndex) {
                                                 sfContextDataTable.addContextTableRow(tableRows[rowIndex], moment.utc(record[field]).format('YYYY-MM-DD HH:mm:ss SSS'), "id='" + record[tidRowIndex] + "_" + record[field] + "'");
                                             } else if (field == tidRowIndex) {
@@ -6641,7 +6652,13 @@
                                                     } else {
                                                         if (otherEvent === "monitor-context" && field == 9 && record[8] == "true") {
                                                             sfContextDataTable.addContextTableRow(tableRows[rowIndex], "<a title='click to view lock details' style='cursor: pointer;float: right;' class='fa fa-eye' onclick='showLockDetail(" + record[0] + ", " + tid + ", \"" + contextDataRecordNumber + "\")'></a>", " hint='view'");
-                                                        }else {
+                                                        }else if(otherEvent === "cellmetrics"){
+                                                            if(field == 0){
+                                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex],record[field],"class='input-menu-one'");
+                                                            }else{
+                                                                sfContextDataTable.addContextTableRow(tableRows[rowIndex], Number(record[field].toFixed(2))," style='text-align:right'");
+                                                            }
+                                                        }else{
                                                             sfContextDataTable.addContextTableRow(tableRows[rowIndex], contextDataRecordNumber + ":" + record[field], "' hint='" + isDimIndexMap[field] + "'");
                                                         }
                                                     }
@@ -6734,6 +6751,9 @@
                 }
             }
 
+            sfContextDataTable.setSFDataTablePercentMetric('runTime'); // Set base metric
+            sfContextDataTable.setMetricsToShowPercent(['runTime','cpuTime', 'dbTime', 'apexTime','gcTime','spTime','safepointTime','cacheTime','apexCalloutTime','waitTime','blockedTime']); // Only show % for these metrics
+            sfContextDataTable.setSFDataTableEnablePercent(true);
             sfContextDataTable.SFDataTable(tableRows, tableHeader, "statetable", order);
 
             //if(!isContextViewFiltered) {

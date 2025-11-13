@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salesforce WAVE Analytics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Salesforce Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f3f3f3;
+            color: #181818;
+            line-height: 1.5;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0176d3 0%, #014486 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 300;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-button {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-input-button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .main-container {
+            display: flex;
+            min-height: calc(100vh - 80px);
+        }
+
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-right: 1px solid #e5e5e5;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            color: #0176d3;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .filter-group {
+            margin-bottom: 2rem;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #181818;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #dddbda;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: #0176d3;
+            box-shadow: 0 0 0 2px rgba(1, 118, 211, 0.2);
+        }
+
+        .chart-type-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .chart-type-btn {
+            padding: 0.5rem;
+            border: 1px solid #dddbda;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .chart-type-btn.active {
+            background: #0176d3;
+            color: white;
+            border-color: #0176d3;
+        }
+
+        .chart-type-btn:hover {
+            background: #f3f3f3;
+        }
+
+        .chart-type-btn.active:hover {
+            background: #014486;
+        }
+
+        .content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .chart-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #181818;
+        }
+
+        .chart-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chart-action-btn {
+            background: none;
+            border: 1px solid #dddbda;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            color: #706e6b;
+        }
+
+        .chart-action-btn:hover {
+            background: #f3f3f3;
+        }
+
+        .chart-canvas {
+            position: relative;
+            height: 300px;
+        }
+
+        .data-table {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .data-table-header {
+            padding: 1rem 1.5rem;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .data-table-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #181818;
+        }
+
+        .data-table-content {
+            overflow-x: auto;
+        }
+
+        .data-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #181818;
+            position: sticky;
+            top: 0;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #0176d3;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #706e6b;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            color: #706e6b;
+        }
+
+        .error {
+            background: #fef7f7;
+            border: 1px solid #ea001e;
+            color: #ea001e;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #706e6b;
+            padding: 2rem;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .export-btn {
+            background: #0176d3;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .export-btn:hover {
+            background: #014486;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #e5e5e5;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Salesforce WAVE Analytics Dashboard</h1>
+        <div class="header-controls">
+            <div class="file-input-wrapper">
+                <input type="file" id="csvFile" class="file-input" accept=".csv" />
+                <label for="csvFile" class="file-input-button">Upload CSV</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <h3>Data Filters</h3>
+            
+            <div class="filter-group">
+                <label for="dateColumn">Date Column:</label>
+                <select id="dateColumn">
+                    <option value="">Select date column</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="valueColumn">Value Column:</label>
+                <select id="valueColumn">
+                    <option value="">Select value column</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="groupColumn">Group By:</label>
+                <select id="groupColumn">
+                    <option value="">Select group column</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="dateRange">Date Range:</label>
+                <input type="date" id="startDate" />
+                <input type="date" id="endDate" style="margin-top: 0.5rem;" />
+            </div>
+
+            <div class="filter-group">
+                <label for="aggregation">Aggregation:</label>
+                <select id="aggregation">
+                    <option value="sum">Sum</option>
+                    <option value="avg">Average</option>
+                    <option value="min">Minimum</option>
+                    <option value="max">Maximum</option>
+                    <option value="count">Count</option>
+                </select>
+            </div>
+
+            <h3>Chart Types</h3>
+            <div class="chart-type-selector">
+                <div class="chart-type-btn active" data-type="line">Line</div>
+                <div class="chart-type-btn" data-type="bar">Bar</div>
+                <div class="chart-type-btn" data-type="pie">Pie</div>
+                <div class="chart-type-btn" data-type="scatter">Scatter</div>
+            </div>
+
+            <div class="export-buttons">
+                <button class="export-btn" onclick="exportData('csv')">Export CSV</button>
+                <button class="export-btn" onclick="exportData('json')">Export JSON</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <div id="loadingIndicator" class="loading" style="display: none;">
+                Loading data...
+            </div>
+
+            <div id="errorMessage" class="error" style="display: none;"></div>
+
+            <div id="noDataMessage" class="no-data" style="display: none;">
+                <h3>No Data Available</h3>
+                <p>Please upload a CSV file to get started.</p>
+            </div>
+
+            <div id="dashboardContent" style="display: none;">
+                <div class="stats-grid" id="statsGrid"></div>
+                <div class="dashboard-grid" id="dashboardGrid"></div>
+                <div class="data-table" id="dataTable"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class WaveDashboard {
+            constructor() {
+                this.data = null;
+                this.filteredData = null;
+                this.charts = {};
+                this.currentChartType = 'line';
+                this.initializeEventListeners();
+            }
+
+            initializeEventListeners() {
+                document.getElementById('csvFile').addEventListener('change', (e) => this.handleFileUpload(e));
+                document.getElementById('dateColumn').addEventListener('change', () => this.updateVisualizations());
+                document.getElementById('valueColumn').addEventListener('change', () => this.updateVisualizations());
+                document.getElementById('groupColumn').addEventListener('change', () => this.updateVisualizations());
+                document.getElementById('startDate').addEventListener('change', () => this.updateVisualizations());
+                document.getElementById('endDate').addEventListener('change', () => this.updateVisualizations());
+                document.getElementById('aggregation').addEventListener('change', () => this.updateVisualizations());
+
+                document.querySelectorAll('.chart-type-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.changeChartType(e.target.dataset.type));
+                });
+            }
+
+            async handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                this.showLoading(true);
+                this.hideError();
+
+                try {
+                    const text = await this.readFileAsText(file);
+                    this.data = this.parseCSV(text);
+                    this.filteredData = [...this.data];
+                    this.populateColumnSelectors();
+                    this.updateVisualizations();
+                    this.showDashboard();
+                } catch (error) {
+                    this.showError('Error reading file: ' + error.message);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            readFileAsText(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.onerror = e => reject(e);
+                    reader.readAsText(file);
+                });
+            }
+
+            parseCSV(text) {
+                const lines = text.split('\n').filter(line => line.trim());
+                if (lines.length < 2) throw new Error('CSV file must have at least a header and one data row');
+
+                const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                const data = [];
+
+                for (let i = 1; i < lines.length; i++) {
+                    const values = this.parseCSVLine(lines[i]);
+                    if (values.length === headers.length) {
+                        const row = {};
+                        headers.forEach((header, index) => {
+                            row[header] = this.parseValue(values[index]);
+                        });
+                        data.push(row);
+                    }
+                }
+
+                return data;
+            }
+
+            parseCSVLine(line) {
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        result.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                result.push(current.trim());
+                return result;
+            }
+
+            parseValue(value) {
+                if (value === '' || value === 'NaN') return null;
+                
+                // Try to parse as number
+                const num = parseFloat(value);
+                if (!isNaN(num)) return num;
+                
+                // Try to parse as date
+                const date = new Date(value);
+                if (!isNaN(date.getTime())) return date;
+                
+                return value;
+            }
+
+            populateColumnSelectors() {
+                if (!this.data || this.data.length === 0) return;
+
+                const columns = Object.keys(this.data[0]);
+                const selectors = ['dateColumn', 'valueColumn', 'groupColumn'];
+
+                selectors.forEach(selectorId => {
+                    const select = document.getElementById(selectorId);
+                    select.innerHTML = `<option value="">Select ${selectorId.replace('Column', ' column')}</option>`;
+                    
+                    columns.forEach(column => {
+                        const option = document.createElement('option');
+                        option.value = column;
+                        option.textContent = column;
+                        select.appendChild(option);
+                    });
+                });
+
+                // Auto-select common column patterns
+                const datePatterns = ['timestamp', 'date', 'time'];
+                const valuePatterns = ['value', 'count', 'amount', 'avg', 'cpu', 'memory'];
+                
+                const dateColumn = columns.find(col => 
+                    datePatterns.some(pattern => col.toLowerCase().includes(pattern))
+                );
+                if (dateColumn) {
+                    document.getElementById('dateColumn').value = dateColumn;
+                }
+
+                const valueColumn = columns.find(col => 
+                    valuePatterns.some(pattern => col.toLowerCase().includes(pattern)) && 
+                    this.isNumericColumn(col)
+                );
+                if (valueColumn) {
+                    document.getElementById('valueColumn').value = valueColumn;
+                }
+            }
+
+            isNumericColumn(columnName) {
+                return this.data.some(row => {
+                    const value = row[columnName];
+                    return typeof value === 'number' && !isNaN(value);
+                });
+            }
+
+            updateVisualizations() {
+                if (!this.data) return;
+
+                this.applyFilters();
+                this.updateStats();
+                this.updateCharts();
+                this.updateDataTable();
+            }
+
+            applyFilters() {
+                let filtered = [...this.data];
+
+                const dateColumn = document.getElementById('dateColumn').value;
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+
+                if (dateColumn && (startDate || endDate)) {
+                    filtered = filtered.filter(row => {
+                        const date = new Date(row[dateColumn]);
+                        if (isNaN(date.getTime())) return true;
+                        
+                        if (startDate && date < new Date(startDate)) return false;
+                        if (endDate && date > new Date(endDate)) return false;
+                        return true;
+                    });
+                }
+
+                this.filteredData = filtered;
+            }
+
+            updateStats() {
+                const statsGrid = document.getElementById('statsGrid');
+                if (!this.filteredData || this.filteredData.length === 0) {
+                    statsGrid.innerHTML = '';
+                    return;
+                }
+
+                const valueColumn = document.getElementById('valueColumn').value;
+                if (!valueColumn) {
+                    statsGrid.innerHTML = '';
+                    return;
+                }
+
+                const values = this.filteredData
+                    .map(row => row[valueColumn])
+                    .filter(val => typeof val === 'number' && !isNaN(val));
+
+                if (values.length === 0) {
+                    statsGrid.innerHTML = '';
+                    return;
+                }
+
+                const stats = {
+                    'Total Records': this.filteredData.length,
+                    'Average': (values.reduce((a, b) => a + b, 0) / values.length).toFixed(2),
+                    'Min': Math.min(...values).toFixed(2),
+                    'Max': Math.max(...values).toFixed(2),
+                    'Sum': values.reduce((a, b) => a + b, 0).toFixed(2)
+                };
+
+                statsGrid.innerHTML = Object.entries(stats).map(([label, value]) => `
+                    <div class="stat-card">
+                        <div class="stat-value">${value}</div>
+                        <div class="stat-label">${label}</div>
+                    </div>
+                `).join('');
+            }
+
+            updateCharts() {
+                const dashboardGrid = document.getElementById('dashboardGrid');
+                dashboardGrid.innerHTML = '';
+
+                const valueColumn = document.getElementById('valueColumn').value;
+                const groupColumn = document.getElementById('groupColumn').value;
+                const dateColumn = document.getElementById('dateColumn').value;
+
+                if (!valueColumn) return;
+
+                // Time series chart
+                if (dateColumn) {
+                    this.createTimeSeriesChart(valueColumn, dateColumn);
+                }
+
+                // Grouped chart
+                if (groupColumn) {
+                    this.createGroupedChart(valueColumn, groupColumn);
+                }
+
+                // Distribution chart
+                this.createDistributionChart(valueColumn);
+            }
+
+            createTimeSeriesChart(valueColumn, dateColumn) {
+                const chartData = this.prepareTimeSeriesData(valueColumn, dateColumn);
+                const chartId = 'timeSeriesChart';
+                
+                const chartContainer = document.createElement('div');
+                chartContainer.className = 'chart-container';
+                chartContainer.innerHTML = `
+                    <div class="chart-header">
+                        <div class="chart-title">Time Series: ${valueColumn}</div>
+                        <div class="chart-actions">
+                            <button class="chart-action-btn" onclick="waveDashboard.downloadChart('${chartId}')">Download</button>
+                        </div>
+                    </div>
+                    <div class="chart-canvas">
+                        <canvas id="${chartId}"></canvas>
+                    </div>
+                `;
+
+                document.getElementById('dashboardGrid').appendChild(chartContainer);
+
+                const ctx = document.getElementById(chartId).getContext('2d');
+                this.charts[chartId] = new Chart(ctx, {
+                    type: this.currentChartType,
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    parser: 'YYYY-MM-DD HH:mm:ss'
+                                }
+                            },
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            createGroupedChart(valueColumn, groupColumn) {
+                const chartData = this.prepareGroupedData(valueColumn, groupColumn);
+                const chartId = 'groupedChart';
+                
+                const chartContainer = document.createElement('div');
+                chartContainer.className = 'chart-container';
+                chartContainer.innerHTML = `
+                    <div class="chart-header">
+                        <div class="chart-title">${valueColumn} by ${groupColumn}</div>
+                        <div class="chart-actions">
+                            <button class="chart-action-btn" onclick="waveDashboard.downloadChart('${chartId}')">Download</button>
+                        </div>
+                    </div>
+                    <div class="chart-canvas">
+                        <canvas id="${chartId}"></canvas>
+                    </div>
+                `;
+
+                document.getElementById('dashboardGrid').appendChild(chartContainer);
+
+                const ctx = document.getElementById(chartId).getContext('2d');
+                this.charts[chartId] = new Chart(ctx, {
+                    type: this.currentChartType === 'line' ? 'bar' : this.currentChartType,
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            createDistributionChart(valueColumn) {
+                const chartData = this.prepareDistributionData(valueColumn);
+                const chartId = 'distributionChart';
+                
+                const chartContainer = document.createElement('div');
+                chartContainer.className = 'chart-container';
+                chartContainer.innerHTML = `
+                    <div class="chart-header">
+                        <div class="chart-title">Distribution: ${valueColumn}</div>
+                        <div class="chart-actions">
+                            <button class="chart-action-btn" onclick="waveDashboard.downloadChart('${chartId}')">Download</button>
+                        </div>
+                    </div>
+                    <div class="chart-canvas">
+                        <canvas id="${chartId}"></canvas>
+                    </div>
+                `;
+
+                document.getElementById('dashboardGrid').appendChild(chartContainer);
+
+                const ctx = document.getElementById(chartId).getContext('2d');
+                this.charts[chartId] = new Chart(ctx, {
+                    type: 'bar',
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+
+            prepareTimeSeriesData(valueColumn, dateColumn) {
+                const data = this.filteredData
+                    .filter(row => row[valueColumn] !== null && row[dateColumn] !== null)
+                    .sort((a, b) => new Date(a[dateColumn]) - new Date(b[dateColumn]));
+
+                return {
+                    labels: data.map(row => new Date(row[dateColumn])),
+                    datasets: [{
+                        label: valueColumn,
+                        data: data.map(row => row[valueColumn]),
+                        borderColor: '#0176d3',
+                        backgroundColor: 'rgba(1, 118, 211, 0.1)',
+                        tension: 0.1
+                    }]
+                };
+            }
+
+            prepareGroupedData(valueColumn, groupColumn) {
+                const groups = {};
+                this.filteredData.forEach(row => {
+                    const group = row[groupColumn] || 'Unknown';
+                    const value = row[valueColumn];
+                    if (typeof value === 'number' && !isNaN(value)) {
+                        if (!groups[group]) groups[group] = [];
+                        groups[group].push(value);
+                    }
+                });
+
+                const aggregation = document.getElementById('aggregation').value;
+                const labels = Object.keys(groups);
+                const data = labels.map(group => {
+                    const values = groups[group];
+                    switch (aggregation) {
+                        case 'sum': return values.reduce((a, b) => a + b, 0);
+                        case 'avg': return values.reduce((a, b) => a + b, 0) / values.length;
+                        case 'min': return Math.min(...values);
+                        case 'max': return Math.max(...values);
+                        case 'count': return values.length;
+                        default: return values.reduce((a, b) => a + b, 0);
+                    }
+                });
+
+                return {
+                    labels: labels,
+                    datasets: [{
+                        label: `${aggregation} of ${valueColumn}`,
+                        data: data,
+                        backgroundColor: this.generateColors(labels.length),
+                        borderColor: this.generateColors(labels.length),
+                        borderWidth: 1
+                    }]
+                };
+            }
+
+            prepareDistributionData(valueColumn) {
+                const values = this.filteredData
+                    .map(row => row[valueColumn])
+                    .filter(val => typeof val === 'number' && !isNaN(val));
+
+                if (values.length === 0) return { labels: [], datasets: [] };
+
+                const min = Math.min(...values);
+                const max = Math.max(...values);
+                const bins = 10;
+                const binSize = (max - min) / bins;
+
+                const histogram = new Array(bins).fill(0);
+                const labels = [];
+
+                for (let i = 0; i < bins; i++) {
+                    const start = min + i * binSize;
+                    const end = start + binSize;
+                    labels.push(`${start.toFixed(1)}-${end.toFixed(1)}`);
+                }
+
+                values.forEach(value => {
+                    const binIndex = Math.min(Math.floor((value - min) / binSize), bins - 1);
+                    histogram[binIndex]++;
+                });
+
+                return {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Frequency',
+                        data: histogram,
+                        backgroundColor: 'rgba(1, 118, 211, 0.6)',
+                        borderColor: '#0176d3',
+                        borderWidth: 1
+                    }]
+                };
+            }
+
+            generateColors(count) {
+                const colors = [];
+                for (let i = 0; i < count; i++) {
+                    const hue = (i * 137.5) % 360;
+                    colors.push(`hsl(${hue}, 70%, 50%)`);
+                }
+                return colors;
+            }
+
+            updateDataTable() {
+                const dataTable = document.getElementById('dataTable');
+                if (!this.filteredData || this.filteredData.length === 0) {
+                    dataTable.innerHTML = '';
+                    return;
+                }
+
+                const columns = Object.keys(this.filteredData[0]);
+                const maxRows = 100; // Limit for performance
+                const displayData = this.filteredData.slice(0, maxRows);
+
+                dataTable.innerHTML = `
+                    <div class="data-table-header">
+                        <div class="data-table-title">Data Table (${this.filteredData.length} rows)</div>
+                        <div class="chart-actions">
+                            <button class="chart-action-btn" onclick="waveDashboard.exportTable()">Export</button>
+                        </div>
+                    </div>
+                    <div class="data-table-content">
+                        <table>
+                            <thead>
+                                <tr>
+                                    ${columns.map(col => `<th>${col}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${displayData.map(row => `
+                                    <tr>
+                                        ${columns.map(col => `<td>${row[col] || ''}</td>`).join('')}
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            changeChartType(type) {
+                this.currentChartType = type;
+                document.querySelectorAll('.chart-type-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.type === type);
+                });
+                this.updateCharts();
+            }
+
+            downloadChart(chartId) {
+                const chart = this.charts[chartId];
+                if (chart) {
+                    const url = chart.toBase64Image();
+                    const link = document.createElement('a');
+                    link.download = `${chartId}.png`;
+                    link.href = url;
+                    link.click();
+                }
+            }
+
+            exportTable() {
+                if (!this.filteredData) return;
+                
+                const csv = this.convertToCSV(this.filteredData);
+                this.downloadFile(csv, 'data.csv', 'text/csv');
+            }
+
+            exportData(format) {
+                if (!this.filteredData) return;
+
+                let content, filename, mimeType;
+                
+                if (format === 'json') {
+                    content = JSON.stringify(this.filteredData, null, 2);
+                    filename = 'data.json';
+                    mimeType = 'application/json';
+                } else {
+                    content = this.convertToCSV(this.filteredData);
+                    filename = 'data.csv';
+                    mimeType = 'text/csv';
+                }
+
+                this.downloadFile(content, filename, mimeType);
+            }
+
+            convertToCSV(data) {
+                if (!data || data.length === 0) return '';
+                
+                const headers = Object.keys(data[0]);
+                const csvContent = [
+                    headers.join(','),
+                    ...data.map(row => headers.map(header => {
+                        const value = row[header];
+                        if (value === null || value === undefined) return '';
+                        if (typeof value === 'string' && value.includes(',')) return `"${value}"`;
+                        return value;
+                    }).join(','))
+                ].join('\n');
+                
+                return csvContent;
+            }
+
+            downloadFile(content, filename, mimeType) {
+                const blob = new Blob([content], { type: mimeType });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.click();
+                URL.revokeObjectURL(url);
+            }
+
+            showLoading(show) {
+                document.getElementById('loadingIndicator').style.display = show ? 'flex' : 'none';
+            }
+
+            showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+            }
+
+            hideError() {
+                document.getElementById('errorMessage').style.display = 'none';
+            }
+
+            showDashboard() {
+                document.getElementById('noDataMessage').style.display = 'none';
+                document.getElementById('dashboardContent').style.display = 'block';
+            }
+        }
+
+        // Initialize the dashboard
+        const waveDashboard = new WaveDashboard();
+    </script>
+</body>
+</html>
+

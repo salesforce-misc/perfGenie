@@ -25,7 +25,7 @@
 </script>
 
 <#include "tabs-js.ftl">
-
+<#include "geniehostselector.ftl">
 <div id="tabs">
     <#include "tab-filter-toolbar.ftl">
     <ul>

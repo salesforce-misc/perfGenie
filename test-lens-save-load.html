@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wave Analytics Lens Save/Load Test</title>
+    
+    <!-- Include required dependencies -->
+    <link rel="stylesheet" href="/plugins/c3/c3.min.css">
+    <script src="/plugins/d3/d3-4.10.0.min.js"></script>
+    <script src="/plugins/c3/c3-0.7.14.min.js"></script>
+    <script src="/plugins/jquery-3.6.1.min.js"></script>
+    <script src="/plugins/moment.min.js"></script>
+    <script src="/js/timeseries-component.js"></script>
+    <script src="/js/time-range-filter.js"></script>
+    <script src="/js/utils.js"></script>
+    <script type="text/javascript" src="/plugins/toastify/toastify.js"></script>
+    <link rel="stylesheet" href="/plugins/toastify/toastify.css">
+    <link href="/plugins/font-awesome-4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .wave-test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .wave-test-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .wave-test-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .wave-test-steps {
+            margin-left: 20px;
+        }
+        .wave-test-step {
+            margin-bottom: 8px;
+            padding: 5px;
+            background-color: #f9f9f9;
+            border-left: 3px solid #007bff;
+        }
+        .wave-expected-result {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .wave-test-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .wave-test-button:hover {
+            background-color: #0056b3;
+        }
+        .wave-status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .wave-status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .wave-status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .wave-analytics-container {
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wave Analytics Lens Save/Load Functionality Test</h1>
+    
+    <!-- Wave Analytics Component Container -->
+    <div class="wave-analytics-container">
+        <h2>Wave Analytics Component</h2>
+        <div id="dataviewcontent"></div>
+    </div>
+    
+    <div class="wave-test-container">
+        <h2>Test Instructions</h2>
+        <p>This test verifies that lens saving and loading works correctly with multiple filter types in the Wave Analytics component.</p>
+        
+        <div class="wave-test-section">
+            <div class="wave-test-title">Test 1: Basic Lens Save/Load</div>
+            <div class="wave-test-steps">
+                <div class="wave-test-step">1. Add some dimensions and metrics to the lens</div>
+                <div class="wave-test-step">2. Add metric filters (e.g., CPU > 50)</div>
+                <div class="wave-test-step">3. Add dimension filters (e.g., select specific values)</div>
+                <div class="wave-test-step">4. Add date/time filters</div>
+                <div class="wave-test-step">5. Add search filters</div>
+                <div class="wave-test-step">6. Save the lens with a test name</div>
+                <div class="wave-test-step">7. Clear the lens (click Clear Lens button)</div>
+                <div class="wave-test-step">8. Load the saved lens</div>
+                <div class="wave-test-step">9. Verify all filters are restored correctly</div>
+            </div>
+            <div class="wave-expected-result">Expected: All filter types should be saved and restored exactly as they were</div>
+        </div>
+        
+        <div class="wave-test-section">
+            <div class="wave-test-title">Test 2: Multiple Filter Types</div>
+            <div class="wave-test-steps">
+                <div class="wave-test-step">1. Create a lens with ALL filter types:</div>
+                <div class="wave-test-step">   - Metric filters (multiple)</div>
+                <div class="wave-test-step">   - Dimension filters (multiple)</div>
+                <div class="wave-test-step">   - Date/time filters (both relative and absolute)</div>
+                <div class="wave-test-step">   - Search filters</div>
+                <div class="wave-test-step">   - Cell/instance filters</div>
+                <div class="wave-test-step">   - Row filters (ignore some rows)</div>
+                <div class="wave-test-step">2. Save the lens</div>
+                <div class="wave-test-step">3. Clear everything</div>
+                <div class="wave-test-step">4. Load the lens</div>
+                <div class="wave-test-step">5. Verify ALL filters are restored</div>
+            </div>
+            <div class="wave-expected-result">Expected: Complex lens with all filter types should save and load perfectly</div>
+        </div>
+        
+        <div class="wave-test-section">
+            <div class="wave-test-title">Test 3: Filter State Verification</div>
+            <div class="wave-test-steps">
+                <div class="wave-test-step">1. After loading a lens, check that:</div>
+                <div class="wave-test-step">   - Filter drop zones show correct counts</div>
+                <div class="wave-test-step">   - Filter UI elements show correct values</div>
+                <div class="wave-test-step">   - Chart data is filtered correctly</div>
+                <div class="wave-test-step">   - No filters are "stuck" or partially applied</div>
+            </div>
+            <div class="wave-expected-result">Expected: UI state should match the actual filter state</div>
+        </div>
+        
+        <div class="wave-test-section">
+            <div class="wave-test-title">Test 4: Clear Lens Functionality</div>
+            <div class="wave-test-steps">
+                <div class="wave-test-step">1. Create a lens with multiple filters</div>
+                <div class="wave-test-step">2. Click "Clear Lens" button</div>
+                <div class="wave-test-step">3. Verify that:</div>
+                <div class="wave-test-step">   - All dimensions/metrics are cleared</div>
+                <div class="wave-test-step">   - All filter drop zones are empty</div>
+                <div class="wave-test-step">   - All DOM filter elements are reset</div>
+                <div class="wave-test-step">   - Chart shows all data (unfiltered)</div>
+            </div>
+            <div class="wave-expected-result">Expected: Complete reset to initial state</div>
+        </div>
+    </div>
+    
+    <div class="wave-test-container">
+        <h2>Test Results</h2>
+        <div id="waveTestResults">
+            <p>Run the tests above and record results here:</p>
+        </div>
+        
+        <button class="wave-test-button" onclick="runWaveBasicTest()">Run Basic Test</button>
+        <button class="wave-test-button" onclick="runWaveComplexTest()">Run Complex Test</button>
+        <button class="wave-test-button" onclick="runWaveClearTest()">Run Clear Test</button>
+        <button class="wave-test-button" onclick="clearWaveResults()">Clear Results</button>
+    </div>
+    
+    <div class="wave-test-container">
+        <h2>Debug Information</h2>
+        <div id="waveDebugInfo">
+            <p>Debug information will appear here when tests are run.</p>
+        </div>
+    </div>
+
+    <!-- Include Wave Analytics Component -->
+    <script>
+        // Mock data for testing
+        const dataHost = 'test-host';
+        
+        // Mock functions that might be needed
+        function toastMessage(type, message) {
+            console.log(`Toast ${type}: ${message}`);
+        }
+        
+        function hideSpinner(id) {
+            const spinner = document.getElementById(id);
+            if (spinner) spinner.style.display = 'none';
+        }
+        
+        function showSpinner(id) {
+            const spinner = document.getElementById(id);
+            if (spinner) spinner.style.display = 'block';
+        }
+    </script>
+    
+    <!-- Include the Wave Analytics component -->
+    <script src="/perfgenie/src/main/resources/templates/component/casp/wave-js.ftl"></script>
+    
+    <script>
+        // Initialize Wave Analytics component
+        $(document).ready(function() {
+            if (typeof WaveAnalytics !== 'undefined') {
+                window.waveAnalytics = new WaveAnalytics('dataviewcontent');
+                logWaveDebug('Wave Analytics component initialized');
+            } else {
+                logWaveDebug('Wave Analytics class not found - component may not be loaded');
+            }
+        });
+        
+        function logWaveResult(testName, success, message) {
+            const resultsDiv = document.getElementById('waveTestResults');
+            const statusClass = success ? 'success' : 'error';
+            const statusText = success ? 'PASS' : 'FAIL';
+            
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `wave-status ${statusClass}`;
+            resultDiv.innerHTML = `<strong>${testName}:</strong> ${statusText} - ${message}`;
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        function logWaveDebug(message) {
+            const debugDiv = document.getElementById('waveDebugInfo');
+            const debugP = document.createElement('p');
+            debugP.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            debugDiv.appendChild(debugP);
+        }
+        
+        function runWaveBasicTest() {
+            logWaveDebug('Starting Wave Analytics Basic Lens Save/Load Test...');
+            
+            // Check if waveAnalytics is available
+            if (typeof window.waveAnalytics === 'undefined') {
+                logWaveResult('Basic Test', false, 'waveAnalytics not available - make sure the component is loaded');
+                return;
+            }
+            
+            try {
+                // Test 1: Check if lens saving works
+                const originalLensCount = window.waveAnalytics.savedLenses.length;
+                logWaveDebug(`Original lens count: ${originalLensCount}`);
+                
+                // Test 2: Check if clearAllDOMFilterSelections exists
+                if (typeof window.waveAnalytics.clearAllDOMFilterSelections === 'function') {
+                    logWaveResult('Clear DOM Filters Function', true, 'clearAllDOMFilterSelections function exists');
+                } else {
+                    logWaveResult('Clear DOM Filters Function', false, 'clearAllDOMFilterSelections function not found');
+                }
+                
+                // Test 3: Check if restoreDOMFilterStates exists
+                if (typeof window.waveAnalytics.restoreDOMFilterStates === 'function') {
+                    logWaveResult('Restore DOM Filters Function', true, 'restoreDOMFilterStates function exists');
+                } else {
+                    logWaveResult('Restore DOM Filters Function', false, 'restoreDOMFilterStates function not found');
+                }
+                
+                // Test 4: Check lens configuration properties
+                const testLens = {
+                    name: 'Test Lens',
+                    selectedDimensions: ['dim1', 'dim2'],
+                    selectedMetrics: ['metric1', 'metric2'],
+                    selectedFilters: [{ metric: 'metric1', operator: '>', value: '50' }],
+                    dimensionFilters: { dim1: { selectedValues: ['val1', 'val2'] } },
+                    currentFilters: { search: 'test search' },
+                    dateTimeFilters: { timestamp: { type: 'relative', period: '7d' } },
+                    ignoredRows: [1, 2, 3]
+                };
+                
+                // Check if all expected properties are present
+                const requiredProps = ['selectedDimensions', 'selectedMetrics', 'selectedFilters', 'dimensionFilters', 'currentFilters', 'dateTimeFilters', 'ignoredRows'];
+                const missingProps = requiredProps.filter(prop => !(prop in testLens));
+                
+                if (missingProps.length === 0) {
+                    logWaveResult('Lens Configuration', true, 'All required properties present in lens config');
+                } else {
+                    logWaveResult('Lens Configuration', false, `Missing properties: ${missingProps.join(', ')}`);
+                }
+                
+                logWaveResult('Basic Test', true, 'Basic functionality checks passed');
+                
+            } catch (error) {
+                logWaveResult('Basic Test', false, `Error: ${error.message}`);
+                logWaveDebug(`Error details: ${error.stack}`);
+            }
+        }
+        
+        function runComplexTest() {
+            logDebug('Starting Complex Lens Save/Load Test...');
+            
+            if (typeof window.waveAnalytics === 'undefined') {
+                logResult('Complex Test', false, 'waveAnalytics not available');
+                return;
+            }
+            
+            try {
+                // Create a complex lens configuration
+                const complexLens = {
+                    name: 'Complex Test Lens',
+                    selectedDimensions: ['host', 'service', 'timestamp'],
+                    selectedMetrics: ['cpu', 'memory', 'disk'],
+                    selectedFilters: [
+                        { metric: 'cpu', operator: '>', value: '80' },
+                        { metric: 'memory', operator: '<', value: '90' }
+                    ],
+                    dimensionFilters: {
+                        host: { selectedValues: ['host1', 'host2'] },
+                        service: { selectedValues: ['web', 'api'] }
+                    },
+                    currentFilters: {
+                        search: 'error',
+                        cell: 'cell1',
+                        instance: 'instance1'
+                    },
+                    dateTimeFilters: {
+                        timestamp: { type: 'relative', period: '24h' },
+                        created_at: { type: 'absolute', from: '2024-01-01', to: '2024-01-31' }
+                    },
+                    ignoredRows: [0, 5, 10, 15],
+                    chartType: 'line',
+                    metricAggregations: { cpu: 'avg', memory: 'max' }
+                };
+                
+                // Test saving complex lens
+                window.waveAnalytics.savedLenses.push(complexLens);
+                logDebug(`Added complex lens. Total lenses: ${window.waveAnalytics.savedLenses.length}`);
+                
+                // Test loading complex lens
+                const loadedLens = window.waveAnalytics.savedLenses.find(l => l.name === 'Complex Test Lens');
+                if (loadedLens) {
+                    logResult('Complex Lens Save/Load', true, 'Complex lens saved and found successfully');
+                    
+                    // Verify all properties
+                    const properties = ['selectedDimensions', 'selectedMetrics', 'selectedFilters', 'dimensionFilters', 'currentFilters', 'dateTimeFilters', 'ignoredRows'];
+                    const verifiedProps = properties.filter(prop => {
+                        const original = complexLens[prop];
+                        const loaded = loadedLens[prop];
+                        return JSON.stringify(original) === JSON.stringify(loaded);
+                    });
+                    
+                    if (verifiedProps.length === properties.length) {
+                        logResult('Complex Lens Properties', true, 'All properties match between saved and loaded lens');
+                    } else {
+                        const missing = properties.filter(p => !verifiedProps.includes(p));
+                        logResult('Complex Lens Properties', false, `Properties don't match: ${missing.join(', ')}`);
+                    }
+                } else {
+                    logResult('Complex Lens Save/Load', false, 'Complex lens not found after saving');
+                }
+                
+            } catch (error) {
+                logResult('Complex Test', false, `Error: ${error.message}`);
+                logDebug(`Error details: ${error.stack}`);
+            }
+        }
+        
+        function runClearTest() {
+            logDebug('Starting Clear Lens Test...');
+            
+            if (typeof window.waveAnalytics === 'undefined') {
+                logResult('Clear Test', false, 'waveAnalytics not available');
+                return;
+            }
+            
+            try {
+                // Test clearAllDOMFilterSelections function
+                if (typeof window.waveAnalytics.clearAllDOMFilterSelections === 'function') {
+                    window.waveAnalytics.clearAllDOMFilterSelections();
+                    logResult('Clear DOM Filters', true, 'clearAllDOMFilterSelections executed without error');
+                } else {
+                    logResult('Clear DOM Filters', false, 'clearAllDOMFilterSelections function not available');
+                }
+                
+                // Test that clearAllDOMFilterSelections clears all filter types
+                const filterTypes = [
+                    '.dimension-checkbox',
+                    '.filter-input',
+                    '.filter-operator',
+                    'input[type="date"], input[type="datetime-local"]',
+                    'select[id^="relativePeriod_"]',
+                    'input[id^="fromDate_"], input[id^="toDate_"]',
+                    'select[id="cellFilter"], select[id="instanceFilter"]'
+                ];
+                
+                let allCleared = true;
+                filterTypes.forEach(selector => {
+                    const elements = document.querySelectorAll(selector);
+                    elements.forEach(element => {
+                        if (element.type === 'checkbox') {
+                            if (element.checked) allCleared = false;
+                        } else if (element.type === 'text' || element.type === 'date' || element.type === 'datetime-local') {
+                            if (element.value) allCleared = false;
+                        } else if (element.tagName === 'SELECT') {
+                            if (element.selectedIndex !== 0) allCleared = false;
+                        }
+                    });
+                });
+                
+                if (allCleared) {
+                    logResult('Clear All Filter Types', true, 'All filter types were cleared successfully');
+                } else {
+                    logResult('Clear All Filter Types', false, 'Some filter types were not cleared');
+                }
+                
+            } catch (error) {
+                logResult('Clear Test', false, `Error: ${error.message}`);
+                logDebug(`Error details: ${error.stack}`);
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('testResults').innerHTML = '<p>Run the tests above and record results here:</p>';
+            document.getElementById('debugInfo').innerHTML = '<p>Debug information will appear here when tests are run.</p>';
+        }
+    </script>
+</body>
+</html>

@@ -8,9 +8,22 @@
  */
 
 let canaryLenses = "";
+let lensLoadingRequested = false;
+let expressionsLoadingRequested = false;
+
 function getCanaryLenses() {
     URL = "/component/casp/v1/getlenses/"+dataHost+"/?metadata_query=" + encodeURIComponent("type=" + "perfswat");
     showSpinner("spinner1");
+    
+    // Set loading state for lens dropdown
+    lensLoadingRequested = true;
+    if (window.waveAnalytics) {
+        console.log('Setting lens dropdown loading state to true');
+        window.waveAnalytics.setLensDropdownLoading(true);
+    } else {
+        console.log('waveAnalytics not available yet, will set loading state later');
+    }
+    
     $.ajax({
         url: URL, 
         success: function (result) {
@@ -25,6 +38,15 @@ function getCanaryLenses() {
                         if (lensData.config) {
                             // Parse the config string to get the actual lens configuration
                             const lensConfig = JSON.parse(lensData.config);
+                            // Ignore entries without names
+                            if (!lensConfig.name) {
+                                console.log('Ignoring lens entry without name');
+                                return;
+                            }
+                            // Store the backend timestamp if available
+                            if (lensData.timestamp) {
+                                lensConfig.backendTimestamp = lensData.timestamp;
+                            }
                             parsedLenses.push(lensConfig);
                         }
                     } catch (error) {
@@ -32,12 +54,80 @@ function getCanaryLenses() {
                     }
                 });
                 
+                // Deduplicate lenses by name, keeping only the latest timestamp
+                const lensMap = new Map();
+                parsedLenses.forEach(lens => {
+                    // Name should already be validated during parsing, but check again for safety
+                    if (!lens.name) {
+                        console.log('Warning: Found lens without name during deduplication, skipping');
+                        return;
+                    }
+                    
+                    const existingLens = lensMap.get(lens.name);
+                    
+                    if (!existingLens) {
+                        // First lens with this name
+                        lensMap.set(lens.name, lens);
+                    } else {
+                        // Compare timestamps to keep the latest one
+                        // Priority: backendTimestamp (epoch in seconds) > savedAt (ISO string)
+                        let existingTime = 0;
+                        if (existingLens.backendTimestamp) {
+                            // Backend timestamp is epoch in seconds, convert to milliseconds
+                            existingTime = existingLens.backendTimestamp * 1000;
+                        } else if (existingLens.savedAt) {
+                            // savedAt is ISO string
+                            existingTime = new Date(existingLens.savedAt).getTime();
+                        }
+                        
+                        let currentTime = 0;
+                        if (lens.backendTimestamp) {
+                            // Backend timestamp is epoch in seconds, convert to milliseconds
+                            currentTime = lens.backendTimestamp * 1000;
+                        } else if (lens.savedAt) {
+                            // savedAt is ISO string
+                            currentTime = new Date(lens.savedAt).getTime();
+                        }
+                        
+                        if (currentTime > existingTime) {
+                            // Current lens is newer, replace the existing one
+                            console.log(`Replacing older lens "${lens.name}" with newer one`);
+                            lensMap.set(lens.name, lens);
+                        } else {
+                            // Existing lens is newer or same, keep it
+                            console.log(`Ignoring older lens "${lens.name}", keeping newer one`);
+                        }
+                    }
+                });
+                
+                // Convert map values back to array (remove backendTimestamp before assigning)
+                const deduplicatedLenses = Array.from(lensMap.values()).map(lens => {
+                    const { backendTimestamp, ...lensWithoutTimestamp } = lens;
+                    return lensWithoutTimestamp;
+                });
+                
                 // Update the wave analytics saved lenses
                 if (window.waveAnalytics) {
-                    window.waveAnalytics.savedLenses = parsedLenses;
-                    window.waveAnalytics.updateLensDropdown();
-                    console.log('Loaded', parsedLenses.length, 'lenses from backend');
+                    window.waveAnalytics.savedLenses = deduplicatedLenses;
+                    
+                    // Show appropriate status based on result
+                    if (deduplicatedLenses.length === 0) {
+                        window.waveAnalytics.setLensDropdownLoading(true, 'empty');
+                        // Auto-clear after 2 seconds
+                        setTimeout(() => {
+                            window.waveAnalytics.setLensDropdownLoading(false);
+                        }, 2000);
+                    } else {
+                        window.waveAnalytics.setLensDropdownLoading(true, 'success');
+                        // Auto-clear after 1 second
+                        setTimeout(() => {
+                            window.waveAnalytics.setLensDropdownLoading(false);
+                        }, 1000);
+                    }
+                    
+                    console.log('Loaded', parsedLenses.length, 'lenses from backend,', deduplicatedLenses.length, 'unique lenses after deduplication');
                 }
+                lensLoadingRequested = false;
             }
             hideSpinner("spinner1");
         },
@@ -45,16 +135,162 @@ function getCanaryLenses() {
             console.error('Failed to get lenses:', error);
             toastMessage(toastType.ERROR, "Failed to get lenses");
             hideSpinner("spinner1");
+            
+            // Show error status
+            if (window.waveAnalytics) {
+                window.waveAnalytics.setLensDropdownLoading(true, 'error');
+                // Auto-clear after 3 seconds
+                setTimeout(() => {
+                    window.waveAnalytics.setLensDropdownLoading(false);
+                }, 3000);
+            }
+            lensLoadingRequested = false;
         }
     });
 }
 
-function saveLenseInBackend(lenseConfigString, timestamp) {
+function getCanaryExpressions() {
+    URL = "/component/casp/v1/getexpressions/"+dataHost+"/?metadata_query=" + encodeURIComponent("type=" + "expression");
+    showSpinner("spinner1");
+    
+    // Set loading state for derived metrics dropdown
+    expressionsLoadingRequested = true;
+    if (window.waveAnalytics) {
+        window.waveAnalytics.setDerivedMetricsDropdownLoading(true);
+    }
+    
+    $.ajax({
+        url: URL, 
+        success: function (result) {
+            if (result != undefined && Array.isArray(result)) {
+                canaryExpressions = result;
+                
+                // Parse each string element to get config objects
+                const parsedExpressions = [];
+                result.forEach(expressionString => {
+                    try {
+                        const expressionData = JSON.parse(expressionString);
+                        if (expressionData.config) {
+                            // Parse the config string to get the actual expression configuration
+                            const expressionConfig = JSON.parse(expressionData.config);
+                            // Ignore entries without names
+                            if (!expressionConfig.name) {
+                                console.log('Ignoring derived metric entry without name');
+                                return;
+                            }
+                            // Store the backend timestamp if available
+                            if (expressionData.timestamp) {
+                                expressionConfig.backendTimestamp = expressionData.timestamp;
+                            }
+                            parsedExpressions.push(expressionConfig);
+                        }
+                    } catch (error) {
+                        console.error('Error parsing expression data:', error, expressionString);
+                    }
+                });
+                
+                // Deduplicate expressions by name, keeping only the latest timestamp
+                const expressionMap = new Map();
+                parsedExpressions.forEach(expression => {
+                    // Name should already be validated during parsing, but check again for safety
+                    if (!expression.name) {
+                        console.log('Warning: Found derived metric without name during deduplication, skipping');
+                        return;
+                    }
+                    
+                    const existingExpression = expressionMap.get(expression.name);
+                    
+                    if (!existingExpression) {
+                        // First expression with this name
+                        expressionMap.set(expression.name, expression);
+                    } else {
+                        // Compare timestamps to keep the latest one
+                        // Priority: backendTimestamp (epoch in seconds) > savedAt (ISO string)
+                        let existingTime = 0;
+                        if (existingExpression.backendTimestamp) {
+                            // Backend timestamp is epoch in seconds, convert to milliseconds
+                            existingTime = existingExpression.backendTimestamp * 1000;
+                        } else if (existingExpression.savedAt) {
+                            // savedAt is ISO string
+                            existingTime = new Date(existingExpression.savedAt).getTime();
+                        }
+                        
+                        let currentTime = 0;
+                        if (expression.backendTimestamp) {
+                            // Backend timestamp is epoch in seconds, convert to milliseconds
+                            currentTime = expression.backendTimestamp * 1000;
+                        } else if (expression.savedAt) {
+                            // savedAt is ISO string
+                            currentTime = new Date(expression.savedAt).getTime();
+                        }
+                        
+                        if (currentTime > existingTime) {
+                            // Current expression is newer, replace the existing one
+                            console.log(`Replacing older derived metric "${expression.name}" with newer one`);
+                            expressionMap.set(expression.name, expression);
+                        } else {
+                            // Existing expression is newer or same, keep it
+                            console.log(`Ignoring older derived metric "${expression.name}", keeping newer one`);
+                        }
+                    }
+                });
+                
+                // Convert map values back to array (remove backendTimestamp before assigning)
+                const deduplicatedExpressions = Array.from(expressionMap.values()).map(expression => {
+                    const { backendTimestamp, ...expressionWithoutTimestamp } = expression;
+                    return expressionWithoutTimestamp;
+                });
+                
+                // Update the wave analytics saved expressions
+                if (window.waveAnalytics) {
+                    window.waveAnalytics.savedExpressions = deduplicatedExpressions;
+                    
+                    // Show appropriate status based on result
+                    if (deduplicatedExpressions.length === 0) {
+                        window.waveAnalytics.setDerivedMetricsDropdownLoading(true, 'empty');
+                        // Auto-clear after 2 seconds
+                        setTimeout(() => {
+                            window.waveAnalytics.setDerivedMetricsDropdownLoading(false);
+                        }, 2000);
+                    } else {
+                        window.waveAnalytics.setDerivedMetricsDropdownLoading(true, 'success');
+                        // Auto-clear after 1 second
+                        setTimeout(() => {
+                            window.waveAnalytics.setDerivedMetricsDropdownLoading(false);
+                        }, 1000);
+                    }
+                    
+                    console.log('Loaded', parsedExpressions.length, 'derived metrics from backend,', deduplicatedExpressions.length, 'unique after deduplication');
+                }
+                expressionsLoadingRequested = false;
+            }
+            hideSpinner("spinner1");
+        },
+        error: function (xhr, status, error) {
+            console.error('Failed to get expressions:', error);
+            toastMessage(toastType.ERROR, "Failed to get expressions");
+            hideSpinner("spinner1");
+            
+            // Show error status
+            if (window.waveAnalytics) {
+                window.waveAnalytics.setDerivedMetricsDropdownLoading(true, 'error');
+                // Auto-clear after 3 seconds
+                setTimeout(() => {
+                    window.waveAnalytics.setDerivedMetricsDropdownLoading(false);
+                }, 3000);
+            }
+            expressionsLoadingRequested = false;
+        }
+    });
+}
+
+function saveLenseInBackend(lenseConfigString, timestamp, lensname) {
     // Create the data to send in the request body
     const requestData = {
         config: lenseConfigString, // Already a string
         source: dataHost,
         type: "perfswat",
+        name: lensname,
         timestamp: timestamp
     };
     console.log('Saving lens config string:', lenseConfigString);
@@ -73,6 +309,343 @@ function saveLenseInBackend(lenseConfigString, timestamp) {
             console.error('Error posting lense:', error);
         }
     });
+}
+
+function saveExpressionInBackend(expressionConfigString, timestamp,expressionname) {
+    // Create the data to send in the request body
+    const requestData = {
+        config: expressionConfigString, // Already a string
+        source: dataHost,
+        type: "expression",
+        name: expressionname,
+        timestamp: timestamp
+    };
+    console.log('Saving expression config string:', expressionConfigString);
+    console.log('Timestamp (epoch):', timestamp);
+
+    // Make the AJAX request using jQuery
+    $.ajax({
+        url: "/component/casp/v1/saveexpression/"+dataHost,
+        type: 'POST',
+        contentType: 'application/json',  // Tells the server the request body will be in JSON format
+        data: JSON.stringify(requestData),  // Convert the data object to a JSON string
+        success: function (response) {
+            console.log('Expression posted successfully:', response);
+        },
+        error: function (xhr, status, error) {
+            console.error('Error posting expression:', error);
+        }
+    });
+}
+
+/**
+ * Centralized Missing Items Manager
+ * Handles all missing item operations consistently across refresh, lens loading, and derived metrics loading
+ */
+class MissingItemsManager {
+    constructor(waveAnalytics) {
+        this.wave = waveAnalytics;
+        this.missingDimensions = [];
+        this.missingMetrics = [];
+        this.missingDerivedMetrics = [];
+    }
+
+    /**
+     * Extract base field dependencies from an expression without evaluating it.
+     * Falls back to treating as missing if dependencies cannot be determined.
+     */
+    getExpressionDependencies(expression) {
+        if (!expression) return [];
+        const parts = Array.isArray(expression.parts) ? expression.parts : [];
+        const deps = [];
+        parts.forEach(part => {
+            if (!part) return;
+            // Common shapes: { type: 'metric', value: 'metricName' } or { metric: 'metricName' }
+            if (part.type === 'metric' || part.type === 'dimension') {
+                if (typeof part.value === 'string' && part.value.trim().length > 0) {
+                    deps.push(part.value.trim());
+                } else if (typeof part.metric === 'string' && part.metric.trim().length > 0) {
+                    deps.push(part.metric.trim());
+                }
+            }
+        });
+        return deps;
+    }
+
+    /**
+     * Determine availability of a derived expression based on dependency existence only.
+     */
+    isDerivedExpressionAvailable(name) {
+        const expr = this.wave.expressions[name];
+        if (!expr || expr.formula === 'Missing from current dataset') return false;
+        const dataColumns = this.wave.parsedData.length > 0 ? Object.keys(this.wave.parsedData[0]) : [];
+        const deps = this.getExpressionDependencies(expr);
+        if (deps.length === 0) return false; // conservative: treat unknown as missing
+        return deps.every(d => dataColumns.includes(d));
+    }
+
+    /**
+     * Return current data columns from parsed data and simple availability helpers
+     */
+    getDataColumns() {
+        return this.wave.parsedData && this.wave.parsedData.length > 0
+            ? Object.keys(this.wave.parsedData[0])
+            : [];
+    }
+
+    isDimensionAvailable(name) {
+        const cols = this.getDataColumns();
+        return cols.includes(name);
+    }
+
+    isMetricAvailable(name) {
+        const cols = this.getDataColumns();
+        return cols.includes(name);
+    }
+
+	/**
+	 * Rebuild categories from data columns and preserve selected items (keeping missing selected items visible).
+	 * Also prune items that are not selected and not available.
+	 */
+	rebuildCategoriesPreservingSelections() {
+		const dataCols = this.getDataColumns();
+		const selectedDimensions = new Set(this.wave.selectedDimensions);
+		const selectedMetrics = new Set(this.wave.selectedMetrics);
+		const expressionNames = new Set(Object.keys(this.wave.expressions));
+
+		// Dimensions category: keep union of data columns and selected dims; prune unselected-unavailable
+		const combinedDimensions = Array.from(new Set([
+			...this.wave.dimensions.filter(d => dataCols.includes(d)),
+			...this.wave.selectedDimensions,
+		]));
+		this.wave.dimensions = combinedDimensions.filter(d => selectedDimensions.has(d) || dataCols.includes(d));
+
+		// Metrics category: regular metrics only (exclude any expression names)
+		const dataRegularMetrics = this.wave.metrics.filter(m => dataCols.includes(m) && !expressionNames.has(m));
+		const selectedRegularMetrics = this.wave.selectedMetrics.filter(m => !expressionNames.has(m));
+		const combinedMetrics = Array.from(new Set([...dataRegularMetrics, ...selectedRegularMetrics]));
+		this.wave.metrics = combinedMetrics.filter(m => selectedMetrics.has(m) || dataCols.includes(m));
+
+		// Derived metrics category is represented by expressions; prune unselected and unavailable placeholders
+		const pruned = {};
+		Object.keys(this.wave.expressions).forEach(name => {
+			const isSelected = selectedMetrics.has(name);
+			const isAvail = this.isDerivedExpressionAvailable(name);
+			if (isSelected || isAvail) {
+				pruned[name] = this.wave.expressions[name];
+			}
+		});
+		this.wave.expressions = pruned;
+	}
+
+	/**
+	 * Recompute missing (orange) strictly from selections and availability.
+	 */
+	recomputeMissingFromSelections() {
+		const dataCols = this.getDataColumns();
+		const expressionNames = new Set(Object.keys(this.wave.expressions));
+
+		// Dimensions
+		this.missingDimensions = this.wave.selectedDimensions.filter(d => !dataCols.includes(d));
+
+		// Regular metrics
+		const selectedRegular = this.wave.selectedMetrics.filter(m => !expressionNames.has(m));
+		this.missingMetrics = selectedRegular.filter(m => !dataCols.includes(m));
+
+		// Derived metrics
+		const selectedDerived = this.wave.selectedMetrics.filter(m => expressionNames.has(m));
+		this.missingDerivedMetrics = selectedDerived.filter(name => !this.isDerivedExpressionAvailable(name));
+	}
+
+    /**
+     * Clear all missing items
+     */
+    clearAll() {
+        this.missingDimensions = [];
+        this.missingMetrics = [];
+        this.missingDerivedMetrics = [];
+        this.wave.hideMissingItemsIndicators();
+    }
+
+    /**
+     * Get all missing items
+     */
+    getAllMissing() {
+        return {
+            dimensions: [...this.missingDimensions],
+            metrics: [...this.missingMetrics],
+            derivedMetrics: [...this.missingDerivedMetrics]
+        };
+    }
+
+    /**
+     * Check if an item is missing
+     */
+    isMissing(itemName, type) {
+        switch (type) {
+            case 'dimension':
+                return this.missingDimensions.includes(itemName);
+            case 'metric':
+                return this.missingMetrics.includes(itemName);
+            case 'derivedMetric':
+                return this.missingDerivedMetrics.includes(itemName);
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Add missing items from a lens
+     */
+    addMissingFromLens(lens) {
+        // Clear previous missing items
+        this.clearAll();
+
+        // Rebuild categories from data columns and preserve selections
+        this.rebuildCategoriesPreservingSelections();
+
+        // Recompute missing strictly from selections and availability
+        this.recomputeMissingFromSelections();
+
+        // Add missing items to arrays for display and update UI
+        this.addMissingItemsToArrays();
+        this.updateVisualIndicators();
+    }
+
+    /**
+     * Add missing items from data refresh
+     */
+    addMissingFromRefresh() {
+        // Rebuild categories from data columns and preserve selections
+        this.rebuildCategoriesPreservingSelections();
+
+        // Recompute missing strictly from selections and availability
+        this.recomputeMissingFromSelections();
+
+        // Add missing items to their respective arrays for display
+        this.addMissingItemsToArrays();
+
+        // Update visual indicators
+        this.updateVisualIndicators();
+    }
+
+    /**
+     * Add missing items from loading derived metrics
+     */
+    addMissingFromDerivedMetrics(loadedMetricNames) {
+        const missingDerivedMetrics = [];
+
+        loadedMetricNames.forEach(metricName => {
+            if (!this.isDerivedExpressionAvailable(metricName)) {
+                missingDerivedMetrics.push(metricName);
+            }
+        });
+
+        // Add new missing derived metrics without duplicating
+        missingDerivedMetrics.forEach(metricName => {
+            if (!this.missingDerivedMetrics.includes(metricName)) {
+                this.missingDerivedMetrics.push(metricName);
+            }
+        });
+
+        // Update visual indicators
+        this.updateVisualIndicators();
+    }
+
+    /**
+     * Clear missing items that are now available
+     */
+    clearAvailableItems() {
+        // Do not clear missing state when suppressed (e.g., during lens load)
+        if (this.wave.suppressMissingClear) {
+            return;
+        }
+        // Use actual data columns for availability checks
+        const availableDimensions = this.wave.parsedData.length > 0 ? Object.keys(this.wave.parsedData[0]) : [];
+        const availableMetrics = this.wave.parsedData.length > 0 ? Object.keys(this.wave.parsedData[0]) : [];
+        const availableExpressions = Object.keys(this.wave.expressions).filter(name => {
+            const expr = this.wave.expressions[name];
+            // Treat as available if expression is defined and not a placeholder
+            return !!expr && expr.formula !== 'Missing from current dataset';
+        });
+
+        // Clear now-available dimensions
+        const nowAvailableDimensions = this.missingDimensions.filter(dim => availableDimensions.includes(dim));
+        this.missingDimensions = this.missingDimensions.filter(dim => !availableDimensions.includes(dim));
+
+        // Clear now-available metrics
+        const nowAvailableMetrics = this.missingMetrics.filter(metric => availableMetrics.includes(metric));
+        this.missingMetrics = this.missingMetrics.filter(metric => !availableMetrics.includes(metric));
+
+        // Clear now-available derived metrics
+        const nowAvailableDerivedMetrics = this.missingDerivedMetrics.filter(metric => availableExpressions.includes(metric));
+        this.missingDerivedMetrics = this.missingDerivedMetrics.filter(metric => !availableExpressions.includes(metric));
+
+        // If any items were cleared, update the UI
+        if (nowAvailableDimensions.length > 0 || nowAvailableMetrics.length > 0 || nowAvailableDerivedMetrics.length > 0) {
+            this.updateVisualIndicators();
+        }
+    }
+
+    /**
+     * Add missing items to their respective arrays for display
+     */
+    addMissingItemsToArrays() {
+        // Add missing dimensions to dimensions array
+        this.missingDimensions.forEach(dim => {
+            if (!this.wave.dimensions.includes(dim)) {
+                this.wave.dimensions.push(dim);
+            }
+        });
+
+        // Add missing metrics to metrics array
+        this.missingMetrics.forEach(metric => {
+            if (!this.wave.metrics.includes(metric)) {
+                this.wave.metrics.push(metric);
+            }
+        });
+
+        // Add missing derived metrics to expressions object
+        this.missingDerivedMetrics.forEach(metric => {
+            if (!this.wave.expressions[metric]) {
+                this.wave.expressions[metric] = {
+                    formula: 'Missing from current dataset',
+                    parts: [],
+                    description: 'This derived metric is missing from the current dataset'
+                };
+            }
+        });
+    }
+
+    /**
+     * Update visual indicators for missing items
+     */
+    updateVisualIndicators() {
+        // Update drop zones
+        this.wave.updateDropZone('dimensionsArea', this.wave.selectedDimensions);
+        this.wave.updateDropZone('metricsArea', this.wave.selectedMetrics);
+        
+        // Update field palette
+        this.wave.updateFieldItemIcons();
+        
+        // Update missing items indicators
+        this.wave.showMissingItemsIndicators();
+    }
+
+    /**
+     * Get missing items counts for indicators (only items used in view)
+     */
+    getMissingCountsForIndicators() {
+        const usedMissingDimensions = this.missingDimensions.filter(dim => this.wave.selectedDimensions.includes(dim));
+        const usedMissingMetrics = this.missingMetrics.filter(metric => this.wave.selectedMetrics.includes(metric));
+        const usedMissingDerivedMetrics = this.missingDerivedMetrics.filter(metric => this.wave.selectedMetrics.includes(metric));
+
+        return {
+            dimensions: usedMissingDimensions.length,
+            metrics: usedMissingMetrics.length + usedMissingDerivedMetrics.length,
+            filters: 0 // TODO: implement filter missing count if needed
+        };
+    }
 }
 
 // Wave Analytics Lens Builder Component
@@ -110,10 +683,42 @@ class WaveAnalytics {
         this.sortDirection = 'asc'; // Sort direction: 'asc' or 'desc'
         this.savedLenses = []; // Array to store saved lens configurations
         this.saveLensModalEventsSetup = false; // Flag to track if modal events are set up
+        this.saveExpressionModalEventsSetup = false; // Flag to track if save expression modal events are set up
         this.ignoredRows = new Set(); // Set to track ignored row indices
         this.dimensionFilters = {}; // Store dimension filters with selected values
         this.dataFetchFunction = null; // Store the data fetch function
         this.chartExpandedWidth = 0; // Track current expanded width
+        this.expressions = {}; // Store expression definitions: {expressionName: {formula: string, parts: array}}
+        this.savedExpressions = []; // Array to store saved expression configurations
+        
+        // Initialize missing items manager
+        this.missingItemsManager = new MissingItemsManager(this);
+        // Suppress clearing missing state during sensitive flows (e.g., lens load)
+        this.suppressMissingClear = false;
+        
+        // Single source of truth data model
+        // Availability maps: track what's available in current data
+        this.dimsAvail = new Map(); // Map<dimensionName, boolean>
+        this.metricsAvail = new Map(); // Map<metricName, boolean>
+        this.derivedAvail = new Map(); // Map<derivedMetricName, boolean>
+        this.dateAvail = new Map(); // Map<dateFieldName, boolean>
+        
+        
+        // Drop zone maps: track what's in each drop zone by category
+        this.grpByDZMap = new Map(); // Map<category, Map<itemName, boolean>>
+        this.metricsDZMap = new Map(); // Map<category, Map<itemName, boolean>>
+        this.filtersDZMap = new Map(); // Map<category, Map<itemName, boolean>>
+        
+        // Initialize drop zone maps with category keys
+        this.grpByDZMap.set('dimension', new Map());
+        this.grpByDZMap.set('date', new Map());
+        this.metricsDZMap.set('metric', new Map());
+        this.metricsDZMap.set('derived', new Map());
+        this.filtersDZMap.set('dimension', new Map());
+        this.filtersDZMap.set('date', new Map());
+        this.filtersDZMap.set('metric', new Map());
+        this.filtersDZMap.set('derived', new Map());
+        
         console.log('DEBUG: WaveAnalytics constructor called, calling init()');
         this.init();
     }
@@ -125,6 +730,273 @@ class WaveAnalytics {
     setDataFetchFunction(fetchFunction) {
         this.dataFetchFunction = fetchFunction;
     }
+
+    /**
+     * Rebuild availability maps from current data columns
+     */
+    rebuildAvailabilityMaps() {
+        if (!this.parsedData || this.parsedData.length === 0) {
+            // Clear all availability maps if no data
+            this.dimsAvail.clear();
+            this.metricsAvail.clear();
+            this.derivedAvail.clear();
+            this.dateAvail.clear();
+            // Don't clear timestampDimensions - preserve them for missing items
+            return;
+        }
+
+        const dataCols = Object.keys(this.parsedData[0]);
+        
+        // Clear and rebuild availability maps
+        this.dimsAvail.clear();
+        this.metricsAvail.clear();
+        this.derivedAvail.clear();
+        this.dateAvail.clear();
+
+        // Check each data column and categorize based on current dimensions and metrics arrays
+        dataCols.forEach(col => {
+            if (this.timestampDimensions.includes(col)) {
+                this.dateAvail.set(col, true);
+            } else if (this.expressions && this.expressions[col]) {
+                // This is a derived metric - don't add it to dimsAvail or metricsAvail
+                // It will be handled in the derived metrics availability check below
+            } else if (this.metrics.includes(col)) {
+                this.metricsAvail.set(col, true);
+            } else {
+                // Assume it's a dimension by default
+                this.dimsAvail.set(col, true);
+            }
+        });
+
+        // Check derived metrics availability based on dependencies
+        Object.keys(this.expressions).forEach(derivedName => {
+            const expression = this.expressions[derivedName];
+            if (expression && expression.parts && expression.parts.length > 0) {
+                // Only check availability if the expression has actual parts
+                const dependencies = this.missingItemsManager.getExpressionDependencies(expression);
+                const isAvailable = dependencies.every(dep => dataCols.includes(dep));
+                this.derivedAvail.set(derivedName, isAvailable);
+            } else {
+                // If expression has no parts or is a placeholder, mark as not available
+                this.derivedAvail.set(derivedName, false);
+            }
+        });
+        
+    }
+
+    /**
+     * Add missing items from drop zone maps to availability maps with false values
+     */
+    addMissingItemsToAvailabilityMaps() {
+        console.log('DEBUG addMissingItemsToAvailabilityMaps:');
+        console.log('  grpByDZMap date items:', Array.from(this.grpByDZMap.get('date').keys()));
+        console.log('  dateAvail before:', Array.from(this.dateAvail.keys()));
+        
+        // Add missing items from drop zone maps with false availability
+        this.grpByDZMap.get('dimension').forEach((isSelected, item) => {
+            if (isSelected && !this.dimsAvail.has(item)) {
+                this.dimsAvail.set(item, false);
+                console.log('  Added missing dimension:', item);
+            }
+        });
+        
+        this.grpByDZMap.get('date').forEach((isSelected, item) => {
+            if (isSelected && !this.dateAvail.has(item)) {
+                this.dateAvail.set(item, false);
+                console.log('  Added missing date:', item);
+            }
+        });
+        
+        this.metricsDZMap.get('metric').forEach((isSelected, item) => {
+            if (isSelected && !this.metricsAvail.has(item)) {
+                this.metricsAvail.set(item, false);
+                console.log('  Added missing metric:', item);
+            }
+        });
+        
+        this.metricsDZMap.get('derived').forEach((isSelected, item) => {
+            if (isSelected && !this.derivedAvail.has(item)) {
+                this.derivedAvail.set(item, false);
+                console.log('  Added missing derived metric:', item);
+            }
+        });
+        
+        console.log('  dateAvail after:', Array.from(this.dateAvail.keys()));
+    }
+
+    /**
+     * Rebuild categories from availability maps and drop zone maps
+     */
+    rebuildCategoriesFromMaps() {
+        // Get selected items from drop zone maps
+        const selectedDimensions = new Set();
+        const selectedMetrics = new Set();
+        const selectedDerivedMetrics = new Set();
+        
+        // Collect selected dimensions and dates
+        this.grpByDZMap.get('dimension').forEach((isSelected, item) => {
+            if (isSelected) selectedDimensions.add(item);
+        });
+        this.grpByDZMap.get('date').forEach((isSelected, item) => {
+            if (isSelected) selectedDimensions.add(item);
+        });
+        
+        // Collect selected metrics
+        this.metricsDZMap.get('metric').forEach((isSelected, item) => {
+            if (isSelected) selectedMetrics.add(item);
+        });
+        
+        // Collect selected derived metrics
+        this.metricsDZMap.get('derived').forEach((isSelected, item) => {
+            if (isSelected) selectedDerivedMetrics.add(item);
+        });
+        
+        // Rebuild dimensions list: available dimensions + selected dimensions
+        const availableDimensions = Array.from(this.dimsAvail.keys());
+        const allDimensions = Array.from(new Set([...availableDimensions, ...selectedDimensions]));
+        this.dimensions = allDimensions;
+        
+        // Preserve missing timestamps so they're categorized correctly
+        this.grpByDZMap.get('date').forEach((isSelected, dateField) => {
+            if (isSelected && !this.timestampDimensions.includes(dateField)) {
+                this.timestampDimensions.push(dateField);
+            }
+        });
+        
+        // Rebuild metrics list: available metrics + selected metrics (excluding derived metrics)
+        const availableMetrics = Array.from(this.metricsAvail.keys());
+        const allMetrics = Array.from(new Set([...availableMetrics, ...selectedMetrics]));
+        this.metrics = allMetrics;
+        
+        // Rebuild expressions: available derived metrics + selected derived metrics
+        const newExpressions = {};
+        
+        // Add available derived metrics
+        this.derivedAvail.forEach((isAvailable, derivedName) => {
+            if (isAvailable && this.expressions[derivedName]) {
+                newExpressions[derivedName] = this.expressions[derivedName];
+            }
+        });
+        
+        // Add selected derived metrics (even if not available)
+        selectedDerivedMetrics.forEach(derivedName => {
+            if (this.expressions[derivedName]) {
+                newExpressions[derivedName] = this.expressions[derivedName];
+            }
+        });
+        
+        this.expressions = newExpressions;
+    }
+
+    /**
+     * Update drop zone maps from current selections
+     */
+    updateDropZoneMaps() {
+        // Preserve timestamp categorization before clearing maps
+        const previousTimestampItems = new Set();
+        this.grpByDZMap.get('date').forEach((isSelected, item) => {
+            previousTimestampItems.add(item);
+        });
+        
+        // Clear all drop zone maps
+        this.grpByDZMap.forEach(map => map.clear());
+        this.metricsDZMap.forEach(map => map.clear());
+        this.filtersDZMap.forEach(map => map.clear());
+
+        // Update group by drop zone (dimensions and dates)
+        this.selectedDimensions.forEach(dim => {
+            // Check if it's a timestamp based on data properties or previous categorization
+            const isTimestamp = this.timestampDimensions.includes(dim) || 
+                               previousTimestampItems.has(dim);
+            
+            if (isTimestamp) {
+                this.grpByDZMap.get('date').set(dim, true);
+            } else {
+                this.grpByDZMap.get('dimension').set(dim, true);
+            }
+        });
+
+        // Update metrics drop zone (regular metrics and derived metrics)
+        this.selectedMetrics.forEach(metric => {
+            if (this.expressions[metric]) {
+                this.metricsDZMap.get('derived').set(metric, true);
+            } else {
+                this.metricsDZMap.get('metric').set(metric, true);
+            }
+        });
+
+        // Update filters drop zone (all types can be filtered)
+        this.selectedFilters.forEach(filter => {
+            if (this.timestampDimensions.includes(filter.metric)) {
+                this.filtersDZMap.get('date').set(filter.metric, true);
+            } else if (this.expressions && this.expressions[filter.metric]) {
+                this.filtersDZMap.get('derived').set(filter.metric, true);
+            } else if (this.metricsAvail.has(filter.metric)) {
+                this.filtersDZMap.get('metric').set(filter.metric, true);
+            } else {
+                this.filtersDZMap.get('dimension').set(filter.metric, true);
+            }
+        });
+        
+        // Also populate filtersDZMap with dimension filters
+        Object.keys(this.dimensionFilters).forEach(dimensionName => {
+            if (this.timestampDimensions.includes(dimensionName)) {
+                this.filtersDZMap.get('date').set(dimensionName, true);
+            } else {
+                this.filtersDZMap.get('dimension').set(dimensionName, true);
+            }
+        });
+    }
+
+    /**
+     * Check if an item is missing (not available)
+     * An item is missing if:
+     * 1. It's in a drop zone AND not available, OR
+     * 2. It's in the category (left navigation) AND not in the availability map (not in current data)
+     */
+    isItemMissing(itemName, category) {
+        let isInDropZone = false;
+        let isAvailable = false;
+
+        // Check if item is in any drop zone
+        if (category === 'dimension' || category === 'date') {
+            isInDropZone = this.grpByDZMap.get(category).has(itemName) || 
+                          this.filtersDZMap.get(category).has(itemName);
+            const availMap = category === 'date' ? this.dateAvail : this.dimsAvail;
+            // If item is in availability map, use its value; otherwise it's not available
+            isAvailable = availMap.has(itemName) ? availMap.get(itemName) : false;
+        } else if (category === 'metric') {
+            isInDropZone = this.metricsDZMap.get('metric').has(itemName) || 
+                          this.filtersDZMap.get('metric').has(itemName);
+            // If item is in availability map, use its value; otherwise it's not available
+            isAvailable = this.metricsAvail.has(itemName) ? this.metricsAvail.get(itemName) : false;
+        } else if (category === 'derived') {
+            isInDropZone = this.metricsDZMap.get('derived').has(itemName) || 
+                          this.filtersDZMap.get('derived').has(itemName);
+            // If item is in availability map, use its value; otherwise it's not available
+            isAvailable = this.derivedAvail.has(itemName) ? this.derivedAvail.get(itemName) : false;
+        }
+
+        // Item is missing if:
+        // - It's in a drop zone and not available
+        // Note: We only mark items as missing if they're actually selected (in drop zones)
+        const isMissing = isInDropZone && !isAvailable;
+        
+        // Debug logging for timestamp items
+        if (itemName.includes('timestamp') || itemName.includes('time')) {
+            console.log('DEBUG isItemMissing for timestamp:', itemName);
+            console.log('  category:', category);
+            console.log('  isInDropZone:', isInDropZone);
+            console.log('  isAvailable:', isAvailable, '(type:', typeof isAvailable, ')');
+            console.log('  isMissing:', isMissing);
+            console.log('  grpByDZMapDate.has:', this.grpByDZMap.get('date').has(itemName));
+            console.log('  dateAvail.has:', this.dateAvail.has(itemName));
+            console.log('  dateAvail.get:', this.dateAvail.get(itemName), '(type:', typeof this.dateAvail.get(itemName), ')');
+        }
+
+        return isMissing;
+    }
+
 
 
     /**
@@ -276,6 +1148,21 @@ class WaveAnalytics {
             console.log('DEBUG: updateFiltersZone() called in init()');
             this.removeExistingTimestampFilters();
             this.updateLensDropdown();
+            this.updateExpressionDropdown();
+            
+            // Set loading states if they were requested before WaveAnalytics was available
+            if (lensLoadingRequested) {
+                console.log('Setting delayed lens dropdown loading state');
+                this.setLensDropdownLoading(true);
+            }
+            if (expressionsLoadingRequested) {
+                console.log('Setting delayed derived metrics dropdown loading state');
+                this.setDerivedMetricsDropdownLoading(true);
+            }
+            
+            // Load saved expressions from backend
+            //getCanaryExpressions();
+            //getCanaryLenses();
             
             // Initialize drop zone counts and field item icons
             setTimeout(() => {
@@ -382,6 +1269,12 @@ class WaveAnalytics {
         this.parsedData = parsedData;
         this.analyzeDataStructure();
         this.filteredData = [...this.parsedData];
+        
+        // Rebuild availability maps from parsed data
+        this.rebuildAvailabilityMaps();
+        
+        // Evaluate expressions after data is set
+        this.evaluateExpressions();
     }
 
     fetchCSVDataAndParse() {
@@ -435,6 +1328,12 @@ class WaveAnalytics {
         this.analyzeDataStructure();
         
         this.filteredData = [...this.parsedData];
+        
+        // Rebuild availability maps from parsed data
+        this.rebuildAvailabilityMaps();
+        
+        // Evaluate expressions after data is parsed
+        this.evaluateExpressions();
     }
 
     /**
@@ -665,6 +1564,10 @@ class WaveAnalytics {
     }
 
     showLoadingState() {
+        if (!this.container) {
+            console.warn('showLoadingState: Container not found, cannot show loading state');
+            return;
+        }
         this.container.innerHTML = 
             '<div class="wave-analytics-container">' +
                 '<div class="wave-header">' +
@@ -680,6 +1583,10 @@ class WaveAnalytics {
     }
 
     showErrorState(error) {
+        if (!this.container) {
+            console.warn('showErrorState: Container not found, cannot show error state');
+            return;
+        }
         this.container.innerHTML = 
             '<div class="wave-analytics-container">' +
                 '<div class="wave-header">' +
@@ -700,6 +1607,10 @@ class WaveAnalytics {
     }
 
     render() {
+        if (!this.container) {
+            console.warn('render: Container not found, cannot render');
+            return;
+        }
         this.container.innerHTML = 
             '<div class="wave-analytics-container">' +
                 '<div class="wave-content">' +
@@ -733,6 +1644,18 @@ class WaveAnalytics {
                                     '<!-- Metrics will be populated here -->' +
                                 '</div>' +
                             '</div>' +
+                            '<div class="category-section">' +
+                                '<h3 class="category-header" data-target="derivedMetricsPalette">' +
+                                    '<span class="collapse-icon">▼</span> Derived Metrics' +
+                                    '<div class="derived-metrics-controls">' +
+                                        '<button class="add-derived-metric-btn" onclick="window.waveAnalyticsShowExpressionBuilder()" title="Add Derived Metric">+</button>' +
+                                        '<button class="save-derived-metric-btn" onclick="window.waveAnalyticsShowSaveExpressionModal()" title="Save Derived Metric">💾</button>' +
+                                    '</div>' +
+                                '</h3>' +
+                                '<div id="derivedMetricsPalette" class="field-list">' +
+                                    '<!-- Derived Metrics will be populated here -->' +
+                                '</div>' +
+                            '</div>' +
                         '</div>' +
                         '<div class="lens-canvas">' +
                             '<div class="drop-zones">' +
@@ -741,6 +1664,7 @@ class WaveAnalytics {
                                         '<div class="drop-zone-title-section">' +
                                             '<h4>Group by dimensions</h4>' +
                                             '<span class="drop-zone-count" id="dimensionsCount">0</span>' +
+                                            '<span class="missing-items-indicator" id="dimensionsMissing" style="display: none;">0</span>' +
                                         '</div>' +
                                         '<button class="drop-zone-collapse-btn" data-zone="dimensionsZone" title="Collapse/Expand Drop Zone"><i class="fa fa-chevron-down"></i></button>' +
                                     '</div>' +
@@ -753,6 +1677,7 @@ class WaveAnalytics {
                                         '<div class="drop-zone-title-section">' +
                                             '<h4>Metric aggregations</h4>' +
                                             '<span class="drop-zone-count" id="metricsCount">0</span>' +
+                                            '<span class="missing-items-indicator" id="metricsMissing" style="display: none;">0</span>' +
                                         '</div>' +
                                         '<button class="drop-zone-collapse-btn" data-zone="metricsZone" title="Collapse/Expand Drop Zone"><i class="fa fa-chevron-down"></i></button>' +
                                     '</div>' +
@@ -765,6 +1690,7 @@ class WaveAnalytics {
                                         '<div class="drop-zone-title-section">' +
                                     '<h4>Filters</h4>' +
                                             '<span class="drop-zone-count" id="filtersCount">0</span>' +
+                                            '<span class="missing-items-indicator" id="filtersMissing" style="display: none;">0</span>' +
                                         '</div>' +
                                         '<button class="drop-zone-collapse-btn" data-zone="filtersZone" title="Collapse/Expand Drop Zone"><i class="fa fa-chevron-down"></i></button>' +
                                     '</div>' +
@@ -776,9 +1702,12 @@ class WaveAnalytics {
                             '<div class="wave-header">' +
                                 '<div class="wave-controls">' +
                                     '<div class="view-controls">' +
-                                        '<input type="text" id="waveSearchInput" class="wave-search-input" placeholder="Search... (Enter)" title="Search across all data - Press Enter to apply">' +
-                                        '<select id="loadLensSelect" class="lens-select" title="Load Saved Lens">' +
+                                        '<input type="text" id="waveSearchInput" class="wave-search-input" placeholder="Search... (Enter)" title="Search across all data - Press Enter to apply" style="font-size: 14px !important;">' +
+                                        '<select id="loadLensSelect" class="lens-select" title="Load Saved Lens" style="font-size: 14px !important;">' +
                                             '<option value="">Load Lens...</option>' +
+                                        '</select>' +
+                '<select id="loadDerivedMetricSelect" class="lens-select" title="Load Saved Derived Metric" style="font-size: 14px !important;">' +
+                    '<option value="">Load Derived Metrics...</option>' +
                                         '</select>' +
                                         '<button id="saveLensBtn" class="wave-btn" title="Save Lens">💾</button>' +
                                         '<button id="tableViewBtn" class="wave-btn" title="Table View"><i class="fa fa-fw fa-table"></i></button>' +
@@ -819,7 +1748,7 @@ class WaveAnalytics {
                 '</div>' +
             '</div>' +
         // Save Lens Modal
-        '<div id="saveLensModal" class="modal-overlay" style="display: none;">' +
+        '<div id="saveLensModal" class="wave-modal-overlay modal-overlay" style="display: none;">' +
             '<div class="modal-content">' +
                 '<div class="modal-header">' +
                     '<h3>Save Lens</h3>' +
@@ -847,30 +1776,206 @@ class WaveAnalytics {
                     '<button type="button" class="btn btn-primary" id="confirmSaveLens">Save Lens</button>' +
                 '</div>' +
             '</div>' +
+        '</div>' +
+        // Expression Builder Modal
+        '<div id="expressionBuilderModal" class="wave-modal-overlay modal-overlay" style="display: none;">' +
+            '<div class="modal-content" style="max-width: 600px;">' +
+                '<div class="modal-header">' +
+                    '<h3>Create Derived Metric</h3>' +
+                    '<button class="modal-close" id="closeExpressionBuilderModal">&times;</button>' +
+                '</div>' +
+                '<div class="modal-body">' +
+                    '<form id="expressionBuilderForm">' +
+                        '<div class="form-group">' +
+                            '<label for="expressionNameInput">Derived Metric Name:</label>' +
+                            '<input type="text" id="expressionNameInput" class="form-input" placeholder="Enter derived metric name" maxlength="50" required>' +
+                        '</div>' +
+                        '<div class="form-group">' +
+                            '<label>Expression Builder:</label>' +
+                            '<div id="expressionBuilder" style="border: 1px solid #ddd; padding: 12px; border-radius: 4px; background: #f9f9f9; min-height: 100px;">' +
+                                '<div id="expressionParts" style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 12px; min-height: 50px; padding: 10px; background: white; border-radius: 4px; border: 1px solid #eee;"></div>' +
+                                '<div style="display: flex; gap: 6px; flex-wrap: wrap;">' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsAddExpressionPart(\'metric\')" style="font-size: 13px !important; padding: 2px 6px; height: 32px;">Add Metric</button>' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsAddExpressionPart(\'constant\')" style="font-size: 13px !important; padding: 2px 6px; height: 32px;">Add Constant</button>' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsAddExpressionPart(\'+\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">+</button>' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsAddExpressionPart(\'-\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">-</button>' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsAddExpressionPart(\'*\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">×</button>' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsAddExpressionPart(\'/\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">÷</button>' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsAddExpressionPart(\'(\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">(</button>' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsAddExpressionPart(\')\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">)</button>' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsClearExpression()" style="margin-left: auto; font-size: 13px !important; padding: 2px 4px; height: 32px;">Clear</button>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</form>' +
+                '</div>' +
+                '<div class="modal-footer">' +
+                    '<button type="button" class="btn btn-secondary" id="cancelExpressionBuilder">Cancel</button>' +
+                    '<button type="button" class="btn btn-primary" id="confirmExpressionBuilder">Create derived metric</button>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+        // Save Expression Modal
+        '<div id="saveExpressionModal" class="wave-modal-overlay modal-overlay" style="display: none;">' +
+            '<div class="modal-content">' +
+                '<div class="modal-header">' +
+                    '<h3>Save Derived Metric</h3>' +
+                    '<button type="button" class="close-btn" id="closeSaveExpressionModal">&times;</button>' +
+                '</div>' +
+                '<div class="modal-body">' +
+                    '<form id="saveExpressionForm">' +
+                        '<div class="form-group">' +
+                            '<label for="saveExpressionNameInput">Derived Metric Name:</label>' +
+                            '<input type="text" id="saveExpressionNameInput" class="form-input" placeholder="Enter a name for this derived metric" maxlength="50">' +
+                            '<div class="form-help">Choose a descriptive name for your derived metric</div>' +
+                        '</div>' +
+                        '<div class="form-group">' +
+                            '<label for="saveExpressionDescriptionInput">Description (optional):</label>' +
+                            '<textarea id="saveExpressionDescriptionInput" class="form-textarea" placeholder="Add a description for this derived metric" maxlength="200"></textarea>' +
+                        '</div>' +
+                        '<div class="expression-preview">' +
+                            '<h4>Derived Metric Configuration:</h4>' +
+                            '<div id="expressionPreviewContent"></div>' +
+                        '</div>' +
+                    '</form>' +
+                '</div>' +
+                '<div class="modal-footer">' +
+                    '<button type="button" class="btn btn-secondary" id="cancelSaveExpression">Cancel</button>' +
+                    '<button type="button" class="btn btn-primary" id="confirmSaveExpression">Save Derived Metric</button>' +
+                '</div>' +
+            '</div>' +
         '</div>';
         
-        this.populateFieldPalette();
+        this.populateFieldPalette(false);
         
         // Small delay to ensure DOM is ready
         setTimeout(() => {
+            this.dragAndDropSetup = false; // Reset the flag to allow re-setup
             this.setupDragAndDrop();
             this.setupEventListeners();
         }, 10);
     }
 
-    populateFieldPalette() {
+    populateFieldPalette(clearMissingItems = true) {
+        // ========== DEBUG: Print availability maps BEFORE rendering ==========
+        console.log('========================================');
+        console.log('DEBUG: populateFieldPalette() - AVAILABILITY MAPS BEFORE RENDERING');
+        console.log('========================================');
+        console.log('dimsAvail Map:');
+        this.dimsAvail.forEach((isAvail, item) => {
+            console.log(`  ${item}: ${isAvail} (${typeof isAvail})`);
+        });
+        console.log('metricsAvail Map:');
+        this.metricsAvail.forEach((isAvail, item) => {
+            console.log(`  ${item}: ${isAvail} (${typeof isAvail})`);
+        });
+        console.log('derivedAvail Map:');
+        this.derivedAvail.forEach((isAvail, item) => {
+            console.log(`  ${item}: ${isAvail} (${typeof isAvail})`);
+        });
+        console.log('dateAvail Map:');
+        this.dateAvail.forEach((isAvail, item) => {
+            console.log(`  ${item}: ${isAvail} (${typeof isAvail})`);
+        });
+        console.log('grpByDZMap (dimension):');
+        this.grpByDZMap.get('dimension').forEach((isSelected, item) => {
+            console.log(`  ${item}: ${isSelected}`);
+        });
+        console.log('grpByDZMap (date):');
+        this.grpByDZMap.get('date').forEach((isSelected, item) => {
+            console.log(`  ${item}: ${isSelected}`);
+        });
+        console.log('metricsDZMap (metric):');
+        this.metricsDZMap.get('metric').forEach((isSelected, item) => {
+            console.log(`  ${item}: ${isSelected}`);
+        });
+        console.log('metricsDZMap (derived):');
+        this.metricsDZMap.get('derived').forEach((isSelected, item) => {
+            console.log(`  ${item}: ${isSelected}`);
+        });
+        console.log('timestampDimensions array:', this.timestampDimensions);
+        console.log('this.dimensions array:', this.dimensions);
+        console.log('this.metrics array:', this.metrics);
+        console.log('this.selectedDimensions:', this.selectedDimensions);
+        console.log('this.selectedMetrics:', this.selectedMetrics);
+        console.log('========================================');
+        
+        // Clear missing items that are now available before populating (unless explicitly disabled)
+        if (clearMissingItems && !this.suppressMissingClear) {
+            this.missingItemsManager.clearAvailableItems();
+        }
+        
         const dimensionsPalette = document.getElementById('dimensionsPalette');
         const datePalette = document.getElementById('datePalette');
         const metricsPalette = document.getElementById('metricsPalette');
+        const derivedMetricsPalette = document.getElementById('derivedMetricsPalette');
+        
+        // Check if elements exist before accessing them
+        if (!dimensionsPalette || !datePalette || !metricsPalette) {
+            console.warn('populateFieldPalette: Field palette elements not found, skipping population');
+            return;
+        }
         
         // Clear existing content
         dimensionsPalette.innerHTML = '';
         datePalette.innerHTML = '';
         metricsPalette.innerHTML = '';
+        if (derivedMetricsPalette) {
+            derivedMetricsPalette.innerHTML = '';
+        }
         
         // Separate dimensions into regular dimensions and date fields
-        const regularDimensions = this.dimensions.filter(dim => !this.timestampDimensions.includes(dim));
-        const dateFields = this.dimensions.filter(dim => this.timestampDimensions.includes(dim));
+        // Include missing items from drop zone maps but categorize them properly
+        const allDimensionsFromMaps = new Set();
+        this.grpByDZMap.get('dimension').forEach((isSelected, item) => {
+            allDimensionsFromMaps.add(item);
+        });
+        this.grpByDZMap.get('date').forEach((isSelected, item) => {
+            allDimensionsFromMaps.add(item);
+        });
+        
+        // Also include items from availability maps (dateAvail and dimsAvail) to ensure they appear
+        this.dateAvail.forEach((isAvailable, item) => {
+            if (isAvailable) {
+                allDimensionsFromMaps.add(item);
+            }
+        });
+        this.dimsAvail.forEach((isAvailable, item) => {
+            if (isAvailable) {
+                allDimensionsFromMaps.add(item);
+            }
+        });
+        
+        // Combine with available dimensions
+        const allDimensions = Array.from(new Set([...this.dimensions, ...allDimensionsFromMaps]));
+        
+        // Categorize: use data properties for available items, drop zone maps for missing items
+        const regularDimensions = allDimensions.filter(dim => {
+            // If available, use data properties
+            if (this.dimsAvail.has(dim) || this.dateAvail.has(dim)) {
+                return !this.timestampDimensions.includes(dim);
+            }
+            // If missing, use drop zone maps to determine category
+            return !this.grpByDZMap.get('date').has(dim);
+        });
+        
+        const dateFields = allDimensions.filter(dim => {
+            // If available, use data properties
+            if (this.dimsAvail.has(dim) || this.dateAvail.has(dim)) {
+                return this.timestampDimensions.includes(dim);
+            }
+            // If missing, use drop zone maps to determine category
+            return this.grpByDZMap.get('date').has(dim);
+        });
+        
+        console.log('DEBUG populateFieldPalette: allDimensions:', allDimensions);
+        console.log('DEBUG populateFieldPalette: regularDimensions:', regularDimensions);
+        console.log('DEBUG populateFieldPalette: dateFields:', dateFields);
+        console.log('DEBUG populateFieldPalette: grpByDZMap dimension:', Array.from(this.grpByDZMap.get('dimension').keys()));
+        console.log('DEBUG populateFieldPalette: grpByDZMap date:', Array.from(this.grpByDZMap.get('date').keys()));
+        console.log('DEBUG populateFieldPalette: dimsAvail:', Array.from(this.dimsAvail.keys()));
+        console.log('DEBUG populateFieldPalette: dateAvail:', Array.from(this.dateAvail.keys()));
+        console.log('DEBUG populateFieldPalette: timestampDimensions:', this.timestampDimensions);
         
         // Populate regular dimensions
         regularDimensions.forEach(dimension => {
@@ -884,12 +1989,55 @@ class WaveAnalytics {
             datePalette.appendChild(fieldElement);
         });
         
-        // Populate metrics (excluding timestamp fields)
-        const regularMetrics = this.metrics.filter(metric => !this.timestampDimensions.includes(metric));
+        // Populate metrics (excluding derived metrics)
+        // Include missing items from drop zone maps but categorize them properly
+        const allMetricsFromMaps = new Set();
+        this.metricsDZMap.get('metric').forEach((isSelected, item) => {
+            allMetricsFromMaps.add(item);
+        });
+        this.metricsDZMap.get('derived').forEach((isSelected, item) => {
+            allMetricsFromMaps.add(item);
+        });
+        
+        // Combine with available metrics
+        const allMetrics = Array.from(new Set([...this.metrics, ...allMetricsFromMaps]));
+        
+        // Categorize: use data properties for available items, drop zone maps for missing items
+        const regularMetrics = allMetrics.filter(metric => {
+            // If available, use data properties
+            if (this.metricsAvail.has(metric)) {
+                return !this.expressions || !this.expressions[metric];
+            }
+            // If missing, use drop zone maps
+            return !this.metricsDZMap.get('derived').has(metric);
+        });
         regularMetrics.forEach(metric => {
             const fieldElement = this.createFieldElement(metric, 'metric');
             metricsPalette.appendChild(fieldElement);
         });
+        
+        // Populate derived metrics
+        if (derivedMetricsPalette) {
+            // Show derived metrics that are either available or missing from drop zones
+            const derivedMetricsToShow = new Set();
+            
+            // Add available derived metrics
+            if (this.expressions) {
+                Object.keys(this.expressions).forEach(expressionName => {
+                    derivedMetricsToShow.add(expressionName);
+                });
+            }
+            
+            // Add missing derived metrics from drop zone maps
+            this.metricsDZMap.get('derived').forEach((isSelected, derivedMetric) => {
+                derivedMetricsToShow.add(derivedMetric);
+            });
+            
+            derivedMetricsToShow.forEach(expressionName => {
+                const fieldElement = this.createFieldElement(expressionName, 'expression');
+                derivedMetricsPalette.appendChild(fieldElement);
+            });
+        }
     }
 
     updateFieldPalettePreservingSelections() {
@@ -899,8 +2047,14 @@ class WaveAnalytics {
         const currentAggregations = {...this.metricAggregations};
         
         // Create combined lists that include both existing selections and new data
-        const allDimensions = [...new Set([...currentDimensions, ...this.dimensions])];
-        const allMetrics = [...new Set([...currentMetrics, ...this.metrics])];
+        // Note: this.dimensions already includes selectedDimensions from rebuildCategoriesFromMaps()
+        const allDimensions = this.dimensions;
+        
+        // Filter out derived metrics from both selections and the metrics array to avoid duplication
+        const expressionNames = new Set(Object.keys(this.expressions));
+        const regularMetricsFromSelections = currentMetrics.filter(metric => !expressionNames.has(metric));
+        const regularMetricsFromArray = (this.metrics || []).filter(metric => !expressionNames.has(metric));
+        const allMetrics = [...new Set([...regularMetricsFromSelections, ...regularMetricsFromArray])];
         
         // Temporarily replace the data arrays to populate the palette with all available options
         const originalDimensions = this.dimensions;
@@ -908,8 +2062,8 @@ class WaveAnalytics {
         this.dimensions = allDimensions;
         this.metrics = allMetrics;
         
-        // Update the field palette with combined data
-        this.populateFieldPalette();
+        // Update the field palette with combined data (don't clear missing items during refresh)
+        this.populateFieldPalette(false);
         
         // Restore original data arrays
         this.dimensions = originalDimensions;
@@ -974,6 +2128,56 @@ class WaveAnalytics {
         fieldDiv.draggable = true;
         fieldDiv.setAttribute('data-field', fieldName);
         fieldDiv.setAttribute('data-type', type);
+        
+        // ========== DEBUG: Print availability for field element ==========
+        if (fieldName === 'timestamp' || fieldName.includes('timestamp') || fieldName.includes('time')) {
+            console.log(`DEBUG createFieldElement for ${fieldName}:`);
+            console.log(`  type parameter: ${type}`);
+            console.log(`  timestampDimensions.includes: ${this.timestampDimensions.includes(fieldName)}`);
+            console.log(`  grpByDZMap.get('date').has: ${this.grpByDZMap.get('date').has(fieldName)}`);
+            console.log(`  dateAvail.has: ${this.dateAvail.has(fieldName)}`);
+            console.log(`  dateAvail.get: ${this.dateAvail.get(fieldName)} (${typeof this.dateAvail.get(fieldName)})`);
+        }
+        
+        // Determine category and check if missing using new data model
+        let category = 'metric';
+        if (type === 'dimension') {
+            // For dimensions, check if it's a timestamp based on data properties or drop zone usage
+            // But prioritize actual data availability over previous categorization
+            const isTimestamp = this.timestampDimensions.includes(fieldName) || 
+                               this.grpByDZMap.get('date').has(fieldName);
+            category = isTimestamp ? 'date' : 'dimension';
+            
+            if (fieldName === 'timestamp' || fieldName.includes('timestamp') || fieldName.includes('time')) {
+                console.log(`  isTimestamp: ${isTimestamp}`);
+                console.log(`  determined category: ${category}`);
+            }
+            
+        } else if (type === 'expression') {
+            category = 'derived';
+        } else if (type === 'date') {
+            category = 'date';
+        }
+        
+        if (fieldName === 'timestamp' || fieldName.includes('timestamp') || fieldName.includes('time')) {
+            console.log(`  final category: ${category}`);
+        }
+        
+        const isMissing = this.isItemMissing(fieldName, category);
+        
+        if (fieldName === 'timestamp' || fieldName.includes('timestamp') || fieldName.includes('time')) {
+            console.log(`  isMissing result: ${isMissing}`);
+            console.log(`---`);
+        }
+        
+        if (isMissing) {
+            fieldDiv.style.setProperty('background-color', '#ffebcd', 'important'); // Light orange background
+            fieldDiv.style.setProperty('border', '1px solid #ff8c00', 'important'); // Orange border
+            fieldDiv.style.setProperty('opacity', '0.7', 'important'); // Slightly faded
+            const itemType = category === 'dimension' ? 'dimension' : (category === 'derived' ? 'derived metric' : 'metric');
+            fieldDiv.title = 'This ' + itemType + ' is missing from the current dataset';
+        }
+        
         fieldDiv.innerHTML = this.formatHeader(fieldName) + ' <span class="click-hint">+</span>';
         
         return fieldDiv;
@@ -1022,7 +2226,7 @@ class WaveAnalytics {
                     this.addDimensionFilter(fieldName);
                 } else if (fieldType === 'date') {
                     this.addDateFilter(fieldName);
-                } else if (fieldType === 'metric') {
+                } else if (fieldType === 'metric' || fieldType === 'expression') {
                     this.addFilter(fieldName);
                 }
             });
@@ -1039,7 +2243,7 @@ class WaveAnalytics {
                     } else {
                     this.addDimension(fieldName);
                     }
-                } else if (fieldType === 'metric') {
+                } else if (fieldType === 'metric' || fieldType === 'expression') {
                     if (this.selectedMetrics.includes(fieldName)) {
                         this.removeMetric(fieldName);
                     } else {
@@ -1061,6 +2265,8 @@ class WaveAnalytics {
         });
         
         [dimensionsArea, metricsArea, filtersArea].forEach(area => {
+            if (!area) return; // Skip if area is null
+            
             area.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 area.classList.add('drag-over');
@@ -1082,9 +2288,9 @@ class WaveAnalytics {
                     
                     if (area.id === 'dimensionsArea' && (fieldType === 'dimension' || fieldType === 'date')) {
                         this.addDimension(fieldName);
-                    } else if (area.id === 'metricsArea' && fieldType === 'metric') {
+                    } else if (area.id === 'metricsArea' && (fieldType === 'metric' || fieldType === 'expression')) {
                         this.addMetric(fieldName);
-                    } else if (area.id === 'filtersArea' && (fieldType === 'metric' || fieldType === 'date' || fieldType === 'dimension')) {
+                    } else if (area.id === 'filtersArea' && (fieldType === 'metric' || fieldType === 'expression' || fieldType === 'date' || fieldType === 'dimension')) {
                         if (fieldType === 'dimension') {
                             this.addDimensionFilter(fieldName);
                         } else {
@@ -1101,6 +2307,10 @@ class WaveAnalytics {
     addDimension(dimensionName) {
         if (!this.selectedDimensions.includes(dimensionName)) {
             this.selectedDimensions.push(dimensionName);
+            
+            // Update drop zone maps
+            this.updateDropZoneMaps();
+            
             this.updateDropZone('dimensionsArea', this.selectedDimensions);
             this.updateDropZoneCounts();
             this.updateFieldItemIcons();
@@ -1112,10 +2322,20 @@ class WaveAnalytics {
     }
 
     addMetric(metricName) {
+        // Prevent timestamps from being added as metrics
+        if (this.timestampDimensions.includes(metricName)) {
+            console.warn('Cannot add timestamp as metric:', metricName);
+            return;
+        }
+        
         if (!this.selectedMetrics.includes(metricName)) {
             this.selectedMetrics.push(metricName);
             // Initialize with default aggregation (average)
             this.metricAggregations[metricName] = ['average'];
+            
+            // Update drop zone maps
+            this.updateDropZoneMaps();
+            
             this.updateDropZone('metricsArea', this.selectedMetrics);
             this.updateDropZoneCounts();
             this.updateFieldItemIcons();
@@ -1403,7 +2623,57 @@ class WaveAnalytics {
     }
 
     updateDropZone(zoneId, items) {
+        console.log(`updateDropZone called with zoneId: ${zoneId}, items:`, items);
+        
+        // ========== DEBUG: Print availability for each item in drop zone ==========
+        console.log('========================================');
+        console.log(`DEBUG: updateDropZone(${zoneId}) - CHECKING AVAILABILITY FOR ITEMS`);
+        console.log('========================================');
+        items.forEach(item => {
+            let category = 'metric';
+            if (zoneId === 'dimensionsArea') {
+                category = this.timestampDimensions.includes(item) ? 'date' : 'dimension';
+            } else if (zoneId === 'metricsArea') {
+                category = this.expressions && this.expressions[item] ? 'derived' : 'metric';
+            }
+            
+            let inDZMap = false;
+            let availValue = null;
+            let availHas = false;
+            
+            if (category === 'dimension' || category === 'date') {
+                const dzMap = category === 'date' ? this.grpByDZMap.get('date') : this.grpByDZMap.get('dimension');
+                inDZMap = dzMap.has(item);
+                const availMap = category === 'date' ? this.dateAvail : this.dimsAvail;
+                availHas = availMap.has(item);
+                availValue = availMap.get(item);
+            } else if (category === 'metric') {
+                inDZMap = this.metricsDZMap.get('metric').has(item);
+                availHas = this.metricsAvail.has(item);
+                availValue = this.metricsAvail.get(item);
+            } else if (category === 'derived') {
+                inDZMap = this.metricsDZMap.get('derived').has(item);
+                availHas = this.derivedAvail.has(item);
+                availValue = this.derivedAvail.get(item);
+            }
+            
+            const isMissing = this.isItemMissing(item, category);
+            
+            console.log(`Item: ${item}`);
+            console.log(`  category: ${category}`);
+            console.log(`  inDZMap: ${inDZMap}`);
+            console.log(`  availHas: ${availHas}`);
+            console.log(`  availValue: ${availValue} (${typeof availValue})`);
+            console.log(`  isMissing: ${isMissing}`);
+            console.log(`  timestampDimensions.includes: ${this.timestampDimensions.includes(item)}`);
+        });
+        console.log('========================================');
+        
         const zone = document.getElementById(zoneId);
+        if (!zone) {
+            console.warn('updateDropZone: Element not found:', zoneId);
+            return;
+        }
         zone.innerHTML = '';
         
         if (items.length === 0) {
@@ -1415,6 +2685,25 @@ class WaveAnalytics {
             items.forEach(item => {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'selected-item';
+                
+                // Determine item category and check if missing using new data model
+                let category = 'metric';
+                let isMissing = false;
+                
+                if (zoneId === 'dimensionsArea') {
+                    category = this.timestampDimensions.includes(item) ? 'date' : 'dimension';
+                } else if (zoneId === 'metricsArea') {
+                    category = this.expressions && this.expressions[item] ? 'derived' : 'metric';
+                }
+                
+                isMissing = this.isItemMissing(item, category);
+                
+                if (isMissing) {
+                    itemDiv.style.setProperty('background-color', '#ffebcd', 'important'); // Light orange background
+                    itemDiv.style.setProperty('border', '1px solid #ff8c00', 'important'); // Orange border
+                    const itemType = category === 'dimension' ? 'dimension' : (category === 'derived' ? 'derived metric' : 'metric');
+                    itemDiv.title = 'This ' + itemType + ' is missing from the current dataset';
+                }
                 
                 if (zoneId === 'metricsArea') {
                     // For metrics, include multi-select aggregation dropdown
@@ -1531,11 +2820,46 @@ class WaveAnalytics {
                         if (menu.style.display === 'none' || menu.style.display === '') {
                             // Position the dropdown menu
                             const buttonRect = button.getBoundingClientRect();
+                            const viewportHeight = window.innerHeight;
+                            const viewportWidth = window.innerWidth;
+                            
+                            // Calculate position to ensure dropdown is visible
+                            let topPosition = buttonRect.bottom;
+                            let leftPosition = buttonRect.left;
+                            
+                            // Adjust if dropdown would go off-screen
+                            if (topPosition + 200 > viewportHeight) {
+                                // Position above the button instead
+                                topPosition = buttonRect.top - 200;
+                            }
+                            
+                            // Ensure minimum top position
+                            if (topPosition < 10) {
+                                topPosition = 10;
+                            }
+                            
+                            if (leftPosition + 150 > viewportWidth) {
+                                // Adjust left position to keep dropdown on screen
+                                leftPosition = viewportWidth - 160;
+                            }
+                            
+                            // Ensure minimum left position
+                            if (leftPosition < 10) {
+                                leftPosition = 10;
+                            }
+                            
                             menu.style.position = 'fixed';
-                            menu.style.top = (buttonRect.bottom + window.scrollY) + 'px';
-                            menu.style.left = buttonRect.left + 'px';
+                            menu.style.top = topPosition + 'px';
+                            menu.style.left = leftPosition + 'px';
                             menu.style.width = Math.max(buttonRect.width, 150) + 'px';
                             menu.style.display = 'block';
+                            menu.style.backgroundColor = 'white';
+                            menu.style.border = '1px solid #ccc';
+                            menu.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                            menu.style.borderRadius = '4px';
+                            menu.style.padding = '4px 0';
+                            menu.style.maxHeight = '200px';
+                            menu.style.overflowY = 'auto';
                             
                             // Set very high z-index for this dropdown (appears above all other elements)
                             const allDropdowns = zone.querySelectorAll('.aggregation-dropdown-menu, .dimension-dropdown-menu');
@@ -1590,6 +2914,10 @@ class WaveAnalytics {
         //console.log('DEBUG: updateFiltersZone() called');
         const zone = document.getElementById('filtersArea');
         //console.log('DEBUG: filtersArea element found:', zone);
+        if (!zone) {
+            console.warn('updateFiltersZone: Element not found: filtersArea');
+            return;
+        }
         zone.innerHTML = '';
         
         // Search input is now in the header, not in the drop zone
@@ -1621,14 +2949,48 @@ class WaveAnalytics {
             const selectedCount = dimensionFilter.selectedValues.length;
             const displayText = isAllSelected ? 'All' : (selectedCount === 1 ? dimensionFilter.selectedValues[0] : selectedCount + ' selected');
             
-            console.log('Rendering dimension filter:', dimensionName, 'availableValues:', dimensionFilter.availableValues);
+            // Check if this dimension is missing
+            const category = this.timestampDimensions.includes(dimensionName) ? 'date' : 'dimension';
+            const isMissing = this.isItemMissing(dimensionName, category);
+            
+            console.log('Rendering dimension filter:', dimensionName, 'availableValues:', dimensionFilter.availableValues, 'isMissing:', isMissing);
+            
+            // Debug: Check if availableValues is valid
+            if (!dimensionFilter.availableValues || dimensionFilter.availableValues.length === 0) {
+                console.log('ERROR: availableValues is empty or undefined for dimension:', dimensionName);
+            } else {
+                console.log('availableValues is valid, length:', dimensionFilter.availableValues.length);
+            }
+            
+            // Debug: Test the HTML generation
+            const testHTML = dimensionFilter.availableValues && dimensionFilter.availableValues.length > 0 ? 
+                dimensionFilter.availableValues.map(value => 
+                    '<div class="dropdown-item">' +
+                        '<label class="dimension-checkbox-label">' +
+                        '<input type="checkbox" class="dimension-checkbox value-checkbox" data-dimension="' + dimensionName + '" value="' + value + '"' + 
+                        (dimensionFilter.selectedValues.includes(value) ? ' checked' : '') + '>' +
+                            '<span class="checkbox-text">' + value + '</span>' +
+                        '</label>' +
+                    '</div>'
+                ).join('') : 
+                '<div class="dropdown-item"><span class="checkbox-text">No values available</span></div>';
+            
+            console.log('Generated HTML for values:', testHTML);
             
             const filterDiv = document.createElement('div');
             filterDiv.className = 'selected-item filter-item dimension-filter';
-            filterDiv.innerHTML = 
+            
+            // Apply orange styling if missing
+            if (isMissing) {
+                filterDiv.style.setProperty('background-color', '#ffebcd', 'important');
+                filterDiv.style.setProperty('border', '1px solid #ff8c00', 'important');
+                filterDiv.title = 'This dimension filter is missing from the current dataset';
+            }
+            
+            const fullHTML = 
                 '<div class="filter-content">' +
                     '<span class="filter-metric">' + this.formatHeader(dimensionName) + '</span>' +
-                    '<div class="dimension-dropdown-container">' +
+                    '<div class="dimension-dropdown-container" data-dimension="' + dimensionName + '">' +
                         '<button class="dimension-dropdown-toggle" data-dimension="' + dimensionName + '">' +
                             '<span class="dropdown-text">' + displayText + '</span>' +
                             '<span class="dropdown-arrow">▼</span>' +
@@ -1640,24 +3002,38 @@ class WaveAnalytics {
                                     '<span class="checkbox-text">All</span>' +
                                 '</label>' +
                             '</div>' +
-                            (dimensionFilter.availableValues && dimensionFilter.availableValues.length > 0 ? 
-                                dimensionFilter.availableValues.map(value => 
-                                    '<div class="dropdown-item">' +
-                                        '<label class="dimension-checkbox-label">' +
-                                        '<input type="checkbox" class="dimension-checkbox value-checkbox" data-dimension="' + dimensionName + '" value="' + value + '"' + 
-                                        (dimensionFilter.selectedValues.includes(value) ? ' checked' : '') + '>' +
-                                            '<span class="checkbox-text">' + value + '</span>' +
-                                        '</label>' +
-                                    '</div>'
-                                ).join('') : 
-                                '<div class="dropdown-item"><span class="checkbox-text">No values available</span></div>'
-                            ) +
+                            testHTML +
                         '</div>' +
                     '</div>' +
                     '<span class="remove-btn" data-dimension="' + dimensionName + '">×</span>' +
                 '</div>';
             
+            console.log('Full HTML being inserted:', fullHTML);
+            filterDiv.innerHTML = fullHTML;
+            
+            // Debug: Check what was actually inserted
+            const insertedMenu = filterDiv.querySelector('.dimension-dropdown-menu');
+            if (insertedMenu) {
+                console.log('Inserted menu HTML:', insertedMenu.innerHTML);
+                const insertedValues = insertedMenu.querySelectorAll('.value-checkbox');
+                console.log('Inserted value checkboxes count:', insertedValues.length);
+            } else {
+                console.log('ERROR: Menu not found in inserted HTML');
+            }
+            
             zone.appendChild(filterDiv);
+            
+            // Debug: Check what's in the DOM after insertion
+            setTimeout(() => {
+                const domMenu = document.querySelector('.dimension-dropdown-menu[data-dimension="' + dimensionName + '"]');
+                if (domMenu) {
+                    console.log('DOM menu HTML after insertion:', domMenu.innerHTML);
+                    const domValues = domMenu.querySelectorAll('.value-checkbox');
+                    console.log('DOM value checkboxes count:', domValues.length);
+                } else {
+                    console.log('ERROR: Menu not found in DOM after insertion');
+                }
+            }, 10);
         });
         
         // Add selected filters
@@ -1666,6 +3042,23 @@ class WaveAnalytics {
                 //console.log('DEBUG: Creating filter div for filter:', filter, 'index:', index);
                 const filterDiv = document.createElement('div');
                 filterDiv.className = 'selected-item filter-item';
+                
+                // Check if this filter metric is missing
+                let category = 'metric';
+                if (this.timestampDimensions.includes(filter.metric)) {
+                    category = 'date';
+                } else if (this.expressions && this.expressions[filter.metric]) {
+                    category = 'derived';
+                }
+                const isMissing = this.isItemMissing(filter.metric, category);
+                
+                // Apply orange styling if missing
+                if (isMissing) {
+                    filterDiv.style.setProperty('background-color', '#ffebcd', 'important');
+                    filterDiv.style.setProperty('border', '1px solid #ff8c00', 'important');
+                    filterDiv.title = 'This filter is missing from the current dataset';
+                }
+                
                 // Build filter content - only show operator dropdown for non-date filters
                 let operatorDropdown = '';
                 if (filter.operator !== 'date_range') {
@@ -1742,11 +3135,27 @@ class WaveAnalytics {
         });
         
         // Add event listeners for dimension dropdown toggles
-        zone.querySelectorAll('.dimension-dropdown-toggle').forEach(button => {
-            button.addEventListener('click', (e) => {
+        console.log('Setting up event listeners for', zone.querySelectorAll('.dimension-dropdown-toggle').length, 'dropdown buttons');
+        
+        // Remove any existing event listeners to prevent duplicates
+        zone.removeEventListener('click', this.handleDimensionDropdownClick);
+        
+        // Use event delegation to handle clicks on dropdown buttons
+        this.handleDimensionDropdownClick = (e) => {
+            const dropdownButton = e.target.closest('.dimension-dropdown-toggle');
+            if (dropdownButton) {
+                console.log('Dropdown button clicked!', e.target);
+                e.preventDefault();
                 e.stopPropagation();
-                const dimensionName = e.target.closest('.dimension-dropdown-toggle').dataset.dimension;
+                const dimensionName = dropdownButton.dataset.dimension;
+                console.log('Dimension name:', dimensionName);
                 const menu = zone.querySelector('.dimension-dropdown-menu[data-dimension="' + dimensionName + '"]');
+                console.log('Found menu:', menu);
+                
+                if (!menu) {
+                    console.log('ERROR: Menu not found for dimension:', dimensionName);
+                    return;
+                }
                 
                 // Close all other dropdowns
                 zone.querySelectorAll('.dimension-dropdown-menu').forEach(otherMenu => {
@@ -1759,29 +3168,80 @@ class WaveAnalytics {
                 
                 // Toggle current dropdown
                 if (menu.style.display === 'none' || menu.style.display === '') {
+                    console.log('Showing dropdown menu');
                     // Position the dropdown menu
-                    const buttonRect = button.getBoundingClientRect();
+                    const buttonRect = dropdownButton.getBoundingClientRect();
+                    const viewportHeight = window.innerHeight;
+                    const viewportWidth = window.innerWidth;
+                    
+                    // Calculate position to ensure dropdown is visible
+                    let topPosition = buttonRect.bottom;
+                    let leftPosition = buttonRect.left;
+                    
+                    // Adjust if dropdown would go off-screen
+                    if (topPosition + 200 > viewportHeight) {
+                        // Position above the button instead
+                        topPosition = buttonRect.top - 200;
+                    }
+                    
+                    // Ensure minimum top position
+                    if (topPosition < 10) {
+                        topPosition = 10;
+                    }
+                    
+                    if (leftPosition + 150 > viewportWidth) {
+                        // Adjust left position to keep dropdown on screen
+                        leftPosition = viewportWidth - 160;
+                    }
+                    
+                    // Ensure minimum left position
+                    if (leftPosition < 10) {
+                        leftPosition = 10;
+                    }
+                    
+                    console.log('Calculated position:', topPosition, leftPosition);
+                    console.log('Button rect bottom:', buttonRect.bottom, 'top:', buttonRect.top);
+                    
                     menu.style.position = 'fixed';
-                    menu.style.top = (buttonRect.bottom + window.scrollY) + 'px';
-                    menu.style.left = buttonRect.left + 'px';
+                    menu.style.top = topPosition + 'px';
+                    menu.style.left = leftPosition + 'px';
                     menu.style.width = Math.max(buttonRect.width, 150) + 'px';
                     menu.style.display = 'block';
+                    menu.style.backgroundColor = 'white';
+                    menu.style.border = '1px solid #ccc';
+                    menu.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                    menu.style.borderRadius = '4px';
+                    menu.style.padding = '4px 0';
+                    menu.style.maxHeight = '200px';
+                    menu.style.overflowY = 'auto';
                     
                     // Set very high z-index for this dropdown (appears above all other elements)
                     const allDropdowns = zone.querySelectorAll('.aggregation-dropdown-menu, .dimension-dropdown-menu');
                     const maxZIndex = Math.max(50000, ...Array.from(allDropdowns).map(m => parseInt(m.style.zIndex) || 0));
                     menu.style.zIndex = (maxZIndex + 1).toString();
+                    
+                    console.log('Dropdown menu positioned and shown at:', topPosition, leftPosition);
+                    console.log('Viewport dimensions:', viewportWidth, 'x', viewportHeight);
+                    console.log('Button rect:', buttonRect);
+                    console.log('Menu HTML:', menu.innerHTML);
                 } else {
+                    console.log('Hiding dropdown menu');
                     menu.style.display = 'none';
                     // Apply filters when dropdown is closed
                     this.applyFilters();
                 }
-            });
-        });
+            }
+        };
         
-        // Add event listeners for dimension checkboxes
-        zone.querySelectorAll('.dimension-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('change', (e) => {
+        // Add the event listener
+        zone.addEventListener('click', this.handleDimensionDropdownClick);
+        
+        // Add event listeners for dimension checkboxes using event delegation
+        // Remove any existing event listeners to prevent duplicates
+        zone.removeEventListener('change', this.handleDimensionCheckboxChange);
+        
+        this.handleDimensionCheckboxChange = (e) => {
+            if (e.target.classList.contains('dimension-checkbox')) {
                 e.stopPropagation();
                 const dimensionName = e.target.dataset.dimension;
                 const value = e.target.value;
@@ -1827,8 +3287,11 @@ class WaveAnalytics {
                 
                 // Update the dropdown button text to reflect the new state
                 this.updateDimensionFilterDisplay(dimensionName);
-            });
-        });
+            }
+        };
+        
+        // Add the event listener
+        zone.addEventListener('change', this.handleDimensionCheckboxChange);
         
         // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
@@ -1965,6 +3428,10 @@ class WaveAnalytics {
 
     removeDimension(dimensionName) {
         this.selectedDimensions = this.selectedDimensions.filter(d => d !== dimensionName);
+        
+        // Update drop zone maps
+        this.updateDropZoneMaps();
+        
         this.updateDropZone('dimensionsArea', this.selectedDimensions);
         this.updateDropZoneCounts();
         this.updateFieldItemIcons();
@@ -1980,6 +3447,10 @@ class WaveAnalytics {
     removeMetric(metricName) {
         this.selectedMetrics = this.selectedMetrics.filter(m => m !== metricName);
         delete this.metricAggregations[metricName];
+        
+        // Update drop zone maps
+        this.updateDropZoneMaps();
+        
         this.updateDropZone('metricsArea', this.selectedMetrics);
         this.updateDropZoneCounts();
         this.updateFieldItemIcons();
@@ -2302,6 +3773,12 @@ class WaveAnalytics {
     renderLensChart() {
         const chartContainer = document.getElementById('lensChart');
         const tableContainer = document.getElementById('lensTable');
+        
+        // Check if containers exist before accessing them
+        if (!chartContainer || !tableContainer) {
+            console.warn('renderLensChart: Chart or table containers not found, skipping render');
+            return;
+        }
         
         if (this.selectedDimensions.length === 0 && this.selectedMetrics.length === 0) {
             chartContainer.innerHTML = '<div class="chart-placeholder"><p>Build your lens by dragging dimensions and metrics</p></div>';
@@ -2686,7 +4163,7 @@ class WaveAnalytics {
         
         // Create modal overlay
         const modalOverlay = document.createElement('div');
-        modalOverlay.className = 'modal-overlay rows-popup-overlay';
+        modalOverlay.className = 'wave-modal-overlay modal-overlay rows-popup-overlay';
         modalOverlay.innerHTML = 
             '<div class="modal-content rows-popup-content">' +
                 '<div class="modal-header">' +
@@ -5533,13 +7010,18 @@ class WaveAnalytics {
         });
     }
 
-    async refreshData() {
+    async refreshData(loadlens) {
         this.isLoading = true;
 
         try {
-            // Store current state before refresh
-            const currentDimensions = [...this.selectedDimensions];
-            const currentMetrics = [...this.selectedMetrics];
+            
+            // Store current state before refresh (exclude lens names from dimensions/metrics)
+            const currentDimensions = [...this.selectedDimensions].filter(item => 
+                !this.savedLenses.some(lens => lens.name === item)
+            );
+            const currentMetrics = [...this.selectedMetrics].filter(item => 
+                !this.savedLenses.some(lens => lens.name === item)
+            );
             const currentAggregations = {...this.metricAggregations};
             const currentChartType = this.chartType;
             
@@ -5547,13 +7029,28 @@ class WaveAnalytics {
             this.fetchCSVDataAndParse();
             this.render();
             
+            // Re-evaluate all derived metrics with the new data
+            this.evaluateExpressions();
+            
+            // Rebuild availability maps from new data
+            this.rebuildAvailabilityMaps();
+            
             // Restore state after re-rendering
             this.selectedDimensions = currentDimensions;
             this.selectedMetrics = currentMetrics;
             this.metricAggregations = currentAggregations;
             this.chartType = currentChartType;
             
-            // Update field palette and preserve existing selections
+            // Update drop zone maps from restored selections
+            this.updateDropZoneMaps();
+            
+            // Add missing items to availability maps with false values
+            this.addMissingItemsToAvailabilityMaps();
+            
+            // Rebuild categories from maps (this will prune unselected and unavailable items)
+            this.rebuildCategoriesFromMaps();
+            
+            // Update field palette and preserve existing selections (don't clear missing items during refresh)
             this.updateFieldPalettePreservingSelections();
             
             // Update the UI with restored state
@@ -5586,8 +7083,11 @@ class WaveAnalytics {
                 this.renderLensChart();
             }
             
-            // Reload lenses from backend after refresh
+            // Reload lenses and expressions from backend after refresh
+            if(loadlens == undefined || loadlens == true){
             getCanaryLenses();
+                getCanaryExpressions();
+            }
         } catch (error) {
             this.showErrorState(error);
         } finally {
@@ -5665,70 +7165,120 @@ class WaveAnalytics {
 
     setupEventListeners() {
         // Chart type buttons
-        document.getElementById('lineChartBtn').addEventListener('click', () => {
+        const lineChartBtn = document.getElementById('lineChartBtn');
+        if (lineChartBtn) {
+            lineChartBtn.addEventListener('click', () => {
             this.setChartType('line');
             this.toggleView('chart');
         });
+        }
         
-        document.getElementById('barChartBtn').addEventListener('click', () => {
+        const barChartBtn = document.getElementById('barChartBtn');
+        if (barChartBtn) {
+            barChartBtn.addEventListener('click', () => {
             this.setChartType('bar');
             this.toggleView('chart');
         });
+        }
         
         // View toggle events
-        document.getElementById('tableViewBtn').addEventListener('click', () => {
+        const tableViewBtn = document.getElementById('tableViewBtn');
+        if (tableViewBtn) {
+            tableViewBtn.addEventListener('click', () => {
             this.toggleView('table');
         });
+        }
         
         // Clear lens event
-        document.getElementById('clearLensBtn').addEventListener('click', () => {
+        const clearLensBtn = document.getElementById('clearLensBtn');
+        if (clearLensBtn) {
+            clearLensBtn.addEventListener('click', () => {
             this.clearLens();
         });
+        }
         
         // Export event
-        document.getElementById('exportBtn').addEventListener('click', () => {
+        const exportBtn = document.getElementById('exportBtn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
             this.exportToCSV();
         });
+        }
         
         // Refresh event
-        document.getElementById('refreshBtn').addEventListener('click', () => {
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
             this.refreshData();
         });
+        }
         
         // Save lens event
-        document.getElementById('saveLensBtn').addEventListener('click', () => {
+        const saveLensBtn = document.getElementById('saveLensBtn');
+        if (saveLensBtn) {
+            saveLensBtn.addEventListener('click', () => {
             this.saveLensOptions();
         });
+        }
         
         // Load lens event
-        document.getElementById('loadLensSelect').addEventListener('change', (e) => {
+        const loadLensSelect = document.getElementById('loadLensSelect');
+        if (loadLensSelect) {
+            loadLensSelect.addEventListener('change', (e) => {
             if (e.target.value) {
                 this.loadLens(e.target.value);
             }
         });
+        }
+
+        // Load expression event
+        const loadDerivedMetricSelect = document.getElementById('loadDerivedMetricSelect');
+        if (loadDerivedMetricSelect) {
+            loadDerivedMetricSelect.addEventListener('change', (e) => {
+                if (e.target.value) {
+                    this.loadExpression(e.target.value);
+                }
+            });
+        }
         
         // Chart expand icon event
-        document.getElementById('chartExpandIcon').addEventListener('click', () => {
+        const chartExpandIcon = document.getElementById('chartExpandIcon');
+        if (chartExpandIcon) {
+            chartExpandIcon.addEventListener('click', () => {
             this.expandChartWidth();
         });
+        }
         
         // Chart reduce icon event
-        document.getElementById('chartReduceIcon').addEventListener('click', () => {
+        const chartReduceIcon = document.getElementById('chartReduceIcon');
+        if (chartReduceIcon) {
+            chartReduceIcon.addEventListener('click', () => {
             this.reduceChartWidth();
         });
+        }
         
         // Setup collapsible categories
         this.setupCollapsibleCategories();
         
         // Setup drop zone collapse functionality
         this.setupDropZoneCollapse();
+        
+        // Setup expression builder events
+        this.setupExpressionBuilderEvents();
     }
 
     setupCollapsibleCategories() {
         const categoryHeaders = document.querySelectorAll('.category-header');
         
         categoryHeaders.forEach(header => {
-            header.addEventListener('click', () => {
+            header.addEventListener('click', (event) => {
+                // Don't toggle if clicking on buttons inside the header
+                if (event.target.classList.contains('add-derived-metric-btn') || 
+                    event.target.classList.contains('save-derived-metric-btn') ||
+                    event.target.closest('.derived-metrics-controls')) {
+                    return;
+                }
+                
                 const targetId = header.getAttribute('data-target');
                 const targetElement = document.getElementById(targetId);
                 const collapseIcon = header.querySelector('.collapse-icon');
@@ -5806,6 +7356,10 @@ class WaveAnalytics {
                 }
             });
             console.log('All drop zones expanded');
+            // Hide indicators on expand
+            this.hideMissingItemsIndicators();
+            // Update counts to hide missing indicators
+            this.updateDropZoneCounts();
             
             // Re-render chart with adjusted height after expansion
             setTimeout(() => {
@@ -5825,6 +7379,10 @@ class WaveAnalytics {
                 }
             });
             console.log('All drop zones collapsed');
+            // Show indicators when collapsed (counts for current view only)
+            this.showMissingItemsIndicators();
+            // Update counts to show both available (blue) and missing (orange) indicators
+            this.updateDropZoneCounts();
             
             // Re-render chart with adjusted height after collapse
             setTimeout(() => {
@@ -5851,38 +7409,131 @@ class WaveAnalytics {
     }
 
     updateDropZoneCounts() {
-        // Update dimensions count
+        // Calculate available and missing counts for dimensions
+        let availableDimensionsCount = 0;
+        let missingDimensionsCount = 0;
+        this.selectedDimensions.forEach(dim => {
+            const category = this.timestampDimensions.includes(dim) ? 'date' : 'dimension';
+            if (this.isItemMissing(dim, category)) {
+                missingDimensionsCount++;
+            } else {
+                availableDimensionsCount++;
+            }
+        });
+        
+        // Update dimensions count - show available count (blue) only when collapsed
         const dimensionsCount = document.getElementById('dimensionsCount');
         if (dimensionsCount) {
-            dimensionsCount.textContent = this.selectedDimensions.length;
+            dimensionsCount.textContent = availableDimensionsCount > 0 ? availableDimensionsCount : '';
+            // Only show when collapsed and there are available items
+            const dimensionsZone = document.getElementById('dimensionsZone');
+            const isCollapsed = dimensionsZone && dimensionsZone.classList.contains('collapsed');
+            dimensionsCount.style.display = (isCollapsed && availableDimensionsCount > 0) ? 'inline-block' : 'none';
         }
         
-        // Update metrics count
+        // Update dimensions missing indicator - show missing count (orange)
+        const dimensionsMissing = document.getElementById('dimensionsMissing');
+        if (dimensionsMissing) {
+            dimensionsMissing.textContent = missingDimensionsCount;
+            // Only show when collapsed and there are missing items
+            const dimensionsZone = document.getElementById('dimensionsZone');
+            const isCollapsed = dimensionsZone && dimensionsZone.classList.contains('collapsed');
+            dimensionsMissing.style.display = (isCollapsed && missingDimensionsCount > 0) ? 'inline-block' : 'none';
+        }
+        
+        // Calculate available and missing counts for metrics
+        let availableMetricsCount = 0;
+        let missingMetricsCount = 0;
+        this.selectedMetrics.forEach(metric => {
+            let category = 'metric';
+            if (this.expressions && this.expressions[metric]) {
+                category = 'derived';
+            }
+            if (this.isItemMissing(metric, category)) {
+                missingMetricsCount++;
+            } else {
+                availableMetricsCount++;
+            }
+        });
+        
+        // Update metrics count - show available count (blue) only when collapsed
         const metricsCount = document.getElementById('metricsCount');
         if (metricsCount) {
-            metricsCount.textContent = this.selectedMetrics.length;
+            metricsCount.textContent = availableMetricsCount > 0 ? availableMetricsCount : '';
+            // Only show when collapsed and there are available items
+            const metricsZone = document.getElementById('metricsZone');
+            const isCollapsed = metricsZone && metricsZone.classList.contains('collapsed');
+            metricsCount.style.display = (isCollapsed && availableMetricsCount > 0) ? 'inline-block' : 'none';
         }
         
-        // Update filters count (include selectedFilters, dimensionFilters, and rows filter only when rows are ignored)
+        // Update metrics missing indicator - show missing count (orange)
+        const metricsMissing = document.getElementById('metricsMissing');
+        if (metricsMissing) {
+            metricsMissing.textContent = missingMetricsCount;
+            // Only show when collapsed and there are missing items
+            const metricsZone = document.getElementById('metricsZone');
+            const isCollapsed = metricsZone && metricsZone.classList.contains('collapsed');
+            metricsMissing.style.display = (isCollapsed && missingMetricsCount > 0) ? 'inline-block' : 'none';
+        }
+        
+        // Calculate available and missing counts for filters
+        let availableFiltersCount = 0;
+        let missingFiltersCount = 0;
+        
+        // Count dimension filters
+        Object.keys(this.dimensionFilters).forEach(dimName => {
+            const category = this.timestampDimensions.includes(dimName) ? 'date' : 'dimension';
+            if (this.isItemMissing(dimName, category)) {
+                missingFiltersCount++;
+            } else {
+                availableFiltersCount++;
+            }
+        });
+        
+        // Count selected filters
+        this.selectedFilters.forEach(filter => {
+            let category = 'metric';
+            if (this.timestampDimensions.includes(filter.metric)) {
+                category = 'date';
+            } else if (this.expressions && this.expressions[filter.metric]) {
+                category = 'derived';
+            }
+            if (this.isItemMissing(filter.metric, category)) {
+                missingFiltersCount++;
+            } else {
+                availableFiltersCount++;
+            }
+        });
+        
+        // Add 1 for the rows filter (always available)
+        if (this.ignoredRows.size > 0) {
+            availableFiltersCount += 1;
+        }
+        
+        // Update filters count - show available count (blue) only when collapsed
         const filtersCount = document.getElementById('filtersCount');
         if (filtersCount) {
-            let totalFilters = this.selectedFilters.length + Object.keys(this.dimensionFilters).length;
-            //console.log('DEBUG: Filter count calculation - selectedFilters:', this.selectedFilters.length, 'dimensionFilters:', Object.keys(this.dimensionFilters).length, 'ignoredRows.size:', this.ignoredRows.size);
-            
-            // Add 1 for the rows filter only when there are ignored rows
-            if (this.ignoredRows.size > 0) {
-                totalFilters += 1;
-                //console.log('DEBUG: Added rows filter to count, total:', totalFilters);
-            } else {
-                //console.log('DEBUG: No ignored rows, not adding rows filter to count, total:', totalFilters);
-            }
-            filtersCount.textContent = totalFilters;
+            filtersCount.textContent = availableFiltersCount > 0 ? availableFiltersCount : '';
+            // Only show when collapsed and there are available items
+            const filtersZone = document.getElementById('filtersZone');
+            const isCollapsed = filtersZone && filtersZone.classList.contains('collapsed');
+            filtersCount.style.display = (isCollapsed && availableFiltersCount > 0) ? 'inline-block' : 'none';
+        }
+        
+        // Update filters missing indicator - show missing count (orange)
+        const filtersMissing = document.getElementById('filtersMissing');
+        if (filtersMissing) {
+            filtersMissing.textContent = missingFiltersCount;
+            // Only show when collapsed and there are missing items
+            const filtersZone = document.getElementById('filtersZone');
+            const isCollapsed = filtersZone && filtersZone.classList.contains('collapsed');
+            filtersMissing.style.display = (isCollapsed && missingFiltersCount > 0) ? 'inline-block' : 'none';
         }
         
         console.log('Drop zone counts updated:', {
-            dimensions: this.selectedDimensions.length,
-            metrics: this.selectedMetrics.length,
-            filters: this.selectedFilters.length + Object.keys(this.dimensionFilters).length
+            dimensions: { available: availableDimensionsCount, missing: missingDimensionsCount },
+            metrics: { available: availableMetricsCount, missing: missingMetricsCount },
+            filters: { available: availableFiltersCount, missing: missingFiltersCount }
         });
     }
 
@@ -5900,9 +7551,10 @@ class WaveAnalytics {
                 
                 if (fieldType === 'dimension' || fieldType === 'date') {
                     isSelected = this.selectedDimensions.includes(fieldName);
-                } else if (fieldType === 'metric') {
+                } else if (fieldType === 'metric' || fieldType === 'expression') {
                     isSelected = this.selectedMetrics.includes(fieldName);
                 }
+                
                 
                 // Update icon and styling
                 if (isSelected) {
@@ -6020,6 +7672,9 @@ class WaveAnalytics {
         this.filteredData = [...this.parsedData]; // Reset filtered data to original data
         this.resetChartWidth(); // Reset chart width when clearing lens
         
+        // Clear missing items indicators
+        this.missingItemsManager.clearAll();
+        
         //console.log('DEBUG: clearLens() - after clear:');
         //console.log('  selectedFilters:', this.selectedFilters.length, this.selectedFilters);
         //console.log('  dimensionFilters:', Object.keys(this.dimensionFilters).length, this.dimensionFilters);
@@ -6028,11 +7683,36 @@ class WaveAnalytics {
         // Clear all DOM filter selections
         this.clearAllDOMFilterSelections();
         
+        // Clear drop zone maps since we're clearing all selections
+        this.grpByDZMap.forEach(map => map.clear());
+        this.metricsDZMap.forEach(map => map.clear());
+        this.filtersDZMap.forEach(map => map.clear());
+        
+        // Rebuild availability maps to reflect current data only
+        this.rebuildAvailabilityMaps();
+        
+        // Rebuild categories from maps (this will remove unavailable items from left navigation panel)
+        this.rebuildCategoriesFromMaps();
+        
         this.updateDropZone('dimensionsArea', this.selectedDimensions);
         this.updateDropZone('metricsArea', this.selectedMetrics);
         this.updateFiltersZone();
         this.updateDropZoneCounts();
         this.updateFieldItemIcons();
+        
+        // Update the field palette to show only available items
+        this.populateFieldPalette(true);
+        
+        // Reset dropdown selections to show placeholder text
+        const loadLensSelect = document.getElementById('loadLensSelect');
+        if (loadLensSelect) {
+            loadLensSelect.value = '';
+        }
+        
+        const loadDerivedMetricSelect = document.getElementById('loadDerivedMetricSelect');
+        if (loadDerivedMetricSelect) {
+            loadDerivedMetricSelect.value = '';
+        }
         
         // Re-initialize drag and drop for new DOM elements
         this.dragAndDropSetup = false; // Reset the flag
@@ -6349,12 +8029,17 @@ class WaveAnalytics {
             this.savedLenses = this.savedLenses.filter(lens => lens.name !== lensName);
         }
 
+        // Separate regular metrics from derived metrics
+        const regularMetrics = this.selectedMetrics.filter(metric => !this.expressions[metric]);
+        const derivedMetrics = this.selectedMetrics.filter(metric => this.expressions[metric]);
+
         // Create lens configuration object
         const lensConfig = {
             name: lensName,
             description: description,
             selectedDimensions: [...this.selectedDimensions],
-            selectedMetrics: [...this.selectedMetrics],
+            selectedMetrics: [...regularMetrics], // Only regular metrics
+            selectedDerivedMetrics: [...derivedMetrics], // Separate field for derived metrics
             metricAggregations: { ...this.metricAggregations },
             chartType: this.chartType,
             selectedFilters: [...this.selectedFilters],
@@ -6379,16 +8064,29 @@ class WaveAnalytics {
         // Show success message
         alert('Lens "' + lensName + '" saved successfully!');
 
-        // Save to backend
+        // Save to backend - skip if name is missing or empty
+        if (!lensName || !lensName.trim()) {
+            console.warn('Skipping backend save: lens name is missing or empty');
+            return;
+        }
+        
         const timestamp = Math.floor(Date.now() / 1000); // Epoch timestamp
         const lensConfigString = JSON.stringify(lensConfig);
-        saveLenseInBackend(lensConfigString, timestamp);
+        saveLenseInBackend(lensConfigString, timestamp, lensName);
     }
 
     loadLens(lensName) {
+        // Suppress clearing of missing state during lens load
+        this.suppressMissingClear = true;
         const lens = this.savedLenses.find(l => l.name === lensName);
         if (!lens) {
             alert('Lens not found!');
+            // Reset dropdown to show placeholder text
+            const loadLensSelect = document.getElementById('loadLensSelect');
+            if (loadLensSelect) {
+                loadLensSelect.value = '';
+            }
+            this.suppressMissingClear = false;
             return;
         }
 
@@ -6396,6 +8094,9 @@ class WaveAnalytics {
         this.selectedDimensions = [];
         this.selectedMetrics = [];
         this.metricAggregations = {};
+        
+        // Clear any existing missing items indicators
+        this.hideMissingItemsIndicators();
         this.selectedFilters = [];
         this.dimensionFilters = {};
         this.currentFilters = {};
@@ -6409,9 +8110,43 @@ class WaveAnalytics {
         // Clear all DOM filter selections
         this.clearAllDOMFilterSelections();
 
-        // Restore lens configuration
-        this.selectedDimensions = [...(lens.selectedDimensions || [])];
-        this.selectedMetrics = [...(lens.selectedMetrics || [])];
+        // Restore lens configuration (exclude lens names)
+        this.selectedDimensions = [...(lens.selectedDimensions || [])].filter(dim => 
+            !this.savedLenses.some(l => l.name === dim)
+        );
+        
+        // Handle regular metrics (exclude lens names and timestamps)
+        const lensMetrics = [...(lens.selectedMetrics || [])].filter(metric => 
+            !this.savedLenses.some(l => l.name === metric) &&
+            !this.timestampDimensions.includes(metric)
+        );
+        
+        // Handle derived metrics (exclude lens names and timestamps)
+        const lensDerivedMetrics = [...(lens.selectedDerivedMetrics || [])].filter(metric => 
+            !this.savedLenses.some(l => l.name === metric) &&
+            !this.timestampDimensions.includes(metric)
+        );
+        
+        // Add regular metrics to selectedMetrics
+        this.selectedMetrics = [...lensMetrics];
+        
+        // Add derived metrics to selectedMetrics and ensure they exist in expressions
+        lensDerivedMetrics.forEach(derivedMetric => {
+            this.selectedMetrics.push(derivedMetric);
+            
+            // If the derived metric doesn't exist in expressions, add it as a placeholder
+            if (!this.expressions[derivedMetric]) {
+                this.expressions[derivedMetric] = {
+                    formula: 'Missing from current dataset',
+                    parts: [],
+                    description: 'This derived metric is missing from the current dataset'
+                };
+            }
+        });
+        
+        // Rebuild availability maps from current data
+        this.rebuildAvailabilityMaps();
+        
         this.metricAggregations = { ...(lens.metricAggregations || {}) };
         this.chartType = lens.chartType || 'bar';
         this.selectedFilters = [...(lens.selectedFilters || [])];
@@ -6422,7 +8157,20 @@ class WaveAnalytics {
         this.sortDirection = lens.sortDirection || 'asc';
         this.ignoredRows = new Set(lens.ignoredRows || []); // Restore ignored rows
 
-        // Update field palette and preserve existing selections
+        // Update drop zone maps from lens selections (after loading all filters)
+        this.updateDropZoneMaps();
+        
+        // Rebuild categories from maps (this will show missing items as orange)
+        this.rebuildCategoriesFromMaps();
+
+        // Update the field palette without clearing missing state
+        this.populateFieldPalette(false);
+        
+        // Re-setup drag and drop to include updates
+        this.dragAndDropSetup = false;
+        this.setupDragAndDrop();
+
+        // Update field palette and preserve existing selections (don't clear missing items during lens loading)
         this.updateFieldPalettePreservingSelections();
         
         // Update UI
@@ -6457,16 +8205,27 @@ class WaveAnalytics {
         this.applyFilters();
         this.renderLensChart();
 
-        // Reset the dropdown selection
-        document.getElementById('loadLensSelect').value = '';
+        // Re-enable clearing after lens load is fully done
+        this.suppressMissingClear = false;
+
+        // Keep the selected lens visible in the dropdown
+        const loadLensSelect = document.getElementById('loadLensSelect');
+        if (loadLensSelect) {
+            loadLensSelect.value = lensName;
+        }
+
+        // Show missing items indicators
+        this.showMissingItemsIndicators(lens);
     }
 
     updateLensDropdown() {
         const select = document.getElementById('loadLensSelect');
         if (!select) return;
 
-        // Clear existing options except the first one
-        select.innerHTML = '<option value="">Load Lens...</option>';
+        // Clear existing options
+        // Show "No lenses found" if count is 0, otherwise show placeholder
+        const placeholderText = this.savedLenses.length === 0 ? 'No lenses found' : 'Load Lens...';
+        select.innerHTML = `<option value="">${placeholderText}</option>`;
 
         // Add saved lenses
         this.savedLenses.forEach(lens => {
@@ -6475,6 +8234,33 @@ class WaveAnalytics {
             option.textContent = lens.name;
             select.appendChild(option);
         });
+    }
+
+    setLensDropdownLoading(loading = true, status = 'loading') {
+        const select = document.getElementById('loadLensSelect');
+        if (!select) {
+            console.log('loadLensSelect not found, cannot set loading state');
+            return;
+        }
+
+        if (loading) {
+            let statusText = 'Loading lenses...';
+            if (status === 'error') {
+                statusText = 'Failed to load lenses';
+            } else if (status === 'empty') {
+                statusText = 'No lenses found';
+            } else if (status === 'success') {
+                statusText = 'Lenses loaded successfully';
+            }
+            
+            console.log('Setting lens dropdown to loading state:', status);
+            select.innerHTML = `<option value="">${statusText}</option>`;
+            select.disabled = true;
+        } else {
+            console.log('Clearing lens dropdown loading state');
+            select.disabled = false;
+            this.updateLensDropdown();
+        }
     }
 
     applyFilters() {
@@ -7672,6 +9458,829 @@ class WaveAnalytics {
         tryInitialize();
     }
 
+    /**
+     * Evaluate all expressions for each row in the data
+     */
+    evaluateExpressions() {
+        if (Object.keys(this.expressions).length === 0) {
+            return; // No expressions to evaluate
+        }
+
+        // Process both parsedData and filteredData
+        [this.parsedData, this.filteredData].forEach(dataArray => {
+            dataArray.forEach(row => {
+                Object.keys(this.expressions).forEach(expressionName => {
+                    const expression = this.expressions[expressionName];
+                    try {
+                        const result = this.evaluateExpressionForRow(expression.formula, row);
+                        row[expressionName] = result;
+                    } catch (error) {
+                        console.warn(`Error evaluating expression '${expressionName}':`, error);
+                        row[expressionName] = null;
+                    }
+                });
+            });
+        });
+    }
+
+    /**
+     * Evaluate an expression against a dataset
+     * @param {object} expression - The expression object with formula, parts, description
+     * @param {array} data - The dataset to evaluate against
+     * @returns {number|null} The calculated result or null if evaluation fails
+     */
+    evaluateExpression(expression, data) {
+        if (!expression || !expression.formula || !data || data.length === 0) {
+            return null;
+        }
+
+        try {
+            // Try to evaluate the expression with the first row of data
+            // This gives us a quick check if the expression can be evaluated
+            const firstRow = data[0];
+            const result = this.evaluateExpressionForRow(expression.formula, firstRow);
+            return result;
+        } catch (error) {
+            console.warn('Error evaluating expression:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Evaluate a single expression formula for a given row
+     * @param {string} formula - The expression formula
+     * @param {object} row - The data row
+     * @returns {number} The calculated result
+     */
+    evaluateExpressionForRow(formula, row) {
+        // Replace metric placeholders with actual values from the row
+        let evaluatedFormula = formula;
+        
+        // Find all metric placeholders in the formula (format: {metricName})
+        const metricPattern = /\{([^}]+)\}/g;
+        const matches = [...formula.matchAll(metricPattern)];
+        
+        matches.forEach(match => {
+            const metricName = match[1];
+            const value = row[metricName];
+            if (value === undefined || value === null) {
+                throw new Error(`Metric '${metricName}' not found or is null`);
+            }
+            const numericValue = parseFloat(value);
+            if (isNaN(numericValue)) {
+                throw new Error(`Metric '${metricName}' is not numeric`);
+            }
+            // Replace the placeholder with the numeric value
+            evaluatedFormula = evaluatedFormula.replace(match[0], numericValue);
+        });
+        
+        // Use Function constructor for safe evaluation
+        try {
+            // Replace operators that might conflict
+            evaluatedFormula = evaluatedFormula.replace(/×/g, '*').replace(/÷/g, '/');
+            const result = Function('"use strict"; return (' + evaluatedFormula + ')')();
+            return isNaN(result) ? null : result;
+        } catch (error) {
+            console.error('Error evaluating formula:', evaluatedFormula, error);
+            return null;
+        }
+    }
+
+    /**
+     * Show the expression builder modal
+     */
+    showExpressionBuilder() {
+        const modal = document.getElementById('expressionBuilderModal');
+        if (!modal) return;
+        
+        // Reset the form
+        const nameInput = document.getElementById('expressionNameInput');
+        const expressionParts = document.getElementById('expressionParts');
+        const preview = document.getElementById('expressionPreview');
+        
+        if (nameInput) nameInput.value = '';
+        if (expressionParts) expressionParts.innerHTML = '';
+        if (preview) preview.textContent = '';
+        
+        // Store current expression parts temporarily
+        this.currentExpressionParts = [];
+        
+        modal.style.display = 'flex';
+    }
+
+    /**
+     * Add a part to the current expression (metric or operator)
+     * @param {string} type - 'metric' or an operator ('+', '-', '*', '/', '(', ')')
+     */
+    addExpressionPart(type) {
+        if (!this.currentExpressionParts) {
+            this.currentExpressionParts = [];
+        }
+
+        if (type === 'metric') {
+            // Show a dropdown to select a metric
+            const regularMetrics = this.metrics.filter(metric => !this.timestampDimensions.includes(metric));
+            if (regularMetrics.length === 0) {
+                alert('No metrics available. Please load data with metrics first.');
+                return;
+            }
+
+            // Create a select element
+            const select = document.createElement('select');
+            select.className = 'form-input';
+            select.style.display = 'inline-block';
+            select.style.width = 'auto';
+            select.style.minWidth = '100px';
+            select.style.fontSize = '12px';
+            select.style.padding = '2px 4px';
+            select.innerHTML = '<option value="">Select Metric...</option>' +
+                regularMetrics.map(m => `<option value="${m}">${this.formatHeader(m)}</option>`).join('');
+            
+            select.addEventListener('change', (e) => {
+                if (e.target.value) {
+                    const partDiv = e.target.parentElement;
+                    const span = document.createElement('span');
+                    span.className = 'expression-part';
+                    span.style.display = 'inline-block';
+                    span.style.padding = '2px 6px';
+                    span.style.background = 'white';
+                    span.style.border = '1px solid #ddd';
+                    span.style.borderRadius = '3px';
+                    span.style.fontFamily = 'monospace';
+                    span.style.fontSize = '12px';
+                    span.textContent = '{' + e.target.value + '}';
+                    partDiv.innerHTML = '';
+                    partDiv.appendChild(span);
+                    const index = Array.from(partDiv.parentElement.children).indexOf(partDiv);
+                    if (this.currentExpressionParts[index]) {
+                        this.currentExpressionParts[index] = { type: 'metric', value: e.target.value };
+                    }
+                }
+            });
+
+            const partDiv = document.createElement('div');
+            partDiv.className = 'expression-part-container';
+            partDiv.style.display = 'inline-block';
+            partDiv.style.margin = '1px';
+            partDiv.appendChild(select);
+            
+            const expressionParts = document.getElementById('expressionParts');
+            if (expressionParts) {
+                expressionParts.appendChild(partDiv);
+                this.currentExpressionParts.push({ type: 'metric', value: null });
+            }
+        } else if (type === 'constant') {
+            // Show an input to enter a constant value
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.className = 'form-input';
+            input.style.display = 'inline-block';
+            input.style.width = '80px';
+            input.style.fontSize = '12px';
+            input.style.padding = '2px 4px';
+            input.placeholder = '100';
+            input.step = 'any';
+            input.style.webkitAppearance = 'none';
+            input.style.mozAppearance = 'textfield';
+            
+            input.addEventListener('change', (e) => {
+                if (e.target.value) {
+                    const partDiv = e.target.parentElement;
+                    const span = document.createElement('span');
+                    span.className = 'expression-part';
+                    span.style.display = 'inline-block';
+                    span.style.padding = '2px 6px';
+                    span.style.background = 'white';
+                    span.style.border = '1px solid #ddd';
+                    span.style.borderRadius = '3px';
+                    span.style.fontFamily = 'monospace';
+                    span.style.fontSize = '12px';
+                    span.style.background = '#f0f8ff';
+                    span.textContent = e.target.value;
+                    partDiv.innerHTML = '';
+                    partDiv.appendChild(span);
+                    const index = Array.from(partDiv.parentElement.children).indexOf(partDiv);
+                    if (this.currentExpressionParts[index]) {
+                        this.currentExpressionParts[index] = { type: 'constant', value: e.target.value };
+                    }
+                }
+            });
+
+            const partDiv = document.createElement('div');
+            partDiv.className = 'expression-part-container';
+            partDiv.style.display = 'inline-block';
+            partDiv.style.margin = '1px';
+            partDiv.appendChild(input);
+            
+            const expressionParts = document.getElementById('expressionParts');
+            if (expressionParts) {
+                expressionParts.appendChild(partDiv);
+                this.currentExpressionParts.push({ type: 'constant', value: null });
+            }
+        } else {
+            // Add operator
+            const partDiv = document.createElement('div');
+            partDiv.className = 'expression-part-container';
+            partDiv.style.display = 'inline-block';
+            partDiv.style.margin = '1px';
+            
+            const operatorSymbol = type === '*' ? '×' : (type === '/' ? '÷' : type);
+            const span = document.createElement('span');
+            span.className = 'expression-part operator';
+            span.style.display = 'inline-block';
+            span.style.padding = '2px 6px';
+            span.style.background = 'white';
+            span.style.border = '1px solid #ddd';
+            span.style.borderRadius = '3px';
+            span.style.fontFamily = 'monospace';
+            span.style.fontSize = '12px';
+            span.style.background = '#e3f2fd';
+            span.style.fontWeight = 'bold';
+            span.style.minWidth = '24px';
+            span.style.textAlign = 'center';
+            span.textContent = operatorSymbol;
+            partDiv.appendChild(span);
+            
+            const expressionParts = document.getElementById('expressionParts');
+            if (expressionParts) {
+                expressionParts.appendChild(partDiv);
+                this.currentExpressionParts.push({ type: 'operator', value: type });
+            }
+        }
+    }
+
+    /**
+     * Clear the current expression being built
+     */
+    clearExpression() {
+        const expressionParts = document.getElementById('expressionParts');
+        if (expressionParts) {
+            expressionParts.innerHTML = '';
+        }
+        this.currentExpressionParts = [];
+    }
+
+
+    /**
+     * Create the expression
+     */
+    createExpression() {
+        const nameInput = document.getElementById('expressionNameInput');
+        const expressionName = nameInput ? nameInput.value.trim() : '';
+        
+        if (!expressionName) {
+            alert('Please enter an expression name');
+            return;
+        }
+        
+        if (this.expressions[expressionName] || this.metrics.includes(expressionName)) {
+            alert('An expression or metric with this name already exists. Please choose a different name.');
+            return;
+        }
+        
+        if (!this.currentExpressionParts || this.currentExpressionParts.length === 0) {
+            alert('Please build an expression first');
+            return;
+        }
+        
+        // Validate that all metric and constant parts have values
+        const hasIncompleteParts = this.currentExpressionParts.some(part => 
+            (part.type === 'metric' || part.type === 'constant') && !part.value
+        );
+        
+        if (hasIncompleteParts) {
+            alert('Please complete all metrics and constants in the expression');
+            return;
+        }
+        
+        // Build the formula string
+        const formulaParts = this.currentExpressionParts.map(part => {
+            if (part.type === 'metric') {
+                return '{' + part.value + '}';
+            } else if (part.type === 'constant') {
+                return part.value;
+            } else {
+                return part.value;
+            }
+        });
+        const formula = formulaParts.join(' ');
+        
+        // Store the expression
+        this.expressions[expressionName] = {
+            formula: formula,
+            parts: [...this.currentExpressionParts]
+        };
+        
+        // Evaluate expressions for all existing data
+        this.evaluateExpressions();
+        
+        // Rebuild availability maps to include the new derived metric
+        this.rebuildAvailabilityMaps();
+        
+        // Note: Derived metrics are stored in this.expressions and displayed in the Derived Metrics section
+        // They should not be added to this.metrics to avoid duplication
+        
+        // Clean up any derived metrics that might have been added to the metrics array
+        this.cleanupDerivedMetricsFromMetricsArray();
+        
+        // Clear missing items that are now available
+        this.missingItemsManager.clearAvailableItems();
+        
+        // Update the field palette
+        this.populateFieldPalette();
+        
+        // Re-setup drag and drop to include the new expression
+        this.dragAndDropSetup = false;
+        this.setupDragAndDrop();
+        
+        // Close the modal
+        const modal = document.getElementById('expressionBuilderModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        
+        // Re-render if we have selected metrics/dimensions
+        if (this.selectedDimensions.length > 0 || this.selectedMetrics.length > 0) {
+            this.renderLensChart();
+        }
+    }
+
+    /**
+     * Show save derived metric modal
+     */
+    showSaveExpressionModal() {
+        // Check if there are any derived metrics to save
+        if (Object.keys(this.expressions).length === 0) {
+            alert('No derived metrics to save. Please create some derived metrics first.');
+            return;
+        }
+
+        const modal = document.getElementById('saveExpressionModal');
+        const nameInput = document.getElementById('saveExpressionNameInput');
+        const descriptionInput = document.getElementById('saveExpressionDescriptionInput');
+        const previewContent = document.getElementById('expressionPreviewContent');
+
+        // Clear previous values
+        if (nameInput) nameInput.value = '';
+        if (descriptionInput) descriptionInput.value = '';
+
+        // Generate expression preview
+        this.generateExpressionPreview(previewContent);
+
+        // Show modal
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+
+        // Focus on name input
+        setTimeout(() => {
+            if (nameInput) {
+                nameInput.focus();
+            }
+        }, 100);
+
+        // Set up modal events if not already done
+        this.setupSaveExpressionModalEvents();
+    }
+
+    /**
+     * Generate derived metric preview for the modal
+     */
+    generateExpressionPreview(container) {
+        if (!container) return;
+
+        let html = '<div class="expression-preview-list">';
+        
+        Object.keys(this.expressions).forEach(expressionName => {
+            const expression = this.expressions[expressionName];
+            html += `<div class="expression-preview-item">`;
+            html += `<strong>${expressionName}:</strong> ${expression.formula}`;
+            html += `</div>`;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    /**
+     * Set up save derived metric modal event listeners
+     */
+    setupSaveExpressionModalEvents() {
+        // Only set up events once
+        if (this.saveExpressionModalEventsSetup) {
+            return;
+        }
+
+        const modal = document.getElementById('saveExpressionModal');
+        const closeBtn = document.getElementById('closeSaveExpressionModal');
+        const cancelBtn = document.getElementById('cancelSaveExpression');
+        const confirmBtn = document.getElementById('confirmSaveExpression');
+        const nameInput = document.getElementById('saveExpressionNameInput');
+
+        // Close modal functions
+        const closeModal = () => {
+            modal.style.display = 'none';
+        };
+
+        // Event listeners
+        closeBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeModal();
+        });
+
+        // Confirm save
+        confirmBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.confirmSaveExpression();
+        });
+
+        // Enter key to save
+        nameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.confirmSaveExpression();
+            }
+        });
+
+        // Prevent form submission
+        const form = document.getElementById('saveExpressionForm');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                // Don't auto-save on form submit, only on button click
+            });
+        }
+
+        // Mark as set up
+        this.saveExpressionModalEventsSetup = true;
+    }
+
+    /**
+     * Confirm save derived metric
+     */
+    confirmSaveExpression() {
+        const nameInput = document.getElementById('saveExpressionNameInput');
+        const descriptionInput = document.getElementById('saveExpressionDescriptionInput');
+        const modal = document.getElementById('saveExpressionModal');
+
+        const expressionName = nameInput ? nameInput.value.trim() : '';
+        const description = descriptionInput ? descriptionInput.value.trim() : '';
+
+        // Validate name
+        if (!expressionName) {
+            alert('Please enter a derived metric name.');
+            if (nameInput) nameInput.focus();
+            return;
+        }
+
+        // Check if derived metric name already exists
+        const existingExpression = this.savedExpressions.find(expr => expr.name === expressionName);
+        if (existingExpression) {
+            if (!confirm('A derived metric named "' + expressionName + '" already exists. Do you want to overwrite it?')) {
+                return;
+            }
+            // Remove existing derived metric
+            this.savedExpressions = this.savedExpressions.filter(expr => expr.name !== expressionName);
+        }
+
+        // Create expression configuration object
+        const expressionConfig = {
+            name: expressionName,
+            description: description,
+            expressions: { ...this.expressions },
+            savedAt: new Date().toISOString()
+        };
+
+        // Add to saved expressions array
+        this.savedExpressions.push(expressionConfig);
+
+        // Update the dropdown
+        this.updateExpressionDropdown();
+
+        // Close modal
+        modal.style.display = 'none';
+
+        // Show success message
+        alert('Derived metric "' + expressionName + '" saved successfully!');
+
+        // Save to backend - skip if name is missing or empty
+        if (!expressionName || !expressionName.trim()) {
+            console.warn('Skipping backend save: derived metric name is missing or empty');
+            return;
+        }
+        
+        const timestamp = Math.floor(Date.now() / 1000); // Epoch timestamp
+        const expressionConfigString = JSON.stringify(expressionConfig);
+        saveExpressionInBackend(expressionConfigString, timestamp, expressionName);
+    }
+
+    /**
+     * Save current derived metrics to backend
+     */
+    saveExpression() {
+        if (Object.keys(this.expressions).length === 0) {
+            alert('No derived metrics to save. Please create some derived metrics first.');
+            return;
+        }
+
+        // Create expression configuration
+        const expressionConfig = {
+            expressions: this.expressions,
+            timestamp: new Date().toISOString()
+        };
+
+        const expressionConfigString = JSON.stringify(expressionConfig);
+        const timestamp = Date.now();
+
+        // Save to backend (no specific name, so pass empty string)
+        saveExpressionInBackend(expressionConfigString, timestamp, '');
+    }
+
+    /**
+     * Load a saved derived metric
+     */
+    loadExpression(expressionName) {
+        const savedExpressionGroup = this.savedExpressions.find(e => e.name === expressionName);
+        if (!savedExpressionGroup) {
+            alert('Derived metric group not found!');
+            // Reset dropdown to show placeholder text
+            const loadDerivedMetricSelect = document.getElementById('loadDerivedMetricSelect');
+            if (loadDerivedMetricSelect) {
+                loadDerivedMetricSelect.value = '';
+            }
+            return;
+        }
+
+        // Load all derived metrics from the selected group
+        if (savedExpressionGroup.expressions) {
+            // Merge all expressions from the saved group into current expressions
+            Object.keys(savedExpressionGroup.expressions).forEach(metricName => {
+                this.expressions[metricName] = {
+                    formula: savedExpressionGroup.expressions[metricName].formula || 'Unknown formula',
+                    parts: savedExpressionGroup.expressions[metricName].parts || [],
+                    description: savedExpressionGroup.expressions[metricName].description || ''
+                };
+            });
+        } else {
+            // Fallback for old format (single expression)
+            this.expressions[expressionName] = {
+                formula: savedExpressionGroup.formula || 'Unknown formula',
+                parts: savedExpressionGroup.parts || [],
+                description: savedExpressionGroup.description || ''
+            };
+        }
+
+        // Re-evaluate expressions for all data
+        this.evaluateExpressions();
+
+        // Rebuild availability maps to include new derived metrics
+        this.rebuildAvailabilityMaps();
+        
+        // Update drop zone maps (derived metrics are not automatically selected)
+        this.updateDropZoneMaps();
+        
+        // Rebuild categories from maps
+        this.rebuildCategoriesFromMaps();
+        
+        // Update drop zones to reflect current state
+        this.updateDropZone('dimensionsArea', this.selectedDimensions);
+        this.updateDropZone('metricsArea', this.selectedMetrics);
+        
+        // Update filters zone to reflect any changes in availability
+        this.updateFiltersZone();
+        
+        // Update drop zone counts to show correct available/missing counts (especially when collapsed)
+        this.updateDropZoneCounts();
+        
+        // Update the field palette (don't clear missing items during expression loading)
+        this.populateFieldPalette(false);
+        
+        // Re-setup drag and drop to include the loaded expressions
+        this.dragAndDropSetup = false;
+        this.setupDragAndDrop();
+
+        // Keep the selected derived metric group visible in the dropdown
+        const loadDerivedMetricSelect = document.getElementById('loadDerivedMetricSelect');
+        if (loadDerivedMetricSelect) {
+            loadDerivedMetricSelect.value = expressionName;
+        }
+
+        // Re-render if we have selected metrics/dimensions
+        if (this.selectedDimensions.length > 0 || this.selectedMetrics.length > 0) {
+            this.renderLensChart();
+        }
+    }
+
+    /**
+     * Update the derived metric dropdown with saved derived metrics
+     */
+    updateExpressionDropdown() {
+        const select = document.getElementById('loadDerivedMetricSelect');
+        if (!select) return;
+
+        // Clear existing options
+        // Show "No derived metrics found" if count is 0, otherwise show placeholder
+        const placeholderText = this.savedExpressions.length === 0 ? 'No derived metrics found' : 'Load Derived Metrics...';
+        select.innerHTML = `<option value="">${placeholderText}</option>`;
+
+        // Add saved expressions
+        this.savedExpressions.forEach(expression => {
+            const option = document.createElement('option');
+            option.value = expression.name;
+            option.textContent = expression.name;
+            select.appendChild(option);
+        });
+    }
+
+    setDerivedMetricsDropdownLoading(loading = true, status = 'loading') {
+        const select = document.getElementById('loadDerivedMetricSelect');
+        if (!select) {
+            console.log('loadDerivedMetricSelect not found, cannot set loading state');
+            return;
+        }
+
+        if (loading) {
+            let statusText = 'Loading derived metrics...';
+            if (status === 'error') {
+                statusText = 'Failed to load derived metrics';
+            } else if (status === 'empty') {
+                statusText = 'No derived metrics found';
+            } else if (status === 'success') {
+                statusText = 'Derived metrics loaded successfully';
+            }
+            
+            console.log('Setting derived metrics dropdown to loading state:', status);
+            select.innerHTML = `<option value="">${statusText}</option>`;
+            select.disabled = true;
+        } else {
+            console.log('Clearing derived metrics dropdown loading state');
+            select.disabled = false;
+            this.updateExpressionDropdown();
+        }
+    }
+
+    /**
+     * Clean up any derived metrics that might have been added to the metrics array
+     */
+    cleanupDerivedMetricsFromMetricsArray() {
+        // Remove any expression names from the metrics array
+        const expressionNames = Object.keys(this.expressions);
+        this.metrics = this.metrics.filter(metric => !expressionNames.includes(metric));
+    }
+
+
+    /**
+     * Show missing items indicators for loaded lens
+     */
+    showMissingItemsIndicators(lens) {
+        // Get missing counts from the missing items manager
+        const counts = this.missingItemsManager.getMissingCountsForIndicators();
+        
+        // Calculate missing filters based on currently applied filters in the view
+        const currentFiltersInView = this.selectedFilters || [];
+        const availableDimensions = this.dimensions;
+        const availableMetrics = this.metrics;
+        const availableExpressions = Object.keys(this.expressions);
+        const allAvailableMetrics = [...availableMetrics, ...availableExpressions];
+        
+        const missingFilters = currentFiltersInView.filter(filter => {
+            const filterField = filter.metric || filter.dimension;
+            return !allAvailableMetrics.includes(filterField) && !availableDimensions.includes(filterField);
+        });
+        
+        // Update orange indicators (missing)
+        this.updateMissingItemsIndicator('dimensionsMissing', counts.dimensions);
+        this.updateMissingItemsIndicator('metricsMissing', counts.metrics);
+        this.updateMissingItemsIndicator('filtersMissing', missingFilters.length);
+
+        // Compute available-used counts (blue)
+        const usedAvailableDimensions = this.selectedDimensions.length - counts.dimensions;
+        const usedAvailableMetrics = this.selectedMetrics.length - counts.metrics;
+        const usedAvailableFilters = (this.selectedFilters || []).length - missingFilters.length;
+
+        // Update blue indicators (available-used) if corresponding elements exist
+        this.updateMissingItemsIndicator('dimensionsMissingBlue', Math.max(usedAvailableDimensions, 0));
+        this.updateMissingItemsIndicator('metricsMissingBlue', Math.max(usedAvailableMetrics, 0));
+        this.updateMissingItemsIndicator('filtersMissingBlue', Math.max(usedAvailableFilters, 0));
+    }
+
+    /**
+     * Update a specific missing items indicator
+     */
+    updateMissingItemsIndicator(elementId, count) {
+        const indicator = document.getElementById(elementId);
+        if (indicator) {
+            if (count > 0) {
+                indicator.textContent = count;
+                indicator.style.display = 'flex';
+            } else {
+                indicator.style.display = 'none';
+            }
+        }
+    }
+
+    /**
+     * Hide all missing items indicators
+     */
+    hideMissingItemsIndicators() {
+        const indicators = ['dimensionsMissing', 'metricsMissing', 'filtersMissing', 'dimensionsMissingBlue', 'metricsMissingBlue', 'filtersMissingBlue'];
+        indicators.forEach(id => {
+            const indicator = document.getElementById(id);
+            if (indicator) {
+                indicator.style.display = 'none';
+            }
+        });
+    }
+
+    /**
+     * Generic method to handle loading states for REST API calls
+     */
+    async makeApiCall(url, options = {}, loadingCallback = null, successCallback = null, errorCallback = null) {
+        try {
+            // Set loading state if callback provided
+            if (loadingCallback) {
+                loadingCallback(true);
+            }
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                ...options
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            // Call success callback if provided
+            if (successCallback) {
+                successCallback(data);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('API call failed:', error);
+            
+            // Call error callback if provided
+            if (errorCallback) {
+                errorCallback(error);
+            }
+            
+            throw error;
+        } finally {
+            // Clear loading state if callback provided
+            if (loadingCallback) {
+                loadingCallback(false);
+            }
+        }
+    }
+
+    /**
+     * Setup event listeners for expression builder modal
+     */
+    setupExpressionBuilderEvents() {
+        // Close modal on X button
+        const closeBtn = document.getElementById('closeExpressionBuilderModal');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                const modal = document.getElementById('expressionBuilderModal');
+                if (modal) modal.style.display = 'none';
+            });
+        }
+        
+        // Cancel button
+        const cancelBtn = document.getElementById('cancelExpressionBuilder');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                const modal = document.getElementById('expressionBuilderModal');
+                if (modal) modal.style.display = 'none';
+            });
+        }
+        
+        // Save button
+        const saveBtn = document.getElementById('confirmExpressionBuilder');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                this.createExpression();
+            });
+        }
+        
+        // Close on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('expressionBuilderModal');
+                if (modal && modal.style.display === 'flex') {
+                    modal.style.display = 'none';
+                }
+            }
+        });
+    }
+
 }
 
         // Add CSS styles
@@ -7696,7 +10305,7 @@ class WaveAnalytics {
                 padding: 4px 8px;
                 border: 1px solid #ddd;
                 border-radius: 4px;
-                font-size: 9px;
+                font-size: 14px !important;
                 box-sizing: border-box;
                 margin-right: 8px;
                 transition: border-color 0.2s ease;
@@ -7797,8 +10406,9 @@ class WaveAnalytics {
         box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
     }
 
-    /* Modal Styles */
-    .modal-overlay {
+    /* Modal Styles - Scoped to wave-analytics-container and wave-modal-overlay */
+    .wave-analytics-container .modal-overlay,
+    .wave-modal-overlay {
         position: fixed;
         top: 0;
         left: 0;
@@ -7811,7 +10421,8 @@ class WaveAnalytics {
         justify-content: center;
     }
 
-    .modal-content {
+    .wave-analytics-container .modal-content,
+    .wave-modal-overlay .modal-content {
         background: white;
         border-radius: 8px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -7821,7 +10432,8 @@ class WaveAnalytics {
         overflow-y: auto;
     }
 
-    .modal-header {
+    .wave-analytics-container .modal-header,
+    .wave-modal-overlay .modal-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -7829,14 +10441,16 @@ class WaveAnalytics {
         border-bottom: 1px solid #e5e5e5;
     }
 
-    .modal-header h3 {
+    .wave-analytics-container .modal-header h3,
+    .wave-modal-overlay .modal-header h3 {
         margin: 0;
         font-size: 18px;
         font-weight: 600;
         color: #333;
     }
 
-    .modal-close {
+    .wave-analytics-container .modal-close,
+    .wave-modal-overlay .modal-close {
         background: none;
         border: none;
         font-size: 24px;
@@ -7851,16 +10465,19 @@ class WaveAnalytics {
         border-radius: 4px;
     }
 
-    .modal-close:hover {
+    .wave-analytics-container .modal-close:hover,
+    .wave-modal-overlay .modal-close:hover {
         background: #f5f5f5;
         color: #333;
     }
 
-    .modal-body {
+    .wave-analytics-container .modal-body,
+    .wave-modal-overlay .modal-body {
         padding: 20px 24px;
     }
 
-    .modal-footer {
+    .wave-analytics-container .modal-footer,
+    .wave-modal-overlay .modal-footer {
         display: flex;
         justify-content: flex-end;
         gap: 12px;
@@ -7868,11 +10485,13 @@ class WaveAnalytics {
         border-top: 1px solid #e5e5e5;
     }
 
-    .form-group {
+    .wave-analytics-container .form-group,
+    .wave-modal-overlay .form-group {
         margin-bottom: 20px;
     }
 
-    .form-group label {
+    .wave-analytics-container .form-group label,
+    .wave-modal-overlay .form-group label {
         display: block;
         margin-bottom: 6px;
         font-weight: 500;
@@ -7880,7 +10499,10 @@ class WaveAnalytics {
         font-size: 14px;
     }
 
-    .form-input, .form-textarea {
+    .wave-analytics-container .form-input, 
+    .wave-analytics-container .form-textarea,
+    .wave-modal-overlay .form-input, 
+    .wave-modal-overlay .form-textarea {
         width: 100%;
         padding: 10px 12px;
         border: 1px solid #ddd;
@@ -7890,18 +10512,23 @@ class WaveAnalytics {
         box-sizing: border-box;
     }
 
-    .form-input:focus, .form-textarea:focus {
+    .wave-analytics-container .form-input:focus, 
+    .wave-analytics-container .form-textarea:focus,
+    .wave-modal-overlay .form-input:focus, 
+    .wave-modal-overlay .form-textarea:focus {
         outline: none;
         border-color: #0070d2;
         box-shadow: 0 0 0 2px rgba(0, 112, 210, 0.1);
     }
 
-    .form-textarea {
+    .wave-analytics-container .form-textarea,
+    .wave-modal-overlay .form-textarea {
         resize: vertical;
         min-height: 80px;
     }
 
-    .form-help {
+    .wave-analytics-container .form-help,
+    .wave-modal-overlay .form-help {
         font-size: 12px;
         color: #666;
         margin-top: 4px;
@@ -7945,7 +10572,9 @@ class WaveAnalytics {
         font-weight: 500;
     }
 
-    .btn {
+    /* Button styles - Scoped to wave-analytics-container */
+    .wave-analytics-container .btn,
+    .wave-analytics-container .modal-overlay .btn {
         padding: 8px 16px;
         border: 1px solid #ddd;
         border-radius: 4px;
@@ -7956,29 +10585,34 @@ class WaveAnalytics {
         min-width: 80px;
     }
 
-    .btn-secondary {
+    .wave-analytics-container .btn-secondary,
+    .wave-analytics-container .modal-overlay .btn-secondary {
         background: white;
         color: #333;
         border-color: #ddd;
     }
 
-    .btn-secondary:hover {
+    .wave-analytics-container .btn-secondary:hover,
+    .wave-analytics-container .modal-overlay .btn-secondary:hover {
         background: #f8f9fa;
         border-color: #bbb;
     }
 
-    .btn-primary {
+    .wave-analytics-container .btn-primary,
+    .wave-analytics-container .modal-overlay .btn-primary {
         background: #0070d2;
         color: white;
         border-color: #0070d2;
     }
 
-    .btn-primary:hover {
+    .wave-analytics-container .btn-primary:hover,
+    .wave-analytics-container .modal-overlay .btn-primary:hover {
         background: #005fb2;
         border-color: #005fb2;
     }
 
-    .btn:disabled {
+    .wave-analytics-container .btn:disabled,
+    .wave-analytics-container .modal-overlay .btn:disabled {
         opacity: 0.6;
         cursor: not-allowed;
     }
@@ -8312,6 +10946,23 @@ class WaveAnalytics {
         display: flex;
         align-items: center;
         gap: 6px;
+    }
+
+    .missing-items-indicator {
+        background-color: #ff8c00;
+        color: white;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 10px;
+        min-width: 16px;
+        text-align: center;
+        display: none; /* Hidden by default, shown when collapsed and there are missing items */
+        margin-left: 4px;
+    }
+    
+    .drop-zone.collapsed .missing-items-indicator {
+        /* Display is controlled by JavaScript based on missing count */
     }
     
     .drop-zone h4 {
@@ -9446,6 +12097,106 @@ class WaveAnalytics {
         border: 6px solid transparent;
         border-right-color: rgba(0, 0, 0, 0.9);
     }
+
+    .derived-metrics-controls {
+        display: flex;
+        gap: 2px;
+        margin-left: 6px;
+    }
+
+    .add-derived-metric-btn, .save-derived-metric-btn {
+        background: transparent;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        color: #666;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: bold;
+        padding: 1px 4px;
+        transition: all 0.2s ease;
+        min-width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .add-derived-metric-btn:hover, .save-derived-metric-btn:hover {
+        background: #f0f0f0;
+        border-color: #999;
+        color: #333;
+    }
+
+    .expression-part-container {
+        display: inline-block;
+        margin: 1px;
+    }
+
+    .expression-part {
+        display: inline-block;
+        padding: 2px 6px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 12px;
+    }
+
+    .expression-part.operator {
+        background: #e3f2fd;
+        font-weight: bold;
+        min-width: 24px;
+        text-align: center;
+    }
+
+    .expression-part-container .form-input {
+        font-size: 12px !important;
+        padding: 2px 4px !important;
+        min-width: 100px !important;
+        height: 24px !important;
+    }
+
+    /* Hide number input spinners */
+    .expression-part-container input[type="number"]::-webkit-outer-spin-button,
+    .expression-part-container input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .expression-part-container input[type="number"] {
+        -moz-appearance: textfield;
+    }
 `;
 document.head.appendChild(style);
+
+// Global functions for expression builder (called from onclick handlers in HTML)
+window.waveAnalyticsShowExpressionBuilder = function() {
+    if (window.waveAnalytics) {
+        window.waveAnalytics.showExpressionBuilder();
+    }
+};
+
+window.waveAnalyticsAddExpressionPart = function(type) {
+    if (window.waveAnalytics) {
+        window.waveAnalytics.addExpressionPart(type);
+    }
+};
+
+window.waveAnalyticsClearExpression = function() {
+    if (window.waveAnalytics) {
+        window.waveAnalytics.clearExpression();
+    }
+};
+
+window.waveAnalyticsShowSaveExpressionModal = function() {
+    if (window.waveAnalytics) {
+        window.waveAnalytics.showSaveExpressionModal();
+    }
+};
+
+window.waveAnalyticsSaveExpression = function() {
+    if (window.waveAnalytics) {
+        window.waveAnalytics.saveExpression();
+    }
+};
 

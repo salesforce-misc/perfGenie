@@ -98,7 +98,7 @@
     <div id="zingcustom" style="min-height: 900px; paddingt-left: 0px" class="row no-padding">
         <#include "contentcustomnew.ftl">
     </div>
-    <div id="perfswat">
+    <div style="min-height: 900px; padding-top:4px !important;padding-left:8px !important;padding-right:8px !important;" id="perfswat">
         <#include "perfswat.ftl">
     </div>
     <div id="perfswatcustom">

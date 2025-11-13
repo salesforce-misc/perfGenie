@@ -32,7 +32,7 @@ let otherEvents1 = {};
 let otherEvents2 = {};
 let otherEventsFetched = {};
 const urlParams = new URLSearchParams(window.location.search);
-let otherEventsSupported = {"top": true, "ps": true, "safepoint": true};//{"top":true, "ps":true, "pidstat":true, "monitor":true,};
+let otherEventsSupported = {"top": true, "ps": true, "safepoint": true, "pidstat":true};//{"top":true, "ps":true, "pidstat":true, "monitor":true,};
 let jstackcolors = ["#29b193", "#ee5869", "#f6ab60", "#377bb5"];
 let jstackcolorsmap = {"RUNNABLE": 9, "BLOCKED": 10, "WAITING": 11, "TIMED_WAITING": 12};
 let jstackidcolorsmap = {9: "RUNNABLE", 10: "BLOCKED", 11: "WAITING", 12: "TIMED_WAITING"};
@@ -285,6 +285,19 @@ $(document).ready(function () {
             addInputToURL();
         }
     });
+    $.contextMenu({
+                selector: '.input-menu-one',
+                callback: function (key, options) {
+                    if (key == "add") {
+                        $("#host-input1").val($(this).text());
+                        $("#host-input1").trigger('change');
+                        //alert($(this).text());
+                    }
+                },
+                items: {
+                    "add": {name: "Select host"}
+                }
+            });
 });
 
 function submitTo() {
@@ -413,16 +426,19 @@ function getTenantData1(start, end) {
         getGoldData1(startTime1, endTime1);
     }else {
         let URL = getTenantDataURL(start, end);
-        showSpinner();
+        //showSpinner();
+        ProgressBar.start({id: 'getTenantData1',container: 'tenant-field-div1',position: 'top'});
         $.ajax({
             url: URL, success: function (result) {
-                hideSpinner();
+                //hideSpinner();
+                ProgressBar.stop('getTenantData1');
                 tenantData1 = result;
                 updateTenantDropdown1(start, end);
             },
             error: function(xhr, status, error) {
                 toastMessage(toastType.ERROR,"Failed to get tenant data 1");
-                hideSpinner();
+                ProgressBar.stop('getTenantData1');
+                //hideSpinner();
             }
         });
     }
@@ -430,35 +446,114 @@ function getTenantData1(start, end) {
 
 function getTenantData2(start, end) {
     let URL = getTenantDataURL(start, end);
-    showSpinner();
+    //showSpinner();
+    ProgressBar.start({id: 'getTenantData2',container: 'tenant-field-div2',position: 'top'});
     $.ajax({
         url: URL, success: function (result) {
-            hideSpinner();
+            //hideSpinner();
+            ProgressBar.stop('getTenantData2');
             tenantData2 = result;
             updateTenantDropdown2(start, end);
         },
         error: function(xhr, status, error) {
             toastMessage(toastType.ERROR,"Failed to get tenant data 2");
-            hideSpinner();
+            //hideSpinner();
+            ProgressBar.stop('getTenantData2');
         }
     });
+}
+let kpodview = undefined;
+function getKpodView(start,end,tenant,count) {
+
+    let URL = getKpodViewDataURL(start, end, tenant);
+    if(URL != undefined){
+        ProgressBar.start({id: 'getKpodView',container: 'tabs',position: 'top'});
+                $.ajax({
+                    url: URL, success: function (result) {
+                        //hideSpinner();
+                        ProgressBar.stop('getKpodView');
+                        kpodview = result;
+                        if($("#host-input1").val() == ""){
+                            createCellViewTable(kpodview,count);
+                        }else{
+                            createCellViewTable(kpodview,count);
+                            //loadCellView(kpodview,count);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        toastMessage(toastType.ERROR,"Failed to get instance data 1");
+                        //hideSpinner();
+                        ProgressBar.stop('getKpodView');
+                    }
+                });
+    }
+
+}
+
+
+const kpodviewtable = new SFDataTable("kpodviewtable");
+Object.freeze(kpodviewtable);
+kpodviewtable.SFDataTableSetPageSize(10);
+
+function createCellViewTable(array,count){
+
+    let localcontextData = getContextData(1);
+    if (localcontextData != undefined && localcontextData.header != undefined) {
+        loadCellView(kpodview,count);
+        customEvent='';
+        return;
+    }
+
+    let tableHeader = [];
+    let rowIndex = -1;
+    let tableRows = [];
+    for (let i = 0; i < array[0].length; i++) {
+
+      if(i == 0){
+          kpodviewtable.addContextTableHeader(tableHeader, array[0][i], -1, "");
+      }else{
+          kpodviewtable.addContextTableHeader(tableHeader, array[0][i], 1, "","");
+      }
+    }
+    for (let k = 1; k < array.length; k++) {
+        rowIndex++;
+        tableRows[rowIndex] = [];
+        for (let i = 0; i < array[k].length; i++) {
+         if(i == 0){
+              kpodviewtable.addContextTableRow(tableRows[rowIndex], array[k][i],"class='input-menu-one'");
+          }else{
+              kpodviewtable.addContextTableRow(tableRows[rowIndex], Number(array[k][i].toFixed(2))," style='text-align:right'");
+          }
+
+        }
+    }
+    kpodviewtable.setSFDataTablePercentMetric('AvgAPT'); // Set base metric
+    kpodviewtable.setMetricsToShowPercent(['RequestCpuTime', 'AvgAPT','SafepointTime']);
+    kpodviewtable.setSFDataTableEnablePercent(true); // Enable percentage display
+    kpodviewtable.setEnableCollapse(false);
+    kpodviewtable.SFDataTable(tableRows, tableHeader, "filter-view-status", 4);
+    $("#filter-view-status").removeClass("hide");
 }
 
 function getInstanceData1(start, end, tenant) {
     if (dataSource == "gold") {
         populateHostsSelector1(start, end, tenant);
     }else{
+        getKpodView(start,end,tenant,1);
         let URL = getInstanceDataURL(start, end, tenant, tenantData1[tenant]);
-        showSpinner();
+        //showSpinner();
+        ProgressBar.start({id: 'getInstanceData1',container: 'host-field-div1',position: 'top'});
         $.ajax({
             url: URL, success: function (result) {
-                hideSpinner();
+                //hideSpinner();
+                ProgressBar.stop('getInstanceData1');
                 instanceData1 = result;
                 populateHostsSelector1(start, end, tenant);
             },
             error: function(xhr, status, error) {
                 toastMessage(toastType.ERROR,"Failed to get instance data 1");
-                hideSpinner();
+                //hideSpinner();
+                ProgressBar.stop('getInstanceData1');
             }
         });
     }
@@ -469,16 +564,19 @@ function getInstanceData2(start, end, tenant) {
         populateHostsSelector2(start, end, tenant);
     }else {
         let URL = getInstanceDataURL(start, end, tenant, tenantData2[tenant]);
-        showSpinner();
+        //showSpinner();
+        ProgressBar.start({id: 'getInstanceData2',container: 'host-field-div2',position: 'top'});
         $.ajax({
             url: URL, success: function (result) {
-                hideSpinner();
+                //hideSpinner();
+                ProgressBar.stop('getInstanceData2');
                 instanceData2 = result;
                 populateHostsSelector2(start, end, tenant);
             },
             error: function(xhr, status, error) {
                 toastMessage(toastType.ERROR,"Failed to get instance data 2");
-                hideSpinner();
+                //hideSpinner();
+                ProgressBar.stop('getInstanceData2');
             }
         });
     }
@@ -486,10 +584,12 @@ function getInstanceData2(start, end, tenant) {
 
 function getGoldData1(start, end) {
     let URL = getGoldDataURL(start, end);
-    showSpinner();
+    //showSpinner();
+    ProgressBar.start({id: 'getGoldData1',container: 'tenant-field-div1',position: 'top'});
     $.ajax({
         url: URL, success: function (result) {
-            hideSpinner();
+            //hideSpinner();
+            ProgressBar.stop('getGoldData1');
             let tmpTenantData = {};
             let tmpInstanceData = {};
             metaData1 = result;
@@ -528,17 +628,20 @@ function getGoldData1(start, end) {
         },
         error: function(xhr, status, error) {
             toastMessage(toastType.ERROR,"Failed to get GOLD data");
-            hideSpinner();
+            //hideSpinner();
+            ProgressBar.stop('getGoldData1');
         }
     });
 }
 
 function getGoldData2(start, end) {
     let URL = getGoldDataURL(start, end);
-    showSpinner();
+    //showSpinner();
+    ProgressBar.start({id: 'getGoldData2',container: 'tenant-field-div2',position: 'top'});
     $.ajax({
         url: URL, success: function (result) {
-            hideSpinner();
+            //hideSpinner();
+            ProgressBar.stop('getGoldData2');
             let tmpTenantData = {};
             let tmpInstanceData = {};
             metaData2 = result;
@@ -576,7 +679,8 @@ function getGoldData2(start, end) {
         },
         error: function(xhr, status, error) {
             toastMessage(toastType.ERROR,"Failed to get GOLD data");
-            hideSpinner();
+            //hideSpinner();
+            ProgressBar.stop('getGoldData2');
         }
     });
 }
@@ -587,17 +691,20 @@ function getMetaData1(start, end, tenant, host) {
         loadDiagData1();
     }else {
         let URL = getMetaDataURL(start, end, tenant, host, instanceData1[host]);
-        showSpinner();
+        //showSpinner();
+        ProgressBar.start({id: 'getMetaData1',container: 'profile-field-div1',position: 'top'});
         $.ajax({
             url: URL, success: function (result) {
-                hideSpinner();
+                //hideSpinner();
+                ProgressBar.stop('getMetaData1');
                 metaData1 = result;
                 populateIDs1(tenant, host);
                 loadDiagData1();
             },
             error: function(xhr, status, error) {
                 toastMessage(toastType.ERROR,"Failed to get metadata data 1");
-                hideSpinner();
+                //hideSpinner();
+                ProgressBar.stop('getMetaData1');
             }
         });
     }
@@ -805,6 +912,7 @@ function loadDiagData1() {
             getDiagEvent(Number(values[0]), values[1], values[2], values[3]);
         }
     }
+    loadCellView(kpodview,1);
 }
 
 function getMetaData2(start, end, tenant, host) {
@@ -813,20 +921,57 @@ function getMetaData2(start, end, tenant, host) {
         loadDiagData2();
     }else {
         let URL = getMetaDataURL(start, end, tenant, host, instanceData2[host]);
-        showSpinner();
+        //showSpinner();
+        ProgressBar.start({id: 'getMetaData2',container: 'profile-field-div2',position: 'top'});
         $.ajax({
             url: URL, success: function (result) {
-                hideSpinner();
+                //hideSpinner();
+                ProgressBar.stop('getMetaData2');
                 metaData2 = result;
                 populateIDs2(tenant, host);
                 loadDiagData2();
             },
             error: function(xhr, status, error) {
                 toastMessage(toastType.ERROR,"Failed to get metadata data 2");
-                hideSpinner();
+                //hideSpinner();
+                ProgressBar.stop('getMetaData2');
             }
         });
     }
+}
+
+function loadCellView(array,count){
+     let localcontextData = getContextData(count);
+     if (array == undefined || localcontextData == undefined || localcontextData.header == undefined) {
+         return;
+     }
+     let records = {};
+     let header = {};
+     let key = "cellmetrics";
+     header[key] = [];
+     records[key] = {};
+     records[key][1] = [];
+     for (let i = 0; i < array[0].length; i++) {
+           if(i == 0){
+              header[key].push(array[0][i]+":text");
+           }else{
+              header[key].push(array[0][i]+":number");
+           }
+     }
+     for (let k = 1; k < array.length; k++) {
+         let metrics = []
+         for (let i = 0; i < array[k].length; i++) {
+             metrics.push(array[k][i]);
+         }
+         records[key][1].push({"record": metrics});
+     }
+     localcontextData.header[key] = header[key];
+     otherEventsFetched[key] = true;
+     localcontextData.records[key] = records[key];
+     $('#other-event-input').append($('<option>', {
+         value: key,
+         text: key
+     }));
 }
 
 function loadDiagData2() {
@@ -929,6 +1074,7 @@ function loadDiagData2() {
         toastMessage(toastType.INFO,"diagnostics(raw) events loaded 2");
         //$("#cct-panel").css("height", "100%");//expand context table view
     }
+    loadCellView(kpodview,2);
 }
 
 function addInputToURL() {
@@ -1337,7 +1483,8 @@ function parsePendingJFRs1(tenant, host) {
         return;
     }
     addInputNote(true, (toPArse[1].length + toPArse[2].length) + " full JFR(s) found, sequential download and parsing will take few minutes, please be patient ...")
-    showSpinner();
+    //showSpinner();
+    ProgressBar.start({id: 'getMetaData1',container: 'profile-field-div1',position: 'top'});
     let queryResults = Promise.all(requests);
     queryResults.then(contextDatas => {
 
@@ -1360,7 +1507,8 @@ function parsePendingJFRs1(tenant, host) {
 
         populateIDs1(tenant, host, false, true);
         addInputNote(false, "");
-        hideSpinner();
+        //hideSpinner();
+        ProgressBar.stop('getMetaData1');
     });
 }
 
@@ -1374,7 +1522,8 @@ function parsePendingJFRs2(tenant, host) {
         return;
     }
     addInputNote(true, (toPArse[1].length + toPArse[2].length) + " full JFR(s) found, sequential download and parsing will take few minutes, please be patient ...")
-    showSpinner();
+    //showSpinner();
+    ProgressBar.start({id: 'getMetaData2',container: 'profile-field-div2',position: 'top'});
     let queryResults = Promise.all(requests);
     queryResults.then(contextDatas => {
 
@@ -1396,7 +1545,8 @@ function parsePendingJFRs2(tenant, host) {
 
         populateIDs2(tenant, host, false, true);
         addInputNote(false, "");
-        hideSpinner();
+        //hideSpinner();
+        ProgressBar.stop('getMetaData2');
     });
 }
 
@@ -1424,7 +1574,7 @@ function populateIDs1(tenant, host, clearInput, skipPArsing) {
             let name = metaData1[key].metadata["name"];
             let filename = metaData1[key].metadata["file-name"];
 
-            if (filename != undefined && filename.includes(".jfr.gz")) {//need to parse
+            if (filename != undefined && filename.includes(".jfr.gz") && !filename.includes("collapsed")) {//need to parse
                 addToParse(1, tenant, host, metaData1[key].timestampMillis, filename, guid)
                 needToParse = true;
             }
@@ -1540,7 +1690,7 @@ function populateIDs2(tenant, host, clearInput, skipPArsing) {
             let name = metaData2[key].metadata["name"];
             let filename = metaData2[key].metadata["file-name"];
 
-            if (filename != undefined && filename.includes(".jfr.gz")) {//need to parse
+            if (filename != undefined && filename.includes(".jfr.gz") && !filename.includes("collapsed")) {//need to parse
                 addToParse(2, tenant, host, metaData2[key].timestampMillis, filename, guid)
                 needToParse = true;
             }

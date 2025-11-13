@@ -124,6 +124,8 @@ border-collapse: collapse;
 <head>
     <meta charset="UTF-8">
     <title>Perf Genie canary</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="alternate icon" href="/favicon.ico">
     <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Tangerine" />
 
     <#--    https://github.com/twbs/bootstrap/releases/download/v4.2.1/bootstrap-4.2.1-dist.zip-->

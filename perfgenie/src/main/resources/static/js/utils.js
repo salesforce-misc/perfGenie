@@ -39,6 +39,24 @@ function getBackupDataURL(start,end,tenant='dev', host, source){
     return URL;
 }
 
+
+function getKpodViewDataURL(start,end,tenant){
+    //tenant format falcon-aws-prod2-apsouth1-core1-ind86
+    let array = tenant?.split('-');
+    let URL = undefined;
+    if(array != undefined && array.length == 6){
+        let cell = array[5];
+        let domain = array[4];
+        let instance = array[1] + '-' + array[2] + '-' + array[3];
+        URL = "v1/kpodview/?start=" + start +
+                "&end=" + end +
+                "&cell=" + cell +
+                "&domain=" + domain +
+                "&instance=" + instance;
+    }
+    return URL;
+}
+
 function getInstanceDataURL(start,end,tenant='dev', source){
     let URL = "v1/instances/"+tenant+
         "/?start=" + start +

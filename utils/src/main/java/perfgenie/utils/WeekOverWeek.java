@@ -28,7 +28,7 @@ public class WeekOverWeek {
 
     static FunctionExecutorPool pool = new FunctionExecutorPool(8);
 
-    public static CanaryResponse processWeekOverWeekCanary(long timestampStart, long timestampEnd, String cell, String host) {
+    public static synchronized CanaryResponse processWeekOverWeekCanary(long timestampStart, long timestampEnd, String cell, String host) {
         return processWeekOverWeekCanaryTask(timestampStart,timestampEnd, cell, host);
     }
 
@@ -291,15 +291,16 @@ public class WeekOverWeek {
     }
 
     static Map<String, String> metricQueries = new HashMap<>() {{
-        put("cCpuT", "SUM(DIVIDE(RATE(START:END:cadvisor.aws.INSTANCE.DOMAIN:container_cpu_usage_seconds_total{k8s_container_name=coreapp,k8s_pod_name=CELL-casam-app-*}:max:2m-max),#60#))");
-        put("cCpuTN","DIVIDE_V(SUM(RATE(START:END:cadvisor.aws.INSTANCE.DOMAIN:container_cpu_usage_seconds_total{k8s_container_name=coreapp,k8s_pod_name=CELL-casam-app-*}:max:2m-max)),SUM(RATE(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-ServerMetrics.LogMetric-COUNT{cell=CELL,k8s_pod_name=CELL-casam-app*}:avg:2m-max)))");
-        put("rCnt", "SUM(RATE(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-ServerMetrics.LogMetric-COUNT{cell=CELL,k8s_pod_name=CELL-casam-app*}:avg:1m-max))");
+        put("cCpuT", "SUM(DIVIDE(CULL_BELOW(RATE(PROPAGATE(START:END:cadvisor.aws.INSTANCE.DOMAIN:container_cpu_usage_seconds_total{k8s_container_name=coreapp,k8s_pod_name=CELL-casam-app-*}:max:2m-max,#2m#)),#0.001#,#value#),#60#))");
+        put("cCpuTN","DIVIDE_V(SUM(CULL_BELOW(RATE(PROPAGATE(START:END:cadvisor.aws.INSTANCE.DOMAIN:container_cpu_usage_seconds_total{k8s_container_name=coreapp,k8s_pod_name=CELL-casam-app-*}:max:2m-max,#2m#)),#0.001#,#value#)),SUM(CULL_BELOW(RATE(PROPAGATE(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-ServerMetrics.LogMetric-COUNT{cell=CELL,k8s_pod_name=CELL-casam-app*}:avg:2m-max,#2m#)),#0.001#,#value#)))");
+        put("rCnt", "SUM(CULL_BELOW(RATE(PROPAGATE(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-ServerMetrics.LogMetric-COUNT{cell=CELL,k8s_pod_name=CELL-casam-app*}:max:1m-max,#1m#)),#0.001#,#value#))");
         put("Apt","AVERAGE(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-trustAptRequestTime.Last_1_Min_Avg{cell=CELL,k8s_pod_name=CELL-casam-app*}:avg:1m-avg)");
-        put("rCpuT","SUM(RATE(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-ServerMetrics.LogMetric-APP_CPU_TIME{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=CELL-casam-app*}:avg:1m-avg))");
+        put("rCpuT","SUM(CULL_BELOW(RATE(PROPAGATE(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-ServerMetrics.LogMetric-APP_CPU_TIME{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=CELL-casam-app*}:max:1m-max,#1m#)),#0.001#,#value#))");
         put("PA", "AVERAGE(START:END:mars.sam.aws.INSTANCE.DOMAIN:predicted_replicas{deployment_name=CELL-casam-app-*,deployment_namespace=core-on-sam}:max:1m-max)");
         put("kpodC","SUM(START:END:mars.sam.aws.INSTANCE.DOMAIN:current_replicas{deployment_name=CELL-casam-app-*,deployment_namespace=core-on-sam}:max:1m-max)");
         put("heap","MAX(DIVIDE(START:END:core.aws.INSTANCE.DOMAIN:java-lang_type-Memory.HeapMemoryUsage_max{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=CELL-casam-app-*,role=app}:max:1m-max,#1073741824#))");
         put("CanaryType","SUM(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-AveGCUsage.OneMinuteAverage{cell=CELL,k8s_pod_name=CELL-casam-app-*}:avg:1m-avg)");
+        put("scalerCPU","START:END:kube-state-metrics.aws.INSTANCE.DOMAIN:kube_horizontalpodautoscaler_status_target_metric{horizontalpodautoscaler=CELL-casam-app,metric_target_type=utilization,metric_name=cpu}:max:2m-max");
     }};
 
     private static Map<String, Double> fetchLast24HrTimeSeriesData(final long peakStart, final long timestampEnd, String cell, final String instance, final String domain, final String host,String metric, final boolean doPerc) {
@@ -386,7 +387,16 @@ public class WeekOverWeek {
                         }
                     }
                     Map<String,Double> percentiles = Utils.getPercentiles(v2);
-
+                    if(metric.equals("cCpuT")){
+                        List<Double> v3 = new ArrayList<>();
+                        for (int i = 0; i < v.size(); i++) {
+                            v3.add(v.get(i));
+                        }
+                        Map<String,Double> percentiles1 = Utils.getPercentiles(v3);
+                        for (String key : percentiles1.keySet()) {
+                            percentiles.put(key + "24hrs",percentiles1.get(key));
+                        }
+                    }
                     if(metric.equals("PA")){
                         int startIndex = getPeakIndexIfExists(x,peakStart);
                         int index = getPAKickinIndexIfExists(v,startIndex);
@@ -413,6 +423,16 @@ public class WeekOverWeek {
                 }
             }
             Map<String,Double> percentiles = Utils.getPercentiles(v2);
+            if(metric.equals("cCpuT")){
+                List<Double> v3 = new ArrayList<>();
+                for (int i = 0; i < values.size(); i++) {
+                        v3.add(values.get(i));
+                }
+                Map<String,Double> percentiles1 = Utils.getPercentiles(v3);
+                for (String key : percentiles1.keySet()) {
+                    percentiles.put(key + "24hrs",percentiles1.get(key));
+                }
+            }
             if(metric.equals("PA")){
                 int startIndex = getPeakIndexIfExists(timestamps,peakStart);
                 int index = getPAKickinIndexIfExists(values,startIndex);
@@ -585,6 +605,7 @@ public class WeekOverWeek {
                 if (reqCount1 != null && reqCount2 != null) {
                     rCount1 = reqCount1.getMetric();
                     rCount2 = reqCount2.getMetric();
+                    System.out.println("rCnt1:"+rCount1 + " rCnt2:"+rCount2);
                     record.add("rCnt1:number");
                     record.add(rCount1);//reqCount1
                     header.add("rCnt1:number");
@@ -639,7 +660,7 @@ public class WeekOverWeek {
                         record.add(percentiles2.get(key));
                         header.add(key + metric + "2:number");
 
-                        if(key.equals("P95")) {
+                        if(key.contains("P95")) {
                             Double percentileChange = 100.0 * (percentiles1.get(key) - percentiles2.get(key)) / percentiles1.get(key);
                             record.add(key + metric + " %c:number");
                             record.add(percentileChange);//jvmCpuPercentPerReqPercentChange
@@ -679,6 +700,11 @@ public class WeekOverWeek {
                 metric = "rCnt";
                 percentiles1 = fetchLast24HrTimeSeriesData(timestampStart1, timestampEnd1, cell1,instance1,domain1,host,metric,false);
                 percentiles2 = fetchLast24HrTimeSeriesData(timestampStart2, timestampEnd2, cell2,instance2,domain2,host, metric,false);
+
+                //metric = "scalerCPU";
+                //percentiles1 = fetchLast24HrTimeSeriesData(timestampStart1, timestampEnd1, cell1,instance1,domain1,host,metric,false);
+                //percentiles2 = fetchLast24HrTimeSeriesData(timestampStart2, timestampEnd2, cell2,instance2,domain2,host, metric,false);
+
                 metric = "Apt";
                 percentiles1 = fetchLast24HrTimeSeriesData(timestampStart1, timestampEnd1, cell1,instance1,domain1,host,metric,false);
                 percentiles2 = fetchLast24HrTimeSeriesData(timestampStart2, timestampEnd2, cell2,instance2,domain2,host, metric,false);
@@ -794,6 +820,7 @@ public class WeekOverWeek {
                 futures2.clear();
 
                 if (APT1 != null && APT2 != null) {
+                    System.out.println("avgApt1:"+APT1.getMetric() + " avgApt2:" +APT2.getMetric());
                     record.add("avgApt1:number");
                     record.add(APT1.getMetric());//APT1
                     header.add("avgApt1:number");
@@ -819,7 +846,7 @@ public class WeekOverWeek {
                 for (int i = 0; i < metricList.size(); i++) {
                     final String m = metricList.get(i);
                     System.out.println(cell1 + "start query for :" + m);
-                    if(m.equals("jCpuT")){
+                    if(m.equals("jCpuT") || m.equals("cCpuR")){//not used for analysis
                         record.add(metricList.get(i) + "1:number");
                         record.add(null);
                         header.add(metricList.get(i) + "1:number");

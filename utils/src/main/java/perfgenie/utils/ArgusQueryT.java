@@ -35,7 +35,7 @@ public class ArgusQueryT {
             ")";
     static String totalTrustRequestCountLast_1_Min_Avg = "DOWNSAMPLE(" +
             "  GROUPBYTAG(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-trustAptRequestCount.Last_1_Min_Avg{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:1m-avg,#k8s_container_name#,#SUM#,#union#)," +
-            "  #1d-sum#,#0#,#abs#" +
+            "  #all-sum#,#0#,#abs#" +
             ")";
     static String totalRequestsLogMetric_COUNT = "DIFF(" +
             "  GROUPBYTAG(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-ServerMetrics.LogMetric-COUNT{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:max:all-max,#k8s_container_name#,#SUM#)," +
@@ -141,8 +141,8 @@ public class ArgusQueryT {
     static String instanceTypeQueryT = "ALIASBYREGEX(GROUPBYTAG(START:END:cadvisor.aws.INSTANCE.DOMAIN:container_cpu_system_seconds_total{k8s_pod_name=POD,k8s_container_name=coreapp,instance_type=*}:avg:all-min,#instance_type#,#SUM#,#UNION#),#^(.+):.*#)";
     static String heapQueryT = "HIGHEST(START:END:core.aws.INSTANCE.DOMAIN:java-lang_type-Memory.HeapMemoryUsage_max{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:all-max,#1#)";
 
-    static String TotalAPTCount = "DOWNSAMPLE(COUNT(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-trustAptRequestTime.Last_1_Min_Avg{cell=CELL,k8s_pod_name=POD,role=app}:avg:1m-avg),#1d-sum#)";
-    static String TotalAPTCountBelow500 = "DOWNSAMPLE(COUNT(CULL_ABOVE(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-trustAptRequestTime.Last_1_Min_Avg{cell=CELL,k8s_pod_name=POD,role=app}:avg:1m-avg,#500#,#value#)),#1d-sum#)";
+    static String TotalAPTCount = "DOWNSAMPLE(COUNT(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-trustAptRequestTime.Last_1_Min_Avg{cell=CELL,k8s_pod_name=POD,role=app}:avg:1m-avg),#all-sum#)";
+    static String TotalAPTCountBelow500 = "DOWNSAMPLE(COUNT(CULL_ABOVE(START:END:core.aws.INSTANCE.DOMAIN:SFDC_type-Stats-name1-System-name2-trustAptRequestTime.Last_1_Min_Avg{cell=CELL,k8s_pod_name=POD,role=app}:avg:1m-avg,#500#,#value#)),#all-sum#)";
 
     static String ScopeQuery = "START:END:core.*:java-lang_type-Runtime.Uptime{cell=CELL}:avg:all-max";
 
@@ -936,6 +936,9 @@ public class ArgusQueryT {
         query = query.replaceAll("POD", podstr);
 
         response.query = query;
+        if(m.equals("reqCount")){
+            System.out.println(response.query);
+        }
 
         try {
             query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
@@ -1090,6 +1093,160 @@ public class ArgusQueryT {
         }
     }
 
+    public static String genieQuery(String query, String refId, String previous) {
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
+            updateAccessToken();
+            lastUpdated = System.currentTimeMillis();
+        }
+        System.out.println(previous + ":"+refId + ":" + query);
+        try {
+            query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            System.out.println("genieQuery1 " + e.getMessage());
+            return null;
+        }
+        String metricCommand = "curl -H \"Authorization: Bearer " + accessToken + "\" " + "https://monitoring-api.salesforce.com/argusws/metrics?expression=" + query;
+
+        String metric = "";
+        if (accessToken != null) {
+            //request timeout
+            String output = executeCurlCommand(metricCommand);
+            if (output.contains("request timeout")) {
+                System.out.println("retry: " + query);
+                output = executeCurlCommand(metricCommand);
+            }
+            metric = output;
+        } else {
+            try {
+                if (substrate == null) {
+                    String filename = refId+".json";
+                    if(previous != null){
+                        filename = refId+previous+".json";
+                    }
+                    try {
+                        return Resources.toString(Resources.getResource(filename), StandardCharsets.UTF_8);
+                    } catch (Exception e) {
+
+                    }
+                    if (refId.equals("heap")){
+                        metric = Resources.toString(Resources.getResource("maxheap.json"), StandardCharsets.UTF_8);
+                    } else if(previous != null){
+                        metric = Resources.toString(Resources.getResource("previous.json"), StandardCharsets.UTF_8);
+                    }else {
+                        metric = Resources.toString(Resources.getResource("current.json"), StandardCharsets.UTF_8);
+                    }
+                    metric = Resources.toString(Resources.getResource("cpuTime_kpods.json"), StandardCharsets.UTF_8);
+                    metric = metric.replaceAll("cpuTimeMs",refId);
+                }
+            } catch (Exception e) {
+                metric = "{}";
+                System.out.println("genieQuery2 " + e.getMessage());
+            }
+        }
+        return metric;
+    }
+
+    public static String kPODKeyMetricSums(long timestampStart, long timestampEnd, String instance, String domain, String cell){
+        String queryT = "JOIN(DOWNSAMPLE(GROUPBYTAG(RATE(PROPAGATE(1761728400000:1761771600000:core.aws.aws-prod21-useast2.core1:Jvm.totalSafepointTimeMs.Value{cell=usa1000,k8s_container_name=coreapp,k8s_pod_name=*,role=app}:max:1m-max,#1m#)),#k8s_pod_name#,#SUM#),#all-sum#,#0#),DOWNSAMPLE(GROUPBYTAG(RATE(PROPAGATE(1761728400000:1761771600000:core.aws.aws-prod21-useast2.core1:SFDC_type-ServerMetrics.LogMetric-APP_CPU_TIME{cell=usa1000,k8s_container_name=coreapp,k8s_pod_name=*,role=app}:max:1m-max,#1m#)),#k8s_pod_name#,#SUM#),#all-sum#,#0#),DOWNSAMPLE(GROUPBYTAG(RATE(PROPAGATE(1761728400000:1761771600000:core.aws.aws-prod21-useast2.core1:SFDC_type-ServerMetrics.LogMetric-COUNT{cell=usa1000,k8s_container_name=coreapp,k8s_pod_name=*,role=app}:max:1m-max,#1m#)),#k8s_pod_name#,#SUM#),#all-sum#,#0#),DOWNSAMPLE(GROUPBYTAG(1761728400000:1761771600000:core.aws.aws-prod21-useast2.core1:SFDC_type-Stats-name1-System-name2-trustAptRequestTime.Last_1_Min_Avg{cell=usa1000,k8s_pod_name=*}:avg:1m-avg,#k8s_pod_name#,#SUM#),#all-sum#,#0#))";
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
+            updateAccessToken();
+            lastUpdated = System.currentTimeMillis();
+        }
+        QueryResponse response = new QueryResponse();
+        String query = queryT.replaceAll("START", String.valueOf(timestampStart));
+        query = query.replaceAll("END", String.valueOf(timestampEnd));
+        query = query.replaceAll("INSTANCE", instance);
+        query = query.replaceAll("DOMAIN", domain);
+        query = query.replaceAll("CELL", cell);
+        try {
+            query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            System.out.println(cell + " kPODKeyMetricSums1 " + e.getMessage());
+            return null;
+        }
+        String metricCommand = "curl -H \"Authorization: Bearer " + accessToken + "\" " + "https://monitoring-api.salesforce.com/argusws/metrics?expression=" + query;
+
+        String metric = "";
+        if (accessToken != null) {
+            //request timeout
+            String output = executeCurlCommand(metricCommand);
+            if(output.contains("request timeout")){
+                System.out.println("retry: " + response.query);
+                output = executeCurlCommand(metricCommand);
+            }
+            metric = "{\"array\":" + output + "}";
+        } else {
+            try {
+                if (substrate == null) {
+                    metric = "{\"array\":" + Resources.toString(Resources.getResource("kpodkeymetrics.json"), StandardCharsets.UTF_8) + "}";
+                }
+            } catch (Exception e) {
+                metric = "{}";
+                System.out.println(cell + " kPODKeyMetricSums2 " + e.getMessage());
+            }
+        }
+        try {
+            List<List<Object>> datas = new ArrayList<>();
+
+            JSONObject jsonObject = new JSONObject(metric);
+            JSONArray jsonArray = jsonObject.getJSONArray("array");
+            List<Object> data = new ArrayList<>();
+            String scope = null;
+            List<Object> header = new ArrayList<>();//kpod,metric1,metric2,...
+            header.add("kpod");
+            HashMap<String,String> hmap = new HashMap<>();
+            hmap.put("Jvm.totalSafepointTimeMs.Value","SafepointTime");
+            hmap.put("SFDC_type-ServerMetrics.LogMetric-APP_CPU_TIME","RequestCpuTime");
+            hmap.put("SFDC_type-ServerMetrics.LogMetric-COUNT","RequestCount");
+            hmap.put("SFDC_type-Stats-name1-System-name2-trustAptRequestTime.Last_1_Min_Avg","AvgAPT");
+            boolean headerAdded = false;
+
+            for (int i = 0; i < jsonArray.length(); i++) {
+
+                JSONObject object = jsonArray.getJSONObject(i);
+                JSONObject datapoints = object.getJSONObject("datapoints");
+                Iterator keys = datapoints.keys();
+                while (keys.hasNext()) {
+                    String k = keys.next().toString();
+
+                    if(scope == null){
+                        scope = object.getString("scope");
+                        data.add(scope);
+                        data.add(datapoints.getDouble(String.valueOf(k)));
+                    }else if(!scope.equals(object.getString("scope")) || i == jsonArray.length()-1){
+                        if(!headerAdded){
+                            datas.add(header);
+                            headerAdded=true;
+                        }
+                        if(i == jsonArray.length()-1){
+                            data.add(datapoints.getDouble(String.valueOf(k)));
+                        }
+                        datas.add(data);
+                        data=new ArrayList<>();
+                        scope = object.getString("scope");
+                        data.add(scope);
+                        data.add(datapoints.getDouble(String.valueOf(k)));
+                    }else {
+                        scope = object.getString("scope");
+                        data.add(datapoints.getDouble(String.valueOf(k)));
+                    }
+                    if(!headerAdded){
+                        if(hmap.containsKey(object.getString("metric"))){
+                            header.add(hmap.get(object.getString("metric")));
+                        }else {
+                            header.add(object.getString("metric"));
+                        }
+                    }
+                }
+            }
+            return Utils.toJson(datas);
+        } catch (Exception e) {
+            System.out.println("query->" + response.query);
+            System.out.println("metric->" + metric);
+            System.out.println(cell + " kPODKeyMetricSums3 " + e.getMessage());
+            return null;
+        }
+    }
     public static QueryResponse getMetric(String queryT, long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
         System.out.println(cell + " getMetric");
         if (pods.size() == 0) {
@@ -1349,8 +1506,13 @@ public class ArgusQueryT {
 
     public static void main(String[] args) {
         try {
-            String metric = getGCMetric("1742270400000", "1742302800000", "instance", "domain", "cell");
-            System.out.println("check");
+            //String metric = getGCMetric("1742270400000", "1742302800000", "instance", "domain", "cell");
+            //String metric1 = kPODKeyMetricSums(1742270400000L, 1742302800000L, "instance", "domain", "cell");
+            //String metric2 = genieQuery("HIGHEST( 1762204140146:1762207740146:core.aws.aws-prod0-uswest2.core1:java-lang_type-Memory.HeapMemoryUsage_max{cell=usa12,k8s_container_name=coreapp,k8s_pod_name=*,role=app}:avg:1m-avg,#1# )");
+            //System.out.println(metric2);
+            //String metric3 = genieQuery("ALIAS( DOWNSAMPLE( DIVIDE( SUM( CULL_BELOW( RATE( 1762204140146:1762207740146:core.aws.aws-prod0-uswest2.core1:SFDC_type-ServerMetrics.LogMetric-APP_CPU_TIME{role=app,cell=usa12,k8s_pod_name=*}:none:1m-max ), #0#,#value# ), #union# ), CULL_BELOW( SUM( CULL_BELOW( RATE( 1762204140146:1762207740146:core.aws.aws-prod0-uswest2.core1:SFDC_type-ServerMetrics.LogMetric-COUNT{role=app,cell=usa12,k8s_pod_name=*}:none:1m-max ), #0#,#value# ), #union# ), #1#,#value# ), #union#,#0# ), #1m-avg# ), #app_cpu_time#,#literal# )");
+            //System.out.println(metric3);
+
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }

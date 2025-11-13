@@ -24,8 +24,8 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -812,6 +812,27 @@ public class EventStore {
         return null;
     }
 
+    public List getCanaryLenses(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final boolean payload) throws IOException {
+        String namespace = PerfGenieConstants.getEventNameSpace(tenant, queryMap.get(PerfGenieConstants.SOURCE_KEY), config.getBackup_namespace());//queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getEventNameSpace(tenant, true, config.getBackup_namespace()) : PerfGenieConstants.getEventNameSpace(tenant, false, config.getBackup_namespace());
+        final List<Events.Event> results = this.cantor.events().get(
+                namespace,
+                start,
+                end,
+                queryMap,
+                dimMap,
+                payload
+        );
+        if (results.size() > 0) {
+            List<String> comments = new ArrayList<>();//timestamp payload map
+            results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
+            for (final Events.Event result : results) {
+                comments.add( new String(Utils.decompress(result.getPayload())));
+            }
+            return comments;
+        }
+        return null;
+    }
+
     public List getCanaryComments(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final boolean payload) throws IOException {
         String namespace = PerfGenieConstants.getEventNameSpace(tenant, queryMap.get(PerfGenieConstants.SOURCE_KEY), config.getBackup_namespace());//queryMap.containsKey(PerfGenieConstants.SOURCE_KEY) ? PerfGenieConstants.getEventNameSpace(tenant, true, config.getBackup_namespace()) : PerfGenieConstants.getEventNameSpace(tenant, false, config.getBackup_namespace());
         final List<Events.Event> results = this.cantor.events().get(
@@ -852,6 +873,357 @@ public class EventStore {
             return payloads;
         }
         return null;
+    }
+
+    public HashMap<String,ArrayList<String>> getPidStatPayLoads(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final boolean payload, int limit) throws IOException {
+        String namespace = PerfGenieConstants.getEventNameSpace(tenant, queryMap.get(PerfGenieConstants.SOURCE_KEY), config.getBackup_namespace());
+        long queryWindowLimit = 3*60*60*1000; // 6 hours in milliseconds
+        
+        // Calculate time range
+        long timeRange = end - start;
+        
+        // If time range is within limit, process normally
+        if (timeRange <= queryWindowLimit) {
+            return getPidStatPayLoadsForWindow(tenant, start, end, queryMap, dimMap, payload, limit, namespace);
+        }
+        
+        // Break into smaller windows and process each
+        HashMap<String, ArrayList<String>> combinedPayloads = new HashMap<>();
+        HashMap<String, Boolean> isProcessed = new HashMap<>();
+        int totalCount = 0;
+        boolean hasFailure = false;
+        
+        long windowStart = start;
+        while (windowStart < end) {
+            long windowEnd = Math.min(windowStart + queryWindowLimit, end);
+            
+            logger.info("Processing time window: {} to {} (window size: {} ms)", 
+                windowStart, windowEnd, (windowEnd - windowStart));
+            
+            // Process this window
+            HashMap<String, ArrayList<String>> windowPayloads;
+            try {
+                windowPayloads = getPidStatPayLoadsForWindow(
+                    tenant, windowStart, windowEnd, queryMap, dimMap, payload, limit, namespace);
+            } catch (Exception e) {
+                logger.error("Error processing window {} to {}", windowStart, windowEnd, e);
+                hasFailure = true;
+                break;
+            }
+            
+            // If window processing returned null, it indicates a failure
+            if (windowPayloads == null) {
+                logger.error("Window processing returned null for window {} to {}", windowStart, windowEnd);
+                hasFailure = true;
+                break;
+            }
+            
+            // Combine payloads from this window
+            for (Map.Entry<String, ArrayList<String>> entry : windowPayloads.entrySet()) {
+                String host = entry.getKey();
+                ArrayList<String> hostPayloads = entry.getValue();
+                
+                if (!combinedPayloads.containsKey(host)) {
+                    combinedPayloads.put(host, new ArrayList<>());
+                }
+                combinedPayloads.get(host).addAll(hostPayloads);
+                
+                // Track processed hosts for limit check
+                if (!isProcessed.containsKey(host)) {
+                    isProcessed.put(host, true);
+                    totalCount++;
+                }
+            }
+            
+            // Check if we've reached the limit
+            if (totalCount >= limit) {
+                logger.info("Reached host limit ({}) after processing window {} to {}", limit, windowStart, windowEnd);
+                break;
+            }
+            
+            windowStart = windowEnd;
+        }
+        
+        // Return null if any failure occurred
+        if (hasFailure) {
+            logger.error("getPidStatPayLoads: Returning null due to failure in window processing");
+            return null;
+        }
+        
+        return combinedPayloads.isEmpty() ? null : combinedPayloads;
+    }
+    
+    /**
+     * Helper method to get pidstat payloads for a single time window
+     * Uses parallel execution to process multiple hosts concurrently
+     */
+    private HashMap<String,ArrayList<String>> getPidStatPayLoadsForWindow(
+            final String tenant, final long start, final long end, 
+            final Map<String, String> queryMap, final Map<String, String> dimMap, 
+            final boolean payload, int limit, final String namespace) throws IOException {
+        
+        // Create a copy of queryMap to avoid modifying the original
+        Map<String, String> windowQueryMap = new HashMap<>(queryMap);
+        
+        // Check disk cache before making the first call (metadata call)
+        List<Events.Event> results1;
+        try {
+            results1 = DiskCache.getCache(namespace, start, end, windowQueryMap);
+            
+            if (results1 == null) {
+                // Cache miss - fetch from cantor
+                results1 = this.cantor.events().get(
+                namespace,
+                start,
+                end,
+                        windowQueryMap,
+                dimMap,
+                false
+        );
+                // Store in cache
+                if (results1 != null && results1.size() > 0) {
+                    DiskCache.setCache(namespace, start, end, windowQueryMap, results1);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error fetching metadata events for window {} to {}", start, end, e);
+            return null;
+        }
+        
+        if (results1 == null || results1.isEmpty()) {
+            logger.warn("No metadata events found for window {} to {}", start, end);
+            return null;
+        }
+        
+        // Use thread-safe collections for parallel processing
+        ConcurrentHashMap<String, ArrayList<String>> payloads = new ConcurrentHashMap<>();
+        ConcurrentHashMap<String, Boolean> isProcessed = new ConcurrentHashMap<>();
+        AtomicInteger count = new AtomicInteger(0);
+        AtomicInteger processedCount = new AtomicInteger(0);
+        
+        // Create ParallelExecutor with concurrency limit (default: 10, can be configured)
+        int concurrencyLimit = 8; // Can be made configurable via config
+        ParallelExecutor executor = new ParallelExecutor(concurrencyLimit);
+        
+        try {
+            // Collect unique hosts
+            Set<String> uniqueHosts = new HashSet<>();
+            for (final Events.Event result1 : results1) {
+                String host = result1.getMetadata().get("host");
+                if (host != null && !uniqueHosts.contains(host)) {
+                    uniqueHosts.add(host);
+                }
+            }
+            
+            logger.info("Processing {} unique hosts in parallel with concurrency limit: {}", uniqueHosts.size(), concurrencyLimit);
+            
+            // Create tasks for each host
+            List<Callable<HostPayloadResult>> tasks = new ArrayList<>();
+            for (final String host : uniqueHosts) {
+                tasks.add(new HostPayloadTask(host, namespace, start, end, windowQueryMap, dimMap, payload, count, isProcessed));
+            }
+            
+            // Execute all tasks in parallel
+            List<Future<HostPayloadResult>> futures = executor.invokeAll(tasks);
+            
+            // Track if any task failed
+            boolean hasFailure = false;
+            int expectedHostCount = uniqueHosts.size();
+            int processedHostCount = 0;
+            
+            // Process results - if any task fails, mark as failure
+            for (Future<HostPayloadResult> future : futures) {
+                try {
+                    // Skip if already failed
+                    if (hasFailure) {
+                        future.cancel(true);
+                        continue;
+                    }
+                    
+                    HostPayloadResult result = future.get();
+                    processedHostCount++;
+                    
+                    if (result != null && result.payloads != null && !result.payloads.isEmpty()) {
+                        // Merge results into the main payloads map
+                        String host = result.host;
+                        payloads.putIfAbsent(host, new ArrayList<>());
+                        payloads.get(host).addAll(result.payloads);
+                        processedCount.incrementAndGet();
+                    } else {
+                        // Task returned null or empty - this indicates a failure
+                        logger.error("Host payload task returned null or empty result for host: {}", 
+                            result != null ? result.host : "unknown");
+                        hasFailure = true;
+                        continue;
+                    }
+                    
+                    // Check if we've reached the limit
+                    if (processedCount.get() >= limit) {
+                        logger.info("Reached host limit ({}) during parallel processing", limit);
+                        // Cancel remaining tasks
+                        for (Future<HostPayloadResult> f : futures) {
+                            if (!f.isDone()) {
+                                f.cancel(true);
+                            }
+                        }
+                        break;
+                    }
+                } catch (ExecutionException e) {
+                    logger.error("Error processing host payload task", e.getCause());
+                    hasFailure = true;
+                    processedHostCount++;
+                } catch (CancellationException e) {
+                    logger.debug("Task was cancelled (expected when limit reached or failure occurred)");
+                    // Cancellation is expected when limit is reached or failure occurred
+                }
+            }
+            
+            // Verify all expected hosts were processed (unless limit was reached)
+            if (!hasFailure && processedHostCount < expectedHostCount && processedCount.get() < limit) {
+                logger.error("Not all hosts were processed. Expected: {}, Processed: {}", expectedHostCount, processedHostCount);
+                hasFailure = true;
+            }
+            
+            // If any task failed, return null
+            if (hasFailure) {
+                logger.error("getPidStatPayLoadsForWindow: Returning null due to task failure. Processed {}/{} hosts", 
+                    processedHostCount, expectedHostCount);
+                return null;
+            }
+            
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.error("Parallel processing interrupted", e);
+            return null;
+        } catch (Exception e) {
+            logger.error("Unexpected error in parallel processing", e);
+            return null;
+        } finally {
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                    logger.warn("ParallelExecutor did not terminate within timeout");
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                executor.shutdownNow();
+            }
+        }
+        
+        return payloads.isEmpty() ? null : new HashMap<>(payloads);
+    }
+    
+    /**
+     * Result class for host payload processing
+     */
+    private static class HostPayloadResult {
+        final String host;
+        final ArrayList<String> payloads;
+        
+        HostPayloadResult(String host, ArrayList<String> payloads) {
+            this.host = host;
+            this.payloads = payloads;
+        }
+    }
+    
+    /**
+     * Callable task for processing a single host's payloads
+     */
+    private class HostPayloadTask implements Callable<HostPayloadResult> {
+        private final String host;
+        private final String namespace;
+        private final long start;
+        private final long end;
+        private final Map<String, String> windowQueryMap;
+        private final Map<String, String> dimMap;
+        private final boolean payload;
+        private final AtomicInteger count;
+        private final ConcurrentHashMap<String, Boolean> isProcessed;
+        
+        HostPayloadTask(String host, String namespace, long start, long end,
+                       Map<String, String> windowQueryMap, Map<String, String> dimMap,
+                       boolean payload, AtomicInteger count,
+                       ConcurrentHashMap<String, Boolean> isProcessed) {
+            this.host = host;
+            this.namespace = namespace;
+            this.start = start;
+            this.end = end;
+            this.windowQueryMap = windowQueryMap;
+            this.dimMap = dimMap;
+            this.payload = payload;
+            this.count = count;
+            this.isProcessed = isProcessed;
+        }
+        
+        @Override
+        public HostPayloadResult call() throws Exception {
+            // Check if already processed (thread-safe check)
+            if (isProcessed.putIfAbsent(host, true) != null) {
+                // Already being processed by another thread
+                return null;
+            }
+            
+            int currentCount = count.incrementAndGet();
+            logger.debug("Processing host: {} (count: {})", host, currentCount);
+            
+            // Create a new queryMap with host for this specific query
+            Map<String, String> hostQueryMap = new HashMap<>(windowQueryMap);
+            hostQueryMap.put("host", "=" + host);
+            
+            // Check disk cache before making the call
+            List<Events.Event> results = DiskCache.getCache(namespace, start, end, hostQueryMap);
+            
+            if (results == null) {
+                // Cache miss - fetch from cantor
+                try {
+                    results = cantor.events().get(
+                            namespace,
+                            start,
+                            end,
+                            hostQueryMap,
+                            dimMap,
+                            payload
+                    );
+                    // Store in cache
+                    if (results != null && results.size() > 0) {
+                        DiskCache.setCache(namespace, start, end, hostQueryMap, results);
+                    }
+                } catch (IOException e) {
+                    logger.error("Error fetching events for host: {}", host, e);
+                    throw new RuntimeException("Failed to fetch events for host: " + host, e);
+                } catch (Exception e) {
+                    logger.error("Unexpected error fetching events for host: {}", host, e);
+                    throw new RuntimeException("Unexpected error fetching events for host: " + host, e);
+                }
+            }
+            
+            if (results == null || results.isEmpty()) {
+                logger.warn("No events found for host: {}", host);
+                throw new RuntimeException("No events found for host: " + host);
+            }
+            
+            // Sort by timestamp
+            results.sort(Comparator.comparing(Events.Event::getTimestampMillis));
+            
+            ArrayList<String> hostPayloads = new ArrayList<>();
+            for (final Events.Event result : results) {
+                try {
+                    hostPayloads.add(new String(Utils.decompress(result.getPayload())));
+                } catch (Exception e) {
+                    logger.error("Error decompressing payload for host: {}", host, e);
+                    throw new RuntimeException("Failed to decompress payload for host: " + host, e);
+                }
+            }
+            
+            if (hostPayloads.isEmpty()) {
+                logger.warn("No payloads extracted for host: {}", host);
+                throw new RuntimeException("No payloads extracted for host: " + host);
+            }
+            
+            logger.debug("Completed processing host: {} with {} payloads", host, hostPayloads.size());
+            return new HostPayloadResult(host, hostPayloads);
+        }
     }
 
     public Collection<com.salesforce.cantor.Events.Event> getHeartbeatEvents(final String tenant, final String instanceId, final long startTimestamp, final long endTimestamp) {
@@ -1451,3 +1823,4 @@ public class EventStore {
         }
     }
 }
+

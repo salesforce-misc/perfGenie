@@ -120,7 +120,7 @@ public class ArgusQueries {
             "            )," +
             "            #(.*)::\\{#" +
             "          )," +
-            "          #1d-sum#,#0#,#abs#" +
+            "          #all-sum#,#0#,#abs#" +
             "        )" +
             "      )," +
             "      DIVIDE(" +
@@ -152,7 +152,7 @@ public class ArgusQueries {
             "            )," +
             "            #(.*)::\\{#" +
             "          )," +
-            "          #1d-sum#,#0#,#abs#" +
+            "          #all-sum#,#0#,#abs#" +
             "        )" +
             "      )" +
             "    )," +
@@ -179,7 +179,7 @@ public class ArgusQueries {
             "          )," +
             "          #(.*)::\\{#" +
             "        )," +
-            "        #1d-sum#,#0#,#abs#" +
+            "        #all-sum#,#0#,#abs#" +
             "      )" +
             "    )" +
             "  )," +
@@ -481,7 +481,7 @@ public class ArgusQueries {
             "            )," +
             "            #(.*)::\\{#" +
             "          )," +
-            "          #1d-sum#,#0#,#abs#" +
+            "          #all-sum#,#0#,#abs#" +
             "        )" +
             "      )," +
             "      SHIFT(" +
@@ -514,7 +514,7 @@ public class ArgusQueries {
             "              )," +
             "              #(.*)::\\{#" +
             "            )," +
-            "            #1d-sum#,#0#,#abs#" +
+            "            #all-sum#,#0#,#abs#" +
             "          )" +
             "        )," +
             "        #7d#" +
@@ -543,7 +543,7 @@ public class ArgusQueries {
             "          )," +
             "          #(.*)::\\{#" +
             "        )," +
-            "        #1d-sum#,#0#,#abs#" +
+            "        #all-sum#,#0#,#abs#" +
             "      )" +
             "    )" +
             "  )," +

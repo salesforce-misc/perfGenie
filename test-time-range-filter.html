@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Range Filter Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background-color: #fafafa;
+        }
+        
+        .test-section h3 {
+            margin-top: 0;
+            color: #0070d2;
+        }
+        
+        .test-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .test-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        
+        .test-btn.primary {
+            background-color: #0070d2;
+            color: white;
+        }
+        
+        .test-btn.primary:hover {
+            background-color: #0056b3;
+        }
+        
+        .test-btn.secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .test-btn.secondary:hover {
+            background-color: #545b62;
+        }
+        
+        .test-btn.success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .test-btn.success:hover {
+            background-color: #1e7e34;
+        }
+        
+        .test-btn.warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .test-btn.warning:hover {
+            background-color: #e0a800;
+        }
+        
+        .test-btn.danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .test-btn.danger:hover {
+            background-color: #c82333;
+        }
+        
+        .console-output {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 20px;
+        }
+        
+        .clear-console {
+            margin-top: 10px;
+        }
+        
+        .info-box {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-box h4 {
+            margin-top: 0;
+            color: #0066cc;
+        }
+        
+        .example-usage {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .example-usage h4 {
+            margin-top: 0;
+            color: #495057;
+        }
+        
+        code {
+            background-color: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        
+        /* Time Range Filter Component Styles */
+        .trf-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .trf-modal {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+        
+        .trf-field-container {
+            margin-bottom: 20px;
+        }
+        
+        .trf-field-container:last-of-type {
+            margin-bottom: 24px;
+        }
+        
+        .trf-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .trf-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        .trf-input:focus {
+            outline: none;
+            border-color: #0070d2;
+            box-shadow: 0 0 0 2px rgba(0, 112, 210, 0.2);
+        }
+        
+        .trf-button-container {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .trf-btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            min-width: 80px;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+        
+        .trf-btn-cancel {
+            border: 1px solid #ddd;
+            background: white;
+            color: #666;
+        }
+        
+        .trf-btn-cancel:hover {
+            background-color: #f8f9fa;
+            border-color: #adb5bd;
+        }
+        
+        .trf-btn-apply {
+            border: none;
+            background: #0070d2;
+            color: white;
+        }
+        
+        .trf-btn-apply:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🕒 Time Range Filter Test Suite</h1>
+        
+        <div class="info-box">
+            <h4>ℹ️ About This Test</h4>
+            <p>This page demonstrates the <code>showTimeRangeFilter()</code> function with various test cases. 
+            Each test will open a modal dialog where you can interact with the time range picker. 
+            Check the console output below to see the results of your interactions.</p>
+        </div>
+        
+        <div class="test-section">
+            <h3>🧪 Individual Test Cases</h3>
+            <p>Click any button below to run a specific test case:</p>
+            
+            <div class="test-buttons">
+                <button class="test-btn primary" onclick="testTimeRangeFilter()">
+                    Test 1: Last 24 Hours
+                </button>
+                <button class="test-btn secondary" onclick="testSpecificDateRange()">
+                    Test 2: Specific Dates (Jan 1-15, 2024)
+                </button>
+                <button class="test-btn success" onclick="testEdgeCases()">
+                    Test 3: Short Range (1 minute)
+                </button>
+                <button class="test-btn warning" onclick="testInvalidInputs()">
+                    Test 4: Invalid Inputs
+                </button>
+                <button class="test-btn danger" onclick="testLongTimeRange()">
+                    Test 5: Long Range (1 year)
+                </button>
+                <button class="test-btn primary" onclick="testWithLabelPrefix()">
+                    Test 6: With Label Prefix
+                </button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🚀 Automated Test Suite</h3>
+            <p>Run all tests automatically with delays between them:</p>
+            
+            <div class="test-buttons">
+                <button class="test-btn primary" onclick="runAllTests()">
+                    Run All Tests
+                </button>
+                <button class="test-btn secondary" onclick="clearConsole()">
+                    Clear Console
+                </button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📝 Manual Test</h3>
+            <p>Test the function with your own custom time range:</p>
+            
+            <div class="test-buttons">
+                <button class="test-btn primary" onclick="testCustomRange()">
+                    Test Custom Range
+                </button>
+            </div>
+        </div>
+        
+        <div class="example-usage">
+            <h4>💡 Example Usage in Code</h4>
+            <pre><code>// Basic usage
+showTimeRangeFilter(startTimestamp, endTimestamp, 
+    (result) => {
+        console.log('Selected range:', result);
+        // result.start and result.end are epoch timestamps
+    },
+    () => {
+        console.log('Cancelled');
+    }
+);
+
+// With label prefix
+showTimeRangeFilter(startTimestamp, endTimestamp, 
+    (result) => {
+        console.log('Selected range:', result);
+    },
+    () => {
+        console.log('Cancelled');
+    },
+    'Event' // This will show "Event Start Time:" and "Event End Time:"
+);
+
+// Example with current time
+const now = Date.now();
+const yesterday = now - (24 * 60 * 60 * 1000);
+showTimeRangeFilter(yesterday, now, onApply, onCancel);</code></pre>
+        </div>
+        
+        <div class="console-output" id="consoleOutput">
+            <div style="color: #4CAF50;">✅ Time Range Filter Test Suite Loaded</div>
+            <div style="color: #2196F3;">📋 Available test functions:</div>
+            <div>• testTimeRangeFilter() - Test with last 24 hours</div>
+            <div>• testSpecificDateRange() - Test with specific dates</div>
+            <div>• testEdgeCases() - Test with short time range</div>
+            <div>• testInvalidInputs() - Test with invalid inputs</div>
+            <div>• testLongTimeRange() - Test with long time range</div>
+            <div>• testWithLabelPrefix() - Test with label prefix</div>
+            <div>• runAllTests() - Run all tests with delays</div>
+            <div style="color: #FF9800;">🎯 Click any test button above to start testing!</div>
+        </div>
+        
+        <div class="clear-console">
+            <button class="test-btn secondary" onclick="clearConsole()">
+                Clear Console Output
+            </button>
+        </div>
+    </div>
+
+    <script src="time-range-filter.js"></script>
+    <script>
+        // Override console.log to display in the page
+        const originalConsoleLog = console.log;
+        const consoleOutput = document.getElementById('consoleOutput');
+        
+        function addToConsole(message, type = 'info') {
+            const div = document.createElement('div');
+            div.style.color = type === 'error' ? '#f44336' : 
+                             type === 'success' ? '#4CAF50' : 
+                             type === 'warning' ? '#FF9800' : '#d4d4d4';
+            div.textContent = message;
+            consoleOutput.appendChild(div);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            addToConsole(args.join(' '));
+        };
+        
+        console.error = function(...args) {
+            originalConsoleLog.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+        
+        // Clear console function
+        function clearConsole() {
+            consoleOutput.innerHTML = '<div style="color: #4CAF50;">✅ Console cleared</div>';
+        }
+        
+        // Custom test function
+        function testCustomRange() {
+            console.log('\n=== Custom Time Range Test ===');
+            
+            // Get current time and 7 days ago
+            const now = Date.now();
+            const weekAgo = now - (7 * 24 * 60 * 60 * 1000);
+            
+            console.log('Testing with custom range: 7 days ago to now');
+            console.log('Start:', new Date(weekAgo));
+            console.log('End:', new Date(now));
+            
+            showTimeRangeFilter(weekAgo, now, 
+                (result) => {
+                    console.log('✅ Custom Test - Apply clicked:');
+                    console.log('  Selected time range:', result);
+                    console.log('  Start date:', new Date(result.start));
+                    console.log('  End date:', new Date(result.end));
+                    console.log('  Duration (days):', (result.end - result.start) / (1000 * 60 * 60 * 24));
+                },
+                () => {
+                    console.log('❌ Custom Test - Cancelled');
+                }
+            );
+        }
+        
+        // Initialize
+        console.log('🌐 Browser environment detected. Ready for testing!');
+        console.log('Try clicking any test button above.');
+    </script>
+</body>
+</html>

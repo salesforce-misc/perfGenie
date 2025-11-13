@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeSeriesChart Simple Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .controls {
+            margin: 20px 0;
+            text-align: center;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #my-chart {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TimeSeriesChart Simple Example</h1>
+        
+        <div class="controls">
+            <button onclick="loadSampleData()">Load Sample Data</button>
+            <button onclick="loadMoreData()">Load More Data</button>
+            <button onclick="changeToBar()">Bar Chart</button>
+            <button onclick="changeToLine()">Line Chart</button>
+            <button onclick="changeToArea()">Area Chart</button>
+            <button onclick="toggleCustomLegend()">Toggle Custom Legend</button>
+            <button onclick="clearChart()">Clear Chart</button>
+        </div>
+        
+        <div id="my-chart"></div>
+    </div>
+
+    <!-- Include required libraries -->
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.20/c3.min.js"></script>
+    <script src="timeseries-component.js"></script>
+    
+    <script>
+        // Initialize the chart
+        let chart;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            chart = new TimeSeriesChart('my-chart', {
+                height: 400,
+                showLegend: true,
+                showCustomLegend: false, // Hide custom legend by default
+                showTooltip: true,
+                showGrid: true,
+                animate: true
+            });
+            
+            // Load initial data
+            loadSampleData();
+            addSampleData();
+        });
+        
+        function loadSampleData() {
+            const timestamps = [
+                '2024-01-01T00:00:00Z',
+                '2024-01-01T01:00:00Z', 
+                '2024-01-01T02:00:00Z',
+                '2024-01-01T03:00:00Z',
+                '2024-01-01T04:00:00Z'
+            ];
+            
+            const metrics = {
+                'CPU Usage': [45.2, 52.1, 38.7, 61.3, 49.8],
+                'Memory Usage': [67.5, 71.2, 65.9, 73.4, 69.1],
+                'Disk I/O': [12.3, 15.7, 8.9, 18.2, 14.6]
+            };
+            
+            chart.loadData(timestamps, metrics);
+        }
+        
+        function loadMoreData() {
+            const timestamps = [
+                '2024-01-01T00:00:00Z', '2024-01-01T00:30:00Z', '2024-01-01T01:00:00Z',
+                '2024-01-01T01:30:00Z', '2024-01-01T02:00:00Z', '2024-01-01T02:30:00Z',
+                '2024-01-01T03:00:00Z', '2024-01-01T03:30:00Z', '2024-01-01T04:00:00Z',
+                '2024-01-01T04:30:00Z', '2024-01-01T05:00:00Z', '2024-01-01T05:30:00Z'
+            ];
+            
+            const metrics = {
+                'CPU Usage': [45.2, 52.1, 38.7, 61.3, 49.8, 55.1, 42.6, 58.9, 47.3, 51.7, 44.8, 59.2],
+                'Memory Usage': [67.5, 71.2, 65.9, 73.4, 69.1, 72.8, 68.5, 75.2, 70.3, 74.1, 67.9, 76.5],
+                'Disk I/O': [12.3, 15.7, 8.9, 18.2, 14.6, 16.4, 11.7, 19.8, 13.2, 17.5, 10.8, 20.1],
+                'Network I/O': [8.4, 12.1, 6.7, 14.9, 11.3, 13.6, 9.2, 15.8, 10.5, 12.7, 7.9, 16.2]
+            };
+            
+            chart.loadData(timestamps, metrics);
+        }
+        
+        function changeToBar() {
+            chart.setChartType('bar');
+        }
+        
+        function changeToLine() {
+            chart.setChartType('line');
+        }
+        
+        function changeToArea() {
+            chart.setChartType('area');
+        }
+        
+        function clearChart() {
+            chart.clearData();
+        }
+        
+        function toggleCustomLegend() {
+            const currentState = chart.options.showCustomLegend;
+            chart.setCustomLegendVisibility(!currentState);
+            console.log('Custom legend visibility:', !currentState ? 'ON' : 'OFF');
+        }
+    </script>
+</body>
+</html>

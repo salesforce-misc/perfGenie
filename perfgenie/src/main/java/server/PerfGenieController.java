@@ -17,6 +17,7 @@ import org.springframework.http.HttpRange;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import perfgenie.utils.ArgusQueryT;
 import perfgenie.utils.Utils;
 
 import java.io.File;
@@ -40,8 +41,17 @@ public class PerfGenieController {
                                             @RequestBody Lense lense) throws IOException{
         lense.setTimestamp(System.currentTimeMillis());
         lense.setSource(host);
-        service.addLense(Utils.toJson(lense),lense.getTimestamp(),lense.getSource(), lense.getType());
+        service.addLense(Utils.toJson(lense),lense.getTimestamp(),lense.getSource(), lense.getType(), lense.getName());
         return ResponseEntity.ok("Lense added successfully!");
+    }
+
+    @PostMapping(path = {"/component/casp/v1/saveexpression","/component/casp/v1/saveexpression/{host}"})
+    public ResponseEntity<String> saveExpression(@PathVariable(required = false, name = "host") String host,
+                                                @RequestBody Expression expression) throws IOException{
+        expression.setTimestamp(System.currentTimeMillis());
+        expression.setSource(host);
+        service.addExpression(Utils.toJson(expression),expression.getTimestamp(),expression.getSource(), expression.getType(),expression.getName());
+        return ResponseEntity.ok("Derived metric added successfully!");
     }
 
     @GetMapping(path = {"/component/casp/v1/getlenses","/component/casp/v1/getlenses/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -53,6 +63,16 @@ public class PerfGenieController {
         return res;
     }
 
+    @GetMapping(path = {"/component/casp/v1/getexpressions","/component/casp/v1/getexpressions/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getExpressions(
+            @PathVariable(required = false, name = "host") String host,
+            @RequestParam(required = false, name = "metadata_query") final List<String> metadataQuery) throws IOException {
+        final Map<String, String> queryMap = queryToMap(metadataQuery);
+        String res = service.getCanaryExpressions(queryMap,host);
+        return res;
+    }
+
+    //http://localhost:15372/component/casp/v1/canaryview/timeseries/perf-genie-test41/?cell=deu72&start=1761116400000&end=1761670800000
     @GetMapping(path = {"/component/casp/v1/canaryview/timeseries/","/component/casp/v1/canaryview/timeseries/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String getCanaryCellTimeSeries(
             @PathVariable(required = false, name = "host") String host,
@@ -62,6 +82,49 @@ public class PerfGenieController {
         final Map<String, String> queryMap = new HashMap<>();
         String res = service.getAllCanaryCellTimeSeries(start, end, cell,host);
         return Utils.toJson(res);
+    }
+
+    @GetMapping(path = {"/component/casp/v1/canaryview/pidstats/","/component/casp/v1/canaryview/pidstats/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getCanaryPidstats(
+            @PathVariable(required = false, name = "host") String host,
+            @RequestParam(required = false, name = "start") final long start,
+            @RequestParam(required = false, name = "end") final long end,
+            @RequestParam(required = false, name = "instance") final String instance,
+            @RequestParam(required = false, name = "cell") final String cell) throws IOException {
+        final Map<String, String> queryMap = new HashMap<>();
+        String res = service.getAllPidStatData(start, end, cell,instance,host);
+        return res;
+    }
+
+    @GetMapping(path = {"/v1/kpodview"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String kpodview(
+            @RequestParam(required = false, name = "start") final long start,
+            @RequestParam(required = false, name = "end") final long end,
+            @RequestParam(required = false, name = "cell") final String cell,
+            @RequestParam(required = false, name = "domain") final String domain,
+            @RequestParam(required = false, name = "instance") final String instance) throws IOException {
+        return ArgusQueryT.kPODKeyMetricSums(start,end,instance,domain,cell);
+    }
+
+    @GetMapping(path = {"/v1/geniequery"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    
+    public String geniequery(
+        @RequestParam(required = false, name = "query") final String query,
+        @RequestParam(required = false, name = "refId") final String refId,
+        @RequestParam(required = false, name = "datasource") final String datasource,
+        @RequestParam(required = false, name = "previous") final String previous,
+        @RequestParam(required = false, name = "startTimestamp") final long startTimestamp,
+        @RequestParam(required = false, name = "endTimestamp") final long endendTimestamp) throws IOException {
+        //System.out.println(refId);
+        if(datasource.equals("genie")){
+            if(refId.equals("pidstats")){
+                String[] array = query.split(":");
+                return service.getAllPidStatData(startTimestamp,endendTimestamp,array[3],array[2],array[4]);
+            }
+        }else {
+            return ArgusQueryT.genieQuery(query, refId, previous);
+        }
+        return null;
     }
 
     @GetMapping(path = {"/component/casp/v1/canaryview","/component/casp/v1/canaryview/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -139,6 +202,17 @@ public class PerfGenieController {
             ) throws IOException {
         //creates duplicates
         return service.processSideBySideCanaryTask(start,end,cell,host);
+    }
+
+    @GetMapping(path = {"/component/casp/v1/refreshcanary","/component/casp/v1/refreshcanary/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String refreshcanary(
+            @PathVariable(required = false, name = "host") String host,
+            @RequestParam(required = false, name = "start") final long start,
+            @RequestParam(required = false, name = "end") final long end,
+            @RequestParam(required = false, name = "cell") final String cell
+    ) throws IOException {
+        //creates duplicates
+        return service.processRefreshRequest(start,end,cell,host);
     }
 
     @GetMapping(path = {"/component/casp/v1/processperfswat","/component/casp/v1/processperfswat/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -538,6 +612,68 @@ public class PerfGenieController {
         }
 
         private String type;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        private String name;
+
+    }
+
+    public static class Expression {
+        public String getConfig() {
+            return config;
+        }
+
+        public void setConfig(String config) {
+            this.config = config;
+        }
+
+        private String config;
+
+        public String getSource() {
+            return source;
+        }
+
+        public void setSource(String source) {
+            this.source = source;
+        }
+
+        private String source;
+
+        public long getTimestamp() {
+            return timestamp;
+        }
+
+        public void setTimestamp(long timestamp) {
+            this.timestamp = timestamp;
+        }
+
+        private long timestamp;
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        private String type;
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        private String name;
 
     }
 

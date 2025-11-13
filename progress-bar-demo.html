@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REST API Progress Bar</title>
+    <!-- Include the Progress Bar Component -->
+    <script src="perfgenie/src/main/resources/static/js/progressbar.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .demo-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        .demo-section h2 {
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn-api {
+            background-color: #0070d2;
+            color: white;
+        }
+
+        .btn-api:hover:not(:disabled) {
+            background-color: #005fb2;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .response-area {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .response-area pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 12px;
+            color: #333;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .code-example {
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- Progress bar will be created automatically by progressbar.js component -->
+
+    <div class="container">
+        <h1>REST API Progress Bar Demo</h1>
+        
+        <div class="demo-section">
+            <h2>Example 1: Simple API Call</h2>
+            <p>Make a simple GET request to demonstrate the progress bar.</p>
+            <button class="btn-api" onclick="makeSimpleApiCall()">Make API Call (No Icon)</button>
+            <button class="btn-api" onclick="makeSimpleApiCallWithIcon()">Make API Call (With Icon 🏃)</button>
+            <div class="status" id="status1">Ready</div>
+            <div class="response-area" id="response1" style="display: none;">
+                <pre id="responseContent1"></pre>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>Example 2: POST Request with Data</h2>
+            <p>Make a POST request with JSON data.</p>
+            <button class="btn-api" onclick="makePostApiCall()">Make POST API Call</button>
+            <button class="btn-api" onclick="makePostApiCallWithExplosion()">POST with Celebration Explosion 🎉</button>
+            <div class="status" id="status2">Ready</div>
+            <div class="response-area" id="response2" style="display: none;">
+                <pre id="responseContent2"></pre>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>Example 3: Simulated Slow API Call</h2>
+            <p>Simulate a slow API call (3 seconds) to see the progress bar in action.</p>
+            <button class="btn-api" onclick="makeSlowApiCall()">Make Slow API Call</button>
+            <div class="status" id="status3">Ready</div>
+            <div class="response-area" id="response3" style="display: none;">
+                <pre id="responseContent3"></pre>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>Multiple Progress Bars</h2>
+            <p>Run multiple progress bars simultaneously with different IDs. Each progress bar operates independently.</p>
+            <button class="btn-api" onclick="startMultipleBars()">Start All Progress Bars</button>
+            <button class="btn-api" onclick="stopMultipleBars()">Stop All Progress Bars</button>
+            <button class="btn-api" onclick="stopSpecificBar('topBar')">Stop Top Bar Only</button>
+            <button class="btn-api" onclick="stopSpecificBar('bottomBar')">Stop Bottom Bar Only</button>
+            <div class="status" id="status4">Click "Start All Progress Bars" to see multiple progress bars running simultaneously</div>
+            <div class="code-example">
+                <pre>// Start multiple progress bars with different IDs
+ProgressBar.start({ id: 'topBar', position: 'top' });
+ProgressBar.start({ id: 'bottomBar', position: 'bottom' });
+ProgressBar.start({ id: 'containerBar', container: 'myDivId', position: 'top' });
+
+// Stop specific progress bar by ID
+ProgressBar.stop('topBar');
+
+// Stop all progress bars
+ProgressBar.stop('topBar');
+ProgressBar.stop('bottomBar');
+ProgressBar.stop('containerBar');</pre>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>Change Progress Bar Position</h2>
+            <p>You can specify where the progress bar appears (top or bottom of the page).</p>
+            <button class="btn-api" onclick="demoPosition('top')">Demo at Top</button>
+            <button class="btn-api" onclick="demoPosition('bottom')">Demo at Bottom</button>
+            <div class="status" id="statusPosition">Click buttons above to change position and see it in action</div>
+        </div>
+
+        <div class="demo-section">
+            <h2>Progress Bar Inside a Div</h2>
+            <p>Place the progress bar inside a specific container div instead of fixed at top/bottom of page.</p>
+            <div id="demoContainer" style="border: 2px solid #0070d2; padding: 20px; margin: 20px 0; background-color: #f9f9f9; min-height: 200px; position: relative;">
+                <h3 style="margin-top: 0;">This is a demo container div</h3>
+                <p>Progress bar will appear inside this div when you click the buttons below.</p>
+                <button class="btn-api" onclick="demoInContainer('top')">Progress at Top of Div</button>
+                <button class="btn-api" onclick="demoInContainer('bottom')">Progress at Bottom of Div</button>
+            </div>
+            <div class="status" id="status5">Ready - click buttons to see progress bar inside the div above</div>
+            <div class="code-example">
+                <pre>// Option 1: Place inside a specific div (with ID)
+ProgressBar.setContainer('myDivId', 'myBarId');  // Container ID, Bar ID
+ProgressBar.setPosition('top', 'myBarId');       // Position, Bar ID
+ProgressBar.start({ id: 'myBarId' });
+
+// Option 2: Set container and position when starting (one line)
+ProgressBar.start({
+    id: 'myBarId',        // Unique ID for this progress bar
+    container: 'myDivId',  // Div ID string, HTMLElement, or null for fixed position
+    position: 'top'       // 'top' or 'bottom'
+});
+
+// Option 3: Fixed position (top/bottom of page) - set container to null
+ProgressBar.start({
+    id: 'topBar',         // Unique ID for this progress bar
+    container: null,      // or don't specify container
+    position: 'top'       // 'top' or 'bottom'
+});
+
+// Make your API call
+fetch('/api/endpoint')
+    .then(response => response.json())
+    .then(data => {
+        ProgressBar.stop('myBarId');  // Stop specific progress bar by ID
+        // Handle data
+    });</pre>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>Animated Icon at Progress Tip 🎨</h2>
+            <p>Show an animated icon (emoji or GIF) at the tip of the progress bar that moves with the progress.</p>
+            <button class="btn-api" onclick="demoIconDefault()">Default Running Icon (🏃)</button>
+            <button class="btn-api" onclick="demoIconCustom('⚡')">Lightning Icon (⚡)</button>
+            <button class="btn-api" onclick="demoIconCustom('🚶')">Walking Icon (🚶)</button>
+            <button class="btn-api" onclick="demoIconCustom('🏄')">Surfing Icon (🏄)</button>
+            <button class="btn-api" onclick="demoIconCustom('🚀')">Rocket Icon (🚀)</button>
+            <button class="btn-api" onclick="demoIconCustom('💨')">Dashing Icon (💨)</button>
+            <div class="status" id="statusIcon">Click any button above to see the animated icon at the progress tip!</div>
+            <div class="code-example">
+                <pre>// Enable default running emoji icon (🏃)
+ProgressBar.start({ showIcon: true });
+
+// Use custom emoji icon
+ProgressBar.start({ 
+    showIcon: true, 
+    icon: '⚡'  // Any emoji character
+});
+
+// Use custom image/GIF icon
+ProgressBar.start({ 
+    showIcon: true, 
+    icon: { 
+        type: 'image', 
+        value: 'path/to/running.gif' 
+    } 
+});
+
+// Icon starting from top
+ProgressBar.start({ 
+    showIcon: true,
+    icon: '🏃',
+    iconStartPosition: 'top'  // 'top' or 'bottom' (default: 'bottom')
+});
+
+// Icon with splash effect when it touches progress bar (like surfboard hitting water)
+ProgressBar.start({ 
+    showIcon: true,
+    icon: '🏄',  // Surfboard emoji
+    iconStartPosition: 'top',
+    splash: true  // Show splash effect when icon touches progress bar
+});
+
+// Combine with other options
+ProgressBar.start({ 
+    id: 'myBar',
+    position: 'top',
+    container: 'myDiv',
+    showIcon: true,
+    icon: '🚀',  // Rocket emoji
+    iconStartPosition: 'top',  // Icon starts from top-left
+    splash: true  // Show splash effect when icon touches progress bar
+});</pre>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>Explosion Effects 💥🎉</h2>
+            <p>Show explosion effects when stopping the progress bar. Choose between crash explosion (fire/smoke/debris) or celebration (colorful sparkles).</p>
+            <div id="explosionContainer" style="border: 2px solid #0070d2; padding: 20px; margin: 20px 0; background-color: #f9f9f9; min-height: 150px; position: relative;">
+                <h3 style="margin-top: 0;">Progress bar with explosion effects will appear here</h3>
+                <p>Click the buttons below to see the explosion effects inside this container.</p>
+            </div>
+            <button class="btn-api" onclick="demoExplosionCrash()">Crash Explosion 💥</button>
+            <button class="btn-api" onclick="demoExplosionCelebration()">Celebration Explosion 🎉</button>
+            <button class="btn-api" onclick="demoExplosionWithIcon()">Explosion with Icon 🏃💥</button>
+            <button class="btn-api" onclick="demoSurfboardExplosion()">Surfboard Icon with Celebration 🏄🎉</button>
+            <div class="status" id="statusExplosion">Click any button above to see the explosion effect when stopping the progress bar!</div>
+            <div class="code-example">
+                <pre>// Stop with crash explosion (fire, smoke, debris)
+ProgressBar.stop({ explode: true });
+
+// Stop with celebration explosion (colorful sparkles)
+ProgressBar.stop({ explode: true, celebrate: true });
+
+// Stop specific progress bar with crash explosion
+ProgressBar.stop({ id: 'myBar', explode: true });
+
+// Stop specific progress bar with celebration explosion
+ProgressBar.stop({ id: 'myBar', explode: true, celebrate: true });
+
+// Combine with icon
+ProgressBar.start({ showIcon: true, icon: '🏃' });
+// ... make API call ...
+ProgressBar.stop({ explode: true, celebrate: true });</pre>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>Usage Code Example</h2>
+            <div class="code-example">
+                <pre>// Multiple progress bars on the same page
+// Each progress bar needs a unique ID
+
+// Example 1: Progress bar inside a div
+ProgressBar.start({
+    id: 'apiCall1',        // Unique ID for this progress bar
+    container: 'myDivId',  // Your div ID or HTMLElement
+    position: 'top'        // 'top' or 'bottom'
+});
+
+// Example 2: Fixed position at top/bottom of page with icon
+ProgressBar.start({
+    id: 'globalProgress',  // Unique ID for this progress bar
+    container: null,      // null or omit for fixed position
+    position: 'top',      // 'top' or 'bottom'
+    showIcon: true,       // Show animated icon at tip
+    icon: '⚡'            // Custom emoji icon
+});
+
+// Example 3: Progress bar with image/GIF icon
+ProgressBar.start({
+    id: 'animatedBar',
+    showIcon: true,
+    icon: {
+        type: 'image',
+        value: 'https://example.com/running.gif'
+    }
+});
+
+// Make your API call
+fetch('/api/endpoint', {
+    method: 'GET',
+    headers: {
+        'Content-Type': 'application/json'
+    }
+})
+.then(response => response.json())
+.then(data => {
+    // Stop specific progress bar after API returns
+    ProgressBar.stop('apiCall1');
+    // Handle response
+    console.log(data);
+})
+.catch(error => {
+    // Stop specific progress bar on error
+    ProgressBar.stop('apiCall1');
+    console.error('Error:', error);
+});
+
+// Example 4: Default progress bar (backward compatible, uses 'default' ID)
+ProgressBar.start({ position: 'top' });
+// Later...
+ProgressBar.stop();  // Stops the 'default' progress bar</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // All progress bar functionality is now in progressbar.js component
+        // Use ProgressBar.start(), ProgressBar.stop(), etc.
+
+        /**
+         * Example 1: Simple API call (without icon)
+         */
+        async function makeSimpleApiCall() {
+            const statusDiv = document.getElementById('status1');
+            const responseDiv = document.getElementById('response1');
+            const responseContent = document.getElementById('responseContent1');
+            
+            // Start progress bar (no icon)
+            ProgressBar.start();
+            statusDiv.textContent = 'Making API call...';
+            statusDiv.style.backgroundColor = '#fff3cd';
+            statusDiv.style.borderLeftColor = '#ffc107';
+            responseDiv.style.display = 'none';
+            
+            try {
+                // Example API call - replace with your actual endpoint
+                const response = await fetch('https://jsonplaceholder.typicode.com/posts/1');
+                const data = await response.json();
+                
+                // Stop progress bar
+                ProgressBar.stop();
+                
+                // Handle response
+                statusDiv.textContent = 'API call completed successfully!';
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.borderLeftColor = '#4CAF50';
+                responseContent.textContent = JSON.stringify(data, null, 2);
+                responseDiv.style.display = 'block';
+                
+            } catch (error) {
+                // Stop progress bar on error
+                ProgressBar.stop();
+                
+                statusDiv.textContent = 'API call failed: ' + error.message;
+                statusDiv.style.backgroundColor = '#f8d7da';
+                statusDiv.style.borderLeftColor = '#dc3545';
+                responseContent.textContent = 'Error: ' + error.message;
+                responseDiv.style.display = 'block';
+            }
+        }
+
+        /**
+         * Example 1b: Simple API call with icon
+         */
+        async function makeSimpleApiCallWithIcon() {
+            const statusDiv = document.getElementById('status1');
+            const responseDiv = document.getElementById('response1');
+            const responseContent = document.getElementById('responseContent1');
+            
+            // Start progress bar with icon, starting from top
+            ProgressBar.start({
+                showIcon: true,
+                icon: '🏃',  // Running emoji
+                iconStartPosition: 'top'  // Icon starts from top-left
+            });
+            statusDiv.textContent = 'Making API call with animated icon...';
+            statusDiv.style.backgroundColor = '#fff3cd';
+            statusDiv.style.borderLeftColor = '#ffc107';
+            responseDiv.style.display = 'none';
+            
+            try {
+                // Example API call - replace with your actual endpoint
+                const response = await fetch('https://jsonplaceholder.typicode.com/posts/1');
+                const data = await response.json();
+                
+                // Stop progress bar
+                ProgressBar.stop();
+                
+                // Handle response
+                statusDiv.textContent = 'API call completed successfully! The running icon moved with the progress.';
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.borderLeftColor = '#4CAF50';
+                responseContent.textContent = JSON.stringify(data, null, 2);
+                responseDiv.style.display = 'block';
+                
+            } catch (error) {
+                // Stop progress bar on error
+                ProgressBar.stop();
+                
+                statusDiv.textContent = 'API call failed: ' + error.message;
+                statusDiv.style.backgroundColor = '#f8d7da';
+                statusDiv.style.borderLeftColor = '#dc3545';
+                responseContent.textContent = 'Error: ' + error.message;
+                responseDiv.style.display = 'block';
+            }
+        }
+
+        /**
+         * Example 2: POST API call
+         */
+        async function makePostApiCall() {
+            const statusDiv = document.getElementById('status2');
+            const responseDiv = document.getElementById('response2');
+            const responseContent = document.getElementById('responseContent2');
+            
+            // Start progress bar
+            ProgressBar.start();
+            statusDiv.textContent = 'Making POST request...';
+            statusDiv.style.backgroundColor = '#fff3cd';
+            statusDiv.style.borderLeftColor = '#ffc107';
+            responseDiv.style.display = 'none';
+            
+            try {
+                // Example POST API call
+                const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: 'Test Post',
+                        body: 'This is a test post',
+                        userId: 1
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Stop progress bar
+                ProgressBar.stop();
+                
+                // Handle response
+                statusDiv.textContent = 'POST request completed successfully!';
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.borderLeftColor = '#4CAF50';
+                responseContent.textContent = JSON.stringify(data, null, 2);
+                responseDiv.style.display = 'block';
+                
+            } catch (error) {
+                // Stop progress bar on error
+                ProgressBar.stop();
+                
+                statusDiv.textContent = 'POST request failed: ' + error.message;
+                statusDiv.style.backgroundColor = '#f8d7da';
+                statusDiv.style.borderLeftColor = '#dc3545';
+                responseContent.textContent = 'Error: ' + error.message;
+                responseDiv.style.display = 'block';
+            }
+        }
+
+        /**
+         * Example 2b: POST API call with celebration explosion
+         */
+        async function makePostApiCallWithExplosion() {
+            const statusDiv = document.getElementById('status2');
+            const responseDiv = document.getElementById('response2');
+            const responseContent = document.getElementById('responseContent2');
+            
+            // Start progress bar with icon
+            ProgressBar.start({
+                showIcon: true,
+                icon: '🚀'
+            });
+            statusDiv.textContent = 'Making POST request with celebration explosion...';
+            statusDiv.style.backgroundColor = '#fff3cd';
+            statusDiv.style.borderLeftColor = '#ffc107';
+            responseDiv.style.display = 'none';
+            
+            try {
+                // Example POST API call
+                const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: 'Test Post',
+                        body: 'This is a test post',
+                        userId: 1
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Stop progress bar with celebration explosion
+                ProgressBar.stop({ explode: true, celebrate: true });
+                
+                // Handle response
+                statusDiv.textContent = 'POST request completed successfully! Watch the celebration explosion!';
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.borderLeftColor = '#4CAF50';
+                responseContent.textContent = JSON.stringify(data, null, 2);
+                responseDiv.style.display = 'block';
+                
+            } catch (error) {
+                // Stop progress bar with crash explosion on error
+                ProgressBar.stop({ explode: true });
+                
+                statusDiv.textContent = 'POST request failed: ' + error.message;
+                statusDiv.style.backgroundColor = '#f8d7da';
+                statusDiv.style.borderLeftColor = '#dc3545';
+                responseContent.textContent = 'Error: ' + error.message;
+                responseDiv.style.display = 'block';
+            }
+        }
+
+        /**
+         * Example 3: Slow API call simulation
+         */
+        async function makeSlowApiCall() {
+            const statusDiv = document.getElementById('status3');
+            const responseDiv = document.getElementById('response3');
+            const responseContent = document.getElementById('responseContent3');
+            
+            // Start progress bar
+            ProgressBar.start();
+            statusDiv.textContent = 'Making slow API call (simulated 3 seconds)...';
+            statusDiv.style.backgroundColor = '#fff3cd';
+            statusDiv.style.borderLeftColor = '#ffc107';
+            responseDiv.style.display = 'none';
+            
+            try {
+                // Simulate a slow API call with delay
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                
+                // Make the actual API call
+                const response = await fetch('https://jsonplaceholder.typicode.com/posts/1');
+                const data = await response.json();
+                
+                // Stop progress bar
+                ProgressBar.stop();
+                
+                // Handle response
+                statusDiv.textContent = 'Slow API call completed successfully!';
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.borderLeftColor = '#4CAF50';
+                responseContent.textContent = JSON.stringify(data, null, 2);
+                responseDiv.style.display = 'block';
+                
+            } catch (error) {
+                // Stop progress bar on error
+                ProgressBar.stop();
+                
+                statusDiv.textContent = 'Slow API call failed: ' + error.message;
+                statusDiv.style.backgroundColor = '#f8d7da';
+                statusDiv.style.borderLeftColor = '#dc3545';
+                responseContent.textContent = 'Error: ' + error.message;
+                responseDiv.style.display = 'block';
+            }
+        }
+
+        // Alternative: jQuery AJAX example (if you're using jQuery)
+        window.makeAjaxCall = function(url, options = {}) {
+            // Start progress bar
+            ProgressBar.start();
+            
+            const defaultOptions = {
+                url: url,
+                method: 'GET',
+                contentType: 'application/json',
+                dataType: 'json',
+                success: function(data) {
+                    ProgressBar.stop();
+                    if (options.success) options.success(data);
+                },
+                error: function(xhr, status, error) {
+                    ProgressBar.stop();
+                    if (options.error) options.error(xhr, status, error);
+                }
+            };
+            
+            // Merge user options with defaults
+            const ajaxOptions = { ...defaultOptions, ...options };
+            
+            // If jQuery is available, use it
+            if (typeof $ !== 'undefined') {
+                $.ajax(ajaxOptions);
+            } else {
+                console.warn('jQuery not available. Use fetch API instead.');
+            }
+        };
+
+        /**
+         * Start multiple progress bars simultaneously
+         */
+        function startMultipleBars() {
+            const statusDiv = document.getElementById('status4');
+            statusDiv.textContent = 'Starting multiple progress bars...';
+            statusDiv.style.backgroundColor = '#fff3cd';
+            statusDiv.style.borderLeftColor = '#ffc107';
+            
+            // Start top progress bar
+            ProgressBar.start({ id: 'topBar', position: 'top' });
+            
+            // Start bottom progress bar
+            ProgressBar.start({ id: 'bottomBar', position: 'bottom' });
+            
+            // Start progress bar in container
+            ProgressBar.start({ id: 'containerBar', container: 'demoContainer', position: 'top' });
+            
+            statusDiv.textContent = 'All progress bars running! Click "Stop" buttons to stop them individually or all at once.';
+            statusDiv.style.backgroundColor = '#e3f2fd';
+            statusDiv.style.borderLeftColor = '#2196F3';
+        }
+
+        /**
+         * Stop all progress bars
+         */
+        function stopMultipleBars() {
+            ProgressBar.stop('topBar');
+            ProgressBar.stop('bottomBar');
+            ProgressBar.stop('containerBar');
+            
+            const statusDiv = document.getElementById('status4');
+            statusDiv.textContent = 'All progress bars stopped!';
+            statusDiv.style.backgroundColor = '#d4edda';
+            statusDiv.style.borderLeftColor = '#4CAF50';
+        }
+
+        /**
+         * Stop a specific progress bar by ID
+         * @param {string} id - Progress bar ID
+         */
+        function stopSpecificBar(id) {
+            ProgressBar.stop(id);
+            
+            const statusDiv = document.getElementById('status4');
+            statusDiv.textContent = `Progress bar "${id}" stopped!`;
+            statusDiv.style.backgroundColor = '#fff3cd';
+            statusDiv.style.borderLeftColor = '#ffc107';
+        }
+
+        /**
+         * Demo function to show progress bar at specified position
+         * @param {string} position - 'top' or 'bottom'
+         */
+        function demoPosition(position) {
+            const statusDiv = document.getElementById('statusPosition');
+            statusDiv.textContent = `Progress bar appearing at ${position}...`;
+            statusDiv.style.backgroundColor = '#fff3cd';
+            statusDiv.style.borderLeftColor = '#ffc107';
+            
+            // Reset to fixed position first
+            ProgressBar.setContainer(null, 'positionDemo');
+            
+            // Start progress at specified position with specific ID
+            ProgressBar.start({ id: 'positionDemo', position: position });
+            
+            // Simulate API call (2 seconds)
+            setTimeout(() => {
+                ProgressBar.stop('positionDemo');
+                statusDiv.textContent = `Progress bar completed at ${position}!`;
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.borderLeftColor = '#4CAF50';
+            }, 2000);
+        }
+
+        /**
+         * Demo function to show progress bar inside a container div
+         * @param {string} position - 'top' or 'bottom'
+         */
+        function demoInContainer(position) {
+            const statusDiv = document.getElementById('status5');
+            statusDiv.textContent = `Progress bar appearing inside div at ${position}...`;
+            statusDiv.style.backgroundColor = '#fff3cd';
+            statusDiv.style.borderLeftColor = '#ffc107';
+            
+            // Start progress inside container at specified position with specific ID
+            ProgressBar.start({
+                id: 'containerDemo',
+                container: 'demoContainer',
+                position: position
+            });
+            
+            // Simulate API call (2 seconds)
+            setTimeout(() => {
+                ProgressBar.stop('containerDemo');
+                statusDiv.textContent = `Progress bar completed inside div at ${position}!`;
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.borderLeftColor = '#4CAF50';
+            }, 2000);
+        }
+
+        /**
+         * Demo function to show progress bar with default running icon
+         */
+        function demoIconDefault() {
+            const statusDiv = document.getElementById('statusIcon');
+            statusDiv.textContent = 'Starting progress bar with default running icon (🏃) from top...';
+            statusDiv.style.backgroundColor = '#fff3cd';
+            statusDiv.style.borderLeftColor = '#ffc107';
+            
+            // Start progress with default icon, starting from top
+            ProgressBar.start({
+                id: 'iconDemo',
+                showIcon: true,  // Uses default 🏃 emoji
+                iconStartPosition: 'top'  // Icon starts from top-left
+            });
+            
+            // Simulate API call (3 seconds)
+            setTimeout(() => {
+                ProgressBar.stop('iconDemo');
+                statusDiv.textContent = 'Progress bar with default icon completed! The running icon (🏃) jumped from top and moved with the progress.';
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.borderLeftColor = '#4CAF50';
+            }, 3000);
+        }
+
+        /**
+         * Demo function to show progress bar with custom emoji icon
+         * @param {string} emoji - Emoji character to display
+         */
+        function demoIconCustom(emoji) {
+            const statusDiv = document.getElementById('statusIcon');
+            statusDiv.textContent = `Starting progress bar with ${emoji} icon from top...`;
+            statusDiv.style.backgroundColor = '#fff3cd';
+            statusDiv.style.borderLeftColor = '#ffc107';
+            
+            // Start progress with custom emoji icon, starting from top
+            ProgressBar.start({
+                id: 'iconDemo',
+                showIcon: true,
+                icon: emoji,
+                iconStartPosition: 'top'  // Icon starts from top-left
+            });
+            
+            // Simulate API call (3 seconds)
+            setTimeout(() => {
+                ProgressBar.stop('iconDemo');
+                statusDiv.textContent = `Progress bar with ${emoji} icon completed! The icon jumped from top and moved smoothly with the progress.`;
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.borderLeftColor = '#4CAF50';
+            }, 3000);
+        }
+
+        /**
+         * Demo function to show surfboard icon with celebration explosion on div top
+         */
+        function demoSurfboardExplosion() {
+            const statusDiv = document.getElementById('statusExplosion');
+            statusDiv.textContent = 'Starting surfboard icon with splash and celebration explosion inside container from top...';
+            statusDiv.style.backgroundColor = '#fff3cd';
+            statusDiv.style.borderLeftColor = '#ffc107';
+            
+            // Start progress bar with surfboard icon inside container, starting from top with splash effect
+            ProgressBar.start({
+                id: 'explosionDemo',
+                container: 'explosionContainer',
+                position: 'top',
+                showIcon: true,
+                icon: '🏄',  // Surfboard emoji
+                iconStartPosition: 'top',  // Icon starts from top-left
+                splash: true  // Show splash effect when icon touches progress bar
+            });
+            
+            // Simulate API call (3 seconds), then stop with celebration explosion
+            setTimeout(() => {
+                ProgressBar.stop({ id: 'explosionDemo', explode: true, celebrate: true });
+                statusDiv.textContent = 'Surfboard icon glided from top, splashed when touching the progress bar, rode it, and exploded into celebration sparkles! 🏄💦🎉';
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.borderLeftColor = '#4CAF50';
+            }, 3000);
+        }
+
+        /**
+         * Demo function to show crash explosion effect
+         */
+        function demoExplosionCrash() {
+            const statusDiv = document.getElementById('statusExplosion');
+            statusDiv.textContent = 'Starting progress bar with crash explosion inside container...';
+            statusDiv.style.backgroundColor = '#fff3cd';
+            statusDiv.style.borderLeftColor = '#ffc107';
+            
+            // Start progress bar inside container
+            ProgressBar.start({
+                id: 'explosionDemo',
+                container: 'explosionContainer',
+                position: 'top'
+            });
+            
+            // Simulate API call (3 seconds), then stop with crash explosion
+            setTimeout(() => {
+                ProgressBar.stop({ id: 'explosionDemo', explode: true });
+                statusDiv.textContent = 'Progress bar stopped with crash explosion! Watch the fire, smoke, and debris at the tip.';
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.borderLeftColor = '#4CAF50';
+            }, 3000);
+        }
+
+        /**
+         * Demo function to show celebration explosion effect
+         */
+        function demoExplosionCelebration() {
+            const statusDiv = document.getElementById('statusExplosion');
+            statusDiv.textContent = 'Starting progress bar with celebration explosion inside container...';
+            statusDiv.style.backgroundColor = '#fff3cd';
+            statusDiv.style.borderLeftColor = '#ffc107';
+            
+            // Start progress bar inside container
+            ProgressBar.start({
+                id: 'explosionDemo',
+                container: 'explosionContainer',
+                position: 'top'
+            });
+            
+            // Simulate API call (3 seconds), then stop with celebration explosion
+            setTimeout(() => {
+                ProgressBar.stop({ id: 'explosionDemo', explode: true, celebrate: true });
+                statusDiv.textContent = 'Progress bar stopped with celebration explosion! Watch the colorful sparkles at the tip.';
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.borderLeftColor = '#4CAF50';
+            }, 3000);
+        }
+
+        /**
+         * Demo function to show explosion effect with icon
+         */
+        function demoExplosionWithIcon() {
+            const statusDiv = document.getElementById('statusExplosion');
+            statusDiv.textContent = 'Starting progress bar with icon and celebration explosion inside container...';
+            statusDiv.style.backgroundColor = '#fff3cd';
+            statusDiv.style.borderLeftColor = '#ffc107';
+            
+            // Start progress bar with icon inside container, starting from top
+            ProgressBar.start({
+                id: 'explosionDemo',
+                container: 'explosionContainer',
+                position: 'top',
+                showIcon: true,
+                icon: '🏃',
+                iconStartPosition: 'top'  // Icon starts from top-left
+            });
+            
+            // Simulate API call (3 seconds), then stop with celebration explosion
+            setTimeout(() => {
+                ProgressBar.stop({ id: 'explosionDemo', explode: true, celebrate: true });
+                statusDiv.textContent = 'Progress bar stopped with icon and celebration explosion! The icon reached the tip and exploded into sparkles.';
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.borderLeftColor = '#4CAF50';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

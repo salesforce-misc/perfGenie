@@ -1,11 +1,67 @@
 {
   "config": {
     "ind86": {
-      "enabled": false,
-      "type": 2,
+      "enabled": true,
+      "type": 1,
       "peak": [
-        12,
-        8
+        16,
+        14
+      ]
+    },
+    "aus90": {
+      "enabled": true,
+      "type": 1,
+      "peak": [
+        7,
+        12
+      ]
+    },
+    "deu90": {
+      "enabled": true,
+      "type": 1,
+      "peak": [
+        23,
+        22
+      ]
+    },
+    "aus70": {
+      "enabled": true,
+      "type": 1,
+      "peak": [
+        7,
+        12
+      ]
+    },
+    "usa314": {
+      "enabled": true,
+      "type": 1,
+      "peak": [
+        23,
+        12
+      ]
+    },
+    "usa1000": {
+      "enabled": true,
+      "type": 1,
+      "peak": [
+        21,
+        12
+      ]
+    },
+    "usa12": {
+      "enabled": true,
+      "type": 1,
+      "peak": [
+        23,
+        22
+      ]
+    },
+    "ind126": {
+      "enabled": true,
+      "type": 1,
+      "peak": [
+        17,
+        13
       ]
     },
     "deu86": {
@@ -13,7 +69,7 @@
       "type": 1,
       "peak": [
         16,
-        12
+        13
       ]
     },
     "aus60": {
@@ -28,7 +84,7 @@
       "enabled": true,
       "type": 1,
       "peak": [
-        22,
+        21,
         11
       ]
     },
@@ -41,7 +97,7 @@
       ]
     },
     "ind56": {
-      "enabled": true,
+      "enabled": false,
       "type": 1,
       "peak": [
         1,
@@ -185,91 +241,91 @@
       ]
     },
     "ind64": {
-      "enabled": false,
-      "type": 2,
+      "enabled": true,
+      "type": 1,
       "peak": [
-        10,
-        6
+        15,
+        12
       ]
     },
     "ind90": {
-      "enabled": false,
-      "type": 2,
+      "enabled": true,
+      "type": 1,
       "peak": [
-        14,
-        6
+        15,
+        11
       ]
     },
     "usa34": {
-      "enabled": false,
-      "type": 2,
+      "enabled": true,
+      "type": 1,
       "peak": [
-        19,
-        5
+        21,
+        11
       ]
     },
     "ind58": {
-      "enabled": false,
-      "type": 2,
+      "enabled": true,
+      "type": 1,
       "peak": [
-        13,
-        4
+        15,
+        11
       ]
     },
     "usa290": {
-      "enabled": false,
-      "type": 2,
+      "enabled": true,
+      "type": 1,
       "peak": [
-        19,
-        6
+        22,
+        12
       ]
     },
     "usa286": {
-      "enabled": false,
-      "type": 2,
+      "enabled": true,
+      "type": 1,
       "peak": [
-        19,
-        6
+        23,
+        12
       ]
     },
     "usa476": {
-      "enabled": false,
-      "type": 2,
+      "enabled": true,
+      "type": 1,
       "peak": [
-        19,
-        6
+        22,
+        12
       ]
     },
     "usa430": {
-      "enabled": false,
-      "type": 2,
+      "enabled": true,
+      "type": 1,
       "peak": [
-        19,
-        6
+        22,
+        12
       ]
     },
     "usa442": {
-      "enabled": false,
-      "type": 2,
+      "enabled": true,
+      "type": 1,
       "peak": [
-        19,
-        6
+        22,
+        12
       ]
     },
     "swe16": {
-      "enabled": false,
-      "type": 2,
+      "enabled": true,
+      "type": 1,
       "peak": [
-        13,
-        4
+        15,
+        11
       ]
     },
     "swe72": {
-      "enabled": false,
-      "type": 2,
+      "enabled": true,
+      "type": 1,
       "peak": [
-        13,
-        4
+        16,
+        12
       ]
     },
     "usa952s": {
@@ -297,11 +353,11 @@
       ]
     },
     "swe70": {
-      "enabled": false,
-      "type": 2,
+      "enabled": true,
+      "type": 1,
       "peak": [
-        13,
-        4
+        15,
+        11
       ]
     },
     "usa950s": {
@@ -339,8 +395,6 @@
     "swe128s": {
       "enabled": false,
       "type": 2,
-
-
       "peak": [
         13,
         4

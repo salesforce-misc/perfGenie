@@ -1,0 +1,1979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenieDashboard Example</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="alternate icon" href="/favicon.ico">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .code-snippet {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+        .code-snippet h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .code-snippet pre {
+            margin: 10px 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <!-- Dashboard Container -->
+    <div id="dashboard-container"></div>
+    
+    <!-- Usage Code Snippet (moved to bottom) -->
+    <div class="code-snippet">
+        <h3>How to Use GenieDashboard Component</h3>
+        <pre><code>// 1. Include Chart.js library
+&lt;script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"&gt;&lt;/script&gt;
+
+// 2. Include GenieDashboard component
+&lt;script src="path/to/genieDashboard.js"&gt;&lt;/script&gt;
+
+// 3. Create a container div
+&lt;div id="dashboard-container"&gt;&lt;/div&gt;
+
+// 4. Initialize and render the dashboard
+const dashboard = new GenieDashboard('dashboard-container');
+
+// 5. Define dashboard configuration (Grafana-style JSON)
+const dashboardJson = {
+    // Optional: Enable toolbar with time range selector and controls
+    toolbar: {
+        enabled: true,  // Set to false to hide toolbar
+        showTimeRange: true,  // Show time range selector (clock icon)
+        showInterval: true,  // Show interval input
+        showAggregation: true,  // Show aggregation dropdown
+        showRefresh: true  // Show refresh button
+    },
+    panels: [
+        {
+            id: 1,
+            type: 'timeseries',  // or 'stat', 'table', 'gauge', 'bargauge'
+            title: 'Example Time Series Chart with Tooltips',
+            description: 'Hover over the chart to see interactive tooltips showing all series values at each timestamp',
+            gridPos: { x: 0, y: 0, w: 12, h: 8 },  // Grid position (24-column system)
+            stats: ['avg', 'max', 'min', 'p90', 'p95', 'p99'],  // Statistics for stats tab
+            fieldConfig: {
+                defaults: {
+                    unit: 'ms',  // Unit for Y-axis
+                    custom: {
+                        drawStyle: 'line',
+                        lineWidth: 0.75,
+                        fillOpacity: 0.1,
+                        showPoints: 'never'
+                    }
+                },
+                // Overrides to customize series display names and colors
+                overrides: [
+                    {
+                        matcher: { id: 'byRegexp', options: '/cpu_usage|CPU Usage/' },
+                        properties: [
+                            {
+                                id: 'displayName',
+                                value: 'CPU Usage'
+                            },
+                            {
+                                id: 'color',
+                                value: { fixedColor: 'red', mode: 'fixed' }
+                            }
+                        ]
+                    },
+                    {
+                        matcher: { id: 'byRegexp', options: '/memory_usage|Memory Usage/' },
+                        properties: [
+                            {
+                                id: 'displayName',
+                                value: 'Memory Usage'
+                            },
+                            {
+                                id: 'color',
+                                value: { fixedColor: 'blue', mode: 'fixed' }
+                            }
+                        ]
+                    }
+                ]
+            },
+            options: {
+                legend: {
+                    showLegend: true,
+                    displayMode: 'list',
+                    placement: 'bottom'
+                },
+                tooltip: {
+                    mode: 'multi'
+                }
+            },
+            // Optional: Right-click context menu for series names in Statistics table
+            seriesContextMenu: [
+                {
+                    label: 'View Details',
+                    handler: function(seriesName) {
+                        console.log('View details for:', seriesName);
+                        alert('View details for: ' + seriesName);
+                    }
+                },
+                {
+                    label: 'Hide Series',
+                    handler: function(seriesName) {
+                        console.log('Hide series:', seriesName);
+                        // Implement hide logic here
+                    }
+                },
+                {
+                    label: 'Export Data',
+                    handler: function(seriesName) {
+                        console.log('Export data for:', seriesName);
+                        // Implement export logic here
+                    }
+                }
+            ],
+            targets: [
+                {
+                    refId: 'A',
+                    rawSql: 'SELECT * FROM metrics WHERE time >= $start AND time <= $end',
+                    datasource: { type: 'argus' }
+                },
+                {
+                    refId: 'B',
+                    rawSql: 'SELECT * FROM metrics WHERE time >= $start AND time <= $end',
+                    datasource: { type: 'argus' }
+                }
+            ]
+        },
+        {
+            id: 2,
+            type: 'stat',
+            title: 'Total Requests',
+            gridPos: { x: 12, y: 0, w: 6, h: 4 },
+            fieldConfig: {
+                defaults: {
+                    unit: 'short'
+                }
+            },
+            options: {
+                reduceOptions: {
+                    calcs: ['lastNotNull']
+                }
+            },
+            targets: [
+                {
+                    refId: 'A',
+                    rawSql: 'SELECT COUNT(*) FROM requests',
+                    datasource: { type: 'argus' }
+                }
+            ]
+        }
+    ]
+};
+
+// 6. Define input configuration (endpoints and variables)
+const inputJson = {
+    // REST endpoint with QEURY placeholder (will be replaced with URL-encoded query)
+    argus: '/api/v1/geniequery/?query=QEURY',
+    
+    // Variables to replace in queries (all $ keys will be replaced)
+    '$start': Date.now() - 3600000,  // 1 hour ago
+    '$end': Date.now(),
+    '$cell': 'usa12',
+    '$substrate': 'aws',
+    '$fi': 'fi1',
+    '$fd': 'fd1',
+    '$interval': '5m',
+    '$agg': 'avg'
+};
+
+// 7. Render the dashboard
+await dashboard.render(dashboardJson, inputJson);
+
+// 8. Optional: Clean up when done
+dashboard.destroy();</code></pre>
+        
+        <h3>dashboard.fetchData() Method</h3>
+        <pre><code>/**
+ * Fetch data from a REST endpoint for a panel target
+ * 
+ * @param {string} endpoint - REST endpoint URL (with QEURY placeholder replaced by URL-encoded query)
+ * @param {string} query - Processed query string (with $variables replaced)
+ * @param {number} [startTimestamp=null] - Optional start timestamp for the data range (in milliseconds)
+ * @param {number} [endTimestamp=null] - Optional end timestamp for the data range (in milliseconds)
+ * @returns {Promise&lt;Array|Object&gt;} - Promise resolving to data in one of the supported formats:
+ *   - Array of series objects (recommended)
+ *   - Single series object with datapoints
+ *   - Single series object with times/values arrays
+ * 
+ * @description
+ * This method is called automatically by the component for each target in a panel.
+ * You can override it to provide custom data fetching logic or mock data.
+ * 
+ * The method receives:
+ * - endpoint: Full URL with query encoded (e.g., "/api/v1/query?query=SELECT%20*%20FROM...")
+ * - query: The processed SQL/query string with $variables replaced
+ * - startTimestamp: Start time in milliseconds (if available)
+ * - endTimestamp: End time in milliseconds (if available)
+ * 
+ * For "Compare with previous" feature, the timestamps represent the period being queried
+ * (which may be shifted for previous period comparisons).
+ * 
+ * Return formats:
+ * 1. Array of series (recommended - matches safepoint.json format):
+ *    [
+ *      {
+ *        scope: "core.aws.aws-prod0-uswest2.core1",
+ *        metric: "cpu_usage",
+ *        tags: { cell: "usa12", role: "app", ... },
+ *        displayName: "Optional - auto-generated if not provided",
+ *        datapoints: { "timestamp": value, ... }
+ *      },
+ *      ...
+ *    ]
+ * 
+ * 2. Single series with array datapoints:
+ *    {
+ *      displayName: "Series Name",
+ *      datapoints: [[value, timestamp], [value, timestamp], ...]
+ *    }
+ * 
+ * 3. Single series with object datapoints:
+ *    {
+ *      displayName: "Series Name",
+ *      datapoints: { "timestamp": value, ... }
+ *    }
+ * 
+ * 4. Single series with times/values arrays:
+ *    {
+ *      displayName: "Series Name",
+ *      times: [timestamp1, timestamp2, ...],
+ *      values: [value1, value2, ...]
+ *    }
+ * 
+ * Example - Override with mock data:
+ */
+const dashboard = new GenieDashboard('dashboard-container');
+
+dashboard.fetchData = async function(endpoint, query, startTimestamp = null, endTimestamp = null) {
+    // Use provided timestamps if available, otherwise use defaults
+    const queryStart = startTimestamp || (Date.now() - 3600000);
+    const queryEnd = endTimestamp || Date.now();
+    
+    // Generate mock time series data for the time range
+    const datapoints = {};
+    const dataPointCount = 20;
+    const timeRange = queryEnd - queryStart;
+    const interval = Math.max(60000, Math.floor(timeRange / dataPointCount));
+    
+    for (let i = 0; i < dataPointCount; i++) {
+        const timestamp = queryStart + (i * interval);
+        datapoints[timestamp] = Math.random() * 100 + 50;
+    }
+    
+    // Return array format (recommended)
+    return [{
+        scope: 'core.aws.aws-prod0-uswest2.core1',
+        metric: 'cpu_usage',
+        tags: {
+            cell: 'usa12',
+            role: 'app',
+            service: 'coreapp'
+        },
+        // displayName will be auto-generated from scope:metric:{tags}
+        datapoints: datapoints  // Object format: { "timestamp": value }
+    }];
+};
+
+await dashboard.render(dashboardJson, inputJson);
+
+/**
+ * Example - Multiple targets (tracking call order):
+ * 
+ * When multiple targets are defined, fetchData is called sequentially:
+ * - First call: target A (refId: 'A')
+ * - Second call: target B (refId: 'B')
+ * - Third call: target A with previous period (if comparison enabled)
+ * - Fourth call: target B with previous period (if comparison enabled)
+ * 
+ * You can track calls using a counter:
+ */
+let timeseriesFetchCount = 0;
+
+dashboard.fetchData = async function(endpoint, query, startTimestamp = null, endTimestamp = null) {
+    timeseriesFetchCount++;
+    
+    // Determine which target based on call order
+    const isTargetA = (timeseriesFetchCount % 2 === 1);
+    const targetMetric = isTargetA ? 'cpu_usage' : 'memory_usage';
+    
+    // Generate data based on target and timestamps...
+    // (See full example in exampleWithMockData function)
+    
+    return [/* series data */];
+};</code></pre>
+        
+        <h3>Example with Mock Data (No API Calls)</h3>
+        <pre><code>// Override fetchData method to return mock data
+const dashboard = new GenieDashboard('dashboard-container');
+
+// Track fetch calls to handle multiple targets and previous period detection
+let fetchCallCount = 0;
+let timeseriesFetchCount = 0; // Track only timeseries panel calls (exclude stat panel)
+let originalStartValue = null;
+let originalEndValue = null;
+let currentPeriodRange = null;
+
+dashboard.fetchData = async function(endpoint, query, startTimestamp = null, endTimestamp = null) {
+    fetchCallCount++;
+    
+    // Check if this is for a stat panel
+    if (query && query.includes('COUNT')) {
+        // For stat panels, return a single value
+        let isPreviousPeriod = false;
+        // Detect previous period (simplified - check timestamp difference)
+        if (originalStartValue && startTimestamp && startTimestamp < originalStartValue - 3600000) {
+            isPreviousPeriod = true;
+        }
+        return {
+            displayName: 'Total Requests',
+            datapoints: {
+                [Date.now()]: Math.floor(Math.random() * 10000) + (isPreviousPeriod ? 4000 : 6000)
+            }
+        };
+    }
+    
+    // Track timeseries panel calls
+    timeseriesFetchCount++;
+    // Determine which target based on call order
+    // Odd calls (1, 3, 5...) = target A, Even calls (2, 4, 6...) = target B
+    const isTargetA = (timeseriesFetchCount % 2 === 1);
+    const targetMetric = isTargetA ? 'cpu_usage' : 'memory_usage';
+    
+    // Detect previous period
+    let isPreviousPeriod = false;
+    if (originalStartValue && startTimestamp && startTimestamp < originalStartValue - 3600000) {
+        isPreviousPeriod = true;
+    }
+    
+    // Use provided timestamps if available, otherwise use defaults
+    let queryStart = startTimestamp || (Date.now() - 3600000);
+    let queryEnd = endTimestamp || Date.now();
+    
+    // Store original period on first call
+    if (!originalStartValue) {
+        originalStartValue = queryStart;
+        originalEndValue = queryEnd;
+        currentPeriodRange = queryEnd - queryStart;
+    }
+    
+    // Generate multiple series for the target metric
+    const response = [];
+    const scopes = ['core.aws.aws-prod0-uswest2.core1', 'core.aws.aws-prod0-uswest2.core2'];
+    const cells = ['usa12', 'usa13'];
+    const roles = ['app', 'api'];
+    const seriesCount = 1; // 1 series per target
+    
+    for (let i = 0; i < seriesCount; i++) {
+        const scope = scopes[i % scopes.length];
+        const cell = cells[i % cells.length];
+        const role = roles[i % roles.length];
+        
+        // Generate datapoints for this series
+        const datapoints = {};
+        const dataPointCount = 20;
+        const timeRange = queryEnd - queryStart;
+        const interval = Math.max(60000, Math.floor(timeRange / dataPointCount));
+        
+        // Different base values for different metrics
+        let baseValue = 50;
+        if (targetMetric === 'cpu_usage') {
+            baseValue = 60 + (i * 15); // CPU usage: 60-75%
+        } else if (targetMetric === 'memory_usage') {
+            baseValue = 70 + (i * 20); // Memory usage: 70-90%
+        }
+        
+        for (let j = 0; j < dataPointCount; j++) {
+            const timestamp = queryStart + (j * interval);
+            const variation = (Math.random() * 20) - 10; // ±10 variation
+            const adjustedValue = isPreviousPeriod 
+                ? (baseValue + variation) * (0.9 + Math.random() * 0.2) 
+                : baseValue + variation;
+            datapoints[timestamp] = Math.max(0, adjustedValue);
+        }
+        
+        response.push({
+            scope: scope,
+            metric: targetMetric,
+            tags: {
+                cell: cell,
+                role: role,
+                service: 'coreapp',
+                pod: cell + '-pod-' + (i % 3),
+                k8s_pod_name: cell + '-casam-app-blue-' + (i % 2),
+                environment: 'prod'
+            },
+            // displayName will be auto-generated from scope:metric:{tags}
+            datapoints: datapoints  // Object format: { "timestamp": value }
+        });
+    }
+    
+    return response; // Return array format
+};
+
+await dashboard.render(dashboardJson, inputJson);</code></pre>
+        
+        <h3>Supported Response Formats</h3>
+        <pre><code>// Format 1: Array of series (recommended - like safepoint.json)
+[
+    {
+        "scope": "core.aws.aws-prod0-uswest2.core1",
+        "metric": "safepoint",
+        "tags": {
+            "cell": "usa12",
+            "role": "app",
+            "service": "coreapp",
+            ...
+        },
+        "displayName": "Optional - built from scope:metric:{tags} if not provided",
+        "datapoints": {
+            "1762106820000": 1.013,
+            "1762106880000": 0.904,
+            ...
+        }
+    },
+    ...
+]
+
+// Format 2: Single series with array datapoints
+{
+    "displayName": "Series Name",
+    "datapoints": [[value, timestamp], [value, timestamp], ...]
+}
+
+// Format 3: Single series with object datapoints
+{
+    "displayName": "Series Name",
+    "datapoints": {
+        "1762106820000": 1.013,
+        "1762106880000": 0.904,
+        ...
+    }
+}
+
+// Format 4: Separate times and values arrays
+{
+    "displayName": "Series Name",
+    "times": [timestamp1, timestamp2, ...],
+    "values": [value1, value2, ...]
+}</code></pre>
+        
+        <h3>DisplayName Auto-Generation</h3>
+        <pre><code>// If displayName is not provided in response, it's built from:
+// scope:metric:{tag1=value1,tag2=value2,...}
+
+// Example:
+{
+    "scope": "core.aws.aws-prod0-uswest2.core1",
+    "metric": "cpu_usage",
+    "tags": {
+        "cell": "usa12",
+        "role": "app",
+        "service": "coreapp"
+    }
+    // displayName will be built as:
+    // "core.aws.aws-prod0-uswest2.core1:cpu_usage:{cell=usa12,role=app,service=coreapp}"
+}
+
+// Panel overrides can still provide custom display names via fieldConfig.overrides</code></pre>
+        
+        <h3>FieldConfig Overrides for Series Names</h3>
+        <pre><code>// Use fieldConfig.overrides to customize series display names and colors
+// This is useful when API returns series with long names or you want user-friendly labels
+
+fieldConfig: {
+    defaults: {
+        unit: 'ms',
+        custom: {
+            drawStyle: 'line',
+            lineWidth: 0.75
+        }
+    },
+    overrides: [
+        {
+            // Match series by regex pattern (case-insensitive)
+            matcher: { 
+                id: 'byRegexp',           // Matcher type: regex pattern
+                options: '/cpu_usage|CPU Usage/'  // Regex pattern (remove slashes for matching)
+            },
+            properties: [
+                {
+                    id: 'displayName',    // Property to override
+                    value: 'CPU Usage'     // Custom display name
+                },
+                {
+                    id: 'color',          // Optional: override color
+                    value: { 
+                        fixedColor: 'red', 
+                        mode: 'fixed' 
+                    }
+                }
+            ]
+        },
+        {
+            matcher: { id: 'byRegexp', options: '/memory_usage|Memory Usage/' },
+            properties: [
+                {
+                    id: 'displayName',
+                    value: 'Memory Usage'
+                },
+                {
+                    id: 'color',
+                    value: { fixedColor: 'blue', mode: 'fixed' }
+                }
+            ]
+        }
+    ]
+}
+
+// How it works:
+// 1. The matcher uses 'byRegexp' to match series names against a regex pattern
+// 2. The pattern can match against:
+//    - Original series name (from API response)
+//    - Metric name (e.g., "cpu_usage")
+//    - Display name (e.g., "CPU Usage")
+//    - Built display name (e.g., "core.aws...:cpu_usage:{tags}")
+// 3. When a match is found, the override properties are applied
+// 4. displayName override replaces the series name in legends, tooltips, and statistics
+// 5. color override can set a fixed color for the series
+
+// Example: Series with name "core.aws.prod:cpu_usage:{cell=usa12}" will match
+// pattern "/cpu_usage/" and display as "CPU Usage" in the chart
+
+// Multiple overrides are checked in order - first match wins</code></pre>
+        
+        <h3>Tooltip Configuration</h3>
+        <pre><code>// Configure tooltips in panel options
+options: {
+    tooltip: {
+        mode: 'multi',    // 'single' = one series at a time, 'multi' = all series at once
+        sort: 'desc'       // 'asc', 'desc', or 'none' - sort values in tooltip
+    }
+}
+
+// Tooltip will show:
+// - Timestamp (formatted based on time range)
+// - All series values at that point (if mode: 'multi')
+// - Series name and value pairs
+// - Unit information if available</code></pre>
+        
+        <h3>Compare with Previous Period</h3>
+        <pre><code>// Add "previous" key to inputJson to enable period comparison dropdown
+const inputJson = {
+    argus: '/api/v1/query?query=QEURY',
+    '$start': Date.now() - 3600000,  // Current period start
+    '$end': Date.now(),               // Current period end
+    'stats': ['avg', 'max', 'min', 'p90', 'p95', 'p99'],
+    'previous': 'none,-1d,-7d,-14d,-21d,-28d'  // Comma-separated list: "none" + durations with "-" prefix
+    // Format: "none" + comma-separated durations like '-1d', '-7d', '-14d', '-21d', '-28d', '-1w', '-1m'
+};
+
+// When "previous" is specified:
+// 1. A dropdown appears next to the tabs with options: None, -1d, -7d, -14d, -21d, -28d
+// 2. When a duration is selected, all queries are re-run with $start and $end reduced by the duration
+// 3. Previous period series are suffixed with "{duration}" (e.g., "Series Name(-7d)")
+//    - This format groups related series together in tooltips and legends
+// 4. Stats table shows current value with % change in brackets:
+//    - Green for increases: "100.00 (+5.2%)"
+//    - Red for decreases: "95.50 (-4.8%)"
+
+// Example with multiple duration options:
+{
+    "argus": "/v1/geniequery/?query=QEURY",
+    "$start": 1762106820000,
+    "$end": 1762711620000,
+    "stats": ["avg", "max", "min", "p90", "p95", "p99"],
+    "previous": "none,-1d,-7d,-14d,-21d,-28d"  // Dropdown with None, -1d, -7d, -14d, -21d, -28d
+}
+
+// When a duration is selected:
+// - Chart shows both current and previous series (previous suffixed with "(-{duration})")
+//   Example: "CPU Usage" and "CPU Usage(-7d)" appear next to each other in tooltips/legends
+// - Statistics table shows: "Current Value (+X.X%)" or "Current Value (-X.X%)"
+// - Percentage change calculated as: ((current - previous) / previous) * 100</code></pre>
+    </div>
+    
+    <!-- GenieDashboard Component -->
+    <script src="perfgenie/src/main/resources/static/js/genieDashboard.js" onerror="handleScriptError()"></script>
+    
+    <script>
+        function handleScriptError() {
+            console.error('Failed to load genieDashboard.js. Please check the file path.');
+            document.getElementById('dashboard-container').innerHTML = 
+                '<div style="padding: 20px; color: red; font-size: 16px;">' +
+                '<strong>Error:</strong> Could not load genieDashboard.js<br>' +
+                'Please ensure the file path is correct or serve the page from a web server.<br>' +
+                'Expected path: perfgenie/src/main/resources/static/js/genieDashboard.js' +
+                '</div>';
+        }
+        
+        // Example with mock data (no API calls needed)
+        // Global variables to store dashboard instance and configs
+        let globalDashboard = null;
+        let globalDashboardJson = null;
+        let globalInputJson = null;
+        
+        // Function to format date to datetime-local input format (YYYY-MM-DDTHH:mm)
+        function formatDateForInput(date) {
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+        
+        // Function to parse datetime-local input to timestamp
+        function parseInputDate(dateString) {
+            if (!dateString) return null;
+            return new Date(dateString).getTime();
+        }
+        
+        // Function to calculate time range from minutes
+        function getTimeRangeFromMinutes(minutes) {
+            const end = Date.now();
+            const start = end - (minutes * 60 * 1000);
+            return { start, end };
+        }
+        
+        // Function to format time range display
+        function formatTimeRangeDisplay(start, end, isCustomRange = false) {
+            if (!start || !end) return 'Last 1h';
+            
+            const now = Date.now();
+            const diff = end - start;
+            const minutes = Math.floor(diff / (60 * 1000));
+            
+            // If custom range is explicitly selected, always show the actual range
+            if (isCustomRange) {
+                const startDate = new Date(start);
+                const endDate = new Date(end);
+                const startDateStr = startDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                const startTimeStr = startDate.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                const endDateStr = endDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                const endTimeStr = endDate.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                
+                // If same day, show only time for end
+                if (startDate.toDateString() === endDate.toDateString()) {
+                    return `${startDateStr} ${startTimeStr} - ${endTimeStr}`;
+                } else {
+                    return `${startDateStr} ${startTimeStr} - ${endDateStr} ${endTimeStr}`;
+                }
+            }
+            
+            // For quick intervals, check if end is "now"
+            if (end === now || Math.abs(end - now) < 60000) {
+                // End is "now", show as "Last X"
+                if (minutes < 60) return `Last ${minutes}m`;
+                if (minutes < 1440) return `Last ${Math.floor(minutes / 60)}h`;
+                return `Last ${Math.floor(minutes / 1440)}d`;
+            } else {
+                // Custom range (end is not "now")
+                const startDate = new Date(start);
+                const endDate = new Date(end);
+                const startDateStr = startDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                const startTimeStr = startDate.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                const endDateStr = endDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                const endTimeStr = endDate.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                
+                // If same day, show only time for end
+                if (startDate.toDateString() === endDate.toDateString()) {
+                    return `${startDateStr} ${startTimeStr} - ${endTimeStr}`;
+                } else {
+                    return `${startDateStr} ${startTimeStr} - ${endDateStr} ${endTimeStr}`;
+                }
+            }
+        }
+        
+        // Function to update inputJson from toolbar values
+        function updateInputJsonFromToolbar() {
+            const intervalInput = document.getElementById('toolbar-interval');
+            const aggSelect = document.getElementById('toolbar-agg');
+            
+            if (globalInputJson) {
+                // Time range is handled separately by time range popup
+                // Start and end are updated when quick interval is selected or custom range is applied
+                
+                if (intervalInput && intervalInput.value) {
+                    globalInputJson['$interval'] = intervalInput.value.trim();
+                }
+                if (aggSelect && aggSelect.value) {
+                    globalInputJson['$agg'] = aggSelect.value;
+                }
+            }
+        }
+        
+        // Track if custom range is selected
+        let isCustomRangeSelected = true; // Default to custom
+        
+        // Function to update toolbar from inputJson values
+        function updateToolbarFromInputJson() {
+            if (!globalInputJson) return;
+            
+            const intervalInput = document.getElementById('toolbar-interval');
+            const aggSelect = document.getElementById('toolbar-agg');
+            const timeRangeDisplay = document.getElementById('time-range-display');
+            const startInput = document.getElementById('toolbar-start');
+            const endInput = document.getElementById('toolbar-end');
+            
+            // Update time range display
+            if (globalInputJson['$start'] && globalInputJson['$end']) {
+                timeRangeDisplay.textContent = formatTimeRangeDisplay(globalInputJson['$start'], globalInputJson['$end'], isCustomRangeSelected);
+                
+                // Update custom range inputs
+                if (startInput) startInput.value = formatDateForInput(globalInputJson['$start']);
+                if (endInput) endInput.value = formatDateForInput(globalInputJson['$end']);
+            }
+            
+            if (intervalInput && globalInputJson['$interval']) {
+                intervalInput.value = globalInputJson['$interval'];
+            }
+            if (aggSelect && globalInputJson['$agg']) {
+                aggSelect.value = globalInputJson['$agg'];
+            }
+        }
+        
+        // Function to apply time range
+        function applyTimeRange(start, end, isCustom = false) {
+            if (!globalInputJson) return;
+            
+            globalInputJson['$start'] = start;
+            globalInputJson['$end'] = end;
+            isCustomRangeSelected = isCustom;
+            
+            // Update display
+            const timeRangeDisplay = document.getElementById('time-range-display');
+            timeRangeDisplay.textContent = formatTimeRangeDisplay(start, end, isCustomRangeSelected);
+            
+            // Close popup
+            const popup = document.getElementById('time-range-popup');
+            popup.classList.remove('show');
+        }
+        
+        // Function to refresh dashboard
+        async function refreshDashboard() {
+            if (!globalDashboard || !globalDashboardJson || !globalInputJson) {
+                console.warn('Dashboard not initialized yet');
+                return;
+            }
+            
+            // Update inputJson from toolbar
+            updateInputJsonFromToolbar();
+            
+            // Disable refresh button during render
+            const refreshButton = document.getElementById('toolbar-refresh');
+            refreshButton.disabled = true;
+            refreshButton.innerHTML = '<span>⏳</span>';
+            refreshButton.title = 'Refreshing...';
+            
+            try {
+                // Clear existing dashboard
+                const container = document.getElementById('dashboard-container');
+                if (container) {
+                    container.innerHTML = '';
+                }
+                
+                // Re-render dashboard
+                await globalDashboard.render(globalDashboardJson, globalInputJson);
+            } catch (error) {
+                console.error('Error refreshing dashboard:', error);
+                alert('Error refreshing dashboard: ' + error.message);
+            } finally {
+                // Re-enable refresh button
+                refreshButton.disabled = false;
+                refreshButton.innerHTML = '<span>🔄</span>';
+                refreshButton.title = 'Refresh dashboard';
+            }
+        }
+        
+        // Initialize toolbar event listeners
+        function initializeToolbar() {
+            const refreshButton = document.getElementById('toolbar-refresh');
+            if (refreshButton) {
+                refreshButton.addEventListener('click', refreshDashboard);
+            }
+            
+            // Time range popup
+            const timeRangeButton = document.getElementById('toolbar-time-range');
+            const timeRangePopup = document.getElementById('time-range-popup');
+            const quickIntervalBtns = document.querySelectorAll('.quick-interval-btn');
+            const customRangeSection = document.getElementById('time-range-custom');
+            const startInput = document.getElementById('toolbar-start');
+            const endInput = document.getElementById('toolbar-end');
+            const applyButton = document.getElementById('time-range-apply');
+            const cancelButton = document.getElementById('time-range-cancel');
+            
+            // Toggle popup
+            if (timeRangeButton && timeRangePopup) {
+                timeRangeButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    timeRangePopup.classList.toggle('show');
+                    
+                    // Update custom range inputs if they exist
+                    if (globalInputJson && globalInputJson['$start'] && globalInputJson['$end']) {
+                        if (startInput) {
+                            startInput.value = formatDateForInput(globalInputJson['$start']);
+                            startInput.removeAttribute('readonly');
+                            startInput.removeAttribute('disabled');
+                        }
+                        if (endInput) {
+                            endInput.value = formatDateForInput(globalInputJson['$end']);
+                            endInput.removeAttribute('readonly');
+                            endInput.removeAttribute('disabled');
+                        }
+                    }
+                });
+                
+                // Close popup when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!timeRangePopup.contains(e.target) && e.target !== timeRangeButton) {
+                        timeRangePopup.classList.remove('show');
+                    }
+                });
+            }
+            
+            // Quick interval buttons
+            quickIntervalBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Remove active class from all buttons
+                    quickIntervalBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    const mode = btn.getAttribute('data-mode');
+                    if (mode === 'custom') {
+                        // Custom range is already shown by default, just mark as active
+                        isCustomRangeSelected = true;
+                    } else {
+                        // Apply quick interval (not custom)
+                        isCustomRangeSelected = false;
+                        const minutes = parseInt(btn.getAttribute('data-minutes'));
+                        if (minutes) {
+                            const { start, end } = getTimeRangeFromMinutes(minutes);
+                            applyTimeRange(start, end, false);
+                            // Auto-refresh dashboard
+                            setTimeout(() => refreshDashboard(), 100);
+                        }
+                    }
+                });
+            });
+            
+            // Apply button for custom range
+            if (applyButton) {
+                applyButton.addEventListener('click', () => {
+                    if (startInput && endInput && startInput.value && endInput.value) {
+                        const start = parseInputDate(startInput.value);
+                        const end = parseInputDate(endInput.value);
+                        if (start && end && start < end) {
+                            applyTimeRange(start, end, true); // Mark as custom
+                            // Auto-refresh dashboard
+                            setTimeout(() => refreshDashboard(), 100);
+                        } else {
+                            alert('Start time must be before end time');
+                        }
+                    }
+                });
+            }
+            
+            // Also update when custom inputs change (on blur or enter)
+            if (startInput) {
+                startInput.addEventListener('change', () => {
+                    // Mark as custom when user manually changes
+                    isCustomRangeSelected = true;
+                });
+            }
+            if (endInput) {
+                endInput.addEventListener('change', () => {
+                    // Mark as custom when user manually changes
+                    isCustomRangeSelected = true;
+                });
+            }
+            
+            // Cancel button
+            if (cancelButton) {
+                cancelButton.addEventListener('click', () => {
+                    timeRangePopup.classList.remove('show');
+                });
+            }
+            
+            // Set initial state - mark "Custom" as active by default
+            const customBtn = document.querySelector('.quick-interval-btn[data-mode="custom"]');
+            if (customBtn) {
+                customBtn.classList.add('active');
+            }
+        }
+        
+        function exampleWithMockData() {
+            // Dashboard config with two panels: timeseries and stat
+            globalDashboardJson = {
+                // Toolbar configuration
+                toolbar: {
+                    enabled: true,  // Enable toolbar
+                    showTimeRange: true,  // Show time range selector (clock icon)
+                    showInterval: true,  // Show interval input
+                    showAggregation: true,  // Show aggregation dropdown
+                    showRefresh: true  // Show refresh button
+                },
+                panels: [
+                    {
+                        id: 1,
+                        type: 'timeseries',
+                        title: 'Example Time Series Chart with Tooltips',
+                        description: 'Hover over the chart to see interactive tooltips showing all series values at each timestamp',
+                        gridPos: { x: 0, y: 0, w: 24, h: 8 },
+                        stats: ['avg', 'max', 'min', 'p90', 'p95', 'p99'],  // Statistics to show in stats tab
+                        fieldConfig: {
+                            defaults: {
+                                unit: 'ms',
+                                custom: {
+                                    drawStyle: 'line',
+                                    lineWidth: 0.75,
+                                    fillOpacity: 0.1,
+                                    showPoints: 'never',  // Disable point dots
+                                    spanNulls: false
+                                }
+                            },
+                            overrides: [
+                                {
+                                    // Match series by metric name (cpu_usage) or displayName (CPU Usage)
+                                    matcher: { id: 'byRegexp', options: '/cpu_usage|CPU Usage/' },
+                                    properties: [
+                                        {
+                                            id: 'color',
+                                            value: { fixedColor: 'red', mode: 'fixed' }
+                                        },
+                                        {
+                                            id: 'displayName',
+                                            value: 'CPU Usage'
+                                        }
+                                    ]
+                                },
+                                {
+                                    // Match series by metric name (memory_usage) or displayName (Memory Usage)
+                                    matcher: { id: 'byRegexp', options: '/memory_usage|Memory Usage/' },
+                                    properties: [
+                                        {
+                                            id: 'color',
+                                            value: { fixedColor: 'blue', mode: 'fixed' }
+                                        },
+                                        {
+                                            id: 'displayName',
+                                            value: 'Memory Usage'
+                                        }
+                                    ]
+                                },
+                                {
+                                    matcher: { id: 'byRegexp', options: '/request_latency|Request Latency/' },
+                                    properties: [
+                                        {
+                                            id: 'color',
+                                            value: { fixedColor: 'green', mode: 'fixed' }
+                                        },
+                                        {
+                                            id: 'displayName',
+                                            value: 'Request Latency'
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        options: {
+                            legend: {
+                                showLegend: true,
+                                displayMode: 'tooltip',  // Use tooltip legend instead of list
+                                placement: 'bottom'
+                            },
+                            tooltip: {
+                                mode: 'multi',  // Show all series values at same time
+                                sort: 'desc'     // Sort by value descending
+                            },
+                            timeSeries: {
+                                zoomSlider: true,  // Enable zoom slider
+                                zoomSliderPosition: 'bottom',  // Position slider at bottom of chart panel
+                                sort: true,  // Enable sort icon to sort series by value
+                                cumulative: true  // Enable cumulative icon to show cumulative values
+                            }
+                        },
+                        // Right-click context menu for series names in Statistics table
+                        seriesContextMenu: [
+                            {
+                                label: 'View Details',
+                                handler: function(seriesName) {
+                                    console.log('View details for:', seriesName);
+                                    alert('View details for: ' + seriesName);
+                                }
+                            },
+                            {
+                                label: 'Hide Series',
+                                handler: function(seriesName) {
+                                    console.log('Hide series:', seriesName);
+                                    alert('Hide series: ' + seriesName);
+                                }
+                            },
+                            {
+                                label: 'Export Data',
+                                handler: function(seriesName) {
+                                    console.log('Export data for:', seriesName);
+                                    alert('Export data for: ' + seriesName);
+                                }
+                            }
+                        ],
+                        targets: [
+                            {
+                                refId: 'A',
+                                rawSql: 'SELECT * FROM metrics WHERE time >= $start AND time <= $end',
+                                datasource: { type: 'argus' }
+                            },
+                            {
+                                refId: 'B',
+                                rawSql: 'SELECT * FROM metrics WHERE time >= $start AND time <= $end',
+                                datasource: { type: 'argus' }
+                            }
+                        ]
+                    },
+                    {
+                        id: 2,
+                        type: 'stat',
+                        title: 'Total Requests',
+                        gridPos: { x: 0, y: 14, w: 6, h: 2 },
+                        fieldConfig: {
+                            defaults: {
+                                unit: 'short'
+                            }
+                        },
+                        options: {
+                            reduceOptions: {
+                                calcs: ['lastNotNull']
+                            }
+                        },
+                        targets: [
+                            {
+                                refId: 'A',
+                                rawSql: 'SELECT COUNT(*) FROM requests',
+                                datasource: { type: 'argus' }
+                            }
+                        ]
+                    },
+                    {
+                        id: 3,
+                        type: 'timeseries',
+                        title: 'Second Row Timeseries Panel',
+                        description: 'This panel is in the second row to test gridPos height and positioning',
+                        gridPos: { x: 0, y: 8, w: 24, h: 6 },
+                        stats: ['avg', 'max', 'min', 'p90', 'p95', 'p99'],
+                        fieldConfig: {
+                            defaults: {
+                                unit: 'ms',
+                                custom: {
+                                    drawStyle: 'line',
+                                    lineWidth: 0.75,
+                                    fillOpacity: 0.1,
+                                    showPoints: 'never',
+                                    spanNulls: false
+                                }
+                            },
+                            overrides: [
+                                {
+                                    // Match series by metric name (cpu_usage) or displayName (CPU Usage)
+                                    matcher: { id: 'byRegexp', options: '/cpu_usage|CPU Usage/' },
+                                    properties: [
+                                        {
+                                            id: 'displayName',
+                                            value: 'CPU Usage (Panel 3)'
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        options: {
+                            legend: {
+                                showLegend: true,
+                                displayMode: 'tooltip',  // Use tooltip legend instead of list
+                                placement: 'bottom'
+                            },
+                            tooltip: {
+                                mode: 'multi',
+                                sort: 'desc'
+                            },
+                            timeSeries: {
+                                zoomSlider: true,  // Enable zoom slider
+                                zoomSliderPosition: 'bottom',  // Position slider at bottom of chart panel
+                                sort: true,  // Enable sort icon to sort series by value
+                                cumulative: true  // Enable cumulative icon to show cumulative values
+                            }
+                        },
+                        targets: [
+                            {
+                                refId: 'A',
+                                rawSql: 'SELECT * FROM metrics WHERE time >= $start AND time <= $end',
+                                datasource: { type: 'argus' }
+                            }
+                        ]
+                    },
+                    {
+                        id: 4,
+                        type: 'timeseries',
+                        title: 'Comprehensive Configuration Test Panel - All Scenarios',
+                        description: 'Tests ALL panel configurations: aggregation (sum/avg), span aggregation (5m avg), comparison (previous period), percentage view (cpu_usage base), display name overrides (regex matching/non-matching), same scope different metrics, explicit vs auto-generated displayNames, matching vs non-matching series for aggregation tag. Use ∑ (sum) and x̄ (avg) icons to toggle aggregation, % icon for percentage view, and compare dropdown for previous period.',
+                        gridPos: { x: 0, y: 14, w: 24, h: 12 },
+                        stats: ['avg', 'max', 'min', 'p90', 'p95', 'p99'],
+                        // Aggregation config (common to both chart and stats table)
+                        // Preferred location: directly under panel (can also use panel.timeSeries.aggregation for backward compatibility)
+                        aggregation: {
+                            tag: 'cell',  // Aggregate series by 'cell' tag (or 'k8s_pod_name', 'scope', etc.)
+                            type: 'sum',  // Default aggregation type (sum or avg) - toggleable via ∑/x̄ buttons
+                            span: '5m',   // Span aggregation: align timestamps to 5-minute windows
+                            spanAggregation: 'avg'  // Span aggregation type: average values within each 5m window
+                        },
+                        statsTable: {
+                            percentBase: 'cpu_usage',  // Base metric for percentage calculation (always shows 100%)
+                            percentTargets: ['memory_usage', 'disk_usage', 'network_usage']  // Metrics shown as % of cpu_usage
+                        },
+                        fieldConfig: {
+                            defaults: {
+                                unit: 'ms',
+                                custom: {
+                                    drawStyle: 'line',
+                                    lineWidth: 0.75,
+                                    fillOpacity: 0.1,
+                                    showPoints: 'never',
+                                    spanNulls: false
+                                }
+                            },
+                            overrides: [
+                                {
+                                    // Regex matching: matches cpu_usage metric OR "CPU Usage" displayName
+                                    matcher: { id: 'byRegexp', options: '/cpu_usage|CPU Usage/' },
+                                    properties: [
+                                        {
+                                            id: 'displayName',
+                                            value: 'CPU Usage (Matched)'
+                                        },
+                                        {
+                                            id: 'color',
+                                            value: { fixedColor: 'red', mode: 'fixed' }
+                                        }
+                                    ]
+                                },
+                                {
+                                    // Regex matching: matches memory_usage metric OR "Memory Usage" displayName
+                                    matcher: { id: 'byRegexp', options: '/memory_usage|Memory Usage/' },
+                                    properties: [
+                                        {
+                                            id: 'displayName',
+                                            value: 'Memory Usage (Matched)'
+                                        },
+                                        {
+                                            id: 'color',
+                                            value: { fixedColor: 'blue', mode: 'fixed' }
+                                        }
+                                    ]
+                                },
+                                {
+                                    // Regex matching: matches disk_usage metric OR "Disk Usage" displayName
+                                    matcher: { id: 'byRegexp', options: '/disk_usage|Disk Usage/' },
+                                    properties: [
+                                        {
+                                            id: 'displayName',
+                                            value: 'Disk Usage (Matched)'
+                                        },
+                                        {
+                                            id: 'color',
+                                            value: { fixedColor: 'green', mode: 'fixed' }
+                                        }
+                                    ]
+                                },
+                                {
+                                    // Regex matching: matches network_usage metric
+                                    matcher: { id: 'byRegexp', options: '/network_usage/' },
+                                    properties: [
+                                        {
+                                            id: 'displayName',
+                                            value: 'Network Usage (Matched)'
+                                        },
+                                        {
+                                            id: 'color',
+                                            value: { fixedColor: 'purple', mode: 'fixed' }
+                                        }
+                                    ]
+                                },
+                                {
+                                    // Non-matching regex: will NOT match any series (to test non-matching behavior)
+                                    matcher: { id: 'byRegexp', options: '/nonexistent_metric_xyz123/' },
+                                    properties: [
+                                        {
+                                            id: 'displayName',
+                                            value: 'This Should Never Appear'
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        options: {
+                            legend: {
+                                showLegend: true,
+                                displayMode: 'tooltip',  // Use tooltip legend instead of list
+                                placement: 'bottom'
+                            },
+                            tooltip: {
+                                mode: 'multi',
+                                sort: 'desc'
+                            },
+                            timeSeries: {
+                                zoomSlider: true,  // Enable zoom slider
+                                zoomSliderPosition: 'bottom',  // Position slider at bottom of chart panel
+                                sort: true,  // Enable sort icon to sort series by value
+                                cumulative: true  // Enable cumulative icon to show cumulative values
+                            }
+                        },
+                        targets: [
+                            {
+                                refId: 'A',
+                                rawSql: 'SELECT * FROM metrics WHERE time >= $start AND time <= $end',
+                                datasource: { type: 'argus' }
+                            },
+                            {
+                                refId: 'B',
+                                rawSql: 'SELECT * FROM metrics WHERE time >= $start AND time <= $end',
+                                datasource: { type: 'argus' }
+                            },
+                            {
+                                refId: 'C',
+                                rawSql: 'SELECT * FROM metrics WHERE time >= $start AND time <= $end',
+                                datasource: { type: 'argus' }
+                            },
+                            {
+                                refId: 'D',
+                                rawSql: 'SELECT * FROM metrics WHERE time >= $start AND time <= $end',
+                                datasource: { type: 'argus' }
+                            }
+                        ]
+                    }
+                ]
+            };
+            
+            // Input config with endpoints and variables
+            globalInputJson = {
+                argus: '/api/v1/query?query=QEURY',
+                '$start': Date.now() - 3600000, // 1 hour ago
+                '$end': Date.now(),
+                '$cell': 'usa12',
+                '$substrate': 'aws',
+                '$fi': 'fi1',
+                '$fd': 'fd1',
+                '$interval': '1m', // Changed default to 1m
+                '$agg': 'avg',
+                'stats': ['avg', 'max', 'min', 'p90', 'p95', 'p99'],
+                'previous': 'none,-1d,-7d,-14d,-21d,-28d'  // Compare dropdown options
+            };
+            
+            // Mock the fetchData method to return sample data
+            globalDashboard = new GenieDashboard('dashboard-container');
+            
+            // Track panels by their target count to identify which panel is calling
+            // Panel 1 (id: 1) has 2 targets, Panel 3 (id: 3) has 1 target
+            let fetchCallCount = 0;
+            let timeseriesFetchCount = 0; // Track only timeseries panel calls (exclude stat)
+            let panelBaseValues = {}; // Store randomized base values per panel (consistent across calls)
+            let panelTargetCounters = {}; // Track target count per panel (to identify which target within panel)
+            let originalStartValue = null;
+            let originalEndValue = null;
+            let currentPeriodRange = null;
+            
+            // No need to store panel info - using simple counter approach instead
+            
+            // Override fetchData to return mock data based on query/refId
+            // We'll intercept fetchPanelData to pass target info, or use a wrapper
+            const originalFetchPanelData = globalDashboard.fetchPanelData.bind(globalDashboard);
+            globalDashboard.fetchPanelData = async function(panel, previousOffset = 0) {
+                const targets = panel.targets || [];
+                const allData = [];
+                
+                // Calculate actual start and end timestamps (after applying previousOffset)
+                let startTimestamp = null;
+                let endTimestamp = null;
+                if (this.inputConfig) {
+                    startTimestamp = this.inputConfig.$start;
+                    endTimestamp = this.inputConfig.$end;
+                    if (previousOffset > 0 && startTimestamp && endTimestamp) {
+                        startTimestamp = startTimestamp - previousOffset;
+                        endTimestamp = endTimestamp - previousOffset;
+                    }
+                }
+                
+                for (const target of targets) {
+                    try {
+                        const query = target.rawSql || target.expr || target.query || '';
+                        const processedQuery = this.processQuery(query, previousOffset);
+                        const endpoint = this.getEndpointForTarget(target);
+                        
+                        if (!endpoint) {
+                            console.warn(`GenieDashboard: No endpoint found for target:`, target);
+                            continue;
+                        }
+                        
+                        // Call our mocked fetchData with target info
+                        const response = await globalDashboard.fetchData(endpoint, processedQuery, startTimestamp, endTimestamp, target);
+                        allData.push({
+                            refId: target.refId || 'A',
+                            data: response,
+                            target: target
+                        });
+                    } catch (error) {
+                        console.error(`GenieDashboard: Error fetching data for target ${target.refId}:`, error);
+                    }
+                }
+                
+                return allData;
+            };
+            
+            const originalFetchData = globalDashboard.fetchData.bind(globalDashboard);
+            globalDashboard.fetchData = async function(endpoint, query, startTimestamp = null, endTimestamp = null, target = null) {
+                // Detect previous period by checking timestamps
+                // Previous period is only fetched when dropdown is changed, not during initial render
+                let isPreviousPeriod = false;
+                
+                console.log('fetchData called with query:', query, 'startTimestamp:', startTimestamp, 'endTimestamp:', endTimestamp);
+                
+                // Use provided timestamps if available (most reliable)
+                if (startTimestamp && endTimestamp) {
+                    // Store original period on first call
+                    if (originalStartValue === null) {
+                        originalStartValue = startTimestamp;
+                        originalEndValue = endTimestamp;
+                        currentPeriodRange = endTimestamp - startTimestamp;
+                        console.log('STORED current period from provided timestamps:', new Date(originalStartValue).toISOString(), 'to', new Date(originalEndValue).toISOString());
+                        // First call is always current period
+                        isPreviousPeriod = false;
+                    } else {
+                        // Check if this is a previous period by comparing timestamps
+                        // Previous period timestamps will be significantly earlier (subtracted by duration)
+                        const diff = originalStartValue - startTimestamp;
+                        const oneHourInMs = 60 * 60 * 1000;
+                        console.log('Timestamp diff:', diff, 'ms');
+                        // If difference is more than 1 hour, it's previous period
+                        // BUT: During initial render, all calls use the same timestamps, so diff should be 0 or very small
+                        // Only set to previous if we're sure this is a dropdown-triggered fetch
+                        if (diff > oneHourInMs) {
+                            isPreviousPeriod = true;
+                            console.log('Detected previous period based on timestamp difference:', diff, 'ms');
+                            window._detectedDuration = diff;
+                        } else {
+                            // If timestamps are the same or very close (within 1 hour), it's current period
+                            // This includes initial render where all targets use the same timestamps
+                            isPreviousPeriod = false;
+                            console.log('Timestamps match or close - treating as current period (diff:', diff, 'ms)');
+                        }
+                    }
+                } else if (query && typeof query === 'string') {
+                    // Fallback: Try to extract timestamps from query
+                    const timestampPattern = /\d{10,}/g;
+                    const matches = query.match(timestampPattern);
+                    
+                    if (matches && matches.length > 0) {
+                        const timestamps = matches.map(t => parseInt(t)).sort((a, b) => a - b);
+                        const extractedStartTimestamp = timestamps[0];
+                        const extractedEndTimestamp = timestamps[timestamps.length - 1];
+                        
+                        console.log('Found timestamps in query - start:', extractedStartTimestamp, 'end:', extractedEndTimestamp, 'Original:', originalStartValue);
+                        
+                        // Store original start and end on first call
+                        if (originalStartValue === null) {
+                            originalStartValue = extractedStartTimestamp;
+                            originalEndValue = extractedEndTimestamp;
+                            currentPeriodRange = extractedEndTimestamp - extractedStartTimestamp;
+                            console.log('Stored original period:', originalStartValue, 'to', originalEndValue, 'range:', currentPeriodRange / 1000 / 60, 'minutes');
+                        } else {
+                            // Check if this is previous period
+                            const diff = originalStartValue - extractedStartTimestamp;
+                            const oneHourInMs = 60 * 60 * 1000;
+                            if (diff > oneHourInMs) {
+                                isPreviousPeriod = true;
+                                console.log('Detected previous period based on timestamp difference:', diff, 'ms');
+                                window._detectedDuration = diff;
+                            }
+                        }
+                    } else {
+                        console.warn('No timestamps found in query, cannot detect previous period');
+                    }
+                }
+                
+                // Additional check: Look for compare dropdown to confirm previous period
+                // Only trust the dropdown if timestamps also indicate previous period
+                const compareDropdown = document.querySelector('[id^="compare-dropdown-"]');
+                if (compareDropdown && compareDropdown.value && compareDropdown.value !== 'none') {
+                    // If dropdown says previous period, and timestamps also indicate it, confirm
+                    if (isPreviousPeriod) {
+                        console.log('Confirmed previous period from dropdown:', compareDropdown.value);
+                    }
+                } else if (isPreviousPeriod) {
+                    // If we detected previous period but dropdown says 'none', it might be wrong
+                    // Only trust timestamp-based detection if timestamps are significantly different
+                    // During initial render, timestamps should match, so this won't trigger
+                    console.log('Previous period detected from timestamps, but dropdown says none - keeping detection');
+                }
+                
+                fetchCallCount++;
+                
+                // Check if this is for a stat panel
+                if (query && query.includes('COUNT')) {
+                    // For stat panels, return different values for comparison
+                    return {
+                        displayName: 'Total Requests',
+                        datapoints: {
+                            [Date.now()]: Math.floor(Math.random() * 10000) + (isPreviousPeriod ? 4000 : 6000)
+                        }
+                    };
+                }
+                
+                // Check if this is for a stat panel first
+                if (query && query.includes('COUNT')) {
+                    // For stat panels, return different values for comparison
+                    return {
+                        displayName: 'Total Requests',
+                        datapoints: {
+                            [Date.now()]: Math.floor(Math.random() * 10000) + (isPreviousPeriod ? 4000 : 6000)
+                        }
+                    };
+                }
+                
+                // Simple approach: Use different Y-axis ranges for different charts
+                // Randomize ranges to ensure different digit counts between charts
+                // First chart: 5-digit range (10000-100100)
+                // Second chart: 3-digit range (1-100)
+                
+                // Use target.refId to determine metric and displayName - much simpler!
+                const refId = target ? (target.refId || 'A') : 'A';
+                const isTargetA = (refId === 'A');
+                
+                // Determine panel based on timeseriesFetchCount (rough approximation)
+                // Panel 1 has 2 targets (A and B), Panel 3 has 1 target (A), Panel 4 has 3 targets (A, B, C)
+                timeseriesFetchCount++;
+                let timeseriesPanelCount;
+                if (timeseriesFetchCount <= 2) {
+                    timeseriesPanelCount = 1; // Panel 1
+                } else if (timeseriesFetchCount <= 3) {
+                    timeseriesPanelCount = 3; // Panel 3
+                } else {
+                    timeseriesPanelCount = 4; // Panel 4 (aggregation test panel)
+                }
+                
+                // Determine metric based on refId and panel
+                // Panel 1: target A = cpu_usage, target B = memory_usage
+                // Panel 3: only target A = cpu_usage
+                // Panel 4 (comprehensive test): A = cpu_usage, B = memory_usage, C = disk_usage, D = network_usage
+                let targetMetric;
+                if (timeseriesPanelCount === 4) {
+                    // Panel 4: Different metrics per target for comprehensive testing
+                    if (refId === 'A') targetMetric = 'cpu_usage';
+                    else if (refId === 'B') targetMetric = 'memory_usage';
+                    else if (refId === 'C') targetMetric = 'disk_usage';
+                    else if (refId === 'D') targetMetric = 'network_usage';
+                    else targetMetric = 'cpu_usage';
+                } else {
+                    // Other panels
+                    targetMetric = (refId === 'B') ? 'memory_usage' : 'cpu_usage';
+                }
+                
+                console.log('TIMESERIES FETCH:', {
+                    refId: refId,
+                    target: target,
+                    metric: targetMetric,
+                    panelCount: timeseriesPanelCount,
+                    period: isPreviousPeriod ? 'prev' : 'curr',
+                    startTimestamp: startTimestamp,
+                    endTimestamp: endTimestamp
+                });
+                
+                // Use provided timestamps if available (preferred method), otherwise extract from query
+                let queryStart = null;
+                let queryEnd = null;
+                
+                // First, try to use the provided timestamps (most reliable)
+                if (startTimestamp && endTimestamp) {
+                    queryStart = startTimestamp;
+                    queryEnd = endTimestamp;
+                    console.log('Using provided timestamps:', new Date(queryStart).toISOString(), 'to', new Date(queryEnd).toISOString(), 'range:', (queryEnd - queryStart) / 1000 / 60, 'minutes');
+                    // Store current period if this is not previous period
+                    if (!isPreviousPeriod && originalStartValue === null) {
+                        originalStartValue = queryStart;
+                        originalEndValue = queryEnd;
+                        currentPeriodRange = queryEnd - queryStart;
+                        console.log('STORED current period from provided timestamps:', new Date(originalStartValue).toISOString(), 'to', new Date(originalEndValue).toISOString());
+                    }
+                } else if (query && typeof query === 'string') {
+                    // Fallback: Try to find timestamps in the query (after processQuery replaces $start and $end)
+                    const timestampPattern = /\d{10,}/g;
+                    const matches = query.match(timestampPattern);
+                    
+                    if (matches && matches.length >= 2) {
+                        const timestamps = matches.map(t => parseInt(t)).sort((a, b) => a - b);
+                        queryStart = timestamps[0];
+                        queryEnd = timestamps[timestamps.length - 1];
+                        console.log('Extracted query time range:', queryStart, 'to', queryEnd, 'range:', (queryEnd - queryStart) / 1000 / 60, 'minutes');
+                        // Store current period if this is not previous period
+                        if (!isPreviousPeriod && originalStartValue === null) {
+                            originalStartValue = queryStart;
+                            originalEndValue = queryEnd;
+                            currentPeriodRange = queryEnd - queryStart;
+                            console.log('STORED current period from extracted timestamps:', new Date(originalStartValue).toISOString(), 'to', new Date(originalEndValue).toISOString());
+                        }
+                    } else if (matches && matches.length === 1) {
+                        // Only one timestamp found, use it as start
+                        queryStart = parseInt(matches[0]);
+                        queryEnd = queryStart + 3600000; // Default 1 hour range
+                        console.log('Only one timestamp found, using:', queryStart, 'to', queryEnd);
+                    }
+                }
+                
+                // Final fallback: use defaults if nothing else worked
+                if (!queryStart || !queryEnd) {
+                    queryStart = queryStart || (Date.now() - 3600000); // Default: 1 hour ago
+                    queryEnd = queryEnd || Date.now(); // Default: now
+                    
+                    // If we're using defaults and no timestamps were found in query
+                    if (query && typeof query === 'string') {
+                        // No timestamps found - query might still have $start/$end placeholders
+                        // For previous period, generate data that will overlap when shifted
+                        if (isPreviousPeriod) {
+                            // Use detected duration if available, otherwise estimate
+                            const detectedDuration = window._detectedDuration || 86400000; // Default 1 day
+                            
+                            // Ensure we have original period values (should have been set from first current period call)
+                            if (originalStartValue === null || originalEndValue === null) {
+                                // If not set yet, this is unexpected but handle it
+                                const now = Date.now();
+                                originalStartValue = now - 3600000;
+                                originalEndValue = now;
+                                currentPeriodRange = 3600000;
+                                console.warn('WARNING: originalStartValue not set! Initialized in previous period fallback:', originalStartValue, 'to', originalEndValue);
+                            }
+                            
+                            // Generate previous period data in a range that, when shifted, aligns with current
+                            // Previous period query range: (originalStart - duration) to (originalEnd - duration)
+                            // After shift: (originalStart - duration + duration) = originalStart to originalEnd
+                            // So generate from (originalStart - duration) to (originalEnd - duration)
+                            if (currentPeriodRange) {
+                                queryStart = originalStartValue - detectedDuration;
+                                queryEnd = originalStartValue - detectedDuration + currentPeriodRange;
+                            } else {
+                                queryStart = originalStartValue - detectedDuration;
+                                queryEnd = originalStartValue - detectedDuration + 3600000; // Default 1 hour range
+                            }
+                            console.log('Previous period fallback: generating data from', new Date(queryStart).toISOString(), 'to', new Date(queryEnd).toISOString(), 
+                                      `(detectedDuration=${detectedDuration}ms, will be shifted forward by ${detectedDuration}ms to overlap with ${new Date(originalStartValue).toISOString()} to ${new Date(originalEndValue).toISOString()})`);
+                        } else {
+                            // Current period - ALWAYS store the range we're generating for future reference
+                            // This is critical - we need the actual timestamps used for current period data
+                            originalStartValue = queryStart;
+                            originalEndValue = queryEnd;
+                            currentPeriodRange = queryEnd - queryStart;
+                            console.log('STORED current period range from generated data:', new Date(originalStartValue).toISOString(), 'to', new Date(originalEndValue).toISOString(), 'range:', currentPeriodRange / 1000 / 60, 'minutes');
+                            console.warn('No timestamps found in query, using default range');
+                        }
+                    }
+                }
+                
+                // For timeseries panels, return array format like safepoint.json
+                // Multiple series with scope, metric, tags, and datapoints
+                const response = [];
+                
+                // Calculate time range for data generation
+                const timeRange = queryEnd - queryStart;
+                const dataPointCount = 20;
+                const interval = Math.max(60000, Math.floor(timeRange / dataPointCount)); // At least 1 minute intervals
+                
+                // Generate multiple series for the target metric with different tag combinations
+                const scopes = ['core.aws.aws-prod0-uswest2.core1', 'core.aws.aws-prod0-uswest2.core2'];
+                const cells = ['usa12', 'usa13', 'usa14', 'usa15']; // More cells for aggregation testing
+                const roles = ['app', 'api'];
+                
+                // For Panel 4 (comprehensive test), create test data covering ALL scenarios:
+                // 1. Same scope, different metrics (same scope across multiple metrics)
+                // 2. Explicit displayName vs auto-generated (some with, some without displayName)
+                // 3. Regex matching displayName overrides (some match, some don't)
+                // 4. Same cell tag + same metric → aggregate together
+                // 5. Same cell tag + different metrics → aggregate separately
+                // 6. Different cell tags → aggregate separately
+                // 7. Series WITHOUT cell tag → remain as-is (non-matching)
+                // 8. Span aggregation: irregular timestamps aligned to 5m windows
+                // For other panels, create 1 series per target
+                let seriesCount = 1;
+                if (timeseriesPanelCount === 4) {
+                    // Panel 4: Create comprehensive test data
+                    // Target A (cpu_usage): 5 series
+                    // Target B (memory_usage): 4 series  
+                    // Target C (disk_usage): 4 series
+                    // Target D (network_usage): 3 series
+                    if (refId === 'A') seriesCount = 5;
+                    else if (refId === 'B') seriesCount = 4;
+                    else if (refId === 'C') seriesCount = 4;
+                    else if (refId === 'D') seriesCount = 3;
+                    else seriesCount = 3;
+                }
+                
+                for (let i = 0; i < seriesCount; i++) {
+                    // For Panel 4: Create comprehensive test scenarios covering ALL configurations
+                    let scope, cell, role, tags, hasExplicitDisplayName, useSameScope;
+                    if (timeseriesPanelCount === 4) {
+                        // Panel 4 comprehensive test data - covering ALL scenarios:
+                        // Use same scope for some series to test "same scope, different metrics"
+                        const commonScope = 'core.aws.aws-prod0-uswest2.core1'; // Same scope for testing
+                        
+                        if (refId === 'A') {
+                            // Target A (cpu_usage): 5 series
+                            if (i === 0) {
+                                // Series 1: usa12 cell, EXPLICIT displayName, SAME scope (will aggregate with series 2)
+                                scope = commonScope;
+                                cell = 'usa12';
+                                role = 'app';
+                                hasExplicitDisplayName = true;
+                            } else if (i === 1) {
+                                // Series 2: usa12 cell, NO explicit displayName (auto-generated), SAME scope (aggregates with series 1)
+                                scope = commonScope;
+                                cell = 'usa12';
+                                role = 'api';
+                                hasExplicitDisplayName = false;
+                            } else if (i === 2) {
+                                // Series 3: usa13 cell, EXPLICIT displayName, DIFFERENT scope
+                                scope = scopes[1];
+                                cell = 'usa13';
+                                role = 'app';
+                                hasExplicitDisplayName = true;
+                            } else if (i === 3) {
+                                // Series 4: usa13 cell, NO explicit displayName, DIFFERENT scope (aggregates with series 3)
+                                scope = scopes[1];
+                                cell = 'usa13';
+                                role = 'api';
+                                hasExplicitDisplayName = false;
+                            } else {
+                                // Series 5: NO cell tag (non-matching - should remain as-is), EXPLICIT displayName
+                                scope = commonScope;
+                                cell = null;
+                                role = 'app';
+                                hasExplicitDisplayName = true;
+                            }
+                        } else if (refId === 'B') {
+                            // Target B (memory_usage): 4 series - SAME scope as A to test "same scope, different metrics"
+                            if (i === 0) {
+                                // Series 1: usa12 cell, EXPLICIT displayName, SAME scope as A (different metric)
+                                scope = commonScope;
+                                cell = 'usa12';
+                                role = 'app';
+                                hasExplicitDisplayName = true;
+                            } else if (i === 1) {
+                                // Series 2: usa13 cell, NO explicit displayName, SAME scope
+                                scope = commonScope;
+                                cell = 'usa13';
+                                role = 'api';
+                                hasExplicitDisplayName = false;
+                            } else if (i === 2) {
+                                // Series 3: usa14 cell, EXPLICIT displayName, SAME scope
+                                scope = commonScope;
+                                cell = 'usa14';
+                                role = 'app';
+                                hasExplicitDisplayName = true;
+                            } else {
+                                // Series 4: NO cell tag (non-matching), NO explicit displayName
+                                scope = commonScope;
+                                cell = null;
+                                role = 'api';
+                                hasExplicitDisplayName = false;
+                            }
+                        } else if (refId === 'C') {
+                            // Target C (disk_usage): 4 series
+                            if (i === 0) {
+                                // Series 1: usa13 cell, EXPLICIT displayName, SAME scope
+                                scope = commonScope;
+                                cell = 'usa13';
+                                role = 'app';
+                                hasExplicitDisplayName = true;
+                            } else if (i === 1) {
+                                // Series 2: usa14 cell, NO explicit displayName, SAME scope
+                                scope = commonScope;
+                                cell = 'usa14';
+                                role = 'api';
+                                hasExplicitDisplayName = false;
+                            } else if (i === 2) {
+                                // Series 3: usa15 cell, EXPLICIT displayName, DIFFERENT scope
+                                scope = scopes[1];
+                                cell = 'usa15';
+                                role = 'app';
+                                hasExplicitDisplayName = true;
+                            } else {
+                                // Series 4: usa15 cell, NO explicit displayName, SAME scope as series 3 (aggregates together)
+                                scope = scopes[1];
+                                cell = 'usa15';
+                                role = 'api';
+                                hasExplicitDisplayName = false;
+                            }
+                        } else {
+                            // Target D (network_usage): 3 series
+                            if (i === 0) {
+                                // Series 1: usa12 cell, EXPLICIT displayName, SAME scope
+                                scope = commonScope;
+                                cell = 'usa12';
+                                role = 'app';
+                                hasExplicitDisplayName = true;
+                            } else if (i === 1) {
+                                // Series 2: usa14 cell, NO explicit displayName, SAME scope
+                                scope = commonScope;
+                                cell = 'usa14';
+                                role = 'api';
+                                hasExplicitDisplayName = false;
+                            } else {
+                                // Series 3: NO cell tag (non-matching), EXPLICIT displayName
+                                scope = commonScope;
+                                cell = null;
+                                role = 'app';
+                                hasExplicitDisplayName = true;
+                            }
+                        }
+                        
+                        // Build tags object - only include cell if it's not null
+                        tags = {
+                            role: role,
+                            service: 'coreapp',
+                            pod: scope.split('.').pop() + '-pod-' + (i % 3),
+                            k8s_pod_name: (cell || 'no-cell') + '-casam-app-blue-' + (i % 2),
+                            environment: 'prod'
+                        };
+                        if (cell) {
+                            tags.cell = cell; // Only add cell tag if cell is not null
+                        }
+                    } else {
+                        // Other panels: Use simple tag logic
+                        let tagIndex;
+                        if (timeseriesPanelCount === 1 && !isTargetA) {
+                            tagIndex = 1;
+                        } else {
+                            tagIndex = 0;
+                        }
+                        scope = scopes[tagIndex % scopes.length];
+                        cell = cells[tagIndex % cells.length];
+                        role = roles[tagIndex % roles.length];
+                        tags = {
+                            cell: cell,
+                            role: role,
+                            service: 'coreapp',
+                            pod: cell + '-pod-' + (tagIndex % 3),
+                            k8s_pod_name: cell + '-casam-app-blue-' + (tagIndex % 2),
+                            environment: 'prod'
+                        };
+                        hasExplicitDisplayName = true; // Other panels always have explicit displayName
+                    }
+                    
+                    // Generate datapoints for this series within the query time range
+                    // For Panel 4: Use irregular timestamps to test span aggregation (5m alignment)
+                    const datapoints = {};
+                    
+                    // Different base values for different panels using randomized ranges
+                    // Panel 1: 5-digit range (10000-100100), Panel 3: 3-digit range (1-100), Panel 4: 4-digit range (1000-10000)
+                    // Use consistent base value per panel/series (generate once, reuse)
+                    const panelSeriesKey = `${timeseriesPanelCount}-${refId}-${i}`;
+                    let baseValue;
+                    if (!panelBaseValues[panelSeriesKey]) {
+                        // Generate random base value for this panel/series (only once)
+                        if (timeseriesPanelCount === 1) {
+                            // First panel - use 5-digit range (10000-100100)
+                            const minValue = 10000;
+                            const maxValue = 100100;
+                            panelBaseValues[panelSeriesKey] = minValue + Math.random() * (maxValue - minValue);
+                        } else if (timeseriesPanelCount === 3) {
+                            // Second panel - use 3-digit range (1-100)
+                            const minValue = 1;
+                            const maxValue = 100;
+                            panelBaseValues[panelSeriesKey] = minValue + Math.random() * (maxValue - minValue);
+                        } else if (timeseriesPanelCount === 4) {
+                            // Panel 4 (comprehensive test) - use different ranges per metric for visibility
+                            const minValue = 1000;
+                            const maxValue = 10000;
+                            // Add variation based on metric and series index
+                            const metricOffset = (targetMetric === 'cpu_usage') ? 0 : 
+                                                 (targetMetric === 'memory_usage') ? 2000 :
+                                                 (targetMetric === 'disk_usage') ? 4000 : 6000;
+                            panelBaseValues[panelSeriesKey] = minValue + Math.random() * (maxValue - minValue) + metricOffset + (i * 300);
+                        }
+                    }
+                    baseValue = panelBaseValues[panelSeriesKey];
+                    
+                    // For Panel 4: Generate irregular timestamps to test span aggregation (5m alignment)
+                    // Other panels: Use regular intervals
+                    if (timeseriesPanelCount === 4) {
+                        // Panel 4: Generate irregular timestamps (not aligned to 5m boundaries)
+                        // This tests span aggregation which should align them to 5m windows
+                        const irregularInterval = interval * (0.7 + Math.random() * 0.6); // 70%-130% of regular interval
+                    for (let j = 0; j < dataPointCount; j++) {
+                            // Add random offset to make timestamps irregular (not aligned to 5m)
+                            const randomOffset = (Math.random() - 0.5) * interval * 0.5; // ±25% of interval
+                            const timestamp = Math.floor((queryStart + (j * irregularInterval) + randomOffset) / 1000) * 1000; // Round to seconds
+                            const variation = (Math.random() * 200) - 100; // ±100 variation
+                            const adjustedValue = isPreviousPeriod 
+                                ? (baseValue + variation) * (0.9 + Math.random() * 0.2) 
+                                : baseValue + variation;
+                            datapoints[timestamp] = Math.max(0, adjustedValue);
+                        }
+                    } else {
+                        // Other panels: Regular intervals
+                        for (let j = 0; j < dataPointCount; j++) {
+                        const timestamp = queryStart + (j * interval);
+                        const variation = timeseriesPanelCount === 1 
+                            ? (Math.random() * 2000) - 1000  // ±1000 for 5-digit panel
+                            : (Math.random() * 20) - 10;     // ±10 for 3-digit panel
+                        const adjustedValue = isPreviousPeriod 
+                            ? (baseValue + variation) * (0.9 + Math.random() * 0.2) 
+                            : baseValue + variation;
+                            datapoints[timestamp] = Math.max(0, adjustedValue);
+                        }
+                    }
+                    
+                    // Log first series data generation for debugging
+                    if (i === 0) {
+                        const timestamps = Object.keys(datapoints).map(Number).sort((a, b) => a - b);
+                        console.log(`Generated data for ${targetMetric} (target ${isTargetA ? 'A' : 'B'}, series ${i + 1}) - timestamps: ${timestamps[0]} to ${timestamps[timestamps.length - 1]} (${timestamps.length} points), isPreviousPeriod: ${isPreviousPeriod}`);
+                        console.log(`  Series tags: scope=${scope}, cell=${cell}, role=${role}, metric=${targetMetric}`);
+                    }
+                    
+                    // Build response object with displayName
+                    // For Panel 4: Test both explicit displayName and auto-generated (no displayName)
+                    // For other panels: Use refId-based displayName
+                    let displayName;
+                    let seriesObj;
+                    
+                    if (timeseriesPanelCount === 4) {
+                        // Panel 4: Test explicit displayName vs auto-generated
+                        if (hasExplicitDisplayName) {
+                            // Explicit displayName - some will match regex, some won't
+                            if (targetMetric === 'cpu_usage') displayName = 'CPU Usage';
+                            else if (targetMetric === 'memory_usage') displayName = 'Memory Usage';
+                            else if (targetMetric === 'disk_usage') displayName = 'Disk Usage';
+                            else if (targetMetric === 'network_usage') displayName = 'Network Usage';
+                            else displayName = targetMetric;
+                            
+                            // Add identifier to show which series have explicit displayName
+                            displayName += ` [Explicit-${i + 1}]`;
+                        }
+                        // If hasExplicitDisplayName is false, don't set displayName - let it be auto-generated
+                        
+                        // Build series object
+                        seriesObj = {
+                        scope: scope,
+                        metric: targetMetric,
+                            tags: tags,
+                        datapoints: datapoints
+                        };
+                        
+                        // Only add displayName if it's explicitly set (test auto-generation)
+                        if (hasExplicitDisplayName) {
+                            seriesObj.displayName = displayName;
+                        }
+                        // If displayName is not set, it will be auto-generated from scope:metric:{tags}
+                        
+                    } else {
+                        // Other panels: Always use explicit displayName
+                        displayName = (refId === 'B') ? 'Memory Usage' : 'CPU Usage';
+                        seriesObj = {
+                            scope: scope,
+                            metric: targetMetric,
+                            displayName: displayName,
+                            tags: tags,
+                            datapoints: datapoints
+                        };
+                    }
+                    
+                    console.log(`  Series ${i + 1}: metric=${targetMetric}, cell=${cell || 'none'}, displayName=${seriesObj.displayName || '(auto-generated)'}, scope=${scope}`);
+                    
+                    response.push(seriesObj);
+                }
+                
+                return response; // Return array format
+            };
+            
+            globalDashboard.render(globalDashboardJson, globalInputJson);
+        }
+        
+        // Alternative: Load dashboard from JSON files
+        async function loadDashboard() {
+            try {
+                // Load dashboard JSON
+                const dashboardResponse = await fetch('utils/src/main/resources/AIdashboard.json');
+                if (!dashboardResponse.ok) {
+                    throw new Error('Failed to load dashboard JSON');
+                }
+                globalDashboardJson = await dashboardResponse.json();
+                
+                // Load input JSON (endpoints and variables)
+                const inputResponse = await fetch('utils/src/main/resources/AIinput.json');
+                if (!inputResponse.ok) {
+                    throw new Error('Failed to load input JSON');
+                }
+                globalInputJson = await inputResponse.json();
+                
+                // Update toolbar with loaded values
+                updateToolbarFromInputJson();
+                
+                // Create and render dashboard
+                globalDashboard = new GenieDashboard('dashboard-container');
+                await globalDashboard.render(globalDashboardJson, globalInputJson);
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                document.getElementById('dashboard-container').innerHTML = 
+                    '<div style="padding: 20px; color: red;">Error: ' + error.message + '<br>Using mock data instead...</div>';
+                exampleWithMockData();
+            }
+        }
+        
+        // Wait for scripts to load, then initialize dashboard
+        window.addEventListener('load', function() {
+            if (typeof GenieDashboard === 'undefined') {
+                handleScriptError();
+                return;
+            }
+            
+            // Check if we're running from file:// protocol (which blocks fetch)
+            const isFileProtocol = window.location.protocol === 'file:';
+            
+            // If file protocol, use mock data directly (CORS will block fetch)
+            if (isFileProtocol) {
+                console.log('Running from file:// protocol, using mock data');
+                exampleWithMockData();
+            } else {
+                // Try to load from files, fallback to mock data
+                try {
+                    loadDashboard();
+                } catch (error) {
+                    console.warn('Could not load dashboard, using mock data:', error);
+                    exampleWithMockData();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+

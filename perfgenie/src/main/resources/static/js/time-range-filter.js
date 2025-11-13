@@ -13,10 +13,7 @@ function showTimeRangeFilter(startTimestamp, endTimestamp, onApply, onCancel, la
         return;
     }
     
-    if (startTimestamp >= endTimestamp) {
-        console.error('Start timestamp must be less than end timestamp');
-        return;
-    }
+
     
     // Create modal overlay
     const modalOverlay = document.createElement('div');
@@ -112,7 +109,7 @@ function showTimeRangeFilter(startTimestamp, endTimestamp, onApply, onCancel, la
             <button id="trf-apply-btn" 
                     class="trf-btn trf-btn-apply"
                     style="padding: 8px 16px; border: none; background: #0070d2; color: white; border-radius: 4px; cursor: pointer; font-size: 14px; min-width: 80px; box-sizing: border-box;">
-                Apply Filter
+                Show timeseries
             </button>
         </div>
     `;

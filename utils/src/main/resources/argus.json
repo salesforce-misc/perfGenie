@@ -1,8 +1,10 @@
 {
   "queries": {
-    "cumulative": "DIFF(GROUPBYTAG(START:END:SCOPE:METRIC{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:max:all-max,#k8s_container_name#,#SUM#),GROUPBYTAG(START:END:SCOPE:METRIC{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:min:all-min,#k8s_container_name#,#SUM#))",
+    "cumulative": "SUM(DOWNSAMPLE(RATE(PROPAGATE(START:END:SCOPE:METRIC{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:max:1m-max,#1m#)),#all-sum#,#0#))",
+    "del-cumulative": "DIFF(GROUPBYTAG(START:END:SCOPE:METRIC{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:max:all-max,#k8s_container_name#,#SUM#),GROUPBYTAG(START:END:SCOPE:METRIC{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:min:all-min,#k8s_container_name#,#SUM#))",
     "average": "DOWNSAMPLE(ALIASBYREGEX(ALIAS(GROUPBYTAG(START:END:SCOPE:METRIC{cell=CELL,k8s_container_name=coreapp,k8s_pod_name=POD,role=app}:avg:1m-avg,#k8s_container_name#,#AVERAGE#),#:#,#literal#,#CELL#,#literal#),#(.*)::\\{#),#1d-avg#,#0#,#abs#)",
-    "ccumulative": "DIFF(GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD}:max:all-max,#k8s_container_name#,#SUM#),GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD}:min:all-min,#k8s_container_name#,#SUM#))",
+    "ccumulative": "SUM(DOWNSAMPLE(RATE(PROPAGATE(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD}:max:1m-max,#1m#)),#all-sum#,#0#))",
+    "del-ccumulative": "DIFF(GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD}:max:all-max,#k8s_container_name#,#SUM#),GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD}:min:all-min,#k8s_container_name#,#SUM#))",
     "caverage": "DOWNSAMPLE(ALIASBYREGEX(ALIAS(GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD}:avg:1m-avg,#k8s_container_name#,#AVERAGE#),#:#,#literal#,#CELL#,#literal#),#(.*)::\\{#),#1d-avg#,#0#,#abs#)",
     "ccpusum": "GROUPBYTAG(START:END:SCOPE:METRIC{k8s_container_name=coreapp,k8s_pod_name=POD,resource=cpu}:sum:all-sum,#k8s_container_name#,#SUM#)"
   },

@@ -190,6 +190,35 @@ class TimeSeriesChart {
             .timeseries-component-sort-btn.sorted:hover {
                 background: rgba(40, 167, 69, 1);
             }
+            .timeseries-component-upload-btn {
+                background: transparent;
+                color: #666;
+                border: none;
+                border-radius: 3px;
+                width: 24px;
+                height: 24px;
+                cursor: pointer;
+                font-size: 10px;
+                line-height: 1;
+                transition: all 0.2s ease;
+                margin-left: 4px;
+                flex-shrink: 0;
+            }
+            .timeseries-component-upload-btn:hover {
+                background: rgba(0, 123, 255, 0.1);
+                color: #007bff;
+                transform: scale(1.05);
+            }
+            .timeseries-component-upload-btn:active {
+                transform: scale(0.95);
+            }
+            .timeseries-component-upload-icon {
+                display: block;
+                font-size: 14px;
+                line-height: 1;
+                font-family: "FontAwesome", "Font Awesome 5 Free", "Font Awesome 6 Free";
+                font-weight: 900;
+            }
             .timeseries-component-sort-icon {
                 display: block;
                 font-size: 12px;
@@ -277,7 +306,7 @@ class TimeSeriesChart {
                 flex-direction: column;
                 align-items: center;
                 margin-left: 10px;
-                min-width: 450px;
+                min-width: 400px;
             }
             .timeseries-component-time-range-slider label {
                 font-size: 12px;
@@ -747,6 +776,10 @@ class TimeSeriesChart {
                 '<button class="timeseries-component-sort-btn" onclick="window.timeseriesComponentToggleSort(\'' + this.containerId + '\')" title="Sort Each Series (Descending)">' +
                     '<span class="timeseries-component-sort-icon">⇅</span>' +
                 '</button>' +
+                '<button class="timeseries-component-upload-btn" onclick="window.timeseriesComponentUploadCSV(\'' + this.containerId + '\')" title="Upload CSV File">' +
+                    '<span class="timeseries-component-upload-icon">↑</span>' +
+                '</button>' +
+                '<input type="file" id="' + this.containerId + '-csv-upload" accept=".csv" style="display: none;" onchange="window.timeseriesComponentHandleCSVUpload(\'' + this.containerId + '\', this)">' +
                 '<button class="timeseries-component-close-btn" onclick="window.timeseriesComponentCloseScrollContainer(\'' + this.containerId + '\')" title="Close Chart">' +
                     '<span class="timeseries-component-close-icon">&times;</span>' +
                 '</button>' +
@@ -980,11 +1013,40 @@ class TimeSeriesChart {
         const storedData = this.storedAdditionalChartsData[chartIndex];
         
         if (storedData && storedData.originalTimestamps && storedData.originalMetrics) {
-            // Use the stored data (which may be sorted) instead of the original chartData
+            // Use sorted data if in sorted mode, otherwise use original data
+            let timestamps = this.isSorted && storedData.sortedTimestamps ? storedData.sortedTimestamps : storedData.originalTimestamps;
+            let metrics = this.isSorted && storedData.sortedMetrics ? storedData.sortedMetrics : storedData.originalMetrics;
+            
+            // Apply zoom filtering if there's a current zoom range
+            if (storedData.currentZoomRange && storedData.currentZoomRange.length === 2) {
+                const [startTime, endTime] = storedData.currentZoomRange;
+                const filteredTimestamps = [];
+                const filteredMetrics = {};
+                
+                // Initialize filtered metrics
+                Object.keys(metrics).forEach(metricName => {
+                    filteredMetrics[metricName] = [];
+                });
+                
+                // Filter data within zoom range
+                for (let i = 0; i < timestamps.length; i++) {
+                    const timestamp = typeof timestamps[i] === 'number' ? timestamps[i] : new Date(timestamps[i]).getTime();
+                    if (timestamp >= startTime && timestamp <= endTime) {
+                        filteredTimestamps.push(timestamps[i]);
+                        Object.keys(metrics).forEach(metricName => {
+                            filteredMetrics[metricName].push(metrics[metricName][i]);
+                        });
+                    }
+                }
+                
+                timestamps = filteredTimestamps;
+                metrics = filteredMetrics;
+            }
+            
             const updatedChartData = {
                 id: chartData.id,
-                timestamps: storedData.originalTimestamps,
-                metrics: storedData.originalMetrics,
+                timestamps: timestamps,
+                metrics: metrics,
                 chart: null,
                 title: storedData.title,
                 colors: storedData.colors
@@ -1590,13 +1652,24 @@ class TimeSeriesChart {
             return;
         }
         
-        // Store original data for reverting
+        // Store pre-sort data for reverting (this preserves zoom state)
+        // Deep clone the storedAdditionalChartsData to preserve pre-sort state
+        const preSortStoredAdditionalChartsData = this.storedAdditionalChartsData ? 
+            this.storedAdditionalChartsData.map(storedData => ({
+                ...storedData,
+                originalTimestamps: [...storedData.originalTimestamps],
+                originalMetrics: JSON.parse(JSON.stringify(storedData.originalMetrics)),
+                trulyOriginalTimestamps: storedData.trulyOriginalTimestamps ? [...storedData.trulyOriginalTimestamps] : null,
+                trulyOriginalMetrics: storedData.trulyOriginalMetrics ? JSON.parse(JSON.stringify(storedData.trulyOriginalMetrics)) : null
+            })) : null;
+            
         this.originalData = {
             timestamps: [...this.timestamps],
             metrics: JSON.parse(JSON.stringify(this.metrics)),
             chartTitle: this.chartTitle,
             chartColors: this.chartColors ? JSON.parse(JSON.stringify(this.chartColors)) : null,
-            zoomRange: this.zoomRange ? [...this.zoomRange] : null
+            zoomRange: this.zoomRange ? [...this.zoomRange] : null,
+            storedAdditionalChartsData: preSortStoredAdditionalChartsData
         };
         
         // Determine which data to sort based on zoom state
@@ -1764,7 +1837,7 @@ class TimeSeriesChart {
                     additionalSortedMetrics[metricName] = metricData.map(item => item.value);
                 });
                 
-                // Update the stored data with sorted values
+                // Store sorted data separately without modifying the original stored data
                 const firstMetricName = Object.keys(additionalDataToSort.metrics)[0];
                 if (firstMetricName) {
                     const firstMetricData = additionalDataPoints.map((point, index) => ({
@@ -1774,9 +1847,10 @@ class TimeSeriesChart {
                     firstMetricData.sort((a, b) => b.value - a.value);
                     
                     const sortedTimestamps = firstMetricData.map(item => additionalDataPoints[item.originalIndex].timestamp);
-                    storedData.originalTimestamps = sortedTimestamps;
+                    // Store sorted data separately
+                    storedData.sortedTimestamps = sortedTimestamps;
                 }
-                storedData.originalMetrics = additionalSortedMetrics;
+                storedData.sortedMetrics = additionalSortedMetrics;
             }
         });
         
@@ -1821,6 +1895,21 @@ class TimeSeriesChart {
         this.chartTitle = this.originalData.chartTitle;
         this.chartColors = this.originalData.chartColors;
         this.zoomRange = this.originalData.zoomRange;
+        
+        // Restore additional charts data to original unsorted state
+        if (this.originalData.storedAdditionalChartsData) {
+            this.storedAdditionalChartsData = this.originalData.storedAdditionalChartsData;
+        }
+        
+        // Clear sorted data from stored additional charts
+        this.storedAdditionalChartsData.forEach(storedData => {
+            if (storedData.sortedTimestamps) {
+                delete storedData.sortedTimestamps;
+            }
+            if (storedData.sortedMetrics) {
+                delete storedData.sortedMetrics;
+            }
+        });
         
         // Clear original data
         this.originalData = null;
@@ -1874,6 +1963,11 @@ class TimeSeriesChart {
             // Temporarily set data to zoomed range
             this.timestamps = filteredTimestamps;
             this.metrics = filteredMetrics;
+            
+            // Store the zoom range for additional charts to use during rendering
+            this.storedAdditionalChartsData.forEach(storedData => {
+                storedData.currentZoomRange = [startTime, endTime];
+            });
             
             // Create charts with zoomed data
             this.updateChart();
@@ -2941,6 +3035,39 @@ window.timeseriesComponentCloseScrollContainer = function(containerId) {
             chartInstance.chartIndex = 0;
             chartInstance.storedMainChartData = null;
             chartInstance.storedAdditionalChartsData = [];
+            
+            // Clear slider-related data
+            chartInstance.zoomRange = null;
+            chartInstance.timeRangeMin = 0;
+            chartInstance.timeRangeMax = 100;
+            chartInstance.seriesMinTimestamp = null;
+            chartInstance.seriesMaxTimestamp = null;
+            chartInstance.originalTimestamps = null;
+            chartInstance.isUpdatingFromInput = false;
+            
+            // Clear sort-related data
+            chartInstance.isSorted = false;
+            chartInstance.originalData = null;
+            chartInstance.isReverting = false;
+            
+            // Clear drag-related data
+            chartInstance.isDragging = false;
+            chartInstance.dragStart = null;
+            chartInstance.dragEnd = null;
+            
+            // Clear timeout references
+            if (chartInstance.zoomUpdateTimeout) {
+                clearTimeout(chartInstance.zoomUpdateTimeout);
+                chartInstance.zoomUpdateTimeout = null;
+            }
+            if (chartInstance.timeLabelUpdateTimeout) {
+                clearTimeout(chartInstance.timeLabelUpdateTimeout);
+                chartInstance.timeLabelUpdateTimeout = null;
+            }
+            
+            // Clear zoom update flag
+            chartInstance.isUpdatingZoom = false;
+            chartInstance.isUpdatingCharts = false;
             // Clear the chart container content
             const chartDiv = document.getElementById(containerId + '-chart');
             if (chartDiv) {
@@ -4253,6 +4380,504 @@ TimeSeriesChart.prototype.updateApplyButtonState = function() {
         applyButton.title = 'Fix validation errors before applying';
     }
 }
+// CSV Upload functionality
+window.timeseriesComponentUploadCSV = function(containerId) {
+    const fileInput = document.getElementById(containerId + '-csv-upload');
+    if (fileInput) {
+        fileInput.click();
+    }
+};
+
+window.timeseriesComponentHandleCSVUpload = function(containerId, fileInput) {
+    const file = fileInput.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const csvText = e.target.result;
+            const chartInstance = window.timeseriesComponentInstances[containerId];
+            if (chartInstance) {
+                chartInstance.processCSVData(csvText, file.name);
+            }
+        } catch (error) {
+            console.error('Error reading CSV file:', error);
+            alert('Error reading CSV file: ' + error.message);
+        }
+    };
+    reader.readAsText(file);
+};
+
+TimeSeriesChart.prototype.processCSVData = function(csvText, fileName) {
+    try {
+        const lines = csvText.split('\n').filter(line => line.trim() !== '');
+        if (lines.length < 2) {
+            throw new Error('CSV file must have at least a header row and one data row');
+        }
+        
+        // Parse header row
+        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        if (headers.length < 2) {
+            throw new Error('CSV file must have at least timestamp and one value column');
+        }
+        
+        // Validate first column is timestamp
+        if (headers[0].toLowerCase() !== 'timestamp') {
+            throw new Error('First column must be named "timestamp"');
+        }
+        
+        // Check if this is "long format" data (one metric per row) or "wide format" data (all metrics per row)
+        const isLongFormat = this.detectDataFormat(headers, lines);
+        
+        if (isLongFormat) {
+            return this.processLongFormatCSV(lines, headers, fileName);
+        }
+        
+        // Original wide format processing
+        const metricNames = [];
+        const dimensionColumns = [];
+        
+        // Analyze each column to determine if it's a metric or dimension
+        for (let i = 1; i < headers.length; i++) {
+            const columnName = headers[i];
+            const columnIndex = i;
+            
+            // Check if this column contains text/dimension data by sampling first few rows
+            let isDimension = false;
+            const sampleSize = Math.min(5, lines.length - 1); // Sample first 5 data rows
+            
+            for (let j = 1; j <= sampleSize; j++) {
+                const values = lines[j].split(',').map(v => v.trim().replace(/"/g, ''));
+                if (values[columnIndex]) {
+                    const value = values[columnIndex];
+                    // Check if value is not a number
+                    if (isNaN(parseFloat(value)) && value !== '' && value !== 'null' && value !== 'NULL') {
+                        isDimension = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (isDimension) {
+                dimensionColumns.push({ name: columnName, index: columnIndex });
+            } else {
+                metricNames.push(columnName);
+            }
+        }
+        
+        // Parse data rows
+        const timestamps = [];
+        const metrics = {};
+        const dimensions = {};
+        
+        // Initialize metrics and dimensions objects
+        metricNames.forEach(name => {
+            metrics[name] = [];
+        });
+        dimensionColumns.forEach(dim => {
+            dimensions[dim.name] = [];
+        });
+        
+        // Parse each data row
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+            if (values.length !== headers.length) {
+                console.warn(`Row ${i + 1} has ${values.length} columns, expected ${headers.length}. Skipping.`);
+                continue;
+            }
+            
+            // Parse timestamp
+            const timestampStr = values[0];
+            let timestamp;
+            
+            // Try different timestamp formats
+            if (timestampStr.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)) {
+                // ISO format
+                if (this.options.useUTC) {
+                    // Parse as UTC
+                    timestamp = new Date(timestampStr + 'Z').getTime();
+                } else {
+                    // Parse as local time
+                    timestamp = new Date(timestampStr).getTime();
+                }
+            } else if (timestampStr.match(/^\d{10}$/)) {
+                // Unix timestamp (seconds)
+                timestamp = parseInt(timestampStr) * 1000;
+            } else if (timestampStr.match(/^\d{13}$/)) {
+                // Unix timestamp (milliseconds)
+                timestamp = parseInt(timestampStr);
+            } else {
+                // Try parsing as date
+                if (this.options.useUTC) {
+                    // Parse as UTC
+                    timestamp = new Date(timestampStr + 'Z').getTime();
+                } else {
+                    // Parse as local time
+                    timestamp = new Date(timestampStr).getTime();
+                }
+            }
+            
+            if (isNaN(timestamp)) {
+                console.warn(`Invalid timestamp in row ${i + 1}: ${timestampStr}. Skipping.`);
+                continue;
+            }
+            
+            timestamps.push(timestamp);
+            
+            // Parse metric values
+            metricNames.forEach((name, index) => {
+                const valueStr = values[index + 1];
+                const value = valueStr === '' || valueStr === 'null' || valueStr === 'NULL' ? null : parseFloat(valueStr);
+                metrics[name].push(value);
+            });
+            
+            // Parse dimension values
+            dimensionColumns.forEach(dim => {
+                const valueStr = values[dim.index];
+                const value = valueStr === '' || valueStr === 'null' || valueStr === 'NULL' ? null : valueStr;
+                dimensions[dim.name].push(value);
+            });
+        }
+        
+        if (timestamps.length === 0) {
+            throw new Error('No valid data rows found in CSV file');
+        }
+        
+        // Create chart title from filename
+        const chartTitle = fileName.replace('.csv', '').replace(/[^a-zA-Z0-9\s]/g, ' ').trim();
+        
+        // If we have dimensions, create series with dimension values in the metric names
+        if (dimensionColumns.length > 0) {
+            this.createSeriesWithDimensions(timestamps, metrics, dimensions, dimensionColumns, chartTitle);
+        } else {
+            // No dimensions, create single chart with all metrics
+            this.addChart(timestamps, metrics, false, chartTitle);
+        }
+        
+        console.log(`Successfully loaded CSV: ${fileName} with ${timestamps.length} data points, ${metricNames.length} metrics, and ${dimensionColumns.length} dimensions`);
+        
+    } catch (error) {
+        console.error('Error processing CSV data:', error);
+        alert('Error processing CSV file: ' + error.message);
+    }
+};
+
+TimeSeriesChart.prototype.detectDataFormat = function(headers, lines) {
+    // Long format: timestamp, dimension1, dimension2, ..., metric_name, value
+    // Wide format: timestamp, metric1, metric2, metric3, ...
+    
+    // Check if we have a "value" column (indicates long format)
+    const hasValueColumn = headers.some(header => 
+        header.toLowerCase() === 'value' || 
+        header.toLowerCase() === 'metric_value' ||
+        header.toLowerCase() === 'measurement'
+    );
+    
+    // Check if we have a metric name column (indicates long format)
+    const hasMetricNameColumn = headers.some(header => 
+        header.toLowerCase() === 'metric' ||
+        header.toLowerCase() === 'activity' ||
+        header.toLowerCase() === 'metric_name' ||
+        header.toLowerCase() === 'measurement_name'
+    );
+    
+    // If we have both value and metric name columns, it's likely long format
+    if (hasValueColumn && hasMetricNameColumn) {
+        return true;
+    }
+    
+    // Additional check: if the last column is numeric and others are text, likely long format
+    if (lines.length > 1) {
+        const sampleRow = lines[1].split(',').map(v => v.trim().replace(/"/g, ''));
+        if (sampleRow.length >= 3) {
+            const lastColumn = sampleRow[sampleRow.length - 1];
+            const secondLastColumn = sampleRow[sampleRow.length - 2];
+            
+            // If last column is numeric and second last is text, likely long format
+            if (!isNaN(parseFloat(lastColumn)) && isNaN(parseFloat(secondLastColumn))) {
+                return true;
+            }
+        }
+    }
+    
+    return false;
+};
+
+TimeSeriesChart.prototype.processLongFormatCSV = function(lines, headers, fileName) {
+    try {
+        // Parse long format data: timestamp, dimension1, dimension2, ..., metric_name, value
+        const dataMap = new Map(); // key: "metric_name (dim1, dim2, ...)", value: {timestamps: [], values: []}
+        
+        // Parse each data row
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+            if (values.length !== headers.length) {
+                console.warn(`Row ${i + 1} has ${values.length} columns, expected ${headers.length}. Skipping.`);
+                continue;
+            }
+            
+            // Parse timestamp
+            const timestampStr = values[0];
+            let timestamp;
+            
+            // Try different timestamp formats
+            if (timestampStr.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)) {
+                // ISO format
+                if (this.options.useUTC) {
+                    // Parse as UTC
+                    timestamp = new Date(timestampStr + 'Z').getTime();
+                } else {
+                    // Parse as local time
+                    timestamp = new Date(timestampStr).getTime();
+                }
+            } else if (timestampStr.match(/^\d{10}$/)) {
+                // Unix timestamp (seconds)
+                timestamp = parseInt(timestampStr) * 1000;
+            } else if (timestampStr.match(/^\d{13}$/)) {
+                // Unix timestamp (milliseconds)
+                timestamp = parseInt(timestampStr);
+            } else {
+                // Try parsing as date
+                if (this.options.useUTC) {
+                    // Parse as UTC
+                    timestamp = new Date(timestampStr + 'Z').getTime();
+                } else {
+                    // Parse as local time
+                    timestamp = new Date(timestampStr).getTime();
+                }
+            }
+            
+            if (isNaN(timestamp)) {
+                console.warn(`Invalid timestamp in row ${i + 1}: ${timestampStr}. Skipping.`);
+                continue;
+            }
+            
+            // Find metric name and value columns
+            let metricName = null;
+            let value = null;
+            const dimensions = {};
+            
+            // Look for metric name column (usually second to last or last column)
+            for (let j = 1; j < headers.length - 1; j++) {
+                const header = headers[j].toLowerCase();
+                if (header === 'metric' || header === 'activity' || header === 'metric_name' || header === 'measurement_name') {
+                    metricName = values[j];
+                    break;
+                }
+            }
+            
+            // If no explicit metric column found, use the second to last column as metric name
+            if (!metricName && values.length >= 3) {
+                metricName = values[values.length - 2];
+            }
+            
+            // Value is the last column
+            if (values.length >= 2) {
+                const valueStr = values[values.length - 1];
+                value = valueStr === '' || valueStr === 'null' || valueStr === 'NULL' ? null : parseFloat(valueStr);
+            }
+            
+            if (!metricName || isNaN(value)) {
+                console.warn(`Invalid metric name or value in row ${i + 1}. Skipping.`);
+                continue;
+            }
+            
+            // Collect dimension values (all columns except timestamp, metric name, and value)
+            for (let j = 1; j < headers.length - 2; j++) {
+                const header = headers[j];
+                const headerLower = header.toLowerCase();
+                
+                // Skip metric name column
+                if (headerLower === 'metric' || headerLower === 'activity' || headerLower === 'metric_name' || headerLower === 'measurement_name') {
+                    continue;
+                }
+                
+                dimensions[header] = values[j];
+            }
+            
+            // Create series name with dimensions
+            const dimensionParts = Object.entries(dimensions).map(([name, val]) => val || 'null');
+            const seriesName = `${metricName} (${dimensionParts.join(', ')})`;
+            
+            // Add to data map
+            if (!dataMap.has(seriesName)) {
+                dataMap.set(seriesName, { timestamps: [], values: [] });
+            }
+            
+            dataMap.get(seriesName).timestamps.push(timestamp);
+            dataMap.get(seriesName).values.push(value);
+        }
+        
+        if (dataMap.size === 0) {
+            throw new Error('No valid data rows found in CSV file');
+        }
+        
+        // Convert to chart format
+        const allTimestamps = new Set();
+        dataMap.forEach(seriesData => {
+            seriesData.timestamps.forEach(ts => allTimestamps.add(ts));
+        });
+        
+        const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b);
+        const metrics = {};
+        
+        // Create metrics object with aligned data
+        dataMap.forEach((seriesData, seriesName) => {
+            metrics[seriesName] = new Array(sortedTimestamps.length).fill(null);
+            
+            seriesData.timestamps.forEach((timestamp, index) => {
+                const timestampIndex = sortedTimestamps.indexOf(timestamp);
+                if (timestampIndex !== -1) {
+                    metrics[seriesName][timestampIndex] = seriesData.values[index];
+                }
+            });
+        });
+        
+        // Create chart title from filename
+        const chartTitle = fileName.replace('.csv', '').replace(/[^a-zA-Z0-9\s]/g, ' ').trim();
+        
+        // Add the chart
+        this.addChart(sortedTimestamps, metrics, false, chartTitle);
+        
+        console.log(`Successfully loaded long format CSV: ${fileName} with ${sortedTimestamps.length} timestamps and ${dataMap.size} series`);
+        
+    } catch (error) {
+        console.error('Error processing long format CSV data:', error);
+        alert('Error processing CSV file: ' + error.message);
+    }
+};
+
+TimeSeriesChart.prototype.createSeriesWithDimensions = function(timestamps, metrics, dimensions, dimensionColumns, baseTitle) {
+    try {
+        // Create new metrics object with dimension values in series names
+        const newMetrics = {};
+        const dataLength = timestamps.length;
+        
+        // For each metric, create separate series for each unique dimension combination
+        Object.keys(metrics).forEach(metricName => {
+            // Get unique dimension combinations for this metric
+            const dimensionCombinations = this.getDimensionCombinations(dimensions, dimensionColumns);
+            
+            dimensionCombinations.forEach(combination => {
+                // Create series name with dimension values
+                const seriesName = this.createSeriesNameWithDimensions(metricName, combination);
+                
+                // Initialize the series array
+                newMetrics[seriesName] = new Array(dataLength).fill(null);
+                
+                // Fill in values where this dimension combination matches
+                for (let i = 0; i < dataLength; i++) {
+                    let matches = true;
+                    
+                    // Check if this row matches the dimension combination
+                    Object.keys(combination).forEach(dimName => {
+                        const expectedValue = combination[dimName];
+                        const actualValue = dimensions[dimName][i];
+                        
+                        if (expectedValue !== actualValue) {
+                            matches = false;
+                        }
+                    });
+                    
+                    if (matches) {
+                        newMetrics[seriesName][i] = metrics[metricName][i];
+                    }
+                }
+            });
+        });
+        
+        // Create single chart with all series
+        this.addChart(timestamps, newMetrics, false, baseTitle);
+        
+        console.log(`Created single chart with ${Object.keys(newMetrics).length} series from CSV data`);
+        
+    } catch (error) {
+        console.error('Error creating series with dimensions:', error);
+        // Fallback: create single chart with all data
+        this.addChart(timestamps, metrics, false, baseTitle);
+    }
+};
+
+TimeSeriesChart.prototype.getDimensionCombinations = function(dimensions, dimensionColumns) {
+    const combinations = [];
+    const dataLength = Object.values(dimensions)[0].length;
+    
+    // Create a set of unique combinations
+    const combinationSet = new Set();
+    
+    for (let i = 0; i < dataLength; i++) {
+        const combination = {};
+        let combinationKey = '';
+        
+        dimensionColumns.forEach(dim => {
+            const value = dimensions[dim.name][i];
+            combination[dim.name] = value;
+            combinationKey += `${dim.name}:${value || 'null'}|`;
+        });
+        
+        if (!combinationSet.has(combinationKey)) {
+            combinationSet.add(combinationKey);
+            combinations.push(combination);
+        }
+    }
+    
+    return combinations;
+};
+
+TimeSeriesChart.prototype.filterDataByDimensionCombination = function(timestamps, metrics, dimensions, combination) {
+    const filteredTimestamps = [];
+    const filteredMetrics = {};
+    
+    // Initialize filtered metrics
+    Object.keys(metrics).forEach(metricName => {
+        filteredMetrics[metricName] = [];
+    });
+    
+    const dataLength = timestamps.length;
+    
+    for (let i = 0; i < dataLength; i++) {
+        let matches = true;
+        
+        // Check if this row matches the dimension combination
+        Object.keys(combination).forEach(dimName => {
+            const expectedValue = combination[dimName];
+            const actualValue = dimensions[dimName][i];
+            
+            if (expectedValue !== actualValue) {
+                matches = false;
+            }
+        });
+        
+        if (matches) {
+            filteredTimestamps.push(timestamps[i]);
+            Object.keys(metrics).forEach(metricName => {
+                filteredMetrics[metricName].push(metrics[metricName][i]);
+            });
+        }
+    }
+    
+    return {
+        timestamps: filteredTimestamps,
+        metrics: filteredMetrics
+    };
+};
+
+TimeSeriesChart.prototype.createSeriesNameWithDimensions = function(metricName, combination) {
+    const dimensionParts = Object.entries(combination).map(([name, value]) => {
+        return `${value || 'null'}`;
+    });
+    
+    return `${metricName} (${dimensionParts.join(', ')})`;
+};
+
+TimeSeriesChart.prototype.createDimensionCombinationTitle = function(combination, baseTitle) {
+    const dimensionParts = Object.entries(combination).map(([name, value]) => {
+        return `${name}: ${value || 'null'}`;
+    });
+    
+    return `${baseTitle} (${dimensionParts.join(', ')})`;
+};
+
 // applyBrushToAllCharts method removed - subchart disabled for performance
 TimeSeriesChart.prototype.addChartTitle = function(chart, title) {
     if (!chart || !chart.internal || !chart.internal.svg) {

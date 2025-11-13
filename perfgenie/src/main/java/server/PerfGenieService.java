@@ -16,6 +16,8 @@ import com.salesforce.cantor.mysql.CantorOnMysql;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
+import perfgenie.ParsePidStat;
+import perfgenie.PidStatResponse;
 import perfgenie.utils.*;
 
 import java.io.*;
@@ -81,10 +83,28 @@ public class PerfGenieService implements IPerfGenieService {
         String substrate = System.getenv("SUBSTRATE");
         if (substrate != null) {
             logger.info(now.format(formatter) + " running canaryTaskJob");
-            canarySideBySideTask(0, 0,"sidebyside", null);
+            //canarySideBySideTask(0, 0,"sidebyside", null);
+            canarySideBySideTask(0, 0,"release", "perf-genie-test45");
             //System.exit(0);
         }
     }
+
+    private static boolean tmpTask = false;//only to catch up last week
+    @Scheduled(cron = "0 0 * * * *")
+    //@Scheduled(cron = "*/10 * * ? * *")
+    private void canaryTaskJobTmp() throws IOException {
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String substrate = System.getenv("SUBSTRATE");
+        if (substrate != null && tmpTask) {
+            tmpTask=false;
+            logger.info(now.format(formatter) + " running canaryTaskJobTmp");
+            //canarySideBySideTask(0, 0,"sidebyside", null);
+            canarySideBySideTask(10, 2,"release", "perf-genie-test45");
+            //System.exit(0);
+        }
+    }
+
 
     public void runJob() throws IOException {
         tenant = config.getTenant();
@@ -1098,6 +1118,7 @@ public class PerfGenieService implements IPerfGenieService {
         } catch (IOException e) {
             System.err.println("Error: walking through directory: " + e.getMessage());
         }
+        DiskCache.cleanup(24*60);
     }
 
     public static String canarySource = "gold";
@@ -1130,7 +1151,7 @@ public class PerfGenieService implements IPerfGenieService {
         eventStore.addGenieEvent(timestamp, queryMap, dimMap, comment, config.getTenant());
     }
 
-    public void addLense(String lense, Long timestamp, String host, String type) throws IOException {
+    public void addLense(String lense, Long timestamp, String host, String type, String name) throws IOException {
         String substrate = System.getenv("SUBSTRATE");
         if (substrate != null || config.getStorageType().equals("grpc")) {
             if(host == null) {
@@ -1149,15 +1170,95 @@ public class PerfGenieService implements IPerfGenieService {
         queryMap.put("source-file", "lense");
         queryMap.put("file-name", "canary-lense");//
         queryMap.put("type", type);
-        queryMap.put("name", "lense");
+        queryMap.put("name", name);
         queryMap.put("guid", timestamp + type);
 
         System.out.println(timestamp + " addLense 5--->" + Utils.toJson(queryMap));
         eventStore.addGenieEvent(timestamp, queryMap, dimMap, lense, config.getTenant());
     }
 
+    public void addExpression(String expression, Long timestamp, String host, String type, String name) throws IOException {
+        String substrate = System.getenv("SUBSTRATE");
+        if (substrate != null || config.getStorageType().equals("grpc")) {
+            if(host == null) {
+                host = "perf-genie-tracker";
+            }
+        }else{
+            host = InetAddress.getLocalHost().getHostName();
+        }
+
+        final Map<String, Double> dimMap = new HashMap<>();
+        final Map<String, String> queryMap = new HashMap<>();
+        queryMap.put("source", canarySource);
+        queryMap.put("tenant-id", "expressions");
+        queryMap.put("instance-id", host);//TODO this shold be input
+        queryMap.put("host", host);
+        queryMap.put("source-file", "expression");
+        queryMap.put("file-name", "canary-expression");//
+        queryMap.put("type", type);
+        queryMap.put("name", name);
+        queryMap.put("guid", timestamp + type);
+
+        System.out.println(timestamp + " addDerivedMetric 6--->" + Utils.toJson(queryMap));
+        eventStore.addGenieEvent(timestamp, queryMap, dimMap, expression, config.getTenant());
+    }
+
+    public String getAllPidStatData(long start, long end, final String cell,String instance, String host) throws IOException {
+        List<List<Object>> datas = new ArrayList<>();
+        final Map<String, String> queryMap =new HashMap<>();
+        //queryMap.put("host","=");
+        String[] arr = instance.split("\\.");
+
+        String tenant_id = "falcon-aws-"+arr[0] + "-" + arr[1]+"-core1-"+cell;
+        queryMap.put("name","=pidstat");
+        queryMap.put("tenant-id","="+tenant_id);
+        //String scope = ArgusQueryT.getScope(start,start,cell);
+        //List<String> kpods = ArgusQueryT.getCanaryPods(String.valueOf(start),String.valueOf(end),"aws-prod2-apsouth1","core1","ind86");
+        final Map<String, String> dimMap = new HashMap<>();
+
+        HashMap<String,ArrayList<String>> otherevents = eventStore.getPidStatPayLoads(tenant_id, start, end, queryMap, dimMap, true,200);
+        List<String> keys = new ArrayList<String>(otherevents.keySet());
+        List<PidStatResponse> responses = new ArrayList<>();
+        for (int i = 0; i < keys.size(); i++) {
+
+            HashMap<Object,ArrayList<Object>> mdata = new HashMap<>();
+
+            for (int j=0; j<otherevents.get(keys.get(i)).size();j++){
+                // First response
+                ParsePidStat parser = new ParsePidStat();
+                parser.parsePidStatString(cell,keys.get(i),otherevents.get(keys.get(i)).get(j));
+                List<List<Object>> list = parser.getPidstatParseOutputArray();
+                for(int k=0;k<list.size();k++){
+                    if(!mdata.containsKey(list.get(k).get(3))){
+                        mdata.put(list.get(k).get(3),new ArrayList<>());
+                    }
+                    mdata.get(list.get(k).get(3)).add(list.get(k));
+                    //System.out.println(list.size());
+                }
+            }
+
+            List<Object> metrics = new ArrayList<Object>(mdata.keySet());
+            for(int z=0; z<metrics.size();z++){
+                ArrayList<Object> r = mdata.get(metrics.get(z));
+
+                PidStatResponse response1 = new PidStatResponse();
+                response1.setScope(keys.get(i));
+                response1.setMetric(metrics.get(z).toString());//????
+                response1.addTag("cell", cell);
+                response1.addTag("datacenter", tenant_id);
+                response1.setDisplayName(keys.get(i)+ ":" + metrics.get(z));//????
+                for (int m=0;m<r.size();m++){
+                    response1.addDatapoint(((ArrayList)r.get(m)).get(2).toString()+"000", Double.parseDouble(((ArrayList)r.get(m)).get(4).toString()));
+                }
+                responses.add(response1);
+            }
+         }
+        String res = Utils.toJson(responses);
+        return res;
+    }
+
     public String getAllCanaryCellTimeSeries(long start, long end, final String cell,String host) throws IOException {
-        ArrayList<String> metrics = new ArrayList<>(Arrays.asList("cCpuT", "rCnt","Apt","rCpuT", "kpodC","PA","heap","cCpuTN"));
+        ArrayList<String> metrics = new ArrayList<>(Arrays.asList("cCpuT","rCnt","Apt","rCpuT", "kpodC","PA","heap","cCpuTN"));
         HashMap<String,Object> canaryType = getCanaryCellTimeSeries(start,end,cell,host,"CanaryType", null);
 
         List<HashMap<String,Object>> datas = new ArrayList<>();
@@ -1217,7 +1318,7 @@ public class PerfGenieService implements IPerfGenieService {
                 if(timestamps_canaryType != null && values_canaryType != null) {
                     TimeseriesSorter.sortByTimestampsIfNeeded(values_canaryType, timestamps_canaryType);
                 }
-                System.out.println(timestamps_canaryType.get(0) +":"+timestamps_canaryType.get(values_canaryType.size()-1));
+                //System.out.println(timestamps_canaryType.get(0) +":"+timestamps_canaryType.get(values_canaryType.size()-1));
             }
 
 
@@ -1229,7 +1330,7 @@ public class PerfGenieService implements IPerfGenieService {
             List<Long> timestamps = new ArrayList<>();
             List<Long> timestamps_canary = new ArrayList<>();
             HashMap<String,String> colors = new HashMap<>();
-            long curStart = start;
+            long curStart = start - 8 * 24 * 60 * 60 * 1000; // start 7 days earlier
             long metricStartTime = 0;
             int metricSeriesCount = 0;
             long canaryMetricStartTime = 0;
@@ -1250,7 +1351,7 @@ public class PerfGenieService implements IPerfGenieService {
 
                         if(interval == 0){
                             interval = TimeseriesSorter.findInterval(tmp_timestamps);
-                            System.out.println(interval);
+                            //System.out.println(interval);
                         }else{
                             //fill gaps with null values
                             long lastTimestamp = timestamps.get(timestamps.size()-1);
@@ -1263,7 +1364,7 @@ public class PerfGenieService implements IPerfGenieService {
                                     values.add(null);
                                 }
                             }
-                            System.out.println(lastTimestamp);
+                            //System.out.println(lastTimestamp);
                         }
 
                         if(metricStartTime == 0){
@@ -1368,6 +1469,7 @@ public class PerfGenieService implements IPerfGenieService {
             System.out.println("getCanaryCellTimeSeries done " + timestamps.size());
             return data;
         } catch (Exception e) {
+            System.out.println(e.getMessage() + ":" + e.getStackTrace());;
             return null;
         }
     }
@@ -1410,19 +1512,59 @@ public class PerfGenieService implements IPerfGenieService {
         queryMap.put("host", host);
         queryMap.put("source-file", "lense");
         queryMap.put("file-name", "canary-lense");//
-        queryMap.put("name", "lense");
+        //queryMap.put("name", "lense");
 
         try {
             long end = Instant.now().toEpochMilli() + 60 * 60 * 1000;
-            for (int j = 5; j <= 40; j += 5) {
+            List<String> lenses = new ArrayList<>();
+            for (int j = 5; j <= 10; j += 5) {
                 long start = end - 5 * 24 * 60 * 60 * 1000L;
-                List<String> lenses = eventStore.getCanaryComments(config.getTenant(), start, end, queryMap, dimMap, true);
-                return Utils.toJson(lenses);
+                List<String> lenses1 = eventStore.getCanaryLenses(config.getTenant(), start, end, queryMap, dimMap, true);
+                if(lenses1 != null){
+                    lenses.addAll(lenses1);
+                }
+                end = start;
             }
+            return Utils.toJson(lenses);
         } catch (Exception e) {
             return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to get lenses" + e.getMessage(), queryMap, null));
         }
-        return null;
+    }
+
+    public String getCanaryExpressions(final Map<String, String> queryMap,String host) throws IOException {
+        String substrate = System.getenv("SUBSTRATE");
+        if (substrate != null || config.getStorageType().equals("grpc")) {
+            if(host == null) {
+                host = "perf-genie-tracker";
+            }
+        }else{
+            host = InetAddress.getLocalHost().getHostName();
+        }
+
+        final Map<String, String> dimMap = new HashMap<>();
+        queryMap.put("source", canarySource);
+        queryMap.put("tenant-id", "expressions");
+        queryMap.put("instance-id", host);//TODO this shold be input
+        queryMap.put("host", host);
+        queryMap.put("source-file", "expression");
+        queryMap.put("file-name", "canary-expression");//
+        //queryMap.put("name", "expression");
+
+        try {
+            long end = Instant.now().toEpochMilli() + 60 * 60 * 1000;
+            List<String> expressions = new ArrayList<>();
+            for (int j = 5; j <= 10; j += 5) {
+                long start = end - 5 * 24 * 60 * 60 * 1000L;
+                List<String> expressions1 = eventStore.getCanaryLenses(config.getTenant(), start, end, queryMap, dimMap, true);
+                if(expressions1 != null){
+                    expressions.addAll(expressions1);
+                }
+                end = start;
+            }
+            return Utils.toJson(expressions);
+        } catch (Exception e) {
+            return Utils.toJson(new EventHandler.JfrParserResponse(null, "Error: Failed to get expressions" + e.getMessage(), queryMap, null));
+        }
     }
 
 
@@ -1644,7 +1786,7 @@ public class PerfGenieService implements IPerfGenieService {
             final EventHandler aggregator = new EventHandler();
             Map<String, String> allcounts = new HashMap<>();
             end = Instant.now().toEpochMilli() + 60 * 60 * 1000;
-            for (int j = 5; j <= 40; j += 5) {
+            for (int j = 5; j <= 50; j += 5) {
                 start = end - 5 * 24 * 60 * 60 * 1000L;
                 String pattern = "yyyy-MM-dd HH:mm:ss";
                 String timezone = "UTC";
@@ -1846,6 +1988,27 @@ public class PerfGenieService implements IPerfGenieService {
         return Utils.toJson(res);
     }
 
+    public String processRefreshRequest(long start, long end, String cell, String host) throws IOException{
+        //type is 1
+        List<List<Object>> res = new ArrayList<>();
+        String dateString1 = Utils.convertEpochToUTCString(start);
+        String dateString2 = Utils.convertEpochToUTCString(end);
+        if((int) ArgusQueryT.pc.getConfig().get(cell).get("type") == 1) {
+            CanaryResponse response = WeekOverWeek.processWeekOverWeekCanary(start, end, cell, host);
+            if(response != null){
+                List<Object> record = response.getRecord();
+                if (record.size() > 0) {
+                    addCanaryEventNew(record, end, cell, host, response.getHeader());
+                    res.add(record);
+                    System.out.println("<-----COMPLETED----->"+ dateString1 + ":"+ dateString2 + ":" +cell + " record count " + record.size()+"<-----COMPLETED----->");
+                } else {
+                    System.out.println("<-----SKIPPED----->"+ dateString1 + ":"+ dateString2 + ":" +cell + " record count " + record.size()+"<-----SKIPPED----->");
+                }
+            }
+        }
+        return Utils.toJson(res);
+    }
+
     //this will use canary end time stamp to save record, used by scheduled task and UI. This will avoid duplicate records
     public synchronized String canarySideBySideTask(long start, long end, String type, String host) throws IOException {
         int hr = Utils.getCurrentHourUTC();
@@ -1876,16 +2039,20 @@ public class PerfGenieService implements IPerfGenieService {
                                 if (type.equals("sidebyside")) {
                                     //type is 2
                                     if((int) ArgusQueryT.pc.getConfig().get(cell).get("type") == 2) {
+                                        System.out.println(type + " SideBySide.processSideBySideCanary");
                                         response = SideBySide.processSideBySideCanary(tmp1, tmp2, cell);
                                     }else{
+                                        System.out.println(type + " SideBySide.processSideBySideCanary");
                                         System.out.println("Ignore cell 1 " + cell + ", request type not matched, type " + (int) ArgusQueryT.pc.getConfig().get(cell).get("type"));
                                         continue;
                                     }
                                 } else {
                                     //type is 1
                                     if((int) ArgusQueryT.pc.getConfig().get(cell).get("type") == 1) {
+                                        System.out.println(type + " WeekOverWeek.processWeekOverWeekCanary");
                                         response = WeekOverWeek.processWeekOverWeekCanary(tmp1, tmp2, cell, host);
                                     }else{
+                                        System.out.println(type + " WeekOverWeek.processWeekOverWeekCanary");
                                         System.out.println("Ignore cell 2 " + cell + ", request type not matched, type " + (int) ArgusQueryT.pc.getConfig().get(cell).get("type"));
                                         continue;
                                     }
@@ -1943,31 +2110,41 @@ public class PerfGenieService implements IPerfGenieService {
             if (substrate != null) {
                 host = "perf-genie-test13";
             }
-            host = "perf-genie-test40";
-            if (args[0].equals("week")) {
+            host = "perf-genie-test45";
+            if (args[0].equals("refresh")) {
+                long startTime = Long.parseLong(args[1]);
+                long endTime = Long.parseLong(args[2]);
+                String cell = args[3];
+                System.out.println("1 refresh service.processRefreshRequest");
+                service.processRefreshRequest(startTime, endTime, cell, host);
+            } else if (args[0].equals("week")) {
                 long startTime = Long.parseLong(args[1]);
                 long endTime = Long.parseLong(args[2]);
                 String cell = args[3];
                 String instance = args[4];
                 long previousTimeDiffMs = 7 * 24 * 60 * 60 * 1000L;
                 //type 4, custom
+                System.out.println("2 week service.processWeekOverWeekCanaryTask");
                 service.processWeekOverWeekCanaryTask(startTime, endTime, cell, startTime - previousTimeDiffMs, endTime - previousTimeDiffMs, cell, host);
             } else if (args[0].equals("side")) {
+                System.out.println("side");
                 //type 3 custom
                 return;
             } else if (args[0].equals("release") || args[0].equals("canary")) {
                 start = Long.parseLong(args[1]);
                 end = Long.parseLong(args[2]);
-                if(!duplicates) {
+                if (!duplicates) {
                     // this will avoid duplicates but checks for current hour  > end time
                     if (args[0].equals("canary")) {
                         //type 2
+                        System.out.println("3 canary service.canarySideBySideTas");
                         service.canarySideBySideTask(start, end, "sidebyside", host);
-                    }else{
+                    } else {
                         //type 1
-                        service.canarySideBySideTask(start,end,"release",host);
+                        System.out.println("4 release service.canarySideBySideTas");
+                        service.canarySideBySideTask(start, end, "release", host);
                     }
-                }else{
+                } else {
                     for (int lastndays = (int) end; lastndays <= start; lastndays++) {
                         for (String cell : ArgusQueryT.pc.getConfig().keySet()) {
                             if ((boolean) ArgusQueryT.pc.getConfig().get(cell).get("enabled") == true) {
@@ -1985,17 +2162,19 @@ public class PerfGenieService implements IPerfGenieService {
                                         CanaryResponse response;
                                         if (args[0].equals("canary")) {
                                             //type 3
-                                            if((int) ArgusQueryT.pc.getConfig().get(cell).get("type") == 2) {
+                                            if ((int) ArgusQueryT.pc.getConfig().get(cell).get("type") == 2) {
+                                                System.out.println("5 canary service.processSideBySideCanaryTask");
                                                 service.processSideBySideCanaryTask(tmp1, tmp2, cell, host);// this will save record with a new timestamp
-                                            }else{
+                                            } else {
                                                 System.out.println("Ignore cell " + cell + ", request type not matched, type " + (int) ArgusQueryT.pc.getConfig().get(cell).get("type"));
                                             }
                                         } else {
                                             long previousTimeDiffMs = 7 * 24 * 60 * 60 * 1000L;
                                             //type 4
-                                            if((int) ArgusQueryT.pc.getConfig().get(cell).get("type") == 1) {
+                                            if ((int) ArgusQueryT.pc.getConfig().get(cell).get("type") == 1) {
+                                                System.out.println("6 release service.processWeekOverWeekCanaryTask");
                                                 service.processWeekOverWeekCanaryTask(tmp1, tmp2, cell, tmp1 - previousTimeDiffMs, tmp2 - previousTimeDiffMs, cell, host); // this will save record with a new timestamp
-                                            }else{
+                                            } else {
                                                 System.out.println("Ignore cell " + cell + ", request type not matched, type " + (int) ArgusQueryT.pc.getConfig().get(cell).get("type"));
                                             }
                                         }
@@ -2013,6 +2192,7 @@ public class PerfGenieService implements IPerfGenieService {
             } else {
                 System.out.println("----> Invalid arguments");
             }
+
             /*else if (args.length == 3 || args.length == 4 || args.length == 5) {
                 if (substrate != null) {
                     host = "perf-genie-tracker";
