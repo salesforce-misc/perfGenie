@@ -3272,7 +3272,7 @@
                 if(tmpHeight < 250){
                     tmpHeight = 250;
                 }
-                $("<td  id='checkresize' style='padding: 0px;border: none;align-items:center;' rowspan='10'>" + "<div id='diageventnn' style='width:"+(window.innerWidth - $("#statetable-table").innerWidth() - 70)+";height: "+tmpHeight +"px; overflow: auto; border-style: dotted hidden; padding: 10px;' class='ui-widget-content col-lg-12'> </div></td>").insertAfter(lastTd);
+                $("<td  id='checkresize' style='padding: 0px;border: none;align-items:center;' rowspan='10'>" + "<div id='diageventnn' style='width:"+( $("#profiler-page").innerWidth() - $("#statetable-table").innerWidth() - 70)+";height: "+tmpHeight +"px; overflow: auto; border-style: dotted hidden; padding: 10px;' class='ui-widget-content col-lg-12'> </div></td>").insertAfter(lastTd);
                 $( "#diageventnn" ).resizable();
             }
         }

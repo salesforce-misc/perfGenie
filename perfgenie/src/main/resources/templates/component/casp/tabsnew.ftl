@@ -388,7 +388,87 @@
     
     .left-nav-sidebar.collapsed {
         width: 22px;
-        background: transparent !important;
+        /* Glazy convex modern background with glazy effect - fading on right edge */
+        background: linear-gradient(to right, 
+            rgba(235, 245, 255, 0.95) 0%, 
+            rgba(235, 245, 255, 0.9) 60%, 
+            rgba(235, 245, 255, 0.7) 85%, 
+            rgba(235, 245, 255, 0.4) 95%, 
+            rgba(235, 245, 255, 0.1) 100%) !important;
+        /* Additional blue tint overlay - also fading on right */
+        background-image: 
+            linear-gradient(to right, 
+                rgba(235, 245, 255, 0.95) 0%, 
+                rgba(235, 245, 255, 0.9) 60%, 
+                rgba(235, 245, 255, 0.7) 85%, 
+                rgba(235, 245, 255, 0.4) 95%, 
+                rgba(235, 245, 255, 0.1) 100%),
+            linear-gradient(to right, 
+                rgba(90, 159, 212, 0.08) 0%, 
+                rgba(90, 159, 212, 0.05) 70%, 
+                rgba(90, 159, 212, 0.02) 90%, 
+                transparent 100%) !important;
+        /* Glassy effect with backdrop blur */
+        backdrop-filter: blur(10px) saturate(180%);
+        -webkit-backdrop-filter: blur(10px) saturate(180%);
+        /* Convex embossed effect - more height on left, soft fade to right */
+        box-shadow: 
+            inset 0 1px 2px rgba(255, 255, 255, 0.8),
+            inset 0 -1px 2px rgba(0, 0, 0, 0.05),
+            /* Left side shadow (more prominent) */
+            -2px 0 8px rgba(0, 0, 0, 0.15),
+            -1px 0 4px rgba(0, 0, 0, 0.1),
+            /* Right side shadow (very subtle, soft fade) */
+            1px 0 2px rgba(0, 0, 0, 0.03),
+            /* Top and bottom shadows */
+            0 1px 3px rgba(0, 0, 0, 0.08),
+            0 -1px 2px rgba(0, 0, 0, 0.05),
+            /* Subtle blue glow */
+            inset 0 0 20px rgba(90, 159, 212, 0.03);
+        /* No right border - soft fade instead */
+        border: none !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.6) !important;
+        border-bottom: 1px solid rgba(90, 159, 212, 0.15) !important;
+        /* Soft fade mask on right edge */
+        mask-image: linear-gradient(to right, black 0%, black 85%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, black 0%, black 85%, transparent 100%);
+    }
+    
+    /* Collapse/Expand Arrow - Middle Right Aligned */
+    .left-nav-collapse-arrow {
+        position: absolute;
+        right: 2px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 14px;
+        height: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 1001;
+        color: #6b7280;
+        font-size: 10px;
+        font-weight: 300;
+        transition: all 0.2s ease;
+        border-radius: 3px;
+        background: transparent;
+    }
+    
+    .left-nav-collapse-arrow:hover {
+        color: #429CD6;
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-50%) scale(1.1);
+    }
+    
+    .left-nav-sidebar.expanded .left-nav-collapse-arrow {
+        color: rgba(255, 255, 255, 0.7);
+        background: transparent;
+    }
+    
+    .left-nav-sidebar.expanded .left-nav-collapse-arrow:hover {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.1);
     }
     
     .left-nav-sidebar.expanded {
@@ -477,7 +557,7 @@
         padding: 4px 20px 4px 2px;
         cursor: pointer;
         transition: all 0.2s ease;
-        color: #ffffff;
+        color: rgba(255, 255, 255, 0.7);
         text-decoration: none;
         border-left: 3px solid transparent;
         gap: 12px;
@@ -489,7 +569,8 @@
     
     .left-nav-item:hover {
         background: rgba(255, 255, 255, 0.15);
-        border-left-color: #ffffff;
+        border-left-color: rgba(255, 255, 255, 0.7);
+        color: rgba(255, 255, 255, 0.85);
     }
     
     .left-nav-item.active {
@@ -500,6 +581,7 @@
     
     .left-nav-item.active:hover {
         background: rgba(255, 255, 255, 0.25);
+        color: #ffffff;
     }
     
     .left-nav-icon {
@@ -511,7 +593,15 @@
         justify-content: center;
         flex-shrink: 0;
         line-height: 1.3;
+        color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .left-nav-item.active .left-nav-icon {
         color: #ffffff;
+    }
+    
+    .left-nav-item:hover .left-nav-icon {
+        color: rgba(255, 255, 255, 0.85);
     }
     
     .left-nav-label {
@@ -522,7 +612,15 @@
         line-height: 1.3;
         display: flex;
         align-items: center;
+        color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .left-nav-item.active .left-nav-label {
         color: #ffffff;
+    }
+    
+    .left-nav-item:hover .left-nav-label {
+        color: rgba(255, 255, 255, 0.85);
     }
     
     .left-nav-sidebar.collapsed .left-nav-label {
@@ -539,12 +637,13 @@
         min-height: 30px;
         width: 100%;
         border-left: none;
-        color: #ffffff !important;
+        color: rgba(255, 255, 255, 0.7) !important;
         background: transparent !important;
     }
     
     .left-nav-sidebar.collapsed .left-nav-item:hover {
         background: rgba(255, 255, 255, 0.1) !important;
+        color: rgba(255, 255, 255, 0.85) !important;
     }
     
     .left-nav-sidebar.collapsed .left-nav-item.active {
@@ -559,6 +658,10 @@
     }
     
     .left-nav-sidebar.collapsed .left-nav-item .left-nav-icon {
+        color: #6b7280 !important;
+    }
+    
+    .left-nav-sidebar.collapsed .left-nav-item:hover .left-nav-icon {
         color: #9ca3af !important;
     }
     
@@ -571,14 +674,67 @@
         align-items: center;
         padding: 0 16px;
         font-size: 18px;
-        font-weight: 600;
-        color: #2c3e50;
-        background: #f8f9fa;
+        font-weight: 500;
+        color: #4a5568;
+        /* Embossed glazy background with blue tint gradient */
+        background: linear-gradient(135deg, rgba(235, 245, 255, 0.95) 0%, rgba(220, 235, 250, 0.9) 50%, rgba(235, 245, 255, 0.95) 100%);
+        /* Additional blue tint overlay */
+        background-image: 
+            linear-gradient(135deg, rgba(235, 245, 255, 0.95) 0%, rgba(220, 235, 250, 0.9) 50%, rgba(235, 245, 255, 0.95) 100%),
+            linear-gradient(180deg, rgba(90, 159, 212, 0.08) 0%, rgba(127, 192, 232, 0.05) 100%);
+        /* Glassy effect with backdrop blur */
+        backdrop-filter: blur(10px) saturate(180%);
+        -webkit-backdrop-filter: blur(10px) saturate(180%);
+        /* Embossed effect with inset shadows */
+        box-shadow: 
+            inset 0 1px 2px rgba(255, 255, 255, 0.8),
+            inset 0 -1px 2px rgba(0, 0, 0, 0.05),
+            0 1px 3px rgba(0, 0, 0, 0.08),
+            0 0 0 1px rgba(90, 159, 212, 0.15),
+            inset 0 0 20px rgba(90, 159, 212, 0.03);
+        /* Subtle border with gradient effect */
         border: none !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.6) !important;
+        border-bottom: 1px solid rgba(90, 159, 212, 0.2) !important;
+        /* Text styling - clean, professional look */
+        text-shadow: none;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        letter-spacing: 0.01em;
+        letter-spacing: 0.02em;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        /* Smooth transitions */
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    /* Optional: Add a subtle shine effect on hover */
+    .data-view-header-placeholder:hover {
+        background: linear-gradient(135deg, rgba(235, 245, 255, 0.98) 0%, rgba(220, 235, 250, 0.96) 50%, rgba(235, 245, 255, 0.98) 100%);
+        background-image: 
+            linear-gradient(135deg, rgba(235, 245, 255, 0.98) 0%, rgba(220, 235, 250, 0.96) 50%, rgba(235, 245, 255, 0.98) 100%),
+            linear-gradient(180deg, rgba(90, 159, 212, 0.12) 0%, rgba(127, 192, 232, 0.08) 100%);
+        box-shadow: 
+            inset 0 1px 3px rgba(255, 255, 255, 0.9),
+            inset 0 -1px 2px rgba(0, 0, 0, 0.06),
+            0 2px 4px rgba(0, 0, 0, 0.1),
+            0 0 0 1px rgba(90, 159, 212, 0.2);
+    }
+    
+    /* Optional: Add a subtle animated shine effect */
+    .data-view-header-placeholder::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s;
+    }
+    
+    .data-view-header-placeholder:hover::before {
+        left: 100%;
     }
     
     /* Field and Input Styling - Matching SFDataTable.js */
@@ -1484,6 +1640,75 @@
     }
     
     /**
+     * Function to switch to a specific page
+     */
+    function switchToPage(pageId) {
+        const navItems = document.querySelectorAll('.left-nav-item');
+        const canariesPage = document.getElementById('canaries-page');
+        const profilerPage = document.getElementById('profiler-page');
+        const aidashboardPage = document.getElementById('aidashboard-page');
+        
+        // Remove active class from all nav items
+        navItems.forEach(nav => nav.classList.remove('active'));
+        
+        // Add active class to the corresponding nav item
+        const targetNavItem = document.querySelector('.left-nav-item[data-page="' + pageId + '"]');
+        if (targetNavItem) {
+            targetNavItem.classList.add('active');
+        }
+        
+        // Hide all pages
+        document.querySelectorAll('.page-content').forEach(page => {
+            page.classList.remove('active');
+        });
+        
+        // Show the selected page
+        if (pageId === 'canaries') {
+            if (canariesPage) {
+                canariesPage.classList.add('active');
+                // Initialize datetime pickers when canaries page becomes active
+                setTimeout(function() {
+                    initCanaryDateTimePickers();
+                    // Set default value for canary-source-input from dataHost if available
+                    setCanarySourceDefault();
+                    // Load canary data from URL parameters if they exist
+                    loadCanaryDataFromUrl();
+                }, 100);
+            }
+        } else if (pageId === 'profiler') {
+            if (profilerPage) {
+                profilerPage.classList.add('active');
+            }
+        } else if (pageId === 'aidashboard') {
+            if (aidashboardPage) {
+                aidashboardPage.classList.add('active');
+            }
+        }
+    }
+    
+    /**
+     * Function to restore page from URL parameter
+     */
+    function restorePageFromUrl() {
+        // Get page parameter from URL
+        let pageParam = null;
+        if (typeof window.urlParams !== 'undefined') {
+            pageParam = window.urlParams.get('page');
+        } else {
+            const urlParams = new URLSearchParams(window.location.search);
+            pageParam = urlParams.get('page');
+        }
+        
+        // If page parameter exists and is valid, switch to that page
+        if (pageParam && (pageParam === 'canaries' || pageParam === 'profiler' || pageParam === 'aidashboard')) {
+            switchToPage(pageParam);
+        } else {
+            // Default to canaries page if no page parameter
+            switchToPage('canaries');
+        }
+    }
+    
+    /**
      * Initialize Left Navigation Sidebar
      */
     function initLeftNavigation() {
@@ -1509,13 +1734,12 @@
         }
         sidebar.hasEventListener = true;
         
-        // Toggle collapse/expand
-        toggle.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
+        // Get arrow element once
+        const collapseArrow = document.getElementById('leftNavCollapseArrow');
+        
+        // Function to toggle sidebar
+        function toggleSidebar() {
             const isCollapsed = sidebar.classList.contains('collapsed');
-            const toggleIcon = toggle.querySelector('.left-nav-toggle-icon');
             
             if (isCollapsed) {
                 sidebar.classList.remove('collapsed');
@@ -1523,16 +1747,52 @@
                 if (mainContent) {
                     mainContent.classList.remove('sidebar-collapsed');
                 }
-                // Icon remains the same (favicon.svg)
+                // Update arrow to point left (collapse)
+                if (collapseArrow) {
+                    collapseArrow.classList.remove('fa-chevron-right');
+                    collapseArrow.classList.add('fa-chevron-left');
+                }
             } else {
                 sidebar.classList.remove('expanded');
                 sidebar.classList.add('collapsed');
                 if (mainContent) {
                     mainContent.classList.add('sidebar-collapsed');
                 }
-                // Icon remains the same (favicon.svg)
+                // Update arrow to point right (expand)
+                if (collapseArrow) {
+                    collapseArrow.classList.remove('fa-chevron-left');
+                    collapseArrow.classList.add('fa-chevron-right');
+                }
             }
+        }
+        
+        // Initialize arrow direction based on initial state
+        if (collapseArrow) {
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            if (isCollapsed) {
+                collapseArrow.classList.remove('fa-chevron-left');
+                collapseArrow.classList.add('fa-chevron-right');
+            } else {
+                collapseArrow.classList.remove('fa-chevron-right');
+                collapseArrow.classList.add('fa-chevron-left');
+            }
+        }
+        
+        // Toggle collapse/expand on nav toggle click
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleSidebar();
         });
+        
+        // Toggle collapse/expand on arrow click
+        if (collapseArrow) {
+            collapseArrow.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleSidebar();
+            });
+        }
         
         // Handle navigation item clicks
         navItems.forEach(item => {
@@ -1542,46 +1802,19 @@
                 
                 const pageId = this.getAttribute('data-page');
                 
-                // Remove active class from all items
-                navItems.forEach(nav => nav.classList.remove('active'));
-                
-                // Add active class to clicked item
-                this.classList.add('active');
-                
-                // Show/hide page content
-                const canariesPage = document.getElementById('canaries-page');
-                const profilerPage = document.getElementById('profiler-page');
-                const aidashboardPage = document.getElementById('aidashboard-page');
-                
-                // Hide all pages
-                document.querySelectorAll('.page-content').forEach(page => {
-                    page.classList.remove('active');
-                });
-                
-                if (pageId === 'canaries') {
-                    // Show canaries page
-                    if (canariesPage) {
-                        canariesPage.classList.add('active');
-                        // Initialize datetime pickers when canaries page becomes active
-                        setTimeout(function() {
-                            initCanaryDateTimePickers();
-                            // Set default value for canary-source-input from dataHost if available
-                            setCanarySourceDefault();
-                            // Load canary data from URL parameters if they exist
-                            loadCanaryDataFromUrl();
-                        }, 100);
-                    }
-                } else if (pageId === 'profiler') {
-                    // Show profiler page
-                    if (profilerPage) {
-                        profilerPage.classList.add('active');
-                    }
-                } else if (pageId === 'aidashboard') {
-                    // Show AI dashboard page
-                    if (aidashboardPage) {
-                        aidashboardPage.classList.add('active');
-                    }
+                // Update URL with selected page
+                if (typeof updateUrl === 'function') {
+                    updateUrl('page', pageId);
+                } else {
+                    // Fallback: use URLSearchParams if updateUrl is not available
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set('page', pageId);
+                    const newUrl = window.location.pathname + '?' + urlParams.toString() + window.location.hash;
+                    window.history.pushState({}, '', newUrl);
                 }
+                
+                // Switch to the selected page
+                switchToPage(pageId);
             });
         });
     }
@@ -1591,14 +1824,20 @@
         if (typeof jQuery !== 'undefined' && jQuery.fn) {
             jQuery(document).ready(function() {
                 initLeftNavigation();
+                // Restore page from URL after navigation is initialized
+                restorePageFromUrl();
             });
         } else {
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', function() {
                     initLeftNavigation();
+                    // Restore page from URL after navigation is initialized
+                    restorePageFromUrl();
                 });
             } else {
                 initLeftNavigation();
+                // Restore page from URL after navigation is initialized
+                restorePageFromUrl();
             }
         }
     }
@@ -1612,6 +1851,8 @@
         const sidebar = document.getElementById('leftNavSidebar');
         if (sidebar && !sidebar.hasEventListener) {
             initLeftNavigation();
+            // Restore page from URL after navigation is initialized
+            restorePageFromUrl();
         }
         // Set default value for canary-source-input on initial load
         setCanarySourceDefault();
@@ -1622,6 +1863,8 @@
     // Also try after a longer delay to ensure header is fully loaded
     setTimeout(function() {
         positionSidebarBelowHeader();
+        // Restore page from URL (fallback)
+        restorePageFromUrl();
         // Set default value for canary-source-input (fallback)
         setCanarySourceDefault();
         // Load canary data from URL parameters (fallback)
@@ -1740,7 +1983,9 @@ function getCanaryHeader(start, end, source){
     <div class="left-nav-toggle" id="leftNavToggle" title="Perf Genie">
         <img src="/images/warden-white.svg" alt="Toggle" class="left-nav-toggle-icon" />
         <span class="left-nav-toggle-title">Perf Genie</span>
-</div>
+    </div>
+    <!-- Collapse/Expand Arrow - Middle Right Aligned -->
+    <i class="fa fa-chevron-left left-nav-collapse-arrow" id="leftNavCollapseArrow" title="Collapse/Expand Navigation"></i>
     <div class="left-nav-menu">
         <a href="#" class="left-nav-item active" data-page="canaries" id="nav-canaries" title="Canary Hub">
             <i class="fa fa-fw fa-table left-nav-icon" aria-hidden="true"></i>
@@ -1761,7 +2006,7 @@ function getCanaryHeader(start, end, source){
 <div class="main-content-wrapper" id="mainContentWrapper">
 <!-- Canaries Page Content -->
 <div id="canaries-page" class="page-content active">
-<div class="data-view-header-placeholder" style="height: 44px; width: 100%;">Canary hub (execute and explore)</div>
+<div class="data-view-header-placeholder" style="height: 44px; width: 100%;">Canary hub (process and explore data)</div>
 
 <!-- Canary Data Input Form -->
 <div id="canary-data-form" style="padding: 12px 16px; background: #ffffff;">
