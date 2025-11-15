@@ -50,6 +50,86 @@
 
 <script type="text/javascript" class="init">
 
+    /**
+     * Check if all required perfswat form fields are filled
+     */
+    function validatePerfSwatForm() {
+        const start1 = $("#startpicker4").val();
+        const end1 = $("#endpicker4").val();
+        const cell1 = $("#swatcell-input1").val();
+        const start2 = $("#startpicker5").val();
+        const end2 = $("#endpicker5").val();
+        const cell2 = $("#swatcell-input2").val();
+        
+        const isValid = start1 && start1.trim() !== '' && 
+                       end1 && end1.trim() !== '' && 
+                       cell1 && cell1.trim() !== '' &&
+                       start2 && start2.trim() !== '' && 
+                       end2 && end2.trim() !== '' && 
+                       cell2 && cell2.trim() !== '';
+        
+        const submitButton = document.getElementById('submit-perfswat-input');
+        if (submitButton) {
+            submitButton.disabled = !isValid;
+        }
+        
+        return isValid;
+    }
+    
+    /**
+     * Initialize perfswat form validation
+     */
+    function initPerfSwatFormValidation() {
+        // Disable button initially
+        const submitButton = document.getElementById('submit-perfswat-input');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+        
+        // Add event listeners to input fields
+        const startPicker1 = $("#startpicker4");
+        const endPicker1 = $("#endpicker4");
+        const cellInput1 = $("#swatcell-input1");
+        const startPicker2 = $("#startpicker5");
+        const endPicker2 = $("#endpicker5");
+        const cellInput2 = $("#swatcell-input2");
+        
+        // Listen for input changes
+        if (startPicker1.length) {
+            startPicker1.on('change blur', validatePerfSwatForm);
+            startPicker1.on('dp.change', validatePerfSwatForm);
+        }
+        if (endPicker1.length) {
+            endPicker1.on('change blur', validatePerfSwatForm);
+            endPicker1.on('dp.change', validatePerfSwatForm);
+        }
+        if (cellInput1.length) {
+            cellInput1.on('input change blur', validatePerfSwatForm);
+        }
+        if (startPicker2.length) {
+            startPicker2.on('change blur', validatePerfSwatForm);
+            startPicker2.on('dp.change', validatePerfSwatForm);
+        }
+        if (endPicker2.length) {
+            endPicker2.on('change blur', validatePerfSwatForm);
+            endPicker2.on('dp.change', validatePerfSwatForm);
+        }
+        if (cellInput2.length) {
+            cellInput2.on('input change blur', validatePerfSwatForm);
+        }
+        
+        // Initial validation
+        validatePerfSwatForm();
+    }
+    
+    // Initialize validation when document is ready
+    $(document).ready(function() {
+        // Wait a bit for datetime pickers to be initialized
+        setTimeout(function() {
+            initPerfSwatFormValidation();
+        }, 200);
+    });
+
     function processPerfSwat() {
         let info = " start: " + moment.utc($("#startpicker4").val()).format('ddd, MMM D YYYY HH:mm:ss [UTC]') + " end: " + moment.utc($("#endpicker4").val()).format('ddd, MMM D YYYY HH:mm:ss [UTC]') + " cell: '" + $('#swatcell-input1').val() + "'";
 
@@ -79,7 +159,8 @@
                 hideSpinner("spinnerswat");
                 toastMessage(toastType.INFO, "Processing Done");
                 $("#perfswat-input-info").css("display", "none");
-                $("#submit-perfswat-input").attr("disabled", false);
+                // Re-enable button and validate form state
+                validatePerfSwatForm();
                 if (result[0] != undefined && result[0].length > 0) {
                     canaryContextArray.push({"record": result[0]});
                     updateCanaryView($(".modern-tabs-nav-button.active").attr("data-tab-target"));
@@ -88,7 +169,8 @@
             error: function (xhr, status, error) {
                 toastMessage(toastType.ERROR, "Failed to process canary data");
                 $("#perfswat-input-info").css("display", "none");
-                $("#submit-perfswat-input").attr("disabled", false);
+                // Re-enable button and validate form state
+                validatePerfSwatForm();
                 hideSpinner("spinnerswat");
             }
         });

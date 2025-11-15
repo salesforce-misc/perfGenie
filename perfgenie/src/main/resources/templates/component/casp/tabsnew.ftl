@@ -52,17 +52,62 @@
         height: auto !important;
     }
     
-    /* Modern Flex-based Tab Container - Transparent Background */
+    /* Modern Flex-based Tab Container - Glass Room Effect */
     .modern-tabs-container,
     #canary-tabs.modern-tabs-container {
         display: none !important; /* Hidden by default */
         flex-direction: column;
         width: 100%;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        padding: 0 !important;
+        /* Glass Room Effect - Enhanced transparency with embossing */
+        background: rgba(255, 255, 255, 0.05) !important;
+        background-image: 
+            linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 50%, rgba(255, 255, 255, 0.12) 100%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
+        /* Strong glass room effect with heavy backdrop blur */
+        backdrop-filter: blur(30px) saturate(200%) brightness(1.1);
+        -webkit-backdrop-filter: blur(30px) saturate(200%) brightness(1.1);
+        /* Visible glass edges - more pronounced */
+        border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
+        border-radius: 12px !important;
+        /* Enhanced embossed shadows with glass room depth */
+        box-shadow: 
+            /* Outer glow - glass room effect */
+            0 8px 32px rgba(0, 0, 0, 0.15),
+            0 4px 16px rgba(255, 255, 255, 0.1),
+            /* Embossed inset highlights */
+            inset 0 2px 4px rgba(255, 255, 255, 0.5),
+            inset 0 -2px 4px rgba(0, 0, 0, 0.1),
+            /* Glass reflection effect */
+            inset 0 0 30px rgba(255, 255, 255, 0.1),
+            /* Depth shadow */
+            0 2px 8px rgba(0, 0, 0, 0.08) !important;
+        padding: 16px !important;
         box-sizing: border-box;
+        /* Dominating text - ensure text is prominent */
+        color: #1a1a1a !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Ensure text inside is dominating and visible */
+    .modern-tabs-container *,
+    #canary-tabs.modern-tabs-container * {
+        color: inherit;
+    }
+    
+    /* Make tab button text more prominent */
+    .modern-tabs-container .modern-tabs-nav-button,
+    #canary-tabs.modern-tabs-container .modern-tabs-nav-button {
+        font-weight: 700 !important;
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+    }
+    
+    /* Make accordion header text prominent */
+    .modern-tabs-container .modern-accordion-header,
+    #canary-tabs.modern-tabs-container .modern-accordion-header,
+    .modern-tabs-container #canary-dataview-header,
+    #canary-tabs.modern-tabs-container #canary-dataview-header {
+        font-weight: 700 !important;
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
     }
     
     /* Show tabs container when visible class is added */
@@ -163,30 +208,81 @@
         transform: translateY(-1px);
     }
     
-    /* Active State - Lighter shades of header colors for dull appearance */
+    /* Active State - iPhone 16 Glassmorphism Style (default, like submit button default) */
     .modern-tabs-nav-button.active,
-    .modern-tabs-nav-button.active:hover,
     #canary-tabs .modern-tabs-nav-button.active,
-    #canary-tabs .modern-tabs-nav-button.active:hover,
     #canary-tabs a.modern-tabs-nav-button.active,
-    #canary-tabs a.modern-tabs-nav-button.active:hover,
     #canary-tabs ul li a.modern-tabs-nav-button.active,
-    #canary-tabs ul li a.modern-tabs-nav-button.active:hover,
-    a.modern-tabs-nav-button.active,
-    a.modern-tabs-nav-button.active:hover {
-        background: linear-gradient(#5A9FD4, #7FC0E8) !important;
-        background-color: #6BB3E0 !important;
-        background-image: linear-gradient(#5A9FD4, #7FC0E8) !important;
-        border: none !important;
-        box-shadow: 0 2px 6px rgba(90, 159, 212, 0.3) !important;
+    a.modern-tabs-nav-button.active {
+        /* Glassmorphism background with blue tint */
+        background: rgba(90, 159, 212, 0.25) !important;
+        background-image: 
+            linear-gradient(135deg, rgba(90, 159, 212, 0.3) 0%, rgba(127, 192, 232, 0.2) 50%, rgba(90, 159, 212, 0.3) 100%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+        /* Glassy effect with backdrop blur */
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        /* Visible edges - matching submit button (no double line) */
+        border: 1px solid rgba(255, 255, 255, 0.5) !important;
+        border-radius: 8px !important;
+        /* Shadow matching submit button - no double line effect */
+        box-shadow: 
+            0 4px 16px rgba(90, 159, 212, 0.4),
+            0 2px 8px rgba(90, 159, 212, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.6),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+        /* Dominating text - bright white with strong shadow */
         color: #ffffff !important;
+        font-weight: 700 !important;
+        text-shadow: 
+            0 1px 3px rgba(0, 0, 0, 0.3),
+            0 0 8px rgba(90, 159, 212, 0.5),
+            0 2px 4px rgba(0, 0, 0, 0.2) !important;
+        transform: translateY(-1px);
+    }
+    
+    /* Active State Hover - Enhanced glassmorphism (like submit button hover) */
+    .modern-tabs-nav-button.active:hover,
+    #canary-tabs .modern-tabs-nav-button.active:hover,
+    #canary-tabs a.modern-tabs-nav-button.active:hover,
+    #canary-tabs ul li a.modern-tabs-nav-button.active:hover,
+    a.modern-tabs-nav-button.active:hover {
+        /* Enhanced glassmorphism background with blue tint */
+        background: rgba(90, 159, 212, 0.35) !important;
+        background-image: 
+            linear-gradient(135deg, rgba(90, 159, 212, 0.4) 0%, rgba(127, 192, 232, 0.3) 50%, rgba(90, 159, 212, 0.4) 100%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%) !important;
+        /* Glassy effect with backdrop blur */
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        /* Enhanced border */
+        border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+        border-radius: 8px !important;
+        /* Enhanced shadow */
+        box-shadow: 
+            0 6px 20px rgba(90, 159, 212, 0.5),
+            0 3px 10px rgba(90, 159, 212, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.7),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+        /* Dominating text - bright white with strong shadow */
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        text-shadow: 
+            0 1px 3px rgba(0, 0, 0, 0.3),
+            0 0 8px rgba(90, 159, 212, 0.5),
+            0 2px 4px rgba(0, 0, 0, 0.2) !important;
+        transform: translateY(-1px);
     }
     
     .modern-tabs-nav-button.active .card-title,
     #canary-tabs .modern-tabs-nav-button.active .card-title,
     #canary-tabs a.modern-tabs-nav-button.active .card-title {
         color: #ffffff !important;
-        font-weight: 600;
+        font-weight: 700 !important;
+        text-shadow: 
+            0 1px 3px rgba(0, 0, 0, 0.3),
+            0 0 8px rgba(90, 159, 212, 0.5),
+            0 2px 4px rgba(0, 0, 0, 0.2) !important;
     }
     
     /* Ensure text is visible on active state */
@@ -197,14 +293,53 @@
     a.modern-tabs-nav-button.active,
     a.modern-tabs-nav-button.active * {
         color: #ffffff !important;
+        font-weight: 700 !important;
     }
     
-    /* Override any inline styles or other CSS - Use lighter header shades */
+    /* Active hover text styling (same as active, but ensures consistency) */
+    .modern-tabs-nav-button.active:hover .card-title,
+    #canary-tabs .modern-tabs-nav-button.active:hover .card-title,
+    #canary-tabs a.modern-tabs-nav-button.active:hover .card-title {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        text-shadow: 
+            0 1px 3px rgba(0, 0, 0, 0.3),
+            0 0 8px rgba(90, 159, 212, 0.5),
+            0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    .modern-tabs-nav-button.active:hover,
+    .modern-tabs-nav-button.active:hover *,
+    #canary-tabs .modern-tabs-nav-button.active:hover,
+    #canary-tabs .modern-tabs-nav-button.active:hover *,
+    a.modern-tabs-nav-button.active:hover,
+    a.modern-tabs-nav-button.active:hover * {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+    }
+    
+    /* Override any inline styles or other CSS - iPhone 16 Glassmorphism (matching submit button) */
     .modern-tabs-nav-button.active[style],
     #canary-tabs .modern-tabs-nav-button.active[style] {
-        background: linear-gradient(#5A9FD4, #7FC0E8) !important;
-        background-color: #6BB3E0 !important;
+        background: rgba(90, 159, 212, 0.25) !important;
+        background-image: 
+            linear-gradient(135deg, rgba(90, 159, 212, 0.3) 0%, rgba(127, 192, 232, 0.2) 50%, rgba(90, 159, 212, 0.3) 100%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.5) !important;
+        border-radius: 8px !important;
+        box-shadow: 
+            0 4px 16px rgba(90, 159, 212, 0.4),
+            0 2px 8px rgba(90, 159, 212, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.6),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
         color: #ffffff !important;
+        font-weight: 700 !important;
+        text-shadow: 
+            0 1px 3px rgba(0, 0, 0, 0.3),
+            0 0 8px rgba(90, 159, 212, 0.5),
+            0 2px 4px rgba(0, 0, 0, 0.2) !important;
     }
     
     /* Remove active badge for button look */
@@ -274,18 +409,18 @@
         justify-content: flex-start;
         gap: 8px;
         padding: 4px 14px !important;
+        /* Glassmorphism effect - matching inactive tabs */
         background: #f1f5f9 !important;
-        border: none;
-        border-radius: 0 !important;
+        border: none !important;
+        border-radius: 6px !important;
         cursor: pointer;
         user-select: none;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
         font-weight: 600;
         color: #475569 !important;
-        height: 30px !important;
+        height: auto !important;
         min-height: 30px !important;
-        max-height: 30px !important;
         box-sizing: border-box !important;
         line-height: 1.3 !important;
         font-size: 13.5px !important;
@@ -305,7 +440,9 @@
     
     .modern-accordion-header:hover,
     #canary-dataview-header:hover {
+        /* Matching tab hover state */
         background: #e2e8f0 !important;
+        border: none !important;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
         color: #1e293b !important;
         transform: translateY(-1px);
@@ -315,30 +452,66 @@
     .modern-accordion-header.active:hover,
     #canary-dataview-header.active,
     #canary-dataview-header.active:hover {
-        background: linear-gradient(#5A9FD4, #7FC0E8) !important;
-        background-color: #6BB3E0 !important;
-        background-image: linear-gradient(#5A9FD4, #7FC0E8) !important;
-        border-bottom: 1px solid #5A9FD4 !important;
-        box-shadow: 0 2px 6px rgba(90, 159, 212, 0.3) !important;
+        /* Glassmorphism effect - matching active tabs */
+        background: rgba(90, 159, 212, 0.25) !important;
+        background-image: 
+            linear-gradient(135deg, rgba(90, 159, 212, 0.3) 0%, rgba(127, 192, 232, 0.2) 50%, rgba(90, 159, 212, 0.3) 100%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+        /* Glassy effect with backdrop blur */
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        /* Visible edges - matching active tabs */
+        border: 1px solid rgba(255, 255, 255, 0.5) !important;
+        border-radius: 8px !important;
+        /* Shadow in between tabs and reduced (moderate for accordion) */
+        box-shadow: 
+            0 3px 12px rgba(90, 159, 212, 0.3),
+            0 1.5px 6px rgba(90, 159, 212, 0.22),
+            inset 0 1px 0 rgba(255, 255, 255, 0.55),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.09) !important;
+        /* Dominating text - bright white with strong shadow */
         color: #ffffff !important;
+        font-weight: 700 !important;
+        text-shadow: 
+            0 1px 3px rgba(0, 0, 0, 0.3),
+            0 0 8px rgba(90, 159, 212, 0.5),
+            0 2px 4px rgba(0, 0, 0, 0.2) !important;
+        transform: translateY(-1px);
     }
     
     .modern-accordion-header.active *,
     #canary-dataview-header.active * {
         color: #ffffff !important;
+        font-weight: 700 !important;
     }
     
     .modern-accordion-header.active .modern-accordion-icon,
     #canary-dataview-header.active .modern-accordion-icon {
         color: #ffffff !important;
+        font-size: 10px;
+    }
+    
+    /* Ensure span text matches active tab text styling (exclude icon) */
+    .modern-accordion-header.active span:not(.modern-accordion-icon),
+    #canary-dataview-header.active span:not(.modern-accordion-icon) {
+        font-weight: 700 !important;
+        text-shadow: 
+            0 1px 3px rgba(0, 0, 0, 0.3),
+            0 0 8px rgba(90, 159, 212, 0.5),
+            0 2px 4px rgba(0, 0, 0, 0.2) !important;
     }
     
     .modern-accordion-icon {
         transition: transform 0.2s ease;
         color: #6b7280;
-        font-size: 12px;
+        font-size: 10px;
         order: -1;
         flex-shrink: 0;
+        width: 12px;
+        text-align: center;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .modern-accordion-header.active .modern-accordion-icon {
@@ -377,7 +550,7 @@
         left: 0;
         top: 0;
         height: 100vh;
-        background: #429CD6;
+        background: #2d5a8f;
         border: none;
         transition: width 0.3s ease, top 0.3s ease, height 0.3s ease;
         z-index: 1000;
@@ -482,7 +655,7 @@
         display: flex;
         align-items: center;
         justify-content: flex-start;
-        background: #3a8bc7;
+        background: #2d5a8f;
         transition: background-color 0.2s ease;
         height: 60px;
         min-height: 60px;
@@ -544,7 +717,7 @@
         padding: 50px 0 8px 0;
         overflow-y: auto;
         border: none;
-        background: #3a8bc7;
+        background: #2d5a8f;
     }
     
     .left-nav-sidebar.collapsed .left-nav-menu {
@@ -676,26 +849,25 @@
         font-size: 18px;
         font-weight: 500;
         color: #4a5568;
-        /* Embossed glazy background with blue tint gradient */
-        background: linear-gradient(135deg, rgba(235, 245, 255, 0.95) 0%, rgba(220, 235, 250, 0.9) 50%, rgba(235, 245, 255, 0.95) 100%);
-        /* Additional blue tint overlay */
+        /* Embossed glazy background with blue tint gradient - more transparent center */
+        background: linear-gradient(135deg, rgba(235, 245, 255, 0.4) 0%, rgba(220, 235, 250, 0.2) 50%, rgba(235, 245, 255, 0.4) 100%);
+        /* Additional blue tint overlay - more transparent */
         background-image: 
-            linear-gradient(135deg, rgba(235, 245, 255, 0.95) 0%, rgba(220, 235, 250, 0.9) 50%, rgba(235, 245, 255, 0.95) 100%),
-            linear-gradient(180deg, rgba(90, 159, 212, 0.08) 0%, rgba(127, 192, 232, 0.05) 100%);
-        /* Glassy effect with backdrop blur */
-        backdrop-filter: blur(10px) saturate(180%);
-        -webkit-backdrop-filter: blur(10px) saturate(180%);
-        /* Embossed effect with inset shadows */
+            linear-gradient(135deg, rgba(235, 245, 255, 0.4) 0%, rgba(220, 235, 250, 0.2) 50%, rgba(235, 245, 255, 0.4) 100%),
+            linear-gradient(180deg, rgba(90, 159, 212, 0.05) 0%, rgba(127, 192, 232, 0.03) 100%);
+        /* Glassy effect with backdrop blur - stronger blur for transparency */
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        /* Embossed effect with inset shadows - smoother bottom edge */
         box-shadow: 
             inset 0 1px 2px rgba(255, 255, 255, 0.8),
             inset 0 -1px 2px rgba(0, 0, 0, 0.05),
             0 1px 3px rgba(0, 0, 0, 0.08),
             0 0 0 1px rgba(90, 159, 212, 0.15),
-            inset 0 0 20px rgba(90, 159, 212, 0.03);
-        /* Subtle border with gradient effect */
+            inset 0 0 20px rgba(90, 159, 212, 0.03),
+            0 2px 6px rgba(0, 0, 0, 0.02);
+        /* Subtle border with gradient effect - smoother bottom edge */
         border: none !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.6) !important;
-        border-bottom: 1px solid rgba(90, 159, 212, 0.2) !important;
         /* Text styling - clean, professional look */
         text-shadow: none;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -706,6 +878,21 @@
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
+    }
+    
+    /* Smooth bottom edge fade using pseudo-element */
+    .data-view-header-placeholder::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(to bottom, 
+            rgba(90, 159, 212, 0.08) 0%, 
+            rgba(90, 159, 212, 0.04) 50%, 
+            transparent 100%);
+        pointer-events: none;
     }
     
     /* Optional: Add a subtle shine effect on hover */
@@ -771,35 +958,70 @@
         border-color: #adb5bd;
     }
     
-    /* Process Button Styling - Matching SFDataTable pagination buttons */
-    .ui-button.ui-widget.ui-corner-all {
+    /* Process Button Styling - Green glassmorphism to differentiate from tabs */
+    .ui-button.ui-widget.ui-corner-all,
+    #submit-canary-data {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-        padding: 0 12px;
-        border: 1px solid #dee2e6;
-        border-radius: 6px;
-        background: #ffffff;
-        color: #495057;
-        font-size: 14px;
-        font-weight: 500;
+        padding: 4px 14px !important;
+        /* Default state - green glassmorphism (to differentiate from blue tabs) */
+        background: rgba(34, 197, 94, 0.25) !important;
+        background-image: 
+            linear-gradient(135deg, rgba(34, 197, 94, 0.3) 0%, rgba(74, 222, 128, 0.2) 50%, rgba(34, 197, 94, 0.3) 100%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.5) !important;
+        border-radius: 8px !important;
+        box-shadow: 
+            0 4px 16px rgba(34, 197, 94, 0.4),
+            0 2px 8px rgba(34, 197, 94, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.6),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+        color: #ffffff !important;
+        font-size: 13.5px !important;
+        font-weight: 700 !important;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         height: 30px;
+        min-height: 30px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         box-sizing: border-box;
+        text-shadow: 
+            0 1px 3px rgba(0, 0, 0, 0.3),
+            0 0 8px rgba(34, 197, 94, 0.5),
+            0 2px 4px rgba(0, 0, 0, 0.2) !important;
+        letter-spacing: 0.01em;
     }
     
-    .ui-button.ui-widget.ui-corner-all:hover:not(:disabled) {
-        background: #46a5e3;
-        color: #ffffff;
-        border-color: #46a5e3;
-        box-shadow: 0 2px 4px rgba(70, 165, 227, 0.2);
+    /* Hover state - enhanced green glassmorphism */
+    .ui-button.ui-widget.ui-corner-all:hover:not(:disabled),
+    #submit-canary-data:hover:not(:disabled) {
+        background: rgba(34, 197, 94, 0.35) !important;
+        background-image: 
+            linear-gradient(135deg, rgba(34, 197, 94, 0.4) 0%, rgba(74, 222, 128, 0.3) 50%, rgba(34, 197, 94, 0.4) 100%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%) !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+        box-shadow: 
+            0 6px 20px rgba(34, 197, 94, 0.5),
+            0 3px 10px rgba(34, 197, 94, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.7),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+        transform: translateY(-1px);
     }
     
-    .ui-button.ui-widget.ui-corner-all:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
+    /* Disabled state - reduced opacity but keep green glassmorphism */
+    .ui-button.ui-widget.ui-corner-all:disabled,
+    #submit-canary-data:disabled,
+    #submit-perfswat-input:disabled,
+    #submit-canary-input:disabled {
+        opacity: 0.6 !important;
+        cursor: not-allowed !important;
+        pointer-events: none;
+        /* Grayscale filter for disabled state */
+        filter: grayscale(100%) !important;
+        -webkit-filter: grayscale(100%) !important;
     }
     
     /* Table styling for form layouts */
@@ -1120,13 +1342,17 @@
                 // Default to first tab
                 const firstButton = tabButtons[0];
                 firstButton.classList.add('active');
-                // Force apply lighter header shades via inline style
-                firstButton.style.background = 'linear-gradient(#5A9FD4, #7FC0E8)';
-                firstButton.style.backgroundImage = 'linear-gradient(#5A9FD4, #7FC0E8)';
-                firstButton.style.backgroundColor = '#6BB3E0';
+                // Force apply iPhone 16 glassmorphism style via inline style
+                firstButton.style.background = 'rgba(90, 159, 212, 0.25)';
+                firstButton.style.backgroundImage = 'linear-gradient(135deg, rgba(90, 159, 212, 0.3) 0%, rgba(127, 192, 232, 0.2) 50%, rgba(90, 159, 212, 0.3) 100%), linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%)';
+                firstButton.style.backdropFilter = 'blur(20px) saturate(180%)';
+                firstButton.style.webkitBackdropFilter = 'blur(20px) saturate(180%)';
+                firstButton.style.border = '1px solid rgba(255, 255, 255, 0.5)';
+                firstButton.style.borderRadius = '8px';
+                firstButton.style.boxShadow = '0 4px 16px rgba(90, 159, 212, 0.4), 0 2px 8px rgba(90, 159, 212, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(0, 0, 0, 0.1)';
                 firstButton.style.color = '#ffffff';
-                firstButton.style.border = 'none';
-                firstButton.style.boxShadow = '0 2px 6px rgba(90, 159, 212, 0.3)';
+                firstButton.style.fontWeight = '700';
+                firstButton.style.textShadow = '0 1px 3px rgba(0, 0, 0, 0.3), 0 0 8px rgba(90, 159, 212, 0.5), 0 2px 4px rgba(0, 0, 0, 0.2)';
                 tabPanels[0].classList.add('active');
                 // Trigger updateCanaryView for initial tab
                 const firstTabId = tabPanels[0].id;
@@ -1233,13 +1459,17 @@
                            button.getAttribute('data-tab-target');
             if (targetId === tabId) {
                 button.classList.add('active');
-                // Force apply lighter header shades via inline style as backup
-                button.style.background = 'linear-gradient(#5A9FD4, #7FC0E8)';
-                button.style.backgroundImage = 'linear-gradient(#5A9FD4, #7FC0E8)';
-                button.style.backgroundColor = '#6BB3E0';
+                // Force apply iPhone 16 glassmorphism style via inline style as backup
+                button.style.background = 'rgba(90, 159, 212, 0.25)';
+                button.style.backgroundImage = 'linear-gradient(135deg, rgba(90, 159, 212, 0.3) 0%, rgba(127, 192, 232, 0.2) 50%, rgba(90, 159, 212, 0.3) 100%), linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%)';
+                button.style.backdropFilter = 'blur(20px) saturate(180%)';
+                button.style.webkitBackdropFilter = 'blur(20px) saturate(180%)';
+                button.style.border = '1px solid rgba(255, 255, 255, 0.5)';
+                button.style.borderRadius = '8px';
+                button.style.boxShadow = '0 4px 16px rgba(90, 159, 212, 0.4), 0 2px 8px rgba(90, 159, 212, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(0, 0, 0, 0.1)';
                 button.style.color = '#ffffff';
-                button.style.border = 'none';
-                button.style.boxShadow = '0 2px 6px rgba(90, 159, 212, 0.3)';
+                button.style.fontWeight = '700';
+                button.style.textShadow = '0 1px 3px rgba(0, 0, 0, 0.3), 0 0 8px rgba(90, 159, 212, 0.5), 0 2px 4px rgba(0, 0, 0, 0.2)';
                 buttonFound = true;
             }
         });
@@ -1287,23 +1517,24 @@
                 if (isActive) {
                     accordionContent.classList.remove('active');
                     newHeader.classList.remove('active');
-                    // Remove inline styles when closing
-                    newHeader.style.background = '';
-                    newHeader.style.backgroundImage = '';
-                    newHeader.style.backgroundColor = '';
-                    newHeader.style.color = '';
-                    newHeader.style.borderBottomColor = '';
-                    newHeader.style.boxShadow = '';
+                    // Remove inline styles when closing - CSS will handle the default state
+                    newHeader.style.removeProperty('background');
+                    newHeader.style.removeProperty('background-image');
+                    newHeader.style.removeProperty('background-color');
+                    newHeader.style.removeProperty('color');
+                    newHeader.style.removeProperty('border');
+                    newHeader.style.removeProperty('border-radius');
+                    newHeader.style.removeProperty('box-shadow');
+                    newHeader.style.removeProperty('backdrop-filter');
+                    newHeader.style.removeProperty('-webkit-backdrop-filter');
+                    newHeader.style.removeProperty('text-shadow');
+                    newHeader.style.removeProperty('font-weight');
+                    newHeader.style.removeProperty('transform');
                 } else {
                     accordionContent.classList.add('active');
                     newHeader.classList.add('active');
-                    // Force apply lighter header shades via inline style (matching button active state)
-                    newHeader.style.background = 'linear-gradient(#5A9FD4, #7FC0E8)';
-                    newHeader.style.backgroundImage = 'linear-gradient(#5A9FD4, #7FC0E8)';
-                    newHeader.style.backgroundColor = '#6BB3E0';
-                    newHeader.style.color = '#ffffff';
-                    newHeader.style.borderBottomColor = '#5A9FD4';
-                    newHeader.style.boxShadow = '0 2px 6px rgba(90, 159, 212, 0.3)';
+                    // CSS will handle the glassmorphism styles via .active class
+                    // No need to set inline styles - let CSS take precedence
                 }
             });
         }
@@ -1325,43 +1556,111 @@
         // Initialize all pickers - just like input.js does (lines 255-281)
         // No complex checks, just try to initialize - if plugin isn't loaded, it will fail gracefully
         try {
-            jQuery("#startpicker3").datetimepicker(pickerConfig);
+            var startPicker3 = jQuery("#startpicker3");
+            if (startPicker3.length > 0) {
+                startPicker3.datetimepicker(pickerConfig);
+                // Add change event listener for validation
+                startPicker3.on('dp.change', function() {
+                    if (typeof validateCanaryCustomForm === 'function') {
+                        validateCanaryCustomForm();
+                    }
+                });
+            }
         } catch(e) {
             console.warn('[DateTimePicker] Error initializing #startpicker3:', e);
         }
         
         try {
-            jQuery("#endpicker3").datetimepicker(pickerConfig);
+            var endPicker3 = jQuery("#endpicker3");
+            if (endPicker3.length > 0) {
+                endPicker3.datetimepicker(pickerConfig);
+                // Add change event listener for validation
+                endPicker3.on('dp.change', function() {
+                    if (typeof validateCanaryCustomForm === 'function') {
+                        validateCanaryCustomForm();
+                    }
+                });
+            }
         } catch(e) {
             console.warn('[DateTimePicker] Error initializing #endpicker3:', e);
         }
         
         try {
-            jQuery("#startpicker4").datetimepicker(pickerConfig);
+            var startPicker4 = jQuery("#startpicker4");
+            if (startPicker4.length > 0) {
+                startPicker4.datetimepicker(pickerConfig);
+                // Add change event listener for validation
+                startPicker4.on('dp.change', function() {
+                    if (typeof validatePerfSwatForm === 'function') {
+                        validatePerfSwatForm();
+                    }
+                });
+            }
         } catch(e) {
             console.warn('[DateTimePicker] Error initializing #startpicker4:', e);
         }
         
         try {
-            jQuery("#endpicker4").datetimepicker(pickerConfig);
+            var endPicker4 = jQuery("#endpicker4");
+            if (endPicker4.length > 0) {
+                endPicker4.datetimepicker(pickerConfig);
+                // Add change event listener for validation
+                endPicker4.on('dp.change', function() {
+                    if (typeof validatePerfSwatForm === 'function') {
+                        validatePerfSwatForm();
+                    }
+                });
+            }
         } catch(e) {
             console.warn('[DateTimePicker] Error initializing #endpicker4:', e);
         }
         
         try {
-            jQuery("#startpicker5").datetimepicker(pickerConfig);
+            var startPicker5 = jQuery("#startpicker5");
+            if (startPicker5.length > 0) {
+                startPicker5.datetimepicker(pickerConfig);
+                // Add change event listener for validation
+                startPicker5.on('dp.change', function() {
+                    if (typeof validatePerfSwatForm === 'function') {
+                        validatePerfSwatForm();
+                    }
+                });
+            }
         } catch(e) {
             console.warn('[DateTimePicker] Error initializing #startpicker5:', e);
         }
         
         try {
-            jQuery("#endpicker5").datetimepicker(pickerConfig);
+            var endPicker5 = jQuery("#endpicker5");
+            if (endPicker5.length > 0) {
+                endPicker5.datetimepicker(pickerConfig);
+                // Add change event listener for validation
+                endPicker5.on('dp.change', function() {
+                    if (typeof validatePerfSwatForm === 'function') {
+                        validatePerfSwatForm();
+                    }
+                });
+            }
         } catch(e) {
             console.warn('[DateTimePicker] Error initializing #endpicker5:', e);
         }
         
         // Initialize canary data pickers
         initCanaryDateTimePickers();
+        
+        // Initialize perfswat form validation after pickers are set up
+        setTimeout(function() {
+            if (typeof initPerfSwatFormValidation === 'function') {
+                initPerfSwatFormValidation();
+            }
+        }, 100);
+        
+        // Initialize canary custom form validation after pickers are set up
+        setTimeout(function() {
+            if (typeof initCanaryCustomFormValidation === 'function') {
+                initCanaryCustomFormValidation();
+            }
+        }, 100);
     }
     
     /**
@@ -1495,6 +1794,12 @@
                     // If input is empty or has the default value, set it to dataHost
                     if (!currentValue || currentValue === defaultValue) {
                         sourceInput.val(dataHostValue);
+                        // Trigger validation after setting value
+                        if (typeof validateCanaryForm === 'function') {
+                            setTimeout(function() {
+                                validateCanaryForm();
+                            }, 50);
+                        }
                     }
                 }
             }
@@ -1542,7 +1847,19 @@
                 // Set default value only if field is empty
                 if (!startPicker.val()) {
                     startPicker.val(defaultStart);
+                    // Trigger validation after setting default value
+                    setTimeout(function() {
+                        if (typeof validateCanaryForm === 'function') {
+                            validateCanaryForm();
+                        }
+                    }, 50);
                 }
+                // Add change event listener for validation
+                startPicker.on('dp.change', function() {
+                    if (typeof validateCanaryForm === 'function') {
+                        validateCanaryForm();
+                    }
+                });
             }
         } catch(e) {
             console.warn('[DateTimePicker] Error initializing #canary-startpicker:', e);
@@ -1555,11 +1872,34 @@
                 // Set default value only if field is empty
                 if (!endPicker.val()) {
                     endPicker.val(defaultEnd);
+                    // Trigger validation after setting default value
+                    setTimeout(function() {
+                        if (typeof validateCanaryForm === 'function') {
+                            validateCanaryForm();
+                        }
+                    }, 50);
                 }
+                // Add change event listener for validation
+                endPicker.on('dp.change', function() {
+                    if (typeof validateCanaryForm === 'function') {
+                        validateCanaryForm();
+                    }
+                });
             }
         } catch(e) {
             console.warn('[DateTimePicker] Error initializing #canary-endpicker:', e);
         }
+        
+        // Initialize form validation after pickers are set up and default values are set
+        setTimeout(function() {
+            // Make sure button is disabled initially
+            const submitButton = document.getElementById('submit-canary-data');
+            if (submitButton) {
+                submitButton.disabled = true;
+            }
+            // Initialize validation (will re-check and enable if all fields are filled)
+            initCanaryFormValidation();
+        }, 200);
     }
 
     /**
@@ -1668,9 +2008,19 @@
                 canariesPage.classList.add('active');
                 // Initialize datetime pickers when canaries page becomes active
                 setTimeout(function() {
+                    // Disable button first
+                    const submitButton = document.getElementById('submit-canary-data');
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                    }
+                    // Initialize datetime pickers (will set default values)
                     initCanaryDateTimePickers();
                     // Set default value for canary-source-input from dataHost if available
                     setCanarySourceDefault();
+                    // Initialize form validation after defaults are set
+                    setTimeout(function() {
+                        initCanaryFormValidation();
+                    }, 300);
                     // Load canary data from URL parameters if they exist
                     loadCanaryDataFromUrl();
                 }, 100);
@@ -1854,8 +2204,17 @@
             // Restore page from URL after navigation is initialized
             restorePageFromUrl();
         }
+        // Disable button first
+        const submitButton = document.getElementById('submit-canary-data');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
         // Set default value for canary-source-input on initial load
         setCanarySourceDefault();
+        // Initialize form validation after defaults might be set
+        setTimeout(function() {
+            initCanaryFormValidation();
+        }, 300);
         // Load canary data from URL parameters if they exist
         loadCanaryDataFromUrl();
     }, 100);
@@ -1865,16 +2224,84 @@
         positionSidebarBelowHeader();
         // Restore page from URL (fallback)
         restorePageFromUrl();
+        // Disable button first (fallback)
+        const submitButtonFallback = document.getElementById('submit-canary-data');
+        if (submitButtonFallback) {
+            submitButtonFallback.disabled = true;
+        }
         // Set default value for canary-source-input (fallback)
         setCanarySourceDefault();
+        // Initialize form validation after defaults might be set (fallback)
+        setTimeout(function() {
+            initCanaryFormValidation();
+        }, 300);
         // Load canary data from URL parameters (fallback)
         loadCanaryDataFromUrl();
     }, 500);
 
+    /**
+     * Check if all required canary form fields are filled
+     */
+    function validateCanaryForm() {
+        const start = $("#canary-startpicker").val();
+        const end = $("#canary-endpicker").val();
+        const source = $("#canary-source-input").val();
+        
+        const isValid = start && start.trim() !== '' && 
+                       end && end.trim() !== '' && 
+                       source && source.trim() !== '';
+        
+        const submitButton = document.getElementById('submit-canary-data');
+        if (submitButton) {
+            submitButton.disabled = !isValid;
+        }
+        
+        return isValid;
+    }
+    
+    /**
+     * Initialize canary form validation
+     */
+    function initCanaryFormValidation() {
+        // Disable button initially
+        const submitButton = document.getElementById('submit-canary-data');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+        
+        // Add event listeners to input fields
+        const startPicker = $("#canary-startpicker");
+        const endPicker = $("#canary-endpicker");
+        const sourceInput = $("#canary-source-input");
+        
+        // Listen for input changes
+        if (startPicker.length) {
+            startPicker.on('change blur', validateCanaryForm);
+            // Also listen for datetimepicker change events
+            startPicker.on('dp.change', validateCanaryForm);
+        }
+        if (endPicker.length) {
+            endPicker.on('change blur', validateCanaryForm);
+            endPicker.on('dp.change', validateCanaryForm);
+        }
+        if (sourceInput.length) {
+            sourceInput.on('input change blur', validateCanaryForm);
+        }
+        
+        // Initial validation
+        validateCanaryForm();
+    }
+    
     function submitCanaryData() {
         const start = $("#canary-startpicker").val();
         const end = $("#canary-endpicker").val();
         const source = $("#canary-source-input").val();
+        
+        // Disable submit button on click
+        const submitButton = document.getElementById('submit-canary-data');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
         
         if (start && end && source) {
             // Update URL parameters
@@ -1900,12 +2327,20 @@
             
             if (isNaN(startTimestamp) || isNaN(endTimestamp)) {
                 toastMessage(toastType.ERROR, "Invalid date format. Please use the date picker.");
+                // Re-enable button on error
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
                 return;
             }
             
             viewCanaryData(startTimestamp, endTimestamp, source);
         } else {
             toastMessage(toastType.ERROR, "Please fill in all fields: Start time, End time, and Source");
+            // Re-enable button on error
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
         }
     }
 
@@ -1955,6 +2390,11 @@
             complete: function() {
                 // Ensure flag is reset even if there's an unexpected error
                 canaryDataRequestInProgress = false;
+                // Re-enable submit button after response (success or error)
+                const submitButton = document.getElementById('submit-canary-data');
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
             }
         });
     }
@@ -2031,7 +2471,7 @@ function getCanaryHeader(start, end, source){
                 <input style="height:30px;text-align: center;" class="filterinput" id="canary-source-input" type="text" value="perf-genie-test45">
             </td>
             <td style="padding: 0 0 0 8px; border: none; align-items: center;">
-                <button onclick="submitCanaryData()" id="submit-canary-data" style="alignment:center;height:30px" class="ui-button ui-widget ui-corner-all">Submit</button>
+                <button onclick="submitCanaryData()" id="submit-canary-data" style="alignment:center;height:30px" class="ui-button ui-widget ui-corner-all" disabled>Submit</button>
             </td>
         </tr>
     </table>
@@ -2065,7 +2505,7 @@ function getCanaryHeader(start, end, source){
     <!-- Modern Accordion for Data Explorer -->
     <div class="modern-accordion" id="canary-dataview">
         <div class="modern-accordion-header" id="canary-dataview-header">
-            <span class="modern-accordion-icon">▼</span>
+            <i class="fa fa-chevron-down modern-accordion-icon"></i>
             <span>Data explorer</span>
         </div>
         <div class="modern-accordion-content" id="canary-dataview-content">

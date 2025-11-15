@@ -15,7 +15,7 @@
 
         <td style="padding: 10px;border: none;align-items:center;">
             <button onclick="processCanary()" id="submit-canary-input" style="alignment:center;height:30px"
-                    class="ui-button ui-widget ui-corner-all">Process
+                    class="ui-button ui-widget ui-corner-all" disabled>Process
             </button>
         </td>
     </tr>
@@ -33,6 +33,66 @@
 
 
 <script type="text/javascript" class="init">
+
+    /**
+     * Check if all required canary custom form fields are filled
+     */
+    function validateCanaryCustomForm() {
+        const start = $("#startpicker3").val();
+        const end = $("#endpicker3").val();
+        const cell = $("#cell-input1").val();
+        
+        const isValid = start && start.trim() !== '' && 
+                       end && end.trim() !== '' && 
+                       cell && cell.trim() !== '';
+        
+        const submitButton = document.getElementById('submit-canary-input');
+        if (submitButton) {
+            submitButton.disabled = !isValid;
+        }
+        
+        return isValid;
+    }
+    
+    /**
+     * Initialize canary custom form validation
+     */
+    function initCanaryCustomFormValidation() {
+        // Disable button initially
+        const submitButton = document.getElementById('submit-canary-input');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+        
+        // Add event listeners to input fields
+        const startPicker = $("#startpicker3");
+        const endPicker = $("#endpicker3");
+        const cellInput = $("#cell-input1");
+        
+        // Listen for input changes
+        if (startPicker.length) {
+            startPicker.on('change blur', validateCanaryCustomForm);
+            startPicker.on('dp.change', validateCanaryCustomForm);
+        }
+        if (endPicker.length) {
+            endPicker.on('change blur', validateCanaryCustomForm);
+            endPicker.on('dp.change', validateCanaryCustomForm);
+        }
+        if (cellInput.length) {
+            cellInput.on('input change blur', validateCanaryCustomForm);
+        }
+        
+        // Initial validation
+        validateCanaryCustomForm();
+    }
+    
+    // Initialize validation when document is ready
+    $(document).ready(function() {
+        // Wait a bit for datetime pickers to be initialized
+        setTimeout(function() {
+            initCanaryCustomFormValidation();
+        }, 200);
+    });
 
     function processCanary() {
         let info = " start: " + moment.utc($("#startpicker3").val()).format('ddd, MMM D YYYY HH:mm:ss [UTC]') + " end: " + moment.utc($("#endpicker3").val()).format('ddd, MMM D YYYY HH:mm:ss [UTC]') + " cell: '" + $('#cell-input1').val()  + "'";
@@ -62,7 +122,8 @@
                 hideSpinner("spinnerzingcustom");
                 toastMessage(toastType.INFO, "Processing Done");
                 $("#canary-input-info").css("display", "none");
-                $("#submit-canary-input").attr("disabled", false);
+                // Re-enable button and validate form state
+                validateCanaryCustomForm();
                 if (result[0] != undefined && result[0].length > 0) {
                     canaryContextArray.push({"record": result[0]});
                     updateCanaryView($(".modern-tabs-nav-button.active").attr("data-tab-target"));
@@ -71,7 +132,8 @@
             error: function (xhr, status, error) {
                 toastMessage(toastType.ERROR, "Failed to process canary data");
                 $("#canary-input-info").css("display", "none");
-                $("#submit-canary-input").attr("disabled", false);
+                // Re-enable button and validate form state
+                validateCanaryCustomForm();
                 hideSpinner("spinnerzingcustom");
             }
         });

@@ -224,23 +224,41 @@ Object.freeze(toastType);
 
 function toastMessage(type, msg, d = 5000){
     if(type == toastType.INFO) {
+        // Blue for INFO
         Toastify({
             text: msg,
-            backgroundColor: "linear-gradient(135deg, #73a5ff, #5477f5)",
+            style: {
+                background: "rgba(115, 165, 255, 0.15)",
+                backgroundImage: "linear-gradient(135deg, rgba(115, 165, 255, 0.2) 0%, rgba(84, 119, 245, 0.12) 50%, rgba(115, 165, 255, 0.2) 100%), linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%)",
+                boxShadow: "0 4px 16px rgba(115, 165, 255, 0.25), 0 2px 8px rgba(115, 165, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(0, 0, 0, 0.08), 0 8px 32px rgba(77, 96, 232, 0.15)",
+                textShadow: "0 1px 3px rgba(0, 0, 0, 0.3), 0 0 8px rgba(115, 165, 255, 0.5), 0 2px 4px rgba(0, 0, 0, 0.2)"
+            },
             duration: d,
             close: true
         }).showToast();
     }else if(type == toastType.WARNING){
+        // Orange for WARNING
         Toastify({
             text: msg,
-            backgroundColor: "linear-gradient(135deg, #FAC898, orange)",
+            style: {
+                background: "rgba(255, 183, 77, 0.15)",
+                backgroundImage: "linear-gradient(135deg, rgba(255, 183, 77, 0.2) 0%, rgba(255, 152, 0, 0.12) 50%, rgba(255, 183, 77, 0.2) 100%), linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%)",
+                boxShadow: "0 4px 16px rgba(255, 183, 77, 0.25), 0 2px 8px rgba(255, 183, 77, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(0, 0, 0, 0.08), 0 8px 32px rgba(255, 152, 0, 0.15)",
+                textShadow: "0 1px 3px rgba(0, 0, 0, 0.3), 0 0 8px rgba(255, 183, 77, 0.5), 0 2px 4px rgba(0, 0, 0, 0.2)"
+            },
             duration: d,
             close: true
         }).showToast();
     }else if(type == toastType.ERROR){
+        // Red for ERROR
         Toastify({
             text: msg,
-            backgroundColor: "linear-gradient(135deg, #FFAB91, #FF7043)",
+            style: {
+                background: "rgba(239, 83, 80, 0.15)",
+                backgroundImage: "linear-gradient(135deg, rgba(239, 83, 80, 0.2) 0%, rgba(198, 40, 40, 0.12) 50%, rgba(239, 83, 80, 0.2) 100%), linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%)",
+                boxShadow: "0 4px 16px rgba(239, 83, 80, 0.25), 0 2px 8px rgba(239, 83, 80, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(0, 0, 0, 0.08), 0 8px 32px rgba(198, 40, 40, 0.15)",
+                textShadow: "0 1px 3px rgba(0, 0, 0, 0.3), 0 0 8px rgba(239, 83, 80, 0.5), 0 2px 4px rgba(0, 0, 0, 0.2)"
+            },
             duration: d,
             close: true
         }).showToast();
