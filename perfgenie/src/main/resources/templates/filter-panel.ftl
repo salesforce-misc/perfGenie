@@ -6,7 +6,7 @@
 * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
 */
 </script>
-<#include "component/casp/wave-js.ftl">
+<!-- wave-js.ftl is already included in tabsnew.ftl, don't include it again to avoid duplicate script loading -->
 <style type="text/css">
     .xaxisid::-webkit-scrollbar {
         width: 0px;
@@ -6137,10 +6137,10 @@
 2024-01-01 11:25:00,cell-01,instance-001,86.5,11.7,8.6,14.8,0.0,1.9,2102,1210
 2024-01-01 11:30:00,cell-02,instance-001,87.3,11.3,8.2,14.3,0.0,1.7,2189,1160
 2024-01-01 11:35:00,cell-01,instance-002,84.8,12.4,8.8,15.7,0.1,2.3,2023,1330`;
-            window.waveAnalytics = new WaveAnalytics('statetable');
-            window.waveAnalytics.setCSVDataAsString(sfContextDataTable.getTableAsCSV());
+            window.genieAnalytics = new GenieAnalytics('statetable');
+            window.genieAnalytics.setCSVDataAsString(sfContextDataTable.getTableAsCSV());
             // Initialize collapse functionality for categories panel
-            window.waveAnalytics.initializeCollapsePanel();
+            window.genieAnalytics.initializeCollapsePanel();
         } else if (tableFormat == 2 || tableFormat == 3) {
             let minStart = getContextTree(1, eventType).context.start; //todo: records are aligned to method profile context start
             if(eventType == "json-jstack" || eventType == "Jstack"){//find other profile start time

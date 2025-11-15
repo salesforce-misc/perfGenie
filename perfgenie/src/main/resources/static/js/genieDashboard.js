@@ -12,9 +12,19 @@
  * Usage:
  *   const dashboard = new GenieDashboard('dashboard-container');
  *   dashboard.render(dashboardJson, inputJson);
+ * 
+ * Note: This component can be instantiated multiple times, similar to SFDataTable
  */
 
-class GenieDashboard {
+// Only define the class if it doesn't already exist (prevents duplicate declaration errors)
+// Use a function to create the class to avoid duplicate declaration errors
+(function() {
+    // Check if GenieDashboard is already defined
+    if (typeof window !== 'undefined' && window.GenieDashboard) {
+        return; // Already defined, skip
+    }
+    
+    class GenieDashboard {
     constructor(containerId, options = {}) {
         this.containerId = containerId;
         this.container = document.getElementById(containerId);
@@ -22,6 +32,10 @@ class GenieDashboard {
         if (!this.container) {
             throw new Error(`Container with ID '${containerId}' not found`);
         }
+        
+        // Create instance identifier for unique IDs (similar to SFDataTable pattern)
+        // Use containerId as base, sanitize it to be a valid ID prefix
+        this.instanceId = this.sanitizeId(containerId);
         
         this.options = {
             chartLibrary: 'chartjs', // 'chartjs' or 'c3' or 'd3'
@@ -64,6 +78,27 @@ class GenieDashboard {
             script.onerror = () => reject(new Error('Failed to load Chart.js'));
             document.head.appendChild(script);
         });
+    }
+    
+    /**
+     * Sanitize containerId to create a valid instance ID prefix
+     * Similar to SFDataTable's instance name handling
+     */
+    sanitizeId(id) {
+        if (!id) {
+            return 'genie-dashboard';
+        }
+        // Remove any invalid characters for IDs (keep alphanumeric, hyphens, underscores)
+        return id.replace(/[^a-zA-Z0-9_-]/g, '-').replace(/^-+|-+$/g, '') || 'genie-dashboard';
+    }
+    
+    /**
+     * Generate instance-specific ID
+     * @param {string} baseId - Base ID name (e.g., 'collapse-bar', 'grid')
+     * @returns {string} Instance-specific ID
+     */
+    getInstanceId(baseId) {
+        return `${this.instanceId}-${baseId}`;
     }
     
     /**
@@ -843,7 +878,7 @@ class GenieDashboard {
             // Create collapse bar (always shown at top)
             const collapseBar = document.createElement('div');
             collapseBar.className = 'genie-toolbar-collapse-bar';
-            collapseBar.id = 'genie-dashboard-collapse-bar';
+            collapseBar.id = this.getInstanceId('collapse-bar');
             collapseBar.title = 'Toggle dashboard';
             if (startCollapsed) {
                 collapseBar.classList.add('genie-dashboard-collapsed');
@@ -861,7 +896,7 @@ class GenieDashboard {
             // Create grid container
             const grid = document.createElement('div');
             grid.className = 'genie-dashboard-grid';
-            grid.id = 'genie-dashboard-grid';
+            grid.id = this.getInstanceId('grid');
             // If collapsed by default, hide grid initially
             if (startCollapsed) {
                 grid.classList.add('genie-dashboard-collapsed');
@@ -915,7 +950,7 @@ class GenieDashboard {
         // Create toolbar container
         const toolbar = document.createElement('div');
         toolbar.className = 'genie-dashboard-toolbar';
-        toolbar.id = 'genie-dashboard-toolbar';
+        toolbar.id = this.getInstanceId('toolbar');
         
         // If collapsed by default, hide toolbar initially
         if (startCollapsed) {
@@ -937,19 +972,19 @@ class GenieDashboard {
             const timeRangeButton = document.createElement('button');
             timeRangeButton.type = 'button'; // Prevent form submission
             timeRangeButton.className = 'genie-toolbar-icon-button';
-            timeRangeButton.id = 'genie-toolbar-time-range';
+            timeRangeButton.id = this.getInstanceId('toolbar-time-range');
             timeRangeButton.title = 'Select time range';
             timeRangeButton.innerHTML = '<span>🕐</span>';
             
             const timeRangeDisplay = document.createElement('span');
             timeRangeDisplay.className = 'genie-time-range-display';
-            timeRangeDisplay.id = 'genie-time-range-display';
+            timeRangeDisplay.id = this.getInstanceId('time-range-display');
             timeRangeDisplay.textContent = 'Last 1h';
             
             // Time range popup
             const timeRangePopup = document.createElement('div');
             timeRangePopup.className = 'genie-time-range-popup';
-            timeRangePopup.id = 'genie-time-range-popup';
+            timeRangePopup.id = this.getInstanceId('time-range-popup');
             
             const quickIntervals = document.createElement('div');
             quickIntervals.className = 'genie-time-range-quick-intervals';
@@ -988,24 +1023,24 @@ class GenieDashboard {
             
             const customRange = document.createElement('div');
             customRange.className = 'genie-time-range-custom';
-            customRange.id = 'genie-time-range-custom';
+            customRange.id = this.getInstanceId('time-range-custom');
             customRange.innerHTML = `
                 <h4>Custom Range</h4>
                 <div class="genie-time-range-custom-group">
                     <label>Start:</label>
-                    <input type="datetime-local" id="genie-toolbar-start" class="genie-toolbar-input" step="60" />
+                    <input type="datetime-local" id="${this.instanceId}-toolbar-start" class="genie-toolbar-input" step="60" />
                 </div>
                 <div class="genie-time-range-custom-group" style="margin-top: 8px;">
                     <label>End:</label>
-                    <input type="datetime-local" id="genie-toolbar-end" class="genie-toolbar-input" step="60" />
+                    <input type="datetime-local" id="${this.instanceId}-toolbar-end" class="genie-toolbar-input" step="60" />
                 </div>
             `;
             
             const popupActions = document.createElement('div');
             popupActions.className = 'genie-time-range-popup-actions';
             popupActions.innerHTML = `
-                <button type="button" class="genie-time-range-popup-btn genie-dashboard-btn-cancel" id="genie-time-range-cancel">Cancel</button>
-                <button type="button" class="genie-time-range-popup-btn genie-dashboard-btn-apply" id="genie-time-range-apply">Apply</button>
+                <button type="button" class="genie-time-range-popup-btn genie-dashboard-btn-cancel" id="${this.instanceId}-time-range-cancel">Cancel</button>
+                <button type="button" class="genie-time-range-popup-btn genie-dashboard-btn-apply" id="${this.instanceId}-time-range-apply">Apply</button>
             `;
             
             timeRangePopup.appendChild(quickIntervals);
@@ -1030,7 +1065,7 @@ class GenieDashboard {
             
             const intervalInput = document.createElement('input');
             intervalInput.type = 'text';
-            intervalInput.id = 'genie-toolbar-interval';
+            intervalInput.id = this.getInstanceId('toolbar-interval');
             intervalInput.className = 'genie-toolbar-input';
             intervalInput.value = this.inputConfig['$interval'] || '1m';
             intervalInput.placeholder = 'e.g., 1m, 5m, 1h';
@@ -1048,11 +1083,11 @@ class GenieDashboard {
             
             const aggLabel = document.createElement('label');
             aggLabel.className = 'genie-toolbar-label';
-            aggLabel.setAttribute('for', 'genie-toolbar-agg');
+            aggLabel.setAttribute('for', this.getInstanceId('toolbar-agg'));
             aggLabel.textContent = 'Aggregation:';
             
             const aggSelect = document.createElement('select');
-            aggSelect.id = 'genie-toolbar-agg';
+            aggSelect.id = this.getInstanceId('toolbar-agg');
             aggSelect.className = 'genie-toolbar-select';
             const currentAggValue = this.inputConfig['$agg'] || '';
             aggSelect.innerHTML = `
@@ -1073,7 +1108,7 @@ class GenieDashboard {
             const refreshButton = document.createElement('button');
             refreshButton.type = 'button'; // Prevent form submission
             refreshButton.className = 'genie-toolbar-icon-button';
-            refreshButton.id = 'genie-toolbar-refresh';
+            refreshButton.id = this.getInstanceId('toolbar-refresh');
             refreshButton.title = 'Refresh dashboard';
             refreshButton.innerHTML = '<span>🔄</span>';
             toolbar.appendChild(refreshButton);
@@ -1084,7 +1119,7 @@ class GenieDashboard {
             const editButton = document.createElement('button');
             editButton.type = 'button'; // Prevent form submission
             editButton.className = 'genie-toolbar-icon-button';
-            editButton.id = 'genie-toolbar-edit';
+            editButton.id = this.getInstanceId('toolbar-edit');
             editButton.title = 'Edit dashboard JSON';
             editButton.innerHTML = '<span>✏️</span>';
             toolbar.appendChild(editButton);
@@ -1095,7 +1130,7 @@ class GenieDashboard {
             const uploadButton = document.createElement('button');
             uploadButton.type = 'button'; // Prevent form submission
             uploadButton.className = 'genie-toolbar-icon-button';
-            uploadButton.id = 'genie-toolbar-upload';
+            uploadButton.id = this.getInstanceId('toolbar-upload');
             uploadButton.title = 'Upload dashboard config';
             uploadButton.innerHTML = '<span>📤</span>';
             toolbar.appendChild(uploadButton);
@@ -1118,10 +1153,10 @@ class GenieDashboard {
      * Setup dashboard collapse/expand functionality
      */
     setupDashboardCollapse() {
-        const collapseBar = document.getElementById('genie-dashboard-collapse-bar');
-        const toolbar = document.getElementById('genie-dashboard-toolbar');
+        const collapseBar = document.getElementById(this.getInstanceId('collapse-bar'));
+        const toolbar = document.getElementById(this.getInstanceId('toolbar'));
         // Use stored reference or fallback to getElementById
-        const grid = this.dashboardGrid || document.getElementById('genie-dashboard-grid');
+        const grid = this.dashboardGrid || document.getElementById(this.getInstanceId('grid'));
         const toolbarConfig = this.dashboardConfig.toolbar || {};
         const isToolbarEnabled = toolbarConfig.enabled !== false;
         
@@ -1343,25 +1378,25 @@ class GenieDashboard {
             this.inputConfig['$start'] = start;
             this.inputConfig['$end'] = end;
             isCustomRangeSelected = isCustom;
-            const timeRangeDisplay = document.getElementById('genie-time-range-display');
+            const timeRangeDisplay = document.getElementById(this.getInstanceId('time-range-display'));
             if (timeRangeDisplay) {
                 timeRangeDisplay.textContent = formatTimeRangeDisplay(start, end, isCustomRangeSelected);
             }
-            const popup = document.getElementById('genie-time-range-popup');
+            const popup = document.getElementById(this.getInstanceId('time-range-popup'));
             if (popup) {
                 popup.classList.remove('genie-dashboard-show');
             }
         };
         
         // Time range popup
-        const timeRangeButton = document.getElementById('genie-toolbar-time-range');
-        const timeRangePopup = document.getElementById('genie-time-range-popup');
+        const timeRangeButton = document.getElementById(this.getInstanceId('toolbar-time-range'));
+        const timeRangePopup = document.getElementById(this.getInstanceId('time-range-popup'));
         const quickIntervalBtns = document.querySelectorAll('.genie-quick-interval-btn');
-        const startInput = document.getElementById('genie-toolbar-start');
-        const endInput = document.getElementById('genie-toolbar-end');
-        const applyButton = document.getElementById('genie-time-range-apply');
-        const cancelButton = document.getElementById('genie-time-range-cancel');
-        const refreshButton = document.getElementById('genie-toolbar-refresh');
+        const startInput = document.getElementById(`${this.instanceId}-toolbar-start`);
+        const endInput = document.getElementById(`${this.instanceId}-toolbar-end`);
+        const applyButton = document.getElementById(this.getInstanceId('time-range-apply'));
+        const cancelButton = document.getElementById(this.getInstanceId('time-range-cancel'));
+        const refreshButton = document.getElementById(this.getInstanceId('toolbar-refresh'));
         
         if (timeRangeButton && timeRangePopup) {
             timeRangeButton.addEventListener('click', (e) => {
@@ -1424,7 +1459,7 @@ class GenieDashboard {
         }
         
         // Aggregation dropdown change handler - sync to panel settings if open
-        const aggSelect = document.getElementById('genie-toolbar-agg');
+        const aggSelect = document.getElementById(this.getInstanceId('toolbar-agg'));
         if (aggSelect) {
             aggSelect.addEventListener('change', () => {
                 // Update inputConfig
@@ -1433,12 +1468,12 @@ class GenieDashboard {
                 }
                 
                 // Sync to any open panel settings
-                const openSettingsPanels = document.querySelectorAll('[id^="panel-settings-"]');
+                const openSettingsPanels = document.querySelectorAll(`[id^="${this.instanceId}-panel-settings-"]`);
                 openSettingsPanels.forEach(settingsPanel => {
-                    const panelIdMatch = settingsPanel.id.match(/panel-settings-(\d+)/);
+                    const panelIdMatch = settingsPanel.id.match(new RegExp(`${this.instanceId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-panel-settings-(\\d+)`));
                     if (panelIdMatch) {
                         const panelId = panelIdMatch[1];
-                        const spanTypeSelect = document.getElementById(`agg-span-type-${panelId}`);
+                        const spanTypeSelect = document.getElementById(`${this.instanceId}-agg-span-type-${panelId}`);
                         if (spanTypeSelect) {
                             spanTypeSelect.value = aggSelect.value || '';
                         }
@@ -1451,8 +1486,8 @@ class GenieDashboard {
         if (refreshButton) {
             refreshButton.addEventListener('click', () => {
                 // Update inputJson from toolbar
-                const intervalInput = document.getElementById('genie-toolbar-interval');
-                const aggSelect = document.getElementById('genie-toolbar-agg');
+                const intervalInput = document.getElementById(this.getInstanceId('toolbar-interval'));
+                const aggSelect = document.getElementById(this.getInstanceId('toolbar-agg'));
                 
                 if (intervalInput && intervalInput.value) {
                     this.inputConfig['$interval'] = intervalInput.value.trim();
@@ -1475,7 +1510,7 @@ class GenieDashboard {
         }
         
         // Edit button
-        const editButton = document.getElementById('genie-toolbar-edit');
+        const editButton = document.getElementById(this.getInstanceId('toolbar-edit'));
         if (editButton) {
             editButton.addEventListener('click', () => {
                 this.showEditModal();
@@ -1483,7 +1518,7 @@ class GenieDashboard {
         }
         
         // Upload button
-        const uploadButton = document.getElementById('genie-toolbar-upload');
+        const uploadButton = document.getElementById(this.getInstanceId('toolbar-upload'));
         if (uploadButton) {
             uploadButton.addEventListener('click', () => {
                 this.showUploadModal();
@@ -1492,7 +1527,7 @@ class GenieDashboard {
         
         // Update time range display on init
         if (this.inputConfig && this.inputConfig['$start'] && this.inputConfig['$end']) {
-            const timeRangeDisplay = document.getElementById('genie-time-range-display');
+            const timeRangeDisplay = document.getElementById(this.getInstanceId('time-range-display'));
             if (timeRangeDisplay) {
                 timeRangeDisplay.textContent = formatTimeRangeDisplay(this.inputConfig['$start'], this.inputConfig['$end'], isCustomRangeSelected);
             }
@@ -1510,7 +1545,7 @@ class GenieDashboard {
         
         // Create modal overlay
         const modalOverlay = document.createElement('div');
-        modalOverlay.id = 'genie-edit-modal-overlay';
+        modalOverlay.id = this.getInstanceId('edit-modal-overlay');
         modalOverlay.className = 'genie-edit-modal-overlay';
         modalOverlay.style.cssText = `
             display: none;
@@ -1576,7 +1611,7 @@ class GenieDashboard {
         
         // Create textarea for JSON editing
         const textarea = document.createElement('textarea');
-        textarea.id = 'genie-edit-json-textarea';
+        textarea.id = this.getInstanceId('edit-json-textarea');
         textarea.style.cssText = `
             width: 100%;
             height: 60vh;
@@ -1839,7 +1874,7 @@ class GenieDashboard {
         
         // Create modal overlay
         const modalOverlay = document.createElement('div');
-        modalOverlay.id = 'genie-upload-modal-overlay';
+        modalOverlay.id = this.getInstanceId('upload-modal-overlay');
         modalOverlay.className = 'genie-upload-modal-overlay';
         modalOverlay.style.cssText = `
             display: none;
@@ -1914,7 +1949,7 @@ class GenieDashboard {
         
         const pasteTab = document.createElement('button');
         pasteTab.textContent = 'Paste Config';
-        pasteTab.id = 'genie-upload-tab-paste';
+        pasteTab.id = this.getInstanceId('upload-tab-paste');
         pasteTab.style.cssText = `
             padding: 8px 16px;
             background: #3b82f6;
@@ -1928,7 +1963,7 @@ class GenieDashboard {
         
         const convertedTab = document.createElement('button');
         convertedTab.textContent = 'Converted Config';
-        convertedTab.id = 'genie-upload-tab-converted';
+        convertedTab.id = this.getInstanceId('upload-tab-converted');
         convertedTab.style.cssText = `
             padding: 8px 16px;
             background: #f3f4f6;
@@ -1954,7 +1989,7 @@ class GenieDashboard {
         
         // Create paste textarea
         const pasteTextarea = document.createElement('textarea');
-        pasteTextarea.id = 'genie-upload-paste-textarea';
+        pasteTextarea.id = this.getInstanceId('upload-paste-textarea');
         pasteTextarea.style.cssText = `
             width: 100%;
             height: 60vh;
@@ -1972,7 +2007,7 @@ class GenieDashboard {
         
         // Create converted textarea (read-only)
         const convertedTextarea = document.createElement('textarea');
-        convertedTextarea.id = 'genie-upload-converted-textarea';
+        convertedTextarea.id = this.getInstanceId('upload-converted-textarea');
         convertedTextarea.readOnly = true;
         convertedTextarea.style.cssText = `
             width: 100%;
@@ -2183,8 +2218,8 @@ class GenieDashboard {
         this.uploadModalConvertedTextarea.value = '';
         
         // Switch to paste tab
-        const pasteTab = document.getElementById('genie-upload-tab-paste');
-        const convertedTab = document.getElementById('genie-upload-tab-converted');
+        const pasteTab = document.getElementById(this.getInstanceId('upload-tab-paste'));
+        const convertedTab = document.getElementById(this.getInstanceId('upload-tab-converted'));
         if (pasteTab && convertedTab) {
             pasteTab.style.background = '#3b82f6';
             pasteTab.style.color = 'white';
@@ -2582,9 +2617,9 @@ class GenieDashboard {
         `.replace(/\s+/g, ' ').trim();
         
         // Add CSS animation if not already added
-        if (!document.getElementById('genie-retry-spinner-style')) {
+        if (!document.getElementById(this.getInstanceId('retry-spinner-style'))) {
             const style = document.createElement('style');
-            style.id = 'genie-retry-spinner-style';
+            style.id = this.getInstanceId('retry-spinner-style');
             style.textContent = `
                 @keyframes spin {
                     from { transform: rotate(0deg); }
@@ -3310,7 +3345,7 @@ class GenieDashboard {
                         percentIconButton.title = 'Show percentages';
                     }
                     // Re-render the stats table
-                    const statsContent = container.querySelector(`#stats-tab-${panel.id}`);
+                    const statsContent = container.querySelector(`#${this.instanceId}-stats-tab-${panel.id}`);
                     if (statsContent) {
                         const compareDropdown = container.closest('.genie-dashboard-panel')?.querySelector('.genie-dashboard-compare-dropdown');
                         const previousDuration = compareDropdown && compareDropdown.value !== 'none' ? compareDropdown.value : null;
@@ -3792,7 +3827,7 @@ class GenieDashboard {
             
             // Create hidden select for backward compatibility
             compareDropdown = document.createElement('select');
-            compareDropdown.id = `compare-dropdown-${panel.id}`;
+            compareDropdown.id = `${this.instanceId}-compare-dropdown-${panel.id}`;
             compareDropdown.className = 'genie-dashboard-compare-dropdown';
             compareDropdown.style.cssText = 'display: none;'; // Hidden but kept for compatibility
             compareDropdown.value = initialSelectedOption;
@@ -3971,7 +4006,7 @@ class GenieDashboard {
             chartContent.className = '';
             chartContent.style.display = 'block'; // Always show if tabs disabled
         }
-        chartContent.id = `chart-tab-${panel.id}`;
+        chartContent.id = `${this.instanceId}-chart-tab-${panel.id}`;
         
         const statsContent = document.createElement('div');
         if (showTabs) {
@@ -3981,7 +4016,7 @@ class GenieDashboard {
             statsContent.className = '';
             statsContent.style.display = 'none'; // Hide if tabs disabled
         }
-        statsContent.id = `stats-tab-${panel.id}`;
+        statsContent.id = `${this.instanceId}-stats-tab-${panel.id}`;
         
         // Stats container height will be set dynamically after panel height is calculated
         // to match the chart content height exactly
@@ -5107,7 +5142,7 @@ class GenieDashboard {
                     // Ignore errors during cleanup
                 }
                 // Remove old tooltip container if it exists
-                const oldTooltip = document.getElementById('chartjs-tooltip-' + panel.id);
+                const oldTooltip = document.getElementById(`${this.instanceId}-chartjs-tooltip-${panel.id}`);
                 if (oldTooltip) {
                     oldTooltip.remove();
                 }
@@ -5235,7 +5270,7 @@ class GenieDashboard {
                     // Re-render stats table if stats tab is active (to apply zoom filter)
                     const statsTab = container.querySelector('.genie-dashboard-tab')?.textContent?.includes('🔢') ? 
                         Array.from(container.querySelectorAll('.genie-dashboard-tab')).find(tab => tab.textContent.includes('🔢')) : null;
-                    const statsContent = container.querySelector(`#stats-tab-${panel.id}`);
+                    const statsContent = container.querySelector(`#${this.instanceId}-stats-tab-${panel.id}`);
                     if (statsTab && statsTab.classList.contains('genie-dashboard-active') && statsContent) {
                         const compareDropdown = container.closest('.genie-dashboard-panel')?.querySelector('.genie-dashboard-compare-dropdown');
                         const currentCompareValue = compareDropdown && compareDropdown.value !== 'none' ? compareDropdown.value : null;
@@ -5312,7 +5347,7 @@ class GenieDashboard {
                     // Re-render stats table if stats tab is active (to apply zoom filter)
                     const statsTab = container.querySelector('.genie-dashboard-tab')?.textContent?.includes('🔢') ? 
                         Array.from(container.querySelectorAll('.genie-dashboard-tab')).find(tab => tab.textContent.includes('🔢')) : null;
-                    const statsContent = container.querySelector(`#stats-tab-${panel.id}`);
+                    const statsContent = container.querySelector(`#${this.instanceId}-stats-tab-${panel.id}`);
                     if (statsTab && statsTab.classList.contains('genie-dashboard-active') && statsContent) {
                         const compareDropdown = container.closest('.genie-dashboard-panel')?.querySelector('.genie-dashboard-compare-dropdown');
                         const currentCompareValue = compareDropdown && compareDropdown.value !== 'none' ? compareDropdown.value : null;
@@ -5343,7 +5378,7 @@ class GenieDashboard {
                     // Re-render stats table if stats tab is active (to remove zoom filter)
                     const statsTab = container.querySelector('.genie-dashboard-tab')?.textContent?.includes('🔢') ? 
                         Array.from(container.querySelectorAll('.genie-dashboard-tab')).find(tab => tab.textContent.includes('🔢')) : null;
-                    const statsContent = container.querySelector(`#stats-tab-${panel.id}`);
+                    const statsContent = container.querySelector(`#${this.instanceId}-stats-tab-${panel.id}`);
                     if (statsTab && statsTab.classList.contains('genie-dashboard-active') && statsContent) {
                         const compareDropdown = container.closest('.genie-dashboard-panel')?.querySelector('.genie-dashboard-compare-dropdown');
                         const currentCompareValue = compareDropdown && compareDropdown.value !== 'none' ? compareDropdown.value : null;
@@ -5533,8 +5568,8 @@ class GenieDashboard {
                             border-radius: 1px;
                         }
                     `;
-                    if (!document.head.querySelector('#genie-zoom-slider-styles')) {
-                        sliderStyle.id = 'genie-zoom-slider-styles';
+                    if (!document.head.querySelector(`#${this.getInstanceId('zoom-slider-styles')}`)) {
+                        sliderStyle.id = this.getInstanceId('zoom-slider-styles');
                         document.head.appendChild(sliderStyle);
                     }
                     
@@ -5845,7 +5880,7 @@ class GenieDashboard {
                         // Re-render stats table if stats tab is active (to apply zoom filter)
                         const statsTab = container.querySelector('.genie-dashboard-tab')?.textContent?.includes('🔢') ? 
                             Array.from(container.querySelectorAll('.genie-dashboard-tab')).find(tab => tab.textContent.includes('🔢')) : null;
-                        const statsContent = container.querySelector(`#stats-tab-${panel.id}`);
+                        const statsContent = container.querySelector(`#${this.instanceId}-stats-tab-${panel.id}`);
                         if (statsTab && statsTab.classList.contains('genie-dashboard-active') && statsContent) {
                             // Stats tab is active, re-render stats table with zoom filter
                             const compareDropdown = container.closest('.genie-dashboard-panel')?.querySelector('.genie-dashboard-compare-dropdown');
@@ -6089,7 +6124,7 @@ class GenieDashboard {
                         // Re-render stats table if stats tab is active (to remove zoom filter)
                         const statsTab = container.querySelector('.genie-dashboard-tab')?.textContent?.includes('🔢') ? 
                             Array.from(container.querySelectorAll('.genie-dashboard-tab')).find(tab => tab.textContent.includes('🔢')) : null;
-                        const statsContent = container.querySelector(`#stats-tab-${panel.id}`);
+                        const statsContent = container.querySelector(`#${this.instanceId}-stats-tab-${panel.id}`);
                         if (statsTab && statsTab.classList.contains('genie-dashboard-active') && statsContent) {
                             const compareDropdown = container.closest('.genie-dashboard-panel')?.querySelector('.genie-dashboard-compare-dropdown');
                             const currentCompareValue = compareDropdown && compareDropdown.value !== 'none' ? compareDropdown.value : null;
@@ -9120,7 +9155,7 @@ class GenieDashboard {
         
         // Check if dashboard is collapsed - if so, don't render the table yet
         // The table will be rendered when the dashboard expands
-        const dashboardGrid = document.getElementById('genie-dashboard-grid');
+        const dashboardGrid = document.getElementById(this.getInstanceId('grid'));
         const isDashboardCollapsed = dashboardGrid && dashboardGrid.classList.contains('genie-dashboard-collapsed');
         if (isDashboardCollapsed) {
             console.log(`[renderStatsTable] Dashboard is collapsed, skipping table render for panel ${panel.id}`);
@@ -10292,7 +10327,7 @@ class GenieDashboard {
             const panelElement = container.closest('.genie-dashboard-panel');
             if (panelElement) {
                 // Check if we're in stats view (statsContent is active/visible)
-                const statsContent = panelElement.querySelector(`#stats-tab-${panel.id}`);
+                const statsContent = panelElement.querySelector(`#${this.instanceId}-stats-tab-${panel.id}`);
                 const isStatsViewActive = statsContent && (
                     statsContent.classList.contains('genie-dashboard-active') || 
                     (statsContent.style.display !== 'none' && statsContent.offsetParent !== null)
@@ -11276,14 +11311,14 @@ class GenieDashboard {
         }
         
         // Remove existing tooltip container if it exists
-        const existingTooltip = document.getElementById('chartjs-tooltip-' + panel.id);
+        const existingTooltip = document.getElementById(`${this.instanceId}-chartjs-tooltip-${panel.id}`);
         if (existingTooltip) {
             existingTooltip.remove();
         }
         
         // Function to apply tooltip styles
         const applyTooltipStyles = () => {
-            const tooltipId = 'chartjs-tooltip-' + panel.id;
+            const tooltipId = `${this.instanceId}-chartjs-tooltip-${panel.id}`;
             const tooltip = document.getElementById(tooltipId) || document.querySelector('.chartjs-tooltip');
             if (tooltip) {
                 // Apply styles to tooltip container - allow natural width
@@ -11338,17 +11373,17 @@ class GenieDashboard {
                 // Check for added nodes
                 mutation.addedNodes.forEach((node) => {
                     if (node.nodeType === 1) { // Element node
-                        if (node.id === 'chartjs-tooltip-' + panel.id || 
+                        if (node.id === `${this.instanceId}-chartjs-tooltip-${panel.id}` || 
                             node.classList.contains('chartjs-tooltip') ||
                             node.querySelector('.chartjs-tooltip') ||
-                            node.querySelector('#chartjs-tooltip-' + panel.id)) {
+                            node.querySelector(`#${this.instanceId}-chartjs-tooltip-${panel.id}`)) {
                             shouldApply = true;
                         }
                     }
                 });
                 // Also check for attribute changes (Chart.js updates tooltip content via attributes)
                 if (mutation.type === 'attributes' || mutation.type === 'childList') {
-                    const tooltipId = 'chartjs-tooltip-' + panel.id;
+                    const tooltipId = `${this.instanceId}-chartjs-tooltip-${panel.id}`;
                     const tooltip = document.getElementById(tooltipId) || document.querySelector('.chartjs-tooltip');
                     if (tooltip && (mutation.target === tooltip || tooltip.contains(mutation.target))) {
                         shouldApply = true;
@@ -11376,7 +11411,7 @@ class GenieDashboard {
         // Manually create tooltip element since Chart.js might not be creating it
         // Chart.js v4 should create it automatically, but sometimes doesn't in certain conditions
         const tooltipContainer = document.createElement('div');
-        tooltipContainer.id = 'chartjs-tooltip-' + panel.id;
+        tooltipContainer.id = `${this.instanceId}-chartjs-tooltip-${panel.id}`;
         tooltipContainer.className = 'chartjs-tooltip';
         tooltipContainer.style.cssText = 'position: fixed; z-index: 10000; pointer-events: none; opacity: 0; transition: opacity 0.1s;';
         document.body.appendChild(tooltipContainer);
@@ -11893,7 +11928,7 @@ class GenieDashboard {
      */
     async showPanelSettings(panel, container, header) {
         // Remove existing settings panel if any
-        const existingPanel = document.getElementById(`panel-settings-${panel.id}`);
+        const existingPanel = document.getElementById(`${this.instanceId}-panel-settings-${panel.id}`);
         if (existingPanel) {
             existingPanel.remove();
         }
@@ -11973,12 +12008,12 @@ class GenieDashboard {
         
         // Create overlay (transparent - no background darkening)
         const overlay = document.createElement('div');
-        overlay.id = `panel-settings-overlay-${panel.id}`;
+        overlay.id = `${this.instanceId}-panel-settings-overlay-${panel.id}`;
         overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: transparent; z-index: 10000; pointer-events: none;';
         
         // Create settings panel
         const settingsPanel = document.createElement('div');
-        settingsPanel.id = `panel-settings-${panel.id}`;
+        settingsPanel.id = `${this.instanceId}-panel-settings-${panel.id}`;
         settingsPanel.style.cssText = `
             position: fixed;
             top: 0;
@@ -12110,14 +12145,14 @@ class GenieDashboard {
         aggregationSection.innerHTML = `
             <div>
                 <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 500; color: #374151;">Aggregation Tag:</label>
-                <select id="agg-tag-${panel.id}" style="width: 100%; padding: 6px; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px;">
+                <select id="${this.instanceId}-agg-tag-${panel.id}" style="width: 100%; padding: 6px; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px;">
                     <option value="">-- Select --</option>
                     ${tagOptions}
                 </select>
             </div>
             <div>
                 <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 500; color: #374151;">Aggregation Type:</label>
-                <select id="agg-type-${panel.id}" style="width: 100%; padding: 6px; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px;">
+                <select id="${this.instanceId}-agg-type-${panel.id}" style="width: 100%; padding: 6px; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px;">
                     <option value="" ${!aggregationConfig.type && (!panel._aggregationEnabled || !panel._aggregationType) ? 'selected' : ''}>-- Select --</option>
                     <option value="sum" ${aggregationConfig.type === 'sum' || (panel._aggregationEnabled && panel._aggregationType === 'sum') ? 'selected' : ''}>Sum</option>
                     <option value="avg" ${aggregationConfig.type === 'avg' || (panel._aggregationEnabled && panel._aggregationType === 'avg') ? 'selected' : ''}>Average</option>
@@ -12129,11 +12164,11 @@ class GenieDashboard {
             </div>
             <div>
                 <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 500; color: #374151;">Span Aggregation:</label>
-                <input type="text" id="agg-span-${panel.id}" value="${(aggregationConfig.span || '').replace(/"/g, '&quot;')}" placeholder="e.g., 5m, 1h" style="width: 100%; padding: 6px; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px;">
+                <input type="text" id="${this.instanceId}-agg-span-${panel.id}" value="${(aggregationConfig.span || '').replace(/"/g, '&quot;')}" placeholder="e.g., 5m, 1h" style="width: 100%; padding: 6px; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px;">
             </div>
             <div>
                 <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 500; color: #374151;">Span Type:</label>
-                <select id="agg-span-type-${panel.id}" style="width: 100%; padding: 6px; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px;">
+                <select id="${this.instanceId}-agg-span-type-${panel.id}" style="width: 100%; padding: 6px; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px;">
                     <option value="">-- Select --</option>
                     <option value="sum" ${(aggregationConfig.spanAggregation === 'sum' || (!aggregationConfig.spanAggregation && this.inputConfig?.['$agg'] === 'sum')) ? 'selected' : ''}>Sum</option>
                     <option value="avg" ${(aggregationConfig.spanAggregation === 'avg' || (!aggregationConfig.spanAggregation && this.inputConfig?.['$agg'] === 'avg')) ? 'selected' : ''}>Average</option>
@@ -12146,7 +12181,7 @@ class GenieDashboard {
         
         // Sync panel settings with toolbar aggregation after DOM is ready
         setTimeout(() => {
-            const spanTypeSelect = document.getElementById(`agg-span-type-${panel.id}`);
+            const spanTypeSelect = document.getElementById(`${this.instanceId}-agg-span-type-${panel.id}`);
             if (spanTypeSelect) {
                 // If panel doesn't have spanAggregation set, use toolbar value
                 if (!aggregationConfig.spanAggregation && this.inputConfig?.['$agg']) {
@@ -12155,7 +12190,7 @@ class GenieDashboard {
             }
             
             // Sync "Aggregation Type" dropdown with aggregation icon button dropdown
-            const aggTypeSelect = document.getElementById(`agg-type-${panel.id}`);
+            const aggTypeSelect = document.getElementById(`${this.instanceId}-agg-type-${panel.id}`);
             if (aggTypeSelect) {
                 // Set initial value from aggregation icon button if available
                 if (panel._aggregationEnabled && panel._aggregationType) {
@@ -12753,7 +12788,7 @@ class GenieDashboard {
         // Use requestAnimationFrame to ensure DOM is fully ready
         requestAnimationFrame(() => {
             if (configuredTag) {
-                const tagSelect = document.getElementById(`agg-tag-${panel.id}`);
+                const tagSelect = document.getElementById(`${this.instanceId}-agg-tag-${panel.id}`);
                 if (tagSelect) {
                     // Find the option that matches the configured tag
                     let foundIndex = -1;
@@ -12780,7 +12815,7 @@ class GenieDashboard {
                         }
                     }
                 } else {
-                    console.error(`[Settings] Could not find dropdown element: agg-tag-${panel.id}`);
+                    console.error(`[Settings] Could not find dropdown element: ${this.instanceId}-agg-tag-${panel.id}`);
                 }
             } else {
                 console.log('[Settings] No configured tag to select');
@@ -12869,14 +12904,14 @@ class GenieDashboard {
         if (applyButton) {
             applyButton.addEventListener('click', async () => {
             // Update aggregation config
-            const aggTagSelect = document.getElementById(`agg-tag-${panel.id}`);
+            const aggTagSelect = document.getElementById(`${this.instanceId}-agg-tag-${panel.id}`);
             const aggTag = aggTagSelect ? aggTagSelect.value.trim() : '';
-            const aggType = document.getElementById(`agg-type-${panel.id}`).value;
-            const aggSpan = document.getElementById(`agg-span-${panel.id}`).value.trim();
-            const aggSpanType = document.getElementById(`agg-span-type-${panel.id}`).value;
+            const aggType = document.getElementById(`${this.instanceId}-agg-type-${panel.id}`).value;
+            const aggSpan = document.getElementById(`${this.instanceId}-agg-span-${panel.id}`).value.trim();
+            const aggSpanType = document.getElementById(`${this.instanceId}-agg-span-type-${panel.id}`).value;
             
             // Sync span type to toolbar aggregation dropdown
-            const toolbarAggSelect = document.getElementById('genie-toolbar-agg');
+            const toolbarAggSelect = document.getElementById(this.getInstanceId('toolbar-agg'));
             if (toolbarAggSelect) {
                 if (aggSpanType) {
                     toolbarAggSelect.value = aggSpanType;
@@ -13507,12 +13542,17 @@ class GenieDashboard {
             }
         }
     }
-}
+    } // End of class GenieDashboard
 
-// Export for use
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = GenieDashboard;
-} else {
-    window.GenieDashboard = GenieDashboard;
-}
+    // Export for use (similar to SFDataTable pattern)
+    // Assign to window for global access, allowing multiple instances
+    if (typeof window !== 'undefined') {
+        window.GenieDashboard = GenieDashboard;
+    }
+    // Support CommonJS/Node.js if needed
+    var moduleCheck = typeof module !== 'undefined' && module.exports;
+    if (moduleCheck) {
+        module.exports = GenieDashboard;
+    }
+})(); // End of IIFE - prevents duplicate declaration errors
 

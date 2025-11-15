@@ -65,7 +65,7 @@
                 $("#submit-canary-input").attr("disabled", false);
                 if (result[0] != undefined && result[0].length > 0) {
                     canaryContextArray.push({"record": result[0]});
-                    updateCanaryView($("#tabs .ui-tabs-panel:visible").attr("id"));
+                    updateCanaryView($(".modern-tabs-nav-button.active").attr("data-tab-target"));
                 }
             },
             error: function (xhr, status, error) {

@@ -1,45 +1,13 @@
-<!-- Ensure C3.js and D3.js are available -->
+<!-- Ensure C3.js and D3.js are available (D3 must be loaded before C3) -->
+<script type="text/javascript" src="/plugins/d3/d3-4.10.0.min.js"></script>
+<script type="text/javascript" src="/plugins/c3/c3-0.7.14.min.js"></script>
 <link rel="stylesheet" href="/plugins/c3/c3.min.css">
-<script src="/plugins/d3/d3-4.10.0.min.js"></script>
-<script src="/plugins/c3/c3-0.7.14.min.js"></script>
 
-<!-- Wave Analytics Component JavaScript -->
-<script src="/js/wave-component.js?v=20250106"></script>
+<!-- GenieAnalytics Component JavaScript -->
+<script src="/js/genieAnalytics-component.js?v=20250106"></script>
 
 <style>
-/* Style the zero line as dashed with dull color */
-.c3-line-zero-line,
-.c3-grid-lines .c3-ygrid-line,
-.c3-grid-lines .c3-ygrid-line[data-value="0"],
-.c3-grid-lines .c3-ygrid-line[data-value="0"] line {
-    stroke: #999 !important;
-    stroke-width: 1px !important;
-    stroke-dasharray: 8,4 !important;
-}
-
-/* Style x-axis labels */
-.c3-axis-x .tick text {
-    font-size: 12px !important;
-    fill: #333 !important;
-    white-space: pre-line !important;
-}
-
-/* Ensure x-axis labels are visible */
-.c3-axis-x {
-    display: block !important;
-}
-
-/* Style x-axis label (the main label) */
-.c3-axis-x-label {
-    white-space: pre-line !important;
-    text-anchor: middle !important;
-}
-
-/* Style custom stacked labels */
-.custom-stacked-label {
-    text-anchor: middle !important;
-    dominant-baseline: hanging !important;
-}
+/* C3.js styling - zero line and grid lines */
 
 /* Style width multiplier select */
 .width-multiplier-container {
@@ -68,5 +36,5 @@
 </style>
 
 
-<!-- JavaScript functions are now in wave-component.js -->
+<!-- JavaScript functions are now in genieAnalytics-component.js -->
 

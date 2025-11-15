@@ -5,8 +5,12 @@
 
 
 <script type="text/javascript" class="init">
-    const urlParams = new URLSearchParams(window.location.search);
-    let dataHost = urlParams.get('host') || "perf-genie-tracker";
+    // Use window.urlParams to avoid duplicate declaration errors when multiple templates are included
+    if (typeof window.urlParams === 'undefined') {
+        window.urlParams = new URLSearchParams(window.location.search);
+    }
+    // Use window.urlParams directly to avoid duplicate var declarations
+    let dataHost = window.urlParams.get('host') || "perf-genie-test45";
 
     function onComment(resulttime, cell) {
         getCanaryComments(resulttime, cell);
@@ -15,24 +19,24 @@
 
     $(document).ready(function () {
         // Apply jQuery UI button widget to both submit and cancel buttons
-        $("#submitComment").button();
-        $("#cancelComment").button();
+        $("#canary-submitComment").button();
+        $("#canary-cancelComment").button();
         $("#submitBtn").button();
 
 
         // Close the popup when the cancel button is clicked
-        $("#cancelComment").click(function () {
-            $("#overlay").fadeOut();
-            $("#commentPopup").fadeOut();
+        $("#canary-cancelComment").click(function () {
+            $("#canary-overlay").fadeOut();
+            $("#canary-commentPopup").fadeOut();
         });
 
         // Submit the comment and selected color
-        $("#submitComment").click(function () {
-            let comment = $("#commentText").val();
+        $("#canary-submitComment").click(function () {
+            let comment = $("#canary-commentText").val();
             comment = comment.replaceAll('\n', "<br>");
             let selectedColor = $("input[name='color']:checked").val();
-            let cell = $('#cell').val();
-            let timestamp = $('#resulttime').val();
+            let cell = $('#canary-cell').val();
+            let timestamp = $('#canary-resulttime').val();
             // If comment and color are selected, close popup
             if (!selectedColor) {
                 selectedColor = "black";
@@ -41,17 +45,17 @@
                 //alert("Comment submitted: " + comment + "\nSelected Color: " + selectedColor);
 
                 postComment(comment, selectedColor, cell, timestamp);
-                $("#overlay").fadeOut();
-                $("#commentPopup").fadeOut();
+                $("#canary-overlay").fadeOut();
+                $("#canary-commentPopup").fadeOut();
             } else {
                 toastMessage(toastType.INFO, "Please enter a comment");
             }
         });
 
         // Close the popup when clicking the overlay
-        $("#overlay").click(function () {
+        $("#canary-overlay").click(function () {
             $(this).fadeOut();
-            $("#commentPopup").fadeOut();
+            $("#canary-commentPopup").fadeOut();
         });
 
         $.contextMenu({
@@ -92,7 +96,7 @@
 
             URL = "v1/canaryview/pidstats/" + dataHost + "/?cell="+cell+"&start=" + startEpoch + "&end=" + endEpoch+ "&instance=" + instance;
             //showSpinner("spinnerswat");
-            let currentSpinner = "spinner"+$("#tabs .ui-tabs-panel:visible").attr("id");
+            let currentSpinner = "spinner"+$(".modern-tabs-nav-button.active").attr("data-tab-target");
                     //showSpinner(currentSpinner);
             ProgressBar.start({container: currentSpinner, position: 'top',showIcon: true, iconStartPosition: 'top', icon: '🏄', splash:true }); // Rocket emoji});
             $.ajax({
@@ -136,58 +140,21 @@
         });
     }
 
-    function getCanaryHeader(){
-        URL = "v1/canaryheader";
-        $.ajax({
-            url: URL, success: function (result) {
-                if (result != undefined) {
-                    canaryContextViewHeaderConfig = result.header;
-                    viewCanaryData();
-                }
-            },
-            error: function (xhr, status, error) {
-                toastMessage(toastType.ERROR, "Failed to get header");
-            }
-        });
-    }
-    function viewCanaryData() {
 
-        URL = "v1/canaryview/" + dataHost + "/?start=1&end=1";
-        let currentSpinner = "tabs";//"spinner"+$("#tabs .ui-tabs-panel:visible").attr("id");
-        //showSpinner(currentSpinner);
-        ProgressBar.start({container: currentSpinner, position: 'top',showIcon: true, icon: '🏄',iconStartPosition: 'top', splash:true});
-        $.ajax({
-            url: URL, success: function (result) {
-                if (result != undefined && result.entry != undefined && result.entry.records != undefined && result.entry.records.canary != undefined && result.entry.records.canary[1] != undefined) {
-                    canaryContextArray = result.entry.records.canary[1];
-                    canaryContextHeader = result.entry.header.canary;
-                    canaryCommentCounts = result.counts;
-                    updateCanaryView($("#tabs .ui-tabs-panel:visible").attr("id"));
-                    //showCanaryTable(canaryContextArray);
-                }
-                ProgressBar.stop({ explode: true,celebrate: true, });
-                //hideSpinner(currentSpinner);
-            },
-            error: function (xhr, status, error) {
-                toastMessage(toastType.ERROR, "Failed to process canary data");
-                ProgressBar.stop({ explode: true });
-                //hideSpinner(currentSpinner);
-            }
-        });
-    }
+
 
     function getCanaryComments(resulttime, cell) {
         URL = "v1/canarycomments/"+dataHost+"/?start=" + resulttime + "&end=" + resulttime + "&metadata_query=" + encodeURIComponent("cell=" + cell);
-        showSpinner("spinner1");
+        showSpinner("canary-spinner1");
         $.ajax({
             url: URL, success: function (result) {
                 if (result != undefined) {
                     canaryComments = result;
-                    $('#resulttime').val(resulttime);
-                    $('#cell').val(cell);
-                    $("#commentText").val("");
-                    $("#overlay").fadeIn();
-                    $("#commentPopup").fadeIn();
+                    $('#canary-resulttime').val(resulttime);
+                    $('#canary-cell').val(cell);
+                    $("#canary-commentText").val("");
+                    $("#canary-overlay").fadeIn();
+                    $("#canary-commentPopup").fadeIn();
                     let text = "";
                     let arr = [];
                     for (let timestamp in canaryComments) {
@@ -199,14 +166,17 @@
                             text = text + "<span style='color:" + canaryComments[arr.at(i)].color + "'>" + canaryComments[arr.at(i)].comment + "</span><br>";
                         }
                     }
-                    $('#comments').html(text);
-                    $('#comments').scrollTop($('#comments')[0].scrollHeight);
+                    $('#canary-comments').html(text);
+                    const commentsElement = $('#canary-comments')[0];
+                    if (commentsElement) {
+                        commentsElement.scrollTop = commentsElement.scrollHeight;
+                    }
                 }
-                hideSpinner("spinner1");
+                hideSpinner("canary-spinner1");
             },
             error: function (xhr, status, error) {
                 toastMessage(toastType.ERROR, "Failed to get comments");
-                hideSpinner("spinner1");
+                hideSpinner("canary-spinner1");
             }
         });
     }
@@ -236,15 +206,15 @@
 
     $(document).ready(function () {
         getCanaryHeader();
-        // Initialize Wave Analytics component only if not already initialized
-        if (!window.waveAnalytics) {
-            window.waveAnalytics = new WaveAnalytics('dataviewcontent');
+        // Initialize GenieAnalytics component only if not already initialized
+        if (!window.genieAnalytics) {
+            window.genieAnalytics = new GenieAnalytics('canary-dataviewcontent');
             // Initialize collapse functionality for categories panel
-            window.waveAnalytics.initializeCollapsePanel();
+            window.genieAnalytics.initializeCollapsePanel();
         }
         // Set data and functions on existing instance
-        //window.waveAnalytics.setCSVDataAsString(exampleCSVData);
-        window.waveAnalytics.setDataFetchFunction(getTableAsCSV);
+        //window.genieAnalytics.setCSVDataAsString(exampleCSVData);
+        window.genieAnalytics.setDataFetchFunction(getTableAsCSV);
         //getCanaryLenses();
         //getCanaryExpressions();
     });
@@ -256,11 +226,12 @@
     const canaryviewtable = new SFDataTable("canaryviewtable");
     canaryviewtable.SFDataTableSetPageSize(25);
     Object.freeze(canaryviewtable);
-    let canaryContextArray = undefined;
-    let canaryContextHeader = undefined;
-    let canaryContextViewHeader = undefined;
-    let canaryCommentCounts = undefined;
-    let canaryComments = undefined;
+    // These variables are declared in tabsnew.ftl, don't redeclare here to avoid duplicate declaration errors
+    // var canaryContextArray; // Already declared in parent template
+    // var canaryContextHeader; // Already declared in parent template
+    // var canaryCommentCounts; // Already declared in parent template
+    // var canaryContextViewHeader; // Already declared in parent template
+    // var canaryComments; // Already declared in parent template
 
     let headerTypeMap = {};
     let headerLableMap = {};
@@ -302,7 +273,7 @@
     function  getTimeSeriesDataAndLoad(cell,startEpoch,endEpoch){
         URL = "v1/canaryview/timeseries/" + dataHost + "/?cell="+cell+"&start=" + startEpoch + "&end=" + endEpoch;
         //showSpinner("spinnerswat");
-        let currentSpinner = "spinner"+$("#tabs .ui-tabs-panel:visible").attr("id");
+        let currentSpinner = "spinner"+$(".modern-tabs-nav-button.active").attr("data-tab-target");
                 //showSpinner(currentSpinner);
         ProgressBar.start({container: currentSpinner, position: 'top',showIcon: true, iconStartPosition: 'top', icon: '🏄', splash:true }); // Rocket emoji});
         $.ajax({
@@ -529,7 +500,13 @@
         canaryviewtable.SFDataTable(tableRows, tableHeader, divId, 1);
         //$("#canaryviewtableSFDownloadtable").before('<a title="Download raw json data" id="jsonDownload" href="javascript:downloadJson()"><i style="font-size:18px;" class="fa fa-download" aria-hidden="true"></i>&nbsp;</a>');
         //$("#canaryviewtablepagination").after('<span id="timeseriesload"></span>');
-        window.waveAnalytics.refreshData(true);
+        // Delay refreshData to ensure accordion is expanded and DOM is ready
+        // The refreshData method will also wait for accordion visibility, but this gives extra time
+        setTimeout(() => {
+            if (window.genieAnalytics) {
+                window.genieAnalytics.refreshData(true);
+            }
+        }, 200);
     }
 
     $.contextMenu({

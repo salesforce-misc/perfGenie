@@ -1287,7 +1287,7 @@ public class PerfGenieService implements IPerfGenieService {
     }
 
     public HashMap<String,Object> getCanaryCellTimeSeries(long start, long end, final String cell,String host,String metric, HashMap<String,Object> canaryType) throws IOException {
-        System.out.println("getCanaryCellTimeSeries " + cell + ":" + metric);
+        System.out.println("getCanaryCellTimeSeries " + cell + ":" + metric + " start:" + Utils.getDateTimeString(start) + " end:" + Utils.getDateTimeString(end));
         String substrate = System.getenv("SUBSTRATE");
         if (substrate != null || config.getStorageType().equals("grpc")) {
             if(host == null) {
@@ -1328,7 +1328,7 @@ public class PerfGenieService implements IPerfGenieService {
             List<Long> timestamps = new ArrayList<>();
             List<Long> timestamps_canary = new ArrayList<>();
             HashMap<String,String> colors = new HashMap<>();
-            long curStart = start - 8 * 24 * 60 * 60 * 1000; // start 7 days earlier
+            long curStart = start - 7 * 24 * 60 * 60 * 1000; // start 7 days earlier
             long metricStartTime = 0;
             int metricSeriesCount = 0;
             long canaryMetricStartTime = 0;
@@ -1338,6 +1338,7 @@ public class PerfGenieService implements IPerfGenieService {
                 if(curEnd > end){
                     curEnd = end + 1;
                 }
+                System.out.println("getCanaryCellTimeSeries1 " + cell + ":" + metric + " start:" + Utils.getDateTimeString(curStart) + " end:" + Utils.getDateTimeString(curEnd));
                 List<String> lenses = eventStore.getCanaryComments(config.getTenant(), curStart, curEnd, queryMap, dimMap, true);
                 if(lenses != null) {
 
@@ -1434,6 +1435,8 @@ public class PerfGenieService implements IPerfGenieService {
                 curStart = curEnd+1;
             }
             if(timestamps_canaryType != null && values_canaryType != null) {
+
+
                 if(timestamps.size() != 0) {
                     canaryMetricStartTime = timestamps.get(0)+ 7 * 24 * 60 * 60 * 1000;
                     metricSeriesCount = 0;
@@ -1442,6 +1445,8 @@ public class PerfGenieService implements IPerfGenieService {
                             metricSeriesCount++;
                         }
                     }
+                    System.out.println("getCanaryCellTimeSeries2 " + cell + ":" + metric + " count:" + metricSeriesCount + " data start:" + Utils.getDateTimeString(timestamps.get(0)) + "data end:" + Utils.getDateTimeString(timestamps.get(timestamps.size()-1)) + " canary start:" + Utils.getDateTimeString(canaryMetricStartTime));
+
                     List<Double> values_canary_p = values_canary.subList(0,metricSeriesCount);
                     List<Double> values_p = values.subList(0,metricSeriesCount);
                     timestamps = timestamps.subList(timestamps.size()-metricSeriesCount,timestamps.size());

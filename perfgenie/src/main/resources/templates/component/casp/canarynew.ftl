@@ -123,7 +123,7 @@ border-collapse: collapse;
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Perf Genie canary</title>
+    <title>Perf genie</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="alternate icon" href="/favicon.ico">
     <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Tangerine" />
@@ -150,6 +150,7 @@ border-collapse: collapse;
     <script src="/js/progressbar.js"></script>
     <script src="/js/utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Load genieDashboard.js - browser will handle duplicate script tags with same src by only executing once -->
     <script src="/js/genieDashboard.js"></script>
     <script type="text/javascript" src="/plugins/toastify/toastify.js"></script>
     <link rel="stylesheet" href="/plugins/toastify/toastify.css">
@@ -162,6 +163,6 @@ border-collapse: collapse;
 </head>
 <body>
 
-<#include "../../header.ftl">
+<!--<#include "../../header.ftl">-->
 <#include "tabsnew.ftl">
 </html>

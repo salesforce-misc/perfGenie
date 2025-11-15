@@ -253,7 +253,9 @@ function showSpinner(id) {
     if(id === undefined){
         id = "spinner";
     }
-    document.getElementById(id).style.display = 'block';
+    if(document.getElementById(id) != undefined){
+        document.getElementById(id).style.display = 'block';
+    }
 }
 
 // Function to hide the spinner

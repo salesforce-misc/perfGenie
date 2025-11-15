@@ -13,7 +13,7 @@
     <script src="perfgenie/src/main/resources/static/plugins/moment.min.js"></script>
     <script src="perfgenie/src/main/resources/static/js/timeseries-component.js"></script>
     <script src="perfgenie/src/main/resources/static/js/time-range-filter.js"></script>
-    <script src="perfgenie/src/main/resources/static/js/wave-component.js"></script>
+    <script src="perfgenie/src/main/resources/static/js/genieAnalytics-component.js"></script>
     
     <style>
         body {
@@ -258,25 +258,25 @@
             logWaveDebug('Starting Wave Analytics Basic Lens Save/Load Test...');
             
             // Check if waveAnalytics is available
-            if (typeof window.waveAnalytics === 'undefined') {
+            if (typeof window.genieAnalytics === 'undefined') {
                 logWaveResult('Basic Test', false, 'waveAnalytics not available - make sure the component is loaded');
                 return;
             }
             
             try {
                 // Test 1: Check if lens saving works
-                const originalLensCount = window.waveAnalytics.savedLenses.length;
+                const originalLensCount = window.genieAnalytics.savedLenses.length;
                 logWaveDebug(`Original lens count: ${originalLensCount}`);
                 
                 // Test 2: Check if clearAllDOMFilterSelections exists
-                if (typeof window.waveAnalytics.clearAllDOMFilterSelections === 'function') {
+                if (typeof window.genieAnalytics.clearAllDOMFilterSelections === 'function') {
                     logWaveResult('Clear DOM Filters Function', true, 'clearAllDOMFilterSelections function exists');
                 } else {
                     logWaveResult('Clear DOM Filters Function', false, 'clearAllDOMFilterSelections function not found');
                 }
                 
                 // Test 3: Check if restoreDOMFilterStates exists
-                if (typeof window.waveAnalytics.restoreDOMFilterStates === 'function') {
+                if (typeof window.genieAnalytics.restoreDOMFilterStates === 'function') {
                     logWaveResult('Restore DOM Filters Function', true, 'restoreDOMFilterStates function exists');
                 } else {
                     logWaveResult('Restore DOM Filters Function', false, 'restoreDOMFilterStates function not found');
@@ -315,7 +315,7 @@
         function runWaveComplexTest() {
             logWaveDebug('Starting Wave Analytics Complex Lens Save/Load Test...');
             
-            if (typeof window.waveAnalytics === 'undefined') {
+            if (typeof window.genieAnalytics === 'undefined') {
                 logWaveResult('Complex Test', false, 'waveAnalytics not available');
                 return;
             }
@@ -349,11 +349,11 @@
                 };
                 
                 // Test saving complex lens
-                window.waveAnalytics.savedLenses.push(complexLens);
-                logWaveDebug(`Added complex lens. Total lenses: ${window.waveAnalytics.savedLenses.length}`);
+                window.genieAnalytics.savedLenses.push(complexLens);
+                logWaveDebug(`Added complex lens. Total lenses: ${window.genieAnalytics.savedLenses.length}`);
                 
                 // Test loading complex lens
-                const loadedLens = window.waveAnalytics.savedLenses.find(l => l.name === 'Complex Test Lens');
+                const loadedLens = window.genieAnalytics.savedLenses.find(l => l.name === 'Complex Test Lens');
                 if (loadedLens) {
                     logWaveResult('Complex Lens Save/Load', true, 'Complex lens saved and found successfully');
                     
@@ -384,15 +384,15 @@
         function runWaveClearTest() {
             logWaveDebug('Starting Wave Analytics Clear Lens Test...');
             
-            if (typeof window.waveAnalytics === 'undefined') {
+            if (typeof window.genieAnalytics === 'undefined') {
                 logWaveResult('Clear Test', false, 'waveAnalytics not available');
                 return;
             }
             
             try {
                 // Test clearAllDOMFilterSelections function
-                if (typeof window.waveAnalytics.clearAllDOMFilterSelections === 'function') {
-                    window.waveAnalytics.clearAllDOMFilterSelections();
+                if (typeof window.genieAnalytics.clearAllDOMFilterSelections === 'function') {
+                    window.genieAnalytics.clearAllDOMFilterSelections();
                     logWaveResult('Clear DOM Filters', true, 'clearAllDOMFilterSelections executed without error');
                 } else {
                     logWaveResult('Clear DOM Filters', false, 'clearAllDOMFilterSelections function not available');
@@ -769,7 +769,7 @@
         function runWaveUILoadTest() {
             logWaveDebug('Starting Wave Analytics UI Load Test...');
             
-            if (typeof window.waveAnalytics === 'undefined') {
+            if (typeof window.genieAnalytics === 'undefined') {
                 logWaveResult('UI Load Test', false, 'waveAnalytics not available');
                 return;
             }
@@ -822,11 +822,11 @@
                 };
 
                 // Add the lens to saved lenses
-                window.waveAnalytics.savedLenses.push(testLens);
+                window.genieAnalytics.savedLenses.push(testLens);
                 logWaveDebug('Added test lens to saved lenses');
 
                 // Load the lens
-                window.waveAnalytics.loadLens('UI Test Lens');
+                window.genieAnalytics.loadLens('UI Test Lens');
                 logWaveDebug('Loaded test lens');
 
                 // Wait a bit for UI to update, then validate
@@ -844,7 +844,7 @@
         function runWaveFilterStateTest() {
             logWaveDebug('Starting Wave Analytics Filter State Test...');
             
-            if (typeof window.waveAnalytics === 'undefined') {
+            if (typeof window.genieAnalytics === 'undefined') {
                 logWaveResult('Filter State Test', false, 'waveAnalytics not available');
                 return;
             }
@@ -883,8 +883,8 @@
                 };
 
                 // Add and load the lens
-                window.waveAnalytics.savedLenses.push(complexFilterLens);
-                window.waveAnalytics.loadLens('Filter State Test Lens');
+                window.genieAnalytics.savedLenses.push(complexFilterLens);
+                window.genieAnalytics.loadLens('Filter State Test Lens');
 
                 // Wait for UI to update, then validate
                 setTimeout(() => {
@@ -924,14 +924,14 @@
         function runWaveComprehensiveTest() {
             logWaveDebug('Starting Wave Analytics Comprehensive Test...');
             
-            if (typeof window.waveAnalytics === 'undefined') {
+            if (typeof window.genieAnalytics === 'undefined') {
                 logWaveResult('Comprehensive Test', false, 'waveAnalytics not available');
                 return;
             }
             
             try {
                 // Test 1: Clear existing state
-                window.waveAnalytics.clearLens();
+                window.genieAnalytics.clearLens();
                 logWaveDebug('Cleared existing lens state');
 
                 // Test 2: Create multiple lenses with different configurations
@@ -968,7 +968,7 @@
 
                 // Add all lenses
                 lenses.forEach(lens => {
-                    window.waveAnalytics.savedLenses.push(lens);
+                    window.genieAnalytics.savedLenses.push(lens);
                 });
                 logWaveDebug(`Added ${lenses.length} test lenses`);
 
@@ -989,13 +989,13 @@
                     logWaveDebug(`Testing lens ${currentTestIndex + 1}: ${lens.name}`);
                     
                     // Clear lens state before loading new lens
-                    window.waveAnalytics.clearLens();
-                    logWaveDebug(`Cleared lens state for ${lens.name}, ignoredRows.size: ${window.waveAnalytics.ignoredRows.size}`);
+                    window.genieAnalytics.clearLens();
+                    logWaveDebug(`Cleared lens state for ${lens.name}, ignoredRows.size: ${window.genieAnalytics.ignoredRows.size}`);
                     
                     // Wait for clear to complete, then load the lens
                     setTimeout(() => {
-                        window.waveAnalytics.loadLens(lens.name);
-                        logWaveDebug(`Loaded lens ${lens.name}, ignoredRows.size: ${window.waveAnalytics.ignoredRows.size}`);
+                        window.genieAnalytics.loadLens(lens.name);
+                        logWaveDebug(`Loaded lens ${lens.name}, ignoredRows.size: ${window.genieAnalytics.ignoredRows.size}`);
                         
                         // Wait for lens to load, then validate
                         setTimeout(() => {
@@ -1022,17 +1022,17 @@
         $(document).ready(function() {
             logWaveDebug('Test page loaded. Wave Analytics component should be available if properly included.');
             
-            // Check if WaveAnalytics class is available
-            if (typeof WaveAnalytics !== 'undefined') {
-                logWaveDebug('WaveAnalytics class found - initializing component');
+            // Check if GenieAnalytics class is available
+            if (typeof GenieAnalytics !== 'undefined') {
+                logWaveDebug('GenieAnalytics class found - initializing component');
                 try {
-                    window.waveAnalytics = new WaveAnalytics('dataviewcontent');
-                    logWaveDebug('Wave Analytics component initialized successfully');
+                    window.genieAnalytics = new GenieAnalytics('dataviewcontent');
+                    logWaveDebug('GenieAnalytics component initialized successfully');
                 } catch (error) {
-                    logWaveDebug('Error initializing Wave Analytics component: ' + error.message);
+                    logWaveDebug('Error initializing GenieAnalytics component: ' + error.message);
                 }
             } else {
-                logWaveDebug('WaveAnalytics class not found - component may not be loaded');
+                logWaveDebug('GenieAnalytics class not found - component may not be loaded');
             }
         });
     </script>

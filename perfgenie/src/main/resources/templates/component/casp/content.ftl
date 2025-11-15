@@ -38,8 +38,12 @@
     </div>
 </div>
 <script type="text/javascript" class="init">
-    const urlParams = new URLSearchParams(window.location.search);
-    let dataHost = urlParams.get('host') || "perf-genie-tracker";
+    // Use window.urlParams to avoid duplicate declaration errors when multiple templates are included
+    if (typeof window.urlParams === 'undefined') {
+        window.urlParams = new URLSearchParams(window.location.search);
+    }
+    // Use window.urlParams directly to avoid duplicate var declarations
+    let dataHost = window.urlParams.get('host') || "perf-genie-tracker";
     function onComment(resulttime, cell){
         getCanaryComments(resulttime, cell);
     }
@@ -164,7 +168,8 @@ $(document).ready(function () {
     const canaryviewtable = new SFDataTable("canaryviewtable");
     canaryviewtable.SFDataTableSetPageSize(25);
     Object.freeze(canaryviewtable);
-    let canaryContextArray = undefined;
+    // canaryContextArray is declared in tabsnew.ftl, don't redeclare here
+    // var canaryContextArray; // Already declared in parent template
     let canaryCommentCounts = undefined;
     let canaryComments = undefined;
     function showCanaryTable(result){

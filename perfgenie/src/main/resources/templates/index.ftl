@@ -41,6 +41,7 @@
     <script src="/js/SFlameGraph.js"></script>
     <script src="/js/progressbar.js"></script>
     <script src="/js/SFDataTable.js"></script>
+    <script src="/js/genieAnalytics-component.js"></script>
     <script src="/js/input.js"></script>
     <link rel="stylesheet" href="/css/SFlameGraph.css">
 

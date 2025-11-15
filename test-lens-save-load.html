@@ -209,13 +209,13 @@
     <script src="/perfgenie/src/main/resources/templates/component/casp/wave-js.ftl"></script>
     
     <script>
-        // Initialize Wave Analytics component
+        // Initialize GenieAnalytics component
         $(document).ready(function() {
-            if (typeof WaveAnalytics !== 'undefined') {
-                window.waveAnalytics = new WaveAnalytics('dataviewcontent');
-                logWaveDebug('Wave Analytics component initialized');
+            if (typeof GenieAnalytics !== 'undefined') {
+                window.genieAnalytics = new GenieAnalytics('dataviewcontent');
+                logWaveDebug('GenieAnalytics component initialized');
             } else {
-                logWaveDebug('Wave Analytics class not found - component may not be loaded');
+                logWaveDebug('GenieAnalytics class not found - component may not be loaded');
             }
         });
         
@@ -241,25 +241,25 @@
             logWaveDebug('Starting Wave Analytics Basic Lens Save/Load Test...');
             
             // Check if waveAnalytics is available
-            if (typeof window.waveAnalytics === 'undefined') {
+            if (typeof window.genieAnalytics === 'undefined') {
                 logWaveResult('Basic Test', false, 'waveAnalytics not available - make sure the component is loaded');
                 return;
             }
             
             try {
                 // Test 1: Check if lens saving works
-                const originalLensCount = window.waveAnalytics.savedLenses.length;
+                const originalLensCount = window.genieAnalytics.savedLenses.length;
                 logWaveDebug(`Original lens count: ${originalLensCount}`);
                 
                 // Test 2: Check if clearAllDOMFilterSelections exists
-                if (typeof window.waveAnalytics.clearAllDOMFilterSelections === 'function') {
+                if (typeof window.genieAnalytics.clearAllDOMFilterSelections === 'function') {
                     logWaveResult('Clear DOM Filters Function', true, 'clearAllDOMFilterSelections function exists');
                 } else {
                     logWaveResult('Clear DOM Filters Function', false, 'clearAllDOMFilterSelections function not found');
                 }
                 
                 // Test 3: Check if restoreDOMFilterStates exists
-                if (typeof window.waveAnalytics.restoreDOMFilterStates === 'function') {
+                if (typeof window.genieAnalytics.restoreDOMFilterStates === 'function') {
                     logWaveResult('Restore DOM Filters Function', true, 'restoreDOMFilterStates function exists');
                 } else {
                     logWaveResult('Restore DOM Filters Function', false, 'restoreDOMFilterStates function not found');
@@ -298,7 +298,7 @@
         function runComplexTest() {
             logDebug('Starting Complex Lens Save/Load Test...');
             
-            if (typeof window.waveAnalytics === 'undefined') {
+            if (typeof window.genieAnalytics === 'undefined') {
                 logResult('Complex Test', false, 'waveAnalytics not available');
                 return;
             }
@@ -332,11 +332,11 @@
                 };
                 
                 // Test saving complex lens
-                window.waveAnalytics.savedLenses.push(complexLens);
-                logDebug(`Added complex lens. Total lenses: ${window.waveAnalytics.savedLenses.length}`);
+                window.genieAnalytics.savedLenses.push(complexLens);
+                logDebug(`Added complex lens. Total lenses: ${window.genieAnalytics.savedLenses.length}`);
                 
                 // Test loading complex lens
-                const loadedLens = window.waveAnalytics.savedLenses.find(l => l.name === 'Complex Test Lens');
+                const loadedLens = window.genieAnalytics.savedLenses.find(l => l.name === 'Complex Test Lens');
                 if (loadedLens) {
                     logResult('Complex Lens Save/Load', true, 'Complex lens saved and found successfully');
                     
@@ -367,15 +367,15 @@
         function runClearTest() {
             logDebug('Starting Clear Lens Test...');
             
-            if (typeof window.waveAnalytics === 'undefined') {
+            if (typeof window.genieAnalytics === 'undefined') {
                 logResult('Clear Test', false, 'waveAnalytics not available');
                 return;
             }
             
             try {
                 // Test clearAllDOMFilterSelections function
-                if (typeof window.waveAnalytics.clearAllDOMFilterSelections === 'function') {
-                    window.waveAnalytics.clearAllDOMFilterSelections();
+                if (typeof window.genieAnalytics.clearAllDOMFilterSelections === 'function') {
+                    window.genieAnalytics.clearAllDOMFilterSelections();
                     logResult('Clear DOM Filters', true, 'clearAllDOMFilterSelections executed without error');
                 } else {
                     logResult('Clear DOM Filters', false, 'clearAllDOMFilterSelections function not available');

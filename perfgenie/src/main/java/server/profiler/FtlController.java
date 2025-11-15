@@ -31,6 +31,15 @@ public class FtlController {
         return "index";
     }
 
+    @GetMapping(path = {"/genie"})
+    public String getGenie(@PathVariable(required = false, name = "page") String page, @AuthenticationPrincipal User user, Model model) {
+        if (enableAuth) {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            model.addAttribute("username", username);
+        }
+        return "genie";
+    }
+
     @GetMapping(path = {"/component/{team}/{page}"})
     public String getComponent(@PathVariable(required = false, name = "team") String team, @PathVariable(required = false, name = "page") String page, @AuthenticationPrincipal User user, Model model) {
         if (enableAuth) {

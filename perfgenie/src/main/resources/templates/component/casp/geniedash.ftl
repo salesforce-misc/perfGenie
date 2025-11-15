@@ -1,13 +1,12 @@
 
+<!-- Chart.js is loaded here, but jQuery and genieDashboard.js are already loaded in canarynew.ftl -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="/plugins/jquery-3.6.1.min.js"></script>
-<script src="/js/genieDashboard.js"></script>
-<div id="dashboard-container"></div>
+<div id="dashboard-container1"></div>
 
 <script>
 $(document).ready(() => {
         // 4. Initialize and render the dashboard
-        const dashboard = new GenieDashboard('dashboard-container');
+        const dashboard1 = new GenieDashboard('dashboard-container1');
 
         //////
         // Override fetchData method to return mock data
@@ -19,7 +18,7 @@ $(document).ready(() => {
         let originalEndValue = null;
         let currentPeriodRange = null;
 
-        dashboard.fetchData1 = async function(endpoint, query, startTimestamp = null, endTimestamp = null) {
+        dashboard1.fetchData1 = async function(endpoint, query, startTimestamp = null, endTimestamp = null) {
             fetchCallCount++;
 
             // Check if this is for a stat panel
@@ -1559,7 +1558,7 @@ $(document).ready(() => {
         };
 
         // 7. Render the dashboard
-        dashboard.render(dashboardJson, inputJson);
+        dashboard1.render(dashboardJson, inputJson);
 
         // 8. Optional: Clean up when done
         //dashboard.destroy();

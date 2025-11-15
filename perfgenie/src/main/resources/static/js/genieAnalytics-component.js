@@ -1,6 +1,6 @@
 /**
- * Wave Analytics Component
- * Extracted from wave-js.ftl
+ * GenieAnalytics Component
+ * Extracted from genieAnalytics-js.ftl
  * Copyright (c) 2022, Salesforce.com, Inc.
  * All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause
@@ -10,18 +10,29 @@
 let canaryLenses = "";
 let lensLoadingRequested = false;
 let expressionsLoadingRequested = false;
-
+let defaultDataHost="perf-genie-test45";
 function getCanaryLenses() {
+    // Get dataHost from URL params or window.dataHost, with fallback
+    let dataHost = defaultDataHost;
+    if (typeof dataHost !== "undefined") {
+        ldataHost = dataHost;
+    }
+    if (typeof window.urlParams !== 'undefined' && window.urlParams) {
+        dataHost = window.urlParams.get('host') || dataHost;
+    } else if (typeof window.dataHost !== 'undefined' && window.dataHost) {
+        dataHost = window.dataHost;
+    }
+    
     URL = "/component/casp/v1/getlenses/"+dataHost+"/?metadata_query=" + encodeURIComponent("type=" + "perfswat");
     showSpinner("spinner1");
     
     // Set loading state for lens dropdown
     lensLoadingRequested = true;
-    if (window.waveAnalytics) {
+    if (window.genieAnalytics) {
         console.log('Setting lens dropdown loading state to true');
-        window.waveAnalytics.setLensDropdownLoading(true);
+        window.genieAnalytics.setLensDropdownLoading(true);
     } else {
-        console.log('waveAnalytics not available yet, will set loading state later');
+        console.log('genieAnalytics not available yet, will set loading state later');
     }
     
     $.ajax({
@@ -106,22 +117,22 @@ function getCanaryLenses() {
                     return lensWithoutTimestamp;
                 });
                 
-                // Update the wave analytics saved lenses
-                if (window.waveAnalytics) {
-                    window.waveAnalytics.savedLenses = deduplicatedLenses;
+                // Update the genieAnalytics saved lenses
+                if (window.genieAnalytics) {
+                    window.genieAnalytics.savedLenses = deduplicatedLenses;
                     
                     // Show appropriate status based on result
                     if (deduplicatedLenses.length === 0) {
-                        window.waveAnalytics.setLensDropdownLoading(true, 'empty');
+                        window.genieAnalytics.setLensDropdownLoading(true, 'empty');
                         // Auto-clear after 2 seconds
                         setTimeout(() => {
-                            window.waveAnalytics.setLensDropdownLoading(false);
+                            window.genieAnalytics.setLensDropdownLoading(false);
                         }, 2000);
                     } else {
-                        window.waveAnalytics.setLensDropdownLoading(true, 'success');
+                        window.genieAnalytics.setLensDropdownLoading(true, 'success');
                         // Auto-clear after 1 second
                         setTimeout(() => {
-                            window.waveAnalytics.setLensDropdownLoading(false);
+                            window.genieAnalytics.setLensDropdownLoading(false);
                         }, 1000);
                     }
                     
@@ -137,11 +148,11 @@ function getCanaryLenses() {
             hideSpinner("spinner1");
             
             // Show error status
-            if (window.waveAnalytics) {
-                window.waveAnalytics.setLensDropdownLoading(true, 'error');
+            if (window.genieAnalytics) {
+                window.genieAnalytics.setLensDropdownLoading(true, 'error');
                 // Auto-clear after 3 seconds
                 setTimeout(() => {
-                    window.waveAnalytics.setLensDropdownLoading(false);
+                    window.genieAnalytics.setLensDropdownLoading(false);
                 }, 3000);
             }
             lensLoadingRequested = false;
@@ -150,13 +161,21 @@ function getCanaryLenses() {
 }
 
 function getCanaryExpressions() {
+    // Get dataHost from URL params or window.dataHost, with fallback
+    let dataHost = defaultDataHost;
+    if (typeof window.urlParams !== 'undefined' && window.urlParams) {
+        dataHost = window.urlParams.get('host') || dataHost;
+    } else if (typeof window.dataHost !== 'undefined' && window.dataHost) {
+        dataHost = window.dataHost;
+    }
+    
     URL = "/component/casp/v1/getexpressions/"+dataHost+"/?metadata_query=" + encodeURIComponent("type=" + "expression");
     showSpinner("spinner1");
     
     // Set loading state for derived metrics dropdown
     expressionsLoadingRequested = true;
-    if (window.waveAnalytics) {
-        window.waveAnalytics.setDerivedMetricsDropdownLoading(true);
+    if (window.genieAnalytics) {
+        window.genieAnalytics.setDerivedMetricsDropdownLoading(true);
     }
     
     $.ajax({
@@ -241,22 +260,22 @@ function getCanaryExpressions() {
                     return expressionWithoutTimestamp;
                 });
                 
-                // Update the wave analytics saved expressions
-                if (window.waveAnalytics) {
-                    window.waveAnalytics.savedExpressions = deduplicatedExpressions;
+                // Update the genieAnalytics saved expressions
+                if (window.genieAnalytics) {
+                    window.genieAnalytics.savedExpressions = deduplicatedExpressions;
                     
                     // Show appropriate status based on result
                     if (deduplicatedExpressions.length === 0) {
-                        window.waveAnalytics.setDerivedMetricsDropdownLoading(true, 'empty');
+                        window.genieAnalytics.setDerivedMetricsDropdownLoading(true, 'empty');
                         // Auto-clear after 2 seconds
                         setTimeout(() => {
-                            window.waveAnalytics.setDerivedMetricsDropdownLoading(false);
+                            window.genieAnalytics.setDerivedMetricsDropdownLoading(false);
                         }, 2000);
                     } else {
-                        window.waveAnalytics.setDerivedMetricsDropdownLoading(true, 'success');
+                        window.genieAnalytics.setDerivedMetricsDropdownLoading(true, 'success');
                         // Auto-clear after 1 second
                         setTimeout(() => {
-                            window.waveAnalytics.setDerivedMetricsDropdownLoading(false);
+                            window.genieAnalytics.setDerivedMetricsDropdownLoading(false);
                         }, 1000);
                     }
                     
@@ -272,11 +291,11 @@ function getCanaryExpressions() {
             hideSpinner("spinner1");
             
             // Show error status
-            if (window.waveAnalytics) {
-                window.waveAnalytics.setDerivedMetricsDropdownLoading(true, 'error');
+            if (window.genieAnalytics) {
+                window.genieAnalytics.setDerivedMetricsDropdownLoading(true, 'error');
                 // Auto-clear after 3 seconds
                 setTimeout(() => {
-                    window.waveAnalytics.setDerivedMetricsDropdownLoading(false);
+                    window.genieAnalytics.setDerivedMetricsDropdownLoading(false);
                 }, 3000);
             }
             expressionsLoadingRequested = false;
@@ -343,8 +362,8 @@ function saveExpressionInBackend(expressionConfigString, timestamp,expressionnam
  * Handles all missing item operations consistently across refresh, lens loading, and derived metrics loading
  */
 class MissingItemsManager {
-    constructor(waveAnalytics) {
-        this.wave = waveAnalytics;
+    constructor(genieAnalytics) {
+        this.genieAnalytics = genieAnalytics;
         this.missingDimensions = [];
         this.missingMetrics = [];
         this.missingDerivedMetrics = [];
@@ -376,9 +395,9 @@ class MissingItemsManager {
      * Determine availability of a derived expression based on dependency existence only.
      */
     isDerivedExpressionAvailable(name) {
-        const expr = this.wave.expressions[name];
+        const expr = this.genieAnalytics.expressions[name];
         if (!expr || expr.formula === 'Missing from current dataset') return false;
-        const dataColumns = this.wave.parsedData.length > 0 ? Object.keys(this.wave.parsedData[0]) : [];
+        const dataColumns = this.genieAnalytics.parsedData.length > 0 ? Object.keys(this.genieAnalytics.parsedData[0]) : [];
         const deps = this.getExpressionDependencies(expr);
         if (deps.length === 0) return false; // conservative: treat unknown as missing
         return deps.every(d => dataColumns.includes(d));
@@ -388,8 +407,8 @@ class MissingItemsManager {
      * Return current data columns from parsed data and simple availability helpers
      */
     getDataColumns() {
-        return this.wave.parsedData && this.wave.parsedData.length > 0
-            ? Object.keys(this.wave.parsedData[0])
+        return this.genieAnalytics.parsedData && this.genieAnalytics.parsedData.length > 0
+            ? Object.keys(this.genieAnalytics.parsedData[0])
             : [];
     }
 
@@ -409,33 +428,33 @@ class MissingItemsManager {
 	 */
 	rebuildCategoriesPreservingSelections() {
 		const dataCols = this.getDataColumns();
-		const selectedDimensions = new Set(this.wave.selectedDimensions);
-		const selectedMetrics = new Set(this.wave.selectedMetrics);
-		const expressionNames = new Set(Object.keys(this.wave.expressions));
+		const selectedDimensions = new Set(this.genieAnalytics.selectedDimensions);
+		const selectedMetrics = new Set(this.genieAnalytics.selectedMetrics);
+		const expressionNames = new Set(Object.keys(this.genieAnalytics.expressions));
 
 		// Dimensions category: keep union of data columns and selected dims; prune unselected-unavailable
 		const combinedDimensions = Array.from(new Set([
-			...this.wave.dimensions.filter(d => dataCols.includes(d)),
-			...this.wave.selectedDimensions,
+			...this.genieAnalytics.dimensions.filter(d => dataCols.includes(d)),
+			...this.genieAnalytics.selectedDimensions,
 		]));
-		this.wave.dimensions = combinedDimensions.filter(d => selectedDimensions.has(d) || dataCols.includes(d));
+		this.genieAnalytics.dimensions = combinedDimensions.filter(d => selectedDimensions.has(d) || dataCols.includes(d));
 
 		// Metrics category: regular metrics only (exclude any expression names)
-		const dataRegularMetrics = this.wave.metrics.filter(m => dataCols.includes(m) && !expressionNames.has(m));
-		const selectedRegularMetrics = this.wave.selectedMetrics.filter(m => !expressionNames.has(m));
+		const dataRegularMetrics = this.genieAnalytics.metrics.filter(m => dataCols.includes(m) && !expressionNames.has(m));
+		const selectedRegularMetrics = this.genieAnalytics.selectedMetrics.filter(m => !expressionNames.has(m));
 		const combinedMetrics = Array.from(new Set([...dataRegularMetrics, ...selectedRegularMetrics]));
-		this.wave.metrics = combinedMetrics.filter(m => selectedMetrics.has(m) || dataCols.includes(m));
+		this.genieAnalytics.metrics = combinedMetrics.filter(m => selectedMetrics.has(m) || dataCols.includes(m));
 
 		// Derived metrics category is represented by expressions; prune unselected and unavailable placeholders
 		const pruned = {};
-		Object.keys(this.wave.expressions).forEach(name => {
+		Object.keys(this.genieAnalytics.expressions).forEach(name => {
 			const isSelected = selectedMetrics.has(name);
 			const isAvail = this.isDerivedExpressionAvailable(name);
 			if (isSelected || isAvail) {
-				pruned[name] = this.wave.expressions[name];
+				pruned[name] = this.genieAnalytics.expressions[name];
 			}
 		});
-		this.wave.expressions = pruned;
+		this.genieAnalytics.expressions = pruned;
 	}
 
 	/**
@@ -443,17 +462,17 @@ class MissingItemsManager {
 	 */
 	recomputeMissingFromSelections() {
 		const dataCols = this.getDataColumns();
-		const expressionNames = new Set(Object.keys(this.wave.expressions));
+		const expressionNames = new Set(Object.keys(this.genieAnalytics.expressions));
 
 		// Dimensions
-		this.missingDimensions = this.wave.selectedDimensions.filter(d => !dataCols.includes(d));
+		this.missingDimensions = this.genieAnalytics.selectedDimensions.filter(d => !dataCols.includes(d));
 
 		// Regular metrics
-		const selectedRegular = this.wave.selectedMetrics.filter(m => !expressionNames.has(m));
+		const selectedRegular = this.genieAnalytics.selectedMetrics.filter(m => !expressionNames.has(m));
 		this.missingMetrics = selectedRegular.filter(m => !dataCols.includes(m));
 
 		// Derived metrics
-		const selectedDerived = this.wave.selectedMetrics.filter(m => expressionNames.has(m));
+		const selectedDerived = this.genieAnalytics.selectedMetrics.filter(m => expressionNames.has(m));
 		this.missingDerivedMetrics = selectedDerived.filter(name => !this.isDerivedExpressionAvailable(name));
 	}
 
@@ -464,7 +483,7 @@ class MissingItemsManager {
         this.missingDimensions = [];
         this.missingMetrics = [];
         this.missingDerivedMetrics = [];
-        this.wave.hideMissingItemsIndicators();
+        this.genieAnalytics.hideMissingItemsIndicators();
     }
 
     /**
@@ -557,14 +576,14 @@ class MissingItemsManager {
      */
     clearAvailableItems() {
         // Do not clear missing state when suppressed (e.g., during lens load)
-        if (this.wave.suppressMissingClear) {
+        if (this.genieAnalytics.suppressMissingClear) {
             return;
         }
         // Use actual data columns for availability checks
-        const availableDimensions = this.wave.parsedData.length > 0 ? Object.keys(this.wave.parsedData[0]) : [];
-        const availableMetrics = this.wave.parsedData.length > 0 ? Object.keys(this.wave.parsedData[0]) : [];
-        const availableExpressions = Object.keys(this.wave.expressions).filter(name => {
-            const expr = this.wave.expressions[name];
+        const availableDimensions = this.genieAnalytics.parsedData.length > 0 ? Object.keys(this.genieAnalytics.parsedData[0]) : [];
+        const availableMetrics = this.genieAnalytics.parsedData.length > 0 ? Object.keys(this.genieAnalytics.parsedData[0]) : [];
+        const availableExpressions = Object.keys(this.genieAnalytics.expressions).filter(name => {
+            const expr = this.genieAnalytics.expressions[name];
             // Treat as available if expression is defined and not a placeholder
             return !!expr && expr.formula !== 'Missing from current dataset';
         });
@@ -593,22 +612,22 @@ class MissingItemsManager {
     addMissingItemsToArrays() {
         // Add missing dimensions to dimensions array
         this.missingDimensions.forEach(dim => {
-            if (!this.wave.dimensions.includes(dim)) {
-                this.wave.dimensions.push(dim);
+            if (!this.genieAnalytics.dimensions.includes(dim)) {
+                this.genieAnalytics.dimensions.push(dim);
             }
         });
 
         // Add missing metrics to metrics array
         this.missingMetrics.forEach(metric => {
-            if (!this.wave.metrics.includes(metric)) {
-                this.wave.metrics.push(metric);
+            if (!this.genieAnalytics.metrics.includes(metric)) {
+                this.genieAnalytics.metrics.push(metric);
             }
         });
 
         // Add missing derived metrics to expressions object
         this.missingDerivedMetrics.forEach(metric => {
-            if (!this.wave.expressions[metric]) {
-                this.wave.expressions[metric] = {
+            if (!this.genieAnalytics.expressions[metric]) {
+                this.genieAnalytics.expressions[metric] = {
                     formula: 'Missing from current dataset',
                     parts: [],
                     description: 'This derived metric is missing from the current dataset'
@@ -622,23 +641,23 @@ class MissingItemsManager {
      */
     updateVisualIndicators() {
         // Update drop zones
-        this.wave.updateDropZone('dimensionsArea', this.wave.selectedDimensions);
-        this.wave.updateDropZone('metricsArea', this.wave.selectedMetrics);
+        this.genieAnalytics.updateDropZone('dimensionsArea', this.genieAnalytics.selectedDimensions);
+        this.genieAnalytics.updateDropZone('metricsArea', this.genieAnalytics.selectedMetrics);
         
         // Update field palette
-        this.wave.updateFieldItemIcons();
+        this.genieAnalytics.updateFieldItemIcons();
         
         // Update missing items indicators
-        this.wave.showMissingItemsIndicators();
+        this.genieAnalytics.showMissingItemsIndicators();
     }
 
     /**
      * Get missing items counts for indicators (only items used in view)
      */
     getMissingCountsForIndicators() {
-        const usedMissingDimensions = this.missingDimensions.filter(dim => this.wave.selectedDimensions.includes(dim));
-        const usedMissingMetrics = this.missingMetrics.filter(metric => this.wave.selectedMetrics.includes(metric));
-        const usedMissingDerivedMetrics = this.missingDerivedMetrics.filter(metric => this.wave.selectedMetrics.includes(metric));
+        const usedMissingDimensions = this.missingDimensions.filter(dim => this.genieAnalytics.selectedDimensions.includes(dim));
+        const usedMissingMetrics = this.missingMetrics.filter(metric => this.genieAnalytics.selectedMetrics.includes(metric));
+        const usedMissingDerivedMetrics = this.missingDerivedMetrics.filter(metric => this.genieAnalytics.selectedMetrics.includes(metric));
 
         return {
             dimensions: usedMissingDimensions.length,
@@ -648,10 +667,20 @@ class MissingItemsManager {
     }
 }
 
-// Wave Analytics Lens Builder Component
-class WaveAnalytics {
+// GenieAnalytics Lens Builder Component
+class GenieAnalytics {
     constructor(containerId) {
+        this.containerId = containerId;
         this.container = document.getElementById(containerId);
+        
+        if (!this.container) {
+            throw new Error(`Container with ID '${containerId}' not found`);
+        }
+        
+        // Create instance identifier for unique IDs (similar to GenieDashboard pattern)
+        // Use containerId as base, sanitize it to be a valid ID prefix
+        this.instanceId = this.sanitizeId(containerId);
+        
         this.parsedData = [];
         this.filteredData = [];
         this.currentFilters = {};
@@ -691,6 +720,10 @@ class WaveAnalytics {
         this.expressions = {}; // Store expression definitions: {expressionName: {formula: string, parts: array}}
         this.savedExpressions = []; // Array to store saved expression configurations
         
+        // Instance-specific state for lenses and expressions
+        this.instanceLensLoadingRequested = false;
+        this.instanceExpressionsLoadingRequested = false;
+        
         // Initialize missing items manager
         this.missingItemsManager = new MissingItemsManager(this);
         // Suppress clearing missing state during sensitive flows (e.g., lens load)
@@ -719,8 +752,39 @@ class WaveAnalytics {
         this.filtersDZMap.set('metric', new Map());
         this.filtersDZMap.set('derived', new Map());
         
-        console.log('DEBUG: WaveAnalytics constructor called, calling init()');
+        console.log('DEBUG: GenieAnalytics constructor called, calling init()');
         this.init();
+    }
+
+    /**
+     * Sanitize containerId to create a valid instance ID prefix
+     * Similar to GenieDashboard's instance name handling
+     */
+    sanitizeId(id) {
+        if (!id) {
+            return 'genieAnalytics-analytics';
+        }
+        // Remove any invalid characters for IDs (keep alphanumeric, hyphens, underscores)
+        return id.replace(/[^a-zA-Z0-9_-]/g, '-').replace(/^-+|-+$/g, '') || 'genieAnalytics-analytics';
+    }
+
+    /**
+     * Generate instance-specific ID
+     * @param {string} baseId - Base ID name (e.g., 'fieldPalette', 'lensChart')
+     * @returns {string} Instance-specific ID
+     */
+    getInstanceId(baseId) {
+        return `${this.instanceId}-${baseId}`;
+    }
+
+    /**
+     * Get element by base ID (uses instance-specific ID)
+     * @param {string} baseId - Base ID name
+     * @returns {HTMLElement|null} Element or null if not found
+     */
+    getElementById(baseId) {
+        const instanceId = this.ids && this.ids[baseId] ? this.ids[baseId] : this.getInstanceId(baseId);
+        return this.container ? this.container.querySelector('#' + instanceId) : null;
     }
 
     /**
@@ -1003,13 +1067,24 @@ class WaveAnalytics {
      * Expand chart width by adding current container width
      */
     expandChartWidth() {
-        const lensChart = document.getElementById('lensChart');
-        const lensDisplay = document.querySelector('.lens-display');
-        const lensCanvas = document.querySelector('.lens-canvas');
-        const multiplierInput = document.getElementById('widthMultiplier');
+        const lensChart = this.getElementById('lensChart');
+        const lensDisplay = this.container ? this.container.querySelector('.lens-display') : null;
+        const lensCanvas = this.container ? this.container.querySelector('.lens-canvas') : null;
+        const multiplierInput = this.getElementById('widthMultiplier');
         
+        // Defensive check: ensure all required elements exist before proceeding
         if (!lensChart || !lensDisplay || !lensCanvas) {
-            console.log('Required elements not found');
+            console.log('expandChartWidth: Required elements not found', {
+                lensChart: !!lensChart,
+                lensDisplay: !!lensDisplay,
+                lensCanvas: !!lensCanvas
+            });
+            return;
+        }
+        
+        // Additional defensive check: ensure elements have style property
+        if (!lensChart.style || !lensDisplay.style || !lensCanvas.style) {
+            console.warn('expandChartWidth: Elements found but style property is not available');
             return;
         }
         
@@ -1020,6 +1095,12 @@ class WaveAnalytics {
         const actualMultiplier = this.chartExpandedWidth === 0 ? 1 : multiplier;
         
         // Get lens-display width as the base increment amount
+        // Additional check before calling getBoundingClientRect
+        if (!lensDisplay.getBoundingClientRect) {
+            console.warn('expandChartWidth: getBoundingClientRect not available');
+            return;
+        }
+        
         const lensDisplayRect = lensDisplay.getBoundingClientRect();
         const lensDisplayWidth = lensDisplayRect.width;
         const incrementWidth = lensDisplayWidth * actualMultiplier;
@@ -1032,19 +1113,27 @@ class WaveAnalytics {
         console.log('After expansion - chartExpandedWidth:', this.chartExpandedWidth);
         
         // Apply expanded width to lensChart container
+        if (lensChart && lensChart.style) {
         lensChart.style.width = this.chartExpandedWidth + 'px';
         lensChart.style.minWidth = this.chartExpandedWidth + 'px';
+        }
         
         // Add horizontal scrolling to lens-display
+        if (lensDisplay && lensDisplay.style) {
         lensDisplay.style.overflowX = 'auto';
         lensDisplay.style.overflowY = 'hidden';
+        }
         
         // Ensure lens-canvas doesn't expand by setting fixed width
+        if (lensCanvas && lensCanvas.style) {
         if (!lensCanvas.style.width) {
+                if (lensCanvas.getBoundingClientRect) {
             const lensCanvasRect = lensCanvas.getBoundingClientRect();
             lensCanvas.style.width = lensCanvasRect.width - 2 + 'px';
             lensCanvas.style.flex = '0 0 auto'; // Don't grow or shrink
             return;
+                }
+            }
         }
         
         // Re-render chart with new width
@@ -1059,13 +1148,24 @@ class WaveAnalytics {
      * Reduce chart width by removing lens-display width
      */
     reduceChartWidth() {
-        const lensChart = document.getElementById('lensChart');
-        const lensDisplay = document.querySelector('.lens-display');
-        const lensCanvas = document.querySelector('.lens-canvas');
-        const multiplierInput = document.getElementById('widthMultiplier');
+        const lensChart = this.getElementById('lensChart');
+        const lensDisplay = this.container ? this.container.querySelector('.lens-display') : null;
+        const lensCanvas = this.container ? this.container.querySelector('.lens-canvas') : null;
+        const multiplierInput = this.getElementById('widthMultiplier');
         
+        // Defensive check: ensure all required elements exist before proceeding
         if (!lensChart || !lensDisplay || !lensCanvas) {
-            console.log('Required elements not found');
+            console.log('reduceChartWidth: Required elements not found', {
+                lensChart: !!lensChart,
+                lensDisplay: !!lensDisplay,
+                lensCanvas: !!lensCanvas
+            });
+            return;
+        }
+        
+        // Additional defensive check: ensure elements have style property
+        if (!lensChart.style || !lensDisplay.style || !lensCanvas.style) {
+            console.warn('reduceChartWidth: Elements found but style property is not available');
             return;
         }
         
@@ -1073,6 +1173,12 @@ class WaveAnalytics {
         const multiplier = multiplierInput ? parseFloat(multiplierInput.value) || 1 : 1;
         
         // Get lens-display width as the base reduction amount
+        // Additional check before calling getBoundingClientRect
+        if (!lensDisplay.getBoundingClientRect) {
+            console.warn('reduceChartWidth: getBoundingClientRect not available');
+            return;
+        }
+        
         const lensDisplayRect = lensDisplay.getBoundingClientRect();
         const lensDisplayWidth = lensDisplayRect.width;
         const reduceWidth = lensDisplayWidth * multiplier;
@@ -1108,21 +1214,22 @@ class WaveAnalytics {
      */
     resetChartWidth() {
         this.chartExpandedWidth = 0;
-        const lensChart = document.getElementById('lensChart');
-        const lensDisplay = document.querySelector('.lens-display');
-        const lensCanvas = document.querySelector('.lens-canvas');
+        const lensChart = this.getElementById('lensChart');
+        const lensDisplay = this.container ? this.container.querySelector('.lens-display') : null;
+        const lensCanvas = this.container ? this.container.querySelector('.lens-canvas') : null;
         
-        if (lensChart) {
+        // Defensive checks: ensure elements exist and have style property before accessing
+        if (lensChart && lensChart.style) {
             lensChart.style.width = '';
             lensChart.style.minWidth = '';
         }
         
-        if (lensDisplay) {
+        if (lensDisplay && lensDisplay.style) {
             lensDisplay.style.overflowX = '';
             lensDisplay.style.overflowY = '';
         }
         
-        if (lensCanvas) {
+        if (lensCanvas && lensCanvas.style) {
             lensCanvas.style.width = '';
             lensCanvas.style.flex = '';
         }
@@ -1137,6 +1244,28 @@ class WaveAnalytics {
 
     async init() {
         console.log('DEBUG: init() method called');
+        
+        // Ensure container exists and is ready
+        if (!this.container) {
+            console.error('init: Container not found');
+            this.showErrorState(new Error('Container element not found. Please ensure the container ID is correct.'));
+            return;
+        }
+        
+        // Wait for container to be in the DOM
+        // This helps when the component is initialized before the accordion is expanded
+        // Note: We don't check visibility (offsetParent) because the container might be in a collapsed accordion
+        let retries = 0;
+        const maxRetries = 10;
+        while (retries < maxRetries && !document.body.contains(this.container)) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+            retries++;
+        }
+        
+        if (retries >= maxRetries && !document.body.contains(this.container)) {
+            console.warn('init: Container not found in DOM after waiting, but proceeding anyway');
+        }
+        
         this.showLoadingState();
         try {
             console.log('DEBUG: About to call loadData()');
@@ -1150,7 +1279,7 @@ class WaveAnalytics {
             this.updateLensDropdown();
             this.updateExpressionDropdown();
             
-            // Set loading states if they were requested before WaveAnalytics was available
+            // Set loading states if they were requested before GenieAnalytics was available
             if (lensLoadingRequested) {
                 console.log('Setting delayed lens dropdown loading state');
                 this.setLensDropdownLoading(true);
@@ -1171,16 +1300,45 @@ class WaveAnalytics {
                 this.setupSearchInput();
             }, 100);
         } catch (error) {
+            console.error('init: Error during initialization:', error);
             this.showErrorState(error);
         }
     }
 
     setupSearchInput() {
-        console.log('DEBUG: setupSearchInput() called');
-        const searchInput = document.getElementById('waveSearchInput');
-        console.log('DEBUG: waveSearchInput element found:', !!searchInput);
-        console.log('DEBUG: waveSearchInput element:', searchInput);
-        console.log('DEBUG: waveSearchInput placeholder:', searchInput ? searchInput.placeholder : 'N/A');
+        // First check if container is in DOM
+        if (!this.container || !document.body.contains(this.container)) {
+            console.warn('DEBUG: Container not in DOM, retrying setupSearchInput in 500ms');
+            setTimeout(() => {
+                if (this.container && document.body.contains(this.container)) {
+                    this.setupSearchInput();
+                } else {
+                    console.warn('DEBUG: Container still not in DOM after retry');
+                }
+            }, 500);
+            return;
+        }
+        
+        // Also check if accordion is expanded
+        const accordion = this.container.closest('.modern-accordion');
+        const accordionContent = this.container.closest('.modern-accordion-content');
+        const isAccordionExpanded = accordion && (
+            accordion.classList.contains('visible') || 
+            (accordionContent && accordionContent.style.display !== 'none' && accordionContent.offsetParent !== null && accordionContent.offsetHeight > 0)
+        );
+        
+        if (!isAccordionExpanded) {
+            setTimeout(() => {
+                this.setupSearchInput();
+            }, 300);
+            return;
+        }
+        
+        // Search within container, not globally - use instance-specific ID
+        const searchInput = this.getElementById('genieAnalyticsSearchInput');
+        console.log('DEBUG: genieAnalyticsSearchInput element found:', !!searchInput);
+        console.log('DEBUG: genieAnalyticsSearchInput element:', searchInput);
+        console.log('DEBUG: genieAnalyticsSearchInput placeholder:', searchInput ? searchInput.placeholder : 'N/A');
         
         // Check if already has event listeners (prevent duplicates)
         if (searchInput && searchInput.hasAttribute('data-search-setup')) {
@@ -1188,7 +1346,43 @@ class WaveAnalytics {
             return;
         }
         
+        // Verify element is stable by checking multiple times
         if (searchInput) {
+            let stableCount = 0;
+            const checkStability = () => {
+                const checkInput = this.getElementById('genieAnalyticsSearchInput');
+                if (checkInput && checkInput === searchInput) {
+                    stableCount++;
+                    if (stableCount < 3) {
+                        setTimeout(checkStability, 50);
+                        return;
+                    }
+                } else {
+                    // Element changed or removed, retry setup
+                    console.warn('DEBUG: Search input not stable, retrying setup');
+                    setTimeout(() => this.setupSearchInput(), 200);
+                    return;
+                }
+                
+                // Element is stable, proceed with setup
+                this.setupSearchInputElement(searchInput);
+            };
+            
+            // Start stability check
+            setTimeout(checkStability, 50);
+        } else {
+            // Element not found, use existing retry logic
+            this.setupSearchInputRetry();
+        }
+    }
+    
+    setupSearchInputElement(searchInput) {
+        if (!searchInput) {
+            this.setupSearchInputRetry();
+            return;
+        }
+        
+        try {
             console.log('DEBUG: currentFilters.search:', this.currentFilters.search);
             // Set initial value if currentFilters.search exists
             if (this.currentFilters.search) {
@@ -1206,8 +1400,8 @@ class WaveAnalytics {
                     this.applyFilters();
                     
                     // Visual feedback - applied state
-                    searchInput.classList.remove('wave-search-pending');
-                    searchInput.classList.add('wave-search-applied');
+                    searchInput.classList.remove('genieAnalytics-search-pending');
+                    searchInput.classList.add('genieAnalytics-search-applied');
                     console.log('DEBUG: Applied visual state - classes:', searchInput.className);
                 }
             });
@@ -1218,11 +1412,11 @@ class WaveAnalytics {
                 
                 // Visual feedback - pending state
                 if (e.target.value.trim() !== '') {
-                    searchInput.classList.remove('wave-search-applied');
-                    searchInput.classList.add('wave-search-pending');
+                    searchInput.classList.remove('genieAnalytics-search-applied');
+                    searchInput.classList.add('genieAnalytics-search-pending');
                     console.log('DEBUG: Added pending state - classes:', searchInput.className);
                 } else {
-                    searchInput.classList.remove('wave-search-pending', 'wave-search-applied');
+                    searchInput.classList.remove('genieAnalytics-search-pending', 'genieAnalytics-search-applied');
                     console.log('DEBUG: Removed visual states - classes:', searchInput.className);
                 }
             });
@@ -1230,8 +1424,14 @@ class WaveAnalytics {
             // Mark as setup to prevent duplicate event listeners
             searchInput.setAttribute('data-search-setup', 'true');
             console.log('DEBUG: Search input setup completed');
-        } else {
-            console.warn('DEBUG: Search input not found during setup');
+        } catch (error) {
+            console.error('DEBUG: Error setting up search input:', error);
+            this.setupSearchInputRetry();
+        }
+    }
+    
+    setupSearchInputRetry() {
+        console.warn('DEBUG: Search input not found during setup, retrying...');
             console.log('DEBUG: Available elements with id containing "search":');
             const searchElements = document.querySelectorAll('[id*="search"]');
             searchElements.forEach((el, index) => {
@@ -1239,16 +1439,31 @@ class WaveAnalytics {
             });
             
             // Try to find search input with a delay (in case DOM isn't ready)
+        // Also check if accordion is expanded
             setTimeout(() => {
-                const delayedSearchInput = document.getElementById('waveSearchInput');
-                if (delayedSearchInput) {
-                    console.log('DEBUG: Found waveSearchInput on retry');
+            if (!this.container || !document.body.contains(this.container)) {
+                console.warn('DEBUG: Container not in DOM during retry');
+                return;
+            }
+            
+            const accordion = this.container.closest('.modern-accordion');
+            const accordionContent = this.container.closest('.modern-accordion-content');
+            const isAccordionExpanded = accordion && (
+                accordion.classList.contains('visible') || 
+                (accordionContent && accordionContent.style.display !== 'none' && accordionContent.offsetParent !== null && accordionContent.offsetHeight > 0)
+            );
+            
+            const delayedSearchInput = this.getElementById('genieAnalyticsSearchInput');
+            if (delayedSearchInput && isAccordionExpanded) {
+                console.log('DEBUG: Found genieAnalyticsSearchInput on retry, accordion expanded');
                     this.setupSearchInput();
                 } else {
-                    console.warn('DEBUG: waveSearchInput still not found after retry');
+                console.warn('DEBUG: genieAnalyticsSearchInput still not found after retry or accordion not expanded', {
+                    found: !!delayedSearchInput,
+                    accordionExpanded: isAccordionExpanded
+                });
                 }
             }, 500);
-        }
     }
 
     async loadData() {
@@ -1282,9 +1497,19 @@ class WaveAnalytics {
         if(this.dataFetchFunction && typeof this.dataFetchFunction === 'function'){
             try{
                 CSVData = this.dataFetchFunction();
+                if (!CSVData || CSVData.trim() === '') {
+                    console.warn("fetchCSVDataAndParse: dataFetchFunction returned empty data");
+                    // Don't throw error, just log - allow component to render with empty data
+                    this.parsedData = [];
+                    this.filteredData = [];
+                    return CSVData;
+                }
                 this.parseCSV(CSVData);
             }catch(e){
-                console.log("Error in dataFetchFunction: " + e);
+                console.error("Error in dataFetchFunction: " + e);
+                // Don't throw - allow component to render with empty data
+                this.parsedData = [];
+                this.filteredData = [];
             }
         }else{
             console.log("skip data fetch, dataFetchFunction function not set");
@@ -1293,8 +1518,28 @@ class WaveAnalytics {
     }
 
     parseCSV(csvData) {
+        if (!csvData || typeof csvData !== 'string' || csvData.trim() === '') {
+            console.warn("parseCSV: Empty or invalid CSV data provided");
+            this.parsedData = [];
+            this.filteredData = [];
+            return;
+        }
+        
         const lines = csvData.trim().split('\n');
+        if (lines.length === 0) {
+            console.warn("parseCSV: No lines in CSV data");
+            this.parsedData = [];
+            this.filteredData = [];
+            return;
+        }
+        
         const headers = lines[0].split(',').map(h => h.trim());
+        if (headers.length === 0) {
+            console.warn("parseCSV: No headers in CSV data");
+            this.parsedData = [];
+            this.filteredData = [];
+            return;
+        }
         
         this.parsedData = lines.slice(1).map(line => {
             const values = line.split(',').map(v => v.trim());
@@ -1455,7 +1700,6 @@ class WaveAnalytics {
             
             const epochMs = date.getTime();
             
-            console.log('Converted simple timestamp:', timestampStr, 'to epoch:', epochMs);
             return epochMs;
         } catch (error) {
             console.warn('Error converting simple timestamp to epoch:', error);
@@ -1569,11 +1813,11 @@ class WaveAnalytics {
             return;
         }
         this.container.innerHTML = 
-            '<div class="wave-analytics-container">' +
-                '<div class="wave-header">' +
+            '<div class="genieAnalytics-analytics-container">' +
+                '<div class="genieAnalytics-header">' +
                     '<h2>Performance Analytics Dashboard</h2>' +
                 '</div>' +
-                '<div class="wave-content">' +
+                '<div class="genieAnalytics-content">' +
                     '<div class="loading-state">' +
                         '<div class="spinner"></div>' +
                         '<p>Loading performance data...</p>' +
@@ -1587,23 +1831,54 @@ class WaveAnalytics {
             console.warn('showErrorState: Container not found, cannot show error state');
             return;
         }
+        
+        // Log what exists when error is shown
+        const accordion = this.container.closest('.modern-accordion');
+        const accordionContent = this.container.closest('.modern-accordion-content');
+        console.error('showErrorState: Error occurred', {
+            errorMessage: error.message,
+            errorStack: error.stack,
+            containerInDOM: document.body.contains(this.container),
+            accordion: !!accordion,
+            accordionVisible: accordion?.classList.contains('visible'),
+            accordionContentHeight: accordionContent?.offsetHeight,
+            dataFetchFunction: !!this.dataFetchFunction,
+            parsedDataLength: this.parsedData?.length || 0,
+            containerId: this.container.id
+        });
+        
         this.container.innerHTML = 
-            '<div class="wave-analytics-container">' +
-                '<div class="wave-header">' +
+            '<div class="genieAnalytics-analytics-container">' +
+                '<div class="genieAnalytics-header">' +
                     '<h2>Performance Analytics Dashboard</h2>' +
                 '</div>' +
-                '<div class="wave-content">' +
+                '<div class="genieAnalytics-content">' +
                     '<div class="error-state">' +
                         '<div class="error-icon">⚠️</div>' +
                         '<h3>Error Loading Data</h3>' +
                         '<p>' + error.message + '</p>' +
-                        '<button id="retryBtn" class="wave-btn">Retry</button>' +
+                        '<button id="' + this.getInstanceId('retryBtn') + '" class="genieAnalytics-btn">Retry</button>' +
                     '</div>' +
                 '</div>' +
             '</div>';
-        document.getElementById('retryBtn').addEventListener('click', () => {
+        const retryBtnId = this.getInstanceId('retryBtn');
+        const retryBtn = this.container.querySelector('#' + retryBtnId);
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => {
+            // Log what exists when retry is clicked
+            const retryAccordion = this.container.closest('.modern-accordion');
+            const retryAccordionContent = this.container.closest('.modern-accordion-content');
+            console.log('Retry button clicked - current state:', {
+                containerInDOM: document.body.contains(this.container),
+                accordion: !!retryAccordion,
+                accordionVisible: retryAccordion?.classList.contains('visible'),
+                accordionContentHeight: retryAccordionContent?.offsetHeight,
+                dataFetchFunction: !!this.dataFetchFunction,
+                parsedDataLength: this.parsedData?.length || 0
+            });
             this.init();
         });
+        }
     }
 
     render() {
@@ -1611,133 +1886,211 @@ class WaveAnalytics {
             console.warn('render: Container not found, cannot render');
             return;
         }
+        
+        console.log('render: Starting render, container:', {
+            containerId: this.container.id,
+            containerInDOM: document.body.contains(this.container),
+            containerParent: this.container.parentElement ? this.container.parentElement.className : 'no parent'
+        });
+        
+        // Generate instance-specific IDs
+        const ids = {
+            fieldPalette: this.getInstanceId('fieldPalette'),
+            collapseBtn: this.getInstanceId('collapseBtn'),
+            dimensionsPalette: this.getInstanceId('dimensionsPalette'),
+            datePalette: this.getInstanceId('datePalette'),
+            metricsPalette: this.getInstanceId('metricsPalette'),
+            derivedMetricsPalette: this.getInstanceId('derivedMetricsPalette'),
+            dimensionsZone: this.getInstanceId('dimensionsZone'),
+            dimensionsCount: this.getInstanceId('dimensionsCount'),
+            dimensionsMissing: this.getInstanceId('dimensionsMissing'),
+            dimensionsArea: this.getInstanceId('dimensionsArea'),
+            metricsZone: this.getInstanceId('metricsZone'),
+            metricsCount: this.getInstanceId('metricsCount'),
+            metricsMissing: this.getInstanceId('metricsMissing'),
+            metricsArea: this.getInstanceId('metricsArea'),
+            filtersZone: this.getInstanceId('filtersZone'),
+            filtersCount: this.getInstanceId('filtersCount'),
+            filtersMissing: this.getInstanceId('filtersMissing'),
+            filtersArea: this.getInstanceId('filtersArea'),
+            genieAnalyticsSearchInput: this.getInstanceId('genieAnalyticsSearchInput'),
+            loadLensSelect: this.getInstanceId('loadLensSelect'),
+            loadDerivedMetricSelect: this.getInstanceId('loadDerivedMetricSelect'),
+            saveLensBtn: this.getInstanceId('saveLensBtn'),
+            tableViewBtn: this.getInstanceId('tableViewBtn'),
+            lineChartBtn: this.getInstanceId('lineChartBtn'),
+            barChartBtn: this.getInstanceId('barChartBtn'),
+            clearLensBtn: this.getInstanceId('clearLensBtn'),
+            exportBtn: this.getInstanceId('exportBtn'),
+            refreshBtn: this.getInstanceId('refreshBtn'),
+            chartReduceIcon: this.getInstanceId('chartReduceIcon'),
+            widthMultiplier: this.getInstanceId('widthMultiplier'),
+            chartExpandIcon: this.getInstanceId('chartExpandIcon'),
+            lensChart: this.getInstanceId('lensChart'),
+            lensChartCanvas: this.getInstanceId('lensChartCanvas'),
+            lensTable: this.getInstanceId('lensTable'),
+            saveLensModal: this.getInstanceId('saveLensModal'),
+            closeSaveLensModal: this.getInstanceId('closeSaveLensModal'),
+            saveLensForm: this.getInstanceId('saveLensForm'),
+            lensNameInput: this.getInstanceId('lensNameInput'),
+            lensDescriptionInput: this.getInstanceId('lensDescriptionInput'),
+            lensPreviewContent: this.getInstanceId('lensPreviewContent'),
+            cancelSaveLens: this.getInstanceId('cancelSaveLens'),
+            confirmSaveLens: this.getInstanceId('confirmSaveLens'),
+            expressionBuilderModal: this.getInstanceId('expressionBuilderModal'),
+            closeExpressionBuilderModal: this.getInstanceId('closeExpressionBuilderModal'),
+            expressionBuilderForm: this.getInstanceId('expressionBuilderForm'),
+            expressionNameInput: this.getInstanceId('expressionNameInput'),
+            expressionBuilder: this.getInstanceId('expressionBuilder'),
+            expressionParts: this.getInstanceId('expressionParts'),
+            cancelExpressionBuilder: this.getInstanceId('cancelExpressionBuilder'),
+            confirmExpressionBuilder: this.getInstanceId('confirmExpressionBuilder'),
+            saveExpressionModal: this.getInstanceId('saveExpressionModal'),
+            closeSaveExpressionModal: this.getInstanceId('closeSaveExpressionModal'),
+            saveExpressionForm: this.getInstanceId('saveExpressionForm'),
+            saveExpressionNameInput: this.getInstanceId('saveExpressionNameInput'),
+            saveExpressionDescriptionInput: this.getInstanceId('saveExpressionDescriptionInput'),
+            expressionPreviewContent: this.getInstanceId('expressionPreviewContent'),
+            cancelSaveExpression: this.getInstanceId('cancelSaveExpression'),
+            confirmSaveExpression: this.getInstanceId('confirmSaveExpression')
+        };
+        
+        // Store IDs for use in other methods - MUST be set before any getElementById calls
+        this.ids = ids;
+        
+        // Ensure this.ids is set before proceeding
+        if (!this.ids) {
+            console.error('render: Failed to create IDs object');
+            return;
+        }
+        
         this.container.innerHTML = 
-            '<div class="wave-analytics-container">' +
-                '<div class="wave-content">' +
+            '<div class="genieAnalytics-analytics-container">' +
+                '<div class="genieAnalytics-content">' +
                     '<div class="lens-builder">' +
-                        '<div class="field-palette" id="fieldPalette">' +
+                        '<div class="field-palette" id="' + ids.fieldPalette + '">' +
                             '<div class="palette-header">' +
                                 '<span class="palette-title">Categories</span>' +
-                                '<button id="collapseBtn" class="collapse-toggle" title="Collapse/Expand Panel">‹</button>' +
+                                '<button id="' + ids.collapseBtn + '" class="collapse-toggle" title="Collapse/Expand Panel">‹</button>' +
                             '</div>' +
                             '<div class="category-section">' +
-                                '<h3 class="category-header" data-target="dimensionsPalette">' +
+                                '<h3 class="category-header" data-target="' + ids.dimensionsPalette + '">' +
                                     '<span class="collapse-icon">▼</span> Dimensions' +
                                 '</h3>' +
-                                '<div id="dimensionsPalette" class="field-list">' +
+                                '<div id="' + ids.dimensionsPalette + '" class="field-list">' +
                                     '<!-- Dimensions will be populated here -->' +
                                 '</div>' +
                             '</div>' +
                             '<div class="category-section">' +
-                                '<h3 class="category-header" data-target="datePalette">' +
+                                '<h3 class="category-header" data-target="' + ids.datePalette + '">' +
                                     '<span class="collapse-icon">▼</span> Date' +
                                 '</h3>' +
-                                '<div id="datePalette" class="field-list">' +
+                                '<div id="' + ids.datePalette + '" class="field-list">' +
                                     '<!-- Date fields will be populated here -->' +
                                 '</div>' +
                             '</div>' +
                             '<div class="category-section">' +
-                                '<h3 class="category-header" data-target="metricsPalette">' +
+                                '<h3 class="category-header" data-target="' + ids.metricsPalette + '">' +
                                     '<span class="collapse-icon">▼</span> Metrics' +
                                 '</h3>' +
-                                '<div id="metricsPalette" class="field-list">' +
+                                '<div id="' + ids.metricsPalette + '" class="field-list">' +
                                     '<!-- Metrics will be populated here -->' +
                                 '</div>' +
                             '</div>' +
                             '<div class="category-section">' +
-                                '<h3 class="category-header" data-target="derivedMetricsPalette">' +
+                                '<h3 class="category-header" data-target="' + ids.derivedMetricsPalette + '">' +
                                     '<span class="collapse-icon">▼</span> Derived Metrics' +
                                     '<div class="derived-metrics-controls">' +
-                                        '<button class="add-derived-metric-btn" onclick="window.waveAnalyticsShowExpressionBuilder()" title="Add Derived Metric">+</button>' +
-                                        '<button class="save-derived-metric-btn" onclick="window.waveAnalyticsShowSaveExpressionModal()" title="Save Derived Metric">💾</button>' +
+                                        '<button class="add-derived-metric-btn" onclick="window.genieAnalyticsShowExpressionBuilder()" title="Add Derived Metric">+</button>' +
+                                        '<button class="save-derived-metric-btn" onclick="window.genieAnalyticsShowSaveExpressionModal()" title="Save Derived Metric">💾</button>' +
                                     '</div>' +
                                 '</h3>' +
-                                '<div id="derivedMetricsPalette" class="field-list">' +
+                                '<div id="' + ids.derivedMetricsPalette + '" class="field-list">' +
                                     '<!-- Derived Metrics will be populated here -->' +
                                 '</div>' +
                             '</div>' +
                         '</div>' +
                         '<div class="lens-canvas">' +
                             '<div class="drop-zones">' +
-                                '<div class="drop-zone" id="dimensionsZone">' +
+                                '<div class="drop-zone" id="' + ids.dimensionsZone + '">' +
                                     '<div class="drop-zone-header">' +
                                         '<div class="drop-zone-title-section">' +
                                             '<h4>Group by dimensions</h4>' +
-                                            '<span class="drop-zone-count" id="dimensionsCount">0</span>' +
-                                            '<span class="missing-items-indicator" id="dimensionsMissing" style="display: none;">0</span>' +
+                                            '<span class="drop-zone-count" id="' + ids.dimensionsCount + '">0</span>' +
+                                            '<span class="missing-items-indicator" id="' + ids.dimensionsMissing + '" style="display: none;">0</span>' +
                                         '</div>' +
-                                        '<button class="drop-zone-collapse-btn" data-zone="dimensionsZone" title="Collapse/Expand Drop Zone"><i class="fa fa-chevron-down"></i></button>' +
+                                        '<button class="drop-zone-collapse-btn" data-zone="' + ids.dimensionsZone + '" title="Collapse/Expand Drop Zone"><i class="fa fa-chevron-down"></i></button>' +
                                     '</div>' +
-                                    '<div class="drop-area" id="dimensionsArea">' +
+                                    '<div class="drop-area" id="' + ids.dimensionsArea + '">' +
                                         '<span class="drop-hint">Drag dimensions here</span>' +
                                     '</div>' +
                                 '</div>' +
-                                '<div class="drop-zone" id="metricsZone">' +
+                                '<div class="drop-zone" id="' + ids.metricsZone + '">' +
                                     '<div class="drop-zone-header">' +
                                         '<div class="drop-zone-title-section">' +
                                             '<h4>Metric aggregations</h4>' +
-                                            '<span class="drop-zone-count" id="metricsCount">0</span>' +
-                                            '<span class="missing-items-indicator" id="metricsMissing" style="display: none;">0</span>' +
+                                            '<span class="drop-zone-count" id="' + ids.metricsCount + '">0</span>' +
+                                            '<span class="missing-items-indicator" id="' + ids.metricsMissing + '" style="display: none;">0</span>' +
                                         '</div>' +
-                                        '<button class="drop-zone-collapse-btn" data-zone="metricsZone" title="Collapse/Expand Drop Zone"><i class="fa fa-chevron-down"></i></button>' +
+                                        '<button class="drop-zone-collapse-btn" data-zone="' + ids.metricsZone + '" title="Collapse/Expand Drop Zone"><i class="fa fa-chevron-down"></i></button>' +
                                     '</div>' +
-                                    '<div class="drop-area" id="metricsArea">' +
+                                    '<div class="drop-area" id="' + ids.metricsArea + '">' +
                                         '<span class="drop-hint">Drag metrics here</span>' +
                                     '</div>' +
                                 '</div>' +
-                                '<div class="drop-zone" id="filtersZone">' +
+                                '<div class="drop-zone" id="' + ids.filtersZone + '">' +
                                     '<div class="drop-zone-header">' +
                                         '<div class="drop-zone-title-section">' +
                                     '<h4>Filters</h4>' +
-                                            '<span class="drop-zone-count" id="filtersCount">0</span>' +
-                                            '<span class="missing-items-indicator" id="filtersMissing" style="display: none;">0</span>' +
+                                            '<span class="drop-zone-count" id="' + ids.filtersCount + '">0</span>' +
+                                            '<span class="missing-items-indicator" id="' + ids.filtersMissing + '" style="display: none;">0</span>' +
                                         '</div>' +
-                                        '<button class="drop-zone-collapse-btn" data-zone="filtersZone" title="Collapse/Expand Drop Zone"><i class="fa fa-chevron-down"></i></button>' +
+                                        '<button class="drop-zone-collapse-btn" data-zone="' + ids.filtersZone + '" title="Collapse/Expand Drop Zone"><i class="fa fa-chevron-down"></i></button>' +
                                     '</div>' +
-                                    '<div class="drop-area" id="filtersArea">' +
+                                    '<div class="drop-area" id="' + ids.filtersArea + '">' +
                                         '<span class="drop-hint">Drag metrics here to filter</span>' +
                                     '</div>' +
                                 '</div>' +
                             '</div>' +
-                            '<div class="wave-header">' +
-                                '<div class="wave-controls">' +
+                            '<div class="genieAnalytics-header">' +
+                                '<div class="genieAnalytics-controls">' +
                                     '<div class="view-controls">' +
-                                        '<input type="text" id="waveSearchInput" class="wave-search-input" placeholder="Search... (Enter)" title="Search across all data - Press Enter to apply" style="font-size: 14px !important;">' +
-                                        '<select id="loadLensSelect" class="lens-select" title="Load Saved Lens" style="font-size: 14px !important;">' +
+                                        '<input type="text" id="' + ids.genieAnalyticsSearchInput + '" class="genieAnalytics-search-input" placeholder="Search... (Enter)" title="Search across all data - Press Enter to apply" style="font-size: 14px !important;">' +
+                                        '<select id="' + ids.loadLensSelect + '" class="lens-select" title="Load Saved Lens" style="font-size: 14px !important;">' +
                                             '<option value="">Load Lens...</option>' +
                                         '</select>' +
-                '<select id="loadDerivedMetricSelect" class="lens-select" title="Load Saved Derived Metric" style="font-size: 14px !important;">' +
+                '<select id="' + ids.loadDerivedMetricSelect + '" class="lens-select" title="Load Saved Derived Metric" style="font-size: 14px !important;">' +
                     '<option value="">Load Derived Metrics...</option>' +
                                         '</select>' +
-                                        '<button id="saveLensBtn" class="wave-btn" title="Save Lens">💾</button>' +
-                                        '<button id="tableViewBtn" class="wave-btn" title="Table View"><i class="fa fa-fw fa-table"></i></button>' +
-                                        '<button id="lineChartBtn" class="wave-btn" title="Line Chart">📈</button>' +
-                                        '<button id="barChartBtn" class="wave-btn active" title="Bar Chart">📊</button>' +
-                                        '<button id="clearLensBtn" class="wave-btn" title="Clear Lens">🗑️</button>' +
-                                        '<button id="exportBtn" class="wave-btn" title="Export CSV">📤</button>' +
-                                        '<button id="refreshBtn" class="wave-btn" title="Refresh Data">🔄</button>' +
+                                        '<button id="' + ids.saveLensBtn + '" class="genieAnalytics-btn" title="Save Lens">💾</button>' +
+                                        '<button id="' + ids.tableViewBtn + '" class="genieAnalytics-btn" title="Table View"><i class="fa fa-fw fa-table"></i></button>' +
+                                        '<button id="' + ids.lineChartBtn + '" class="genieAnalytics-btn" title="Line Chart">📈</button>' +
+                                        '<button id="' + ids.barChartBtn + '" class="genieAnalytics-btn active" title="Bar Chart">📊</button>' +
+                                        '<button id="' + ids.clearLensBtn + '" class="genieAnalytics-btn" title="Clear Lens">🗑️</button>' +
+                                        '<button id="' + ids.exportBtn + '" class="genieAnalytics-btn" title="Export CSV">📤</button>' +
+                                        '<button id="' + ids.refreshBtn + '" class="genieAnalytics-btn" title="Refresh Data">🔄</button>' +
                                     '</div>' +
                                 '</div>' +
                                                                 
                             '</div>' +
+                            '<div class="lens-display">' +
 '<div class="floating-chart-controls">' +
-                                '<button id="chartReduceIcon" class="wave-btn" title="Reduce Chart Width"><i class="fa fa-long-arrow-left"></i></button>' +
+                                '<button id="' + ids.chartReduceIcon + '" class="genieAnalytics-btn" title="Reduce Chart Width"><i class="fa fa-long-arrow-left"></i></button>' +
                                 '<div class="width-multiplier-container" title="Width Expansion Multiplier">' +
-                                    '<select id="widthMultiplier" class="width-multiplier-select" title="Width Multiplier">' +
+                                    '<select id="' + ids.widthMultiplier + '" class="width-multiplier-select" title="Width Multiplier">' +
                                         '<option value="1">1x</option>' +
                                         '<option value="2">2x</option>' +
                                         '<option value="5">5x</option>' +
                                     '</select>' +
                                 '</div>' +
-                                '<button id="chartExpandIcon" class="wave-btn" title="Expand Chart Width"><i class="fa fa-long-arrow-right"></i></button>' +
+                                '<button id="' + ids.chartExpandIcon + '" class="genieAnalytics-btn" title="Expand Chart Width"><i class="fa fa-long-arrow-right"></i></button>' +
                             '</div>' +
-                            '<div class="lens-display">' +
-                                '<div class="chart-container" id="lensChart">' +
+                                '<div class="chart-container" id="' + ids.lensChart + '">' +
                                     '<div class="chart-placeholder">' +
                                         '<p>Build your lens by dragging dimensions and metrics</p>' +
                                     '</div>' +
                                 '</div>' +
-                                '<div class="table-container" id="lensTable" style="display: none;">' +
+                                '<div class="table-container" id="' + ids.lensTable + '" style="display: none;">' +
                                     '<div class="table-placeholder">' +
                                         '<p>Build your lens by dragging dimensions and metrics</p>' +
                                     '</div>' +
@@ -1748,103 +2101,117 @@ class WaveAnalytics {
                 '</div>' +
             '</div>' +
         // Save Lens Modal
-        '<div id="saveLensModal" class="wave-modal-overlay modal-overlay" style="display: none;">' +
+        '<div id="' + ids.saveLensModal + '" class="genieAnalytics-modal-overlay modal-overlay" style="display: none;">' +
             '<div class="modal-content">' +
                 '<div class="modal-header">' +
                     '<h3>Save Lens</h3>' +
-                    '<button class="modal-close" id="closeSaveLensModal">&times;</button>' +
+                    '<button class="modal-close" id="' + ids.closeSaveLensModal + '">&times;</button>' +
                 '</div>' +
                 '<div class="modal-body">' +
-                    '<form id="saveLensForm">' +
+                    '<form id="' + ids.saveLensForm + '">' +
                         '<div class="form-group">' +
-                            '<label for="lensNameInput">Lens Name:</label>' +
-                            '<input type="text" id="lensNameInput" class="form-input" placeholder="Enter a name for this lens" maxlength="50" required>' +
+                            '<label for="' + ids.lensNameInput + '">Lens Name:</label>' +
+                            '<input type="text" id="' + ids.lensNameInput + '" class="form-input" placeholder="Enter a name for this lens" maxlength="50" required>' +
                             '<div class="form-help">Choose a descriptive name for your lens configuration</div>' +
                         '</div>' +
                         '<div class="form-group">' +
-                            '<label for="lensDescriptionInput">Description (optional):</label>' +
-                            '<textarea id="lensDescriptionInput" class="form-textarea" placeholder="Add a description for this lens" maxlength="200"></textarea>' +
+                            '<label for="' + ids.lensDescriptionInput + '">Description (optional):</label>' +
+                            '<textarea id="' + ids.lensDescriptionInput + '" class="form-textarea" placeholder="Add a description for this lens" maxlength="200"></textarea>' +
                         '</div>' +
                         '<div class="lens-preview">' +
                             '<h4>Lens Configuration:</h4>' +
-                            '<div id="lensPreviewContent"></div>' +
+                            '<div id="' + ids.lensPreviewContent + '"></div>' +
                         '</div>' +
                     '</form>' +
                 '</div>' +
                 '<div class="modal-footer">' +
-                    '<button type="button" class="btn btn-secondary" id="cancelSaveLens">Cancel</button>' +
-                    '<button type="button" class="btn btn-primary" id="confirmSaveLens">Save Lens</button>' +
+                    '<button type="button" class="btn btn-secondary" id="' + ids.cancelSaveLens + '">Cancel</button>' +
+                    '<button type="button" class="btn btn-primary" id="' + ids.confirmSaveLens + '">Save Lens</button>' +
                 '</div>' +
             '</div>' +
         '</div>' +
         // Expression Builder Modal
-        '<div id="expressionBuilderModal" class="wave-modal-overlay modal-overlay" style="display: none;">' +
+        '<div id="' + ids.expressionBuilderModal + '" class="genieAnalytics-modal-overlay modal-overlay" style="display: none;">' +
             '<div class="modal-content" style="max-width: 600px;">' +
                 '<div class="modal-header">' +
                     '<h3>Create Derived Metric</h3>' +
-                    '<button class="modal-close" id="closeExpressionBuilderModal">&times;</button>' +
+                    '<button class="modal-close" id="' + ids.closeExpressionBuilderModal + '">&times;</button>' +
                 '</div>' +
                 '<div class="modal-body">' +
-                    '<form id="expressionBuilderForm">' +
+                    '<form id="' + ids.expressionBuilderForm + '">' +
                         '<div class="form-group">' +
-                            '<label for="expressionNameInput">Derived Metric Name:</label>' +
-                            '<input type="text" id="expressionNameInput" class="form-input" placeholder="Enter derived metric name" maxlength="50" required>' +
+                            '<label for="' + ids.expressionNameInput + '">Derived Metric Name:</label>' +
+                            '<input type="text" id="' + ids.expressionNameInput + '" class="form-input" placeholder="Enter derived metric name" maxlength="50" required>' +
                         '</div>' +
                         '<div class="form-group">' +
                             '<label>Expression Builder:</label>' +
-                            '<div id="expressionBuilder" style="border: 1px solid #ddd; padding: 12px; border-radius: 4px; background: #f9f9f9; min-height: 100px;">' +
-                                '<div id="expressionParts" style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 12px; min-height: 50px; padding: 10px; background: white; border-radius: 4px; border: 1px solid #eee;"></div>' +
+                            '<div id="' + ids.expressionBuilder + '" style="border: 1px solid #ddd; padding: 12px; border-radius: 4px; background: #f9f9f9; min-height: 100px;">' +
+                                '<div id="' + ids.expressionParts + '" style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 12px; min-height: 50px; padding: 10px; background: white; border-radius: 4px; border: 1px solid #eee;"></div>' +
                                 '<div style="display: flex; gap: 6px; flex-wrap: wrap;">' +
-                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsAddExpressionPart(\'metric\')" style="font-size: 13px !important; padding: 2px 6px; height: 32px;">Add Metric</button>' +
-                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsAddExpressionPart(\'constant\')" style="font-size: 13px !important; padding: 2px 6px; height: 32px;">Add Constant</button>' +
-                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsAddExpressionPart(\'+\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">+</button>' +
-                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsAddExpressionPart(\'-\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">-</button>' +
-                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsAddExpressionPart(\'*\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">×</button>' +
-                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsAddExpressionPart(\'/\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">÷</button>' +
-                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsAddExpressionPart(\'(\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">(</button>' +
-                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsAddExpressionPart(\')\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">)</button>' +
-                                    '<button type="button" class="btn btn-secondary" onclick="window.waveAnalyticsClearExpression()" style="margin-left: auto; font-size: 13px !important; padding: 2px 4px; height: 32px;">Clear</button>' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.genieAnalyticsAddExpressionPart(\'metric\')" style="font-size: 13px !important; padding: 2px 6px; height: 32px;">Add Metric</button>' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.genieAnalyticsAddExpressionPart(\'constant\')" style="font-size: 13px !important; padding: 2px 6px; height: 32px;">Add Constant</button>' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.genieAnalyticsAddExpressionPart(\'+\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">+</button>' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.genieAnalyticsAddExpressionPart(\'-\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">-</button>' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.genieAnalyticsAddExpressionPart(\'*\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">×</button>' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.genieAnalyticsAddExpressionPart(\'/\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">÷</button>' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.genieAnalyticsAddExpressionPart(\'(\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">(</button>' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.genieAnalyticsAddExpressionPart(\')\')" style="font-size: 13px !important; padding: 1px 2px; min-width: 36px; height: 32px;">)</button>' +
+                                    '<button type="button" class="btn btn-secondary" onclick="window.genieAnalyticsClearExpression()" style="margin-left: auto; font-size: 13px !important; padding: 2px 4px; height: 32px;">Clear</button>' +
                                 '</div>' +
                             '</div>' +
                         '</div>' +
                     '</form>' +
                 '</div>' +
                 '<div class="modal-footer">' +
-                    '<button type="button" class="btn btn-secondary" id="cancelExpressionBuilder">Cancel</button>' +
-                    '<button type="button" class="btn btn-primary" id="confirmExpressionBuilder">Create derived metric</button>' +
+                    '<button type="button" class="btn btn-secondary" id="' + ids.cancelExpressionBuilder + '">Cancel</button>' +
+                    '<button type="button" class="btn btn-primary" id="' + ids.confirmExpressionBuilder + '">Create derived metric</button>' +
                 '</div>' +
             '</div>' +
         '</div>' +
         // Save Expression Modal
-        '<div id="saveExpressionModal" class="wave-modal-overlay modal-overlay" style="display: none;">' +
+        '<div id="' + ids.saveExpressionModal + '" class="genieAnalytics-modal-overlay modal-overlay" style="display: none;">' +
             '<div class="modal-content">' +
                 '<div class="modal-header">' +
                     '<h3>Save Derived Metric</h3>' +
-                    '<button type="button" class="close-btn" id="closeSaveExpressionModal">&times;</button>' +
+                    '<button type="button" class="close-btn" id="' + ids.closeSaveExpressionModal + '">&times;</button>' +
                 '</div>' +
                 '<div class="modal-body">' +
-                    '<form id="saveExpressionForm">' +
+                    '<form id="' + ids.saveExpressionForm + '">' +
                         '<div class="form-group">' +
-                            '<label for="saveExpressionNameInput">Derived Metric Name:</label>' +
-                            '<input type="text" id="saveExpressionNameInput" class="form-input" placeholder="Enter a name for this derived metric" maxlength="50">' +
+                            '<label for="' + ids.saveExpressionNameInput + '">Derived Metric Name:</label>' +
+                            '<input type="text" id="' + ids.saveExpressionNameInput + '" class="form-input" placeholder="Enter a name for this derived metric" maxlength="50">' +
                             '<div class="form-help">Choose a descriptive name for your derived metric</div>' +
                         '</div>' +
                         '<div class="form-group">' +
-                            '<label for="saveExpressionDescriptionInput">Description (optional):</label>' +
-                            '<textarea id="saveExpressionDescriptionInput" class="form-textarea" placeholder="Add a description for this derived metric" maxlength="200"></textarea>' +
+                            '<label for="' + ids.saveExpressionDescriptionInput + '">Description (optional):</label>' +
+                            '<textarea id="' + ids.saveExpressionDescriptionInput + '" class="form-textarea" placeholder="Add a description for this derived metric" maxlength="200"></textarea>' +
                         '</div>' +
                         '<div class="expression-preview">' +
                             '<h4>Derived Metric Configuration:</h4>' +
-                            '<div id="expressionPreviewContent"></div>' +
+                            '<div id="' + ids.expressionPreviewContent + '"></div>' +
                         '</div>' +
                     '</form>' +
                 '</div>' +
                 '<div class="modal-footer">' +
-                    '<button type="button" class="btn btn-secondary" id="cancelSaveExpression">Cancel</button>' +
-                    '<button type="button" class="btn btn-primary" id="confirmSaveExpression">Save Derived Metric</button>' +
+                    '<button type="button" class="btn btn-secondary" id="' + ids.cancelSaveExpression + '">Cancel</button>' +
+                    '<button type="button" class="btn btn-primary" id="' + ids.confirmSaveExpression + '">Save Derived Metric</button>' +
                 '</div>' +
             '</div>' +
         '</div>';
+        
+        // Log after setting innerHTML to verify elements are created
+        const fieldPaletteAfterRender = this.container.querySelector('#' + ids.fieldPalette);
+        const lensChartAfterRender = this.container.querySelector('#' + ids.lensChart);
+        const dimensionsAreaAfterRender = this.container.querySelector('#' + ids.dimensionsArea);
+        const metricsAreaAfterRender = this.container.querySelector('#' + ids.metricsArea);
+        console.log('render: After setting innerHTML, elements found:', {
+            fieldPalette: !!fieldPaletteAfterRender,
+            lensChart: !!lensChartAfterRender,
+            dimensionsArea: !!dimensionsAreaAfterRender,
+            metricsArea: !!metricsAreaAfterRender,
+            containerHTMLLength: this.container.innerHTML.length,
+            containerHasContent: this.container.innerHTML.length > 0
+        });
         
         this.populateFieldPalette(false);
         
@@ -1905,10 +2272,11 @@ class WaveAnalytics {
             this.missingItemsManager.clearAvailableItems();
         }
         
-        const dimensionsPalette = document.getElementById('dimensionsPalette');
-        const datePalette = document.getElementById('datePalette');
-        const metricsPalette = document.getElementById('metricsPalette');
-        const derivedMetricsPalette = document.getElementById('derivedMetricsPalette');
+        // Search within container, not globally - use instance-specific IDs
+        const dimensionsPalette = this.getElementById('dimensionsPalette');
+        const datePalette = this.getElementById('datePalette');
+        const metricsPalette = this.getElementById('metricsPalette');
+        const derivedMetricsPalette = this.getElementById('derivedMetricsPalette');
         
         // Check if elements exist before accessing them
         if (!dimensionsPalette || !datePalette || !metricsPalette) {
@@ -2189,8 +2557,12 @@ class WaveAnalytics {
             return;
         }
         
-        // Make field items draggable and clickable
-        const fieldItems = document.querySelectorAll('.field-item');
+        // Make field items draggable and clickable - search within container
+        if (!this.container) {
+            console.warn('setupDragAndDrop: Container not found');
+            return;
+        }
+        const fieldItems = this.container.querySelectorAll('.field-item');
         console.log('Setting up drag and drop for', fieldItems.length, 'field items');
         
         // Remove existing event listeners to prevent duplicates
@@ -2199,8 +2571,8 @@ class WaveAnalytics {
             item.parentNode.replaceChild(newItem, item);
         });
         
-        // Re-query after cloning to get fresh elements
-        const freshFieldItems = document.querySelectorAll('.field-item');
+        // Re-query after cloning to get fresh elements - search within container
+        const freshFieldItems = this.container.querySelectorAll('.field-item');
         
         freshFieldItems.forEach(item => {
             item.addEventListener('dragstart', (e) => {
@@ -2253,10 +2625,10 @@ class WaveAnalytics {
             });
         });
         
-        // Setup drop zones
-        const dimensionsArea = document.getElementById('dimensionsArea');
-        const metricsArea = document.getElementById('metricsArea');
-        const filtersArea = document.getElementById('filtersArea');
+        // Setup drop zones - search within container using instance-specific IDs
+        const dimensionsArea = this.getElementById('dimensionsArea');
+        const metricsArea = this.getElementById('metricsArea');
+        const filtersArea = this.getElementById('filtersArea');
         
         console.log('Drop zones found:', {
             dimensionsArea: !!dimensionsArea,
@@ -2286,16 +2658,38 @@ class WaveAnalytics {
                     const fieldType = this.draggedElement.getAttribute('data-type');
                     console.log('Dropping field:', fieldName, 'type:', fieldType, 'on area:', area.id);
                     
-                    if (area.id === 'dimensionsArea' && (fieldType === 'dimension' || fieldType === 'date')) {
+                    // Get instance-specific IDs for comparison (area.id is already instance-specific)
+                    // Compare by checking if area.id ends with the base ID or matches the instance ID
+                    const dimensionsAreaId = this.ids ? this.ids.dimensionsArea : this.getInstanceId('dimensionsArea');
+                    const metricsAreaId = this.ids ? this.ids.metricsArea : this.getInstanceId('metricsArea');
+                    const filtersAreaId = this.ids ? this.ids.filtersArea : this.getInstanceId('filtersArea');
+                    
+                    // Check if this is the dimensions area
+                    if ((area.id === dimensionsAreaId || area.id.endsWith('-dimensionsArea')) && (fieldType === 'dimension' || fieldType === 'date')) {
+                        console.log('Adding dimension:', fieldName);
                         this.addDimension(fieldName);
-                    } else if (area.id === 'metricsArea' && (fieldType === 'metric' || fieldType === 'expression')) {
+                    } 
+                    // Check if this is the metrics area
+                    else if ((area.id === metricsAreaId || area.id.endsWith('-metricsArea')) && (fieldType === 'metric' || fieldType === 'expression')) {
+                        console.log('Adding metric:', fieldName);
                         this.addMetric(fieldName);
-                    } else if (area.id === 'filtersArea' && (fieldType === 'metric' || fieldType === 'expression' || fieldType === 'date' || fieldType === 'dimension')) {
+                    } 
+                    // Check if this is the filters area
+                    else if ((area.id === filtersAreaId || area.id.endsWith('-filtersArea')) && (fieldType === 'metric' || fieldType === 'expression' || fieldType === 'date' || fieldType === 'dimension')) {
+                        console.log('Adding filter:', fieldName, 'type:', fieldType);
                         if (fieldType === 'dimension') {
                             this.addDimensionFilter(fieldName);
                         } else {
                             this.addFilter(fieldName);
                         }
+                    } else {
+                        console.warn('Drop zone ID mismatch:', {
+                            areaId: area.id,
+                            dimensionsAreaId: dimensionsAreaId,
+                            metricsAreaId: metricsAreaId,
+                            filtersAreaId: filtersAreaId,
+                            fieldType: fieldType
+                        });
                     }
                 }
             });
@@ -2625,12 +3019,17 @@ class WaveAnalytics {
     updateDropZone(zoneId, items) {
         console.log(`updateDropZone called with zoneId: ${zoneId}, items:`, items);
         
+        // zoneId is a base ID (e.g., 'dimensionsArea'), convert to instance-specific ID
+        const instanceZoneId = this.ids && this.ids[zoneId] ? this.ids[zoneId] : this.getInstanceId(zoneId);
+        const zone = this.getElementById(zoneId);
+        
         // ========== DEBUG: Print availability for each item in drop zone ==========
         console.log('========================================');
         console.log(`DEBUG: updateDropZone(${zoneId}) - CHECKING AVAILABILITY FOR ITEMS`);
         console.log('========================================');
         items.forEach(item => {
             let category = 'metric';
+            // Compare with base ID, not instance-specific ID
             if (zoneId === 'dimensionsArea') {
                 category = this.timestampDimensions.includes(item) ? 'date' : 'dimension';
             } else if (zoneId === 'metricsArea') {
@@ -2669,9 +3068,8 @@ class WaveAnalytics {
         });
         console.log('========================================');
         
-        const zone = document.getElementById(zoneId);
         if (!zone) {
-            console.warn('updateDropZone: Element not found:', zoneId);
+            console.warn('updateDropZone: Element not found:', zoneId, 'instance ID:', instanceZoneId);
             return;
         }
         zone.innerHTML = '';
@@ -2687,6 +3085,7 @@ class WaveAnalytics {
                 itemDiv.className = 'selected-item';
                 
                 // Determine item category and check if missing using new data model
+                // Compare with base ID, not instance-specific ID
                 let category = 'metric';
                 let isMissing = false;
                 
@@ -2912,7 +3311,7 @@ class WaveAnalytics {
 
     updateFiltersZone() {
         //console.log('DEBUG: updateFiltersZone() called');
-        const zone = document.getElementById('filtersArea');
+        const zone = this.getElementById('filtersArea');
         //console.log('DEBUG: filtersArea element found:', zone);
         if (!zone) {
             console.warn('updateFiltersZone: Element not found: filtersArea');
@@ -3771,13 +4170,56 @@ class WaveAnalytics {
     }
 
     renderLensChart() {
-        const chartContainer = document.getElementById('lensChart');
-        const tableContainer = document.getElementById('lensTable');
+        // Use scoped queries within container, not global
+        if (!this.container) {
+            console.warn('renderLensChart: Container not found, skipping render');
+            return;
+        }
+        
+        const chartContainer = this.getElementById('lensChart');
+        const tableContainer = this.getElementById('lensTable');
         
         // Check if containers exist before accessing them
         if (!chartContainer || !tableContainer) {
-            console.warn('renderLensChart: Chart or table containers not found, skipping render');
+            console.warn('renderLensChart: Chart or table containers not found, skipping render', {
+                chartContainer: !!chartContainer,
+                tableContainer: !!tableContainer,
+                containerInDOM: document.body.contains(this.container)
+            });
             return;
+        }
+        
+        // Destroy any existing C3 chart instance before creating a new one
+        if (this.c3ChartInstance) {
+            try {
+                this.c3ChartInstance.destroy();
+                this.c3ChartInstance = null;
+            } catch (error) {
+                console.warn('Error destroying previous chart:', error);
+            }
+        }
+        
+        // Reset container heights before creating new chart
+        const resetLensChartCanvasId = this.ids ? this.ids.lensChartCanvas : this.getInstanceId('lensChartCanvas');
+        const resetLensChartCanvas = chartContainer.querySelector('#' + resetLensChartCanvasId);
+        const resetLensDisplay = this.container ? this.container.querySelector('.lens-display') : null;
+        
+        if (resetLensChartCanvas) {
+            resetLensChartCanvas.style.height = '';
+            resetLensChartCanvas.style.minHeight = '';
+            resetLensChartCanvas.style.maxHeight = '';
+        }
+        
+        if (chartContainer) {
+            chartContainer.style.height = '';
+            chartContainer.style.minHeight = '';
+            chartContainer.style.maxHeight = '';
+        }
+        
+        if (resetLensDisplay) {
+            resetLensDisplay.style.height = '';
+            resetLensDisplay.style.minHeight = '';
+            resetLensDisplay.style.maxHeight = '';
         }
         
         if (this.selectedDimensions.length === 0 && this.selectedMetrics.length === 0) {
@@ -3799,126 +4241,154 @@ class WaveAnalytics {
         // Calculate optimal canvas dimensions based on labels
         const canvasSize = this.calculateOptimalCanvasSize(chartData);
         
-        // Render chart with maximum available width
+        // Wait for drop zone collapse/expand animations to complete before measuring container height
+        // Drop zones have 0.3s transition, so wait for that plus a buffer
+        const waitForDropZoneAnimations = () => {
+            return new Promise((resolve) => {
+                // Check if any drop zones are transitioning
+                const dropZones = this.container ? this.container.querySelectorAll('.drop-zone') : [];
+                let maxTransitionDuration = 0;
+                
+                dropZones.forEach(zone => {
+                    const computedStyle = window.getComputedStyle(zone);
+                    // Check both the zone and its drop-area for transitions
+                    const zoneTransition = parseFloat(computedStyle.transitionDuration) || 0;
+                    const dropArea = zone.querySelector('.drop-area');
+                    let dropAreaTransition = 0;
+                    if (dropArea) {
+                        const dropAreaStyle = window.getComputedStyle(dropArea);
+                        dropAreaTransition = parseFloat(dropAreaStyle.transitionDuration) || 0;
+                    }
+                    const maxDuration = Math.max(zoneTransition, dropAreaTransition);
+                    if (maxDuration > maxTransitionDuration) {
+                        maxTransitionDuration = maxDuration;
+                    }
+                });
+                
+                // Wait for transition to complete (convert seconds to milliseconds, add buffer)
+                // Default to 350ms if no transition detected (0.3s + 50ms buffer)
+                const waitTime = maxTransitionDuration > 0 ? (maxTransitionDuration * 1000) + 50 : 350;
+                
+                setTimeout(() => {
+                    // Use requestAnimationFrame to ensure layout has settled
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            resolve();
+                        });
+                    });
+                }, waitTime);
+            });
+        };
+        
+        // Wait for animations, then proceed with chart rendering
+        waitForDropZoneAnimations().then(() => {
+            this.renderLensChartInternal(chartContainer, tableContainer, chartData);
+        });
+    }
+    
+    renderLensChartInternal(chartContainer, tableContainer, chartData) {
+        // Re-measure container after animations complete
         const containerRect = chartContainer.getBoundingClientRect();
         
+        // Get the target height: use full container height since padding was removed
+        // This ensures charts use the full available height
+        const chartContainerPadding = 0;
+        const targetChartHeight = containerRect.height - chartContainerPadding;
+        
         // Check if the field palette is collapsed to adjust width
-        const fieldPalette = document.getElementById('fieldPalette');
+        // Use instance-specific ID
+        const fieldPalette = this.getElementById('fieldPalette');
         const isCollapsed = fieldPalette && fieldPalette.classList.contains('collapsed');
         
         // Calculate legend space needed (C3.js legend on right side)
         const totalLegendItems = this.selectedDimensions.length * this.selectedMetrics.length;
         const legendSpace = Math.max(120, totalLegendItems * 15); // Reserve space for legend
         
+        // Check if this is a time series chart
+        const hasTimestampDimension = this.selectedDimensions.some(dim => this.timestampDimensions.includes(dim));
+        const isTimeSeries = this.chartType === 'line' && hasTimestampDimension;
+        
         // Debug: Log container dimensions
         console.log('Container dimensions before chart render:', {
             width: containerRect.width,
             height: containerRect.height,
+            targetChartHeight: targetChartHeight,
             collapsed: isCollapsed,
             viewportWidth: window.innerWidth,
-            availableWidth: isCollapsed ? (window.innerWidth - 32 - 40) : (containerRect.width - 20),
             legendSpace: legendSpace
         });
         
-        // Get the actual available height by checking the current viewport and container position
-        const viewportHeight = window.innerHeight;
-        const containerTop = containerRect.top;
-        let availableViewportHeight = viewportHeight - containerTop - 50; // Leave 50px for bottom margins
-        
-        // Check if drop zones are collapsed to adjust available height
-        const dropZones = document.querySelector('.drop-zones');
-        const anyDropZonesCollapsed = dropZones && Array.from(dropZones.querySelectorAll('.drop-zone')).some(zone => zone.classList.contains('collapsed'));
-        
-        if (anyDropZonesCollapsed) {
-            // When drop zones are collapsed, they take up less space (30px each instead of ~74px)
-            const dropZoneHeightSaved = 3 * (74 - 30); // 3 zones * 44px saved per zone
-            availableViewportHeight += dropZoneHeightSaved;
-            console.log('Drop zones collapsed - additional height available:', dropZoneHeightSaved);
-        }
-        
-        // Check if this is a time series chart for extra height
-        const hasTimestampDimension = this.selectedDimensions.some(dim => this.timestampDimensions.includes(dim));
-        const isTimeSeries = this.chartType === 'line' && hasTimestampDimension;
-        
-        // Dynamic height and width calculation based on actual available space
-        // Use more of the available height when drop zones are expanded
-        const heightMultiplier = anyDropZonesCollapsed ? 0.8 : 0.9; // Use 90% when expanded, 80% when collapsed
-        const baseHeight = Math.min(800, availableViewportHeight * heightMultiplier); // Increased max height and use more space
         let chartHeight, chartWidth;
         
         // Calculate available width based on collapsed state
+        // Use full container width since padding was removed
         let availableWidth;
         if (isCollapsed) {
             // When collapsed, get the actual lens-area width instead of calculating manually
-            const lensArea = document.querySelector('.lens-area');
+            // Use scoped query within container
+            const lensArea = this.container ? this.container.querySelector('.lens-area') : null;
             if (lensArea) {
                 const lensAreaRect = lensArea.getBoundingClientRect();
-                availableWidth = lensAreaRect.width - 20; // Use actual lens-area width minus margins
+                availableWidth = lensAreaRect.width; // Use full lens-area width
                 console.log('Collapsed state - using actual lens-area width:', availableWidth, 'lens-area:', lensAreaRect.width);
             } else {
                 // Fallback to viewport calculation
-                availableWidth = window.innerWidth - 32 - 40;
+                availableWidth = window.innerWidth - 32;
                 console.log('Collapsed state - fallback to viewport calculation:', availableWidth);
             }
         } else {
-            // When expanded, use container width minus normal margins
-            availableWidth = containerRect.width - 20;
-            console.log('Expanded state - calculated available width:', availableWidth, 'container:', containerRect.width);
+            // When expanded, use full container width (padding was removed)
+            availableWidth = containerRect.width;
+            console.log('Expanded state - using full container width:', availableWidth, 'container:', containerRect.width);
         }
         
         // Use expanded width if chart has been expanded
         if (this.chartExpandedWidth > 0) {
             // For expanded width, use the stored expanded width directly
-            chartWidth = this.chartExpandedWidth - legendSpace - 40;
+            chartWidth = this.chartExpandedWidth - legendSpace; // Only subtract legend space
             console.log('Using stored expanded width:', chartWidth, 'total expanded:', this.chartExpandedWidth);
             
             // Keep the same height as calculated for normal width - don't recalculate
             // This preserves the original height when expanding width
+            chartHeight = targetChartHeight;
         } else {
-            if (isTimeSeries) {
-                // For time series: calculate optimal dimensions based on available space
-                const containerWidth = availableWidth - legendSpace - 40; // Account for additional margins/padding
-
-                // Calculate optimal height based on available width and aspect ratio
-                const optimalAspectRatio = 2.5; // Increased aspect ratio for better height utilization
-                const maxHeightByWidth = containerWidth / optimalAspectRatio;
-                // Use more of the viewport height - increased multipliers
-                const viewportHeightMultiplier = anyDropZonesCollapsed ? 0.85 : 0.95; // Increased from 0.75/0.85
-                const maxHeightByViewport = availableViewportHeight * viewportHeightMultiplier;
-
-                chartHeight = Math.min(maxHeightByWidth, maxHeightByViewport, 800); // Increased max height from 700
-                chartHeight = Math.max(chartHeight, 400); // Increased minimum height from 300
-
-                chartWidth = containerWidth;
-            } else {
-                // For regular charts, use the calculated baseHeight which already accounts for drop zone state
-                chartHeight = baseHeight;
-                chartWidth = availableWidth - legendSpace - 40; // Account for additional margins/padding
-            }
+            // Use targetChartHeight (full container height) for all chart types
+            // This ensures consistent height for both bar and line charts
+            chartHeight = targetChartHeight;
+            chartWidth = availableWidth - legendSpace; // Only subtract legend space, no extra padding
+            
+            // Ensure minimum height
+            chartHeight = Math.max(chartHeight, 400);
         }
         
-        // Ensure canvas div height doesn't exceed parent container height
-        // Use the calculated chartHeight directly, as it already accounts for available space
-        const maxCanvasHeight = chartHeight;
+        // Use targetChartHeight (lensChart container height - 40px padding) for consistent height
+        const finalChartHeight = chartHeight;
         
         console.log('Final chart dimensions:', {
             chartWidth: chartWidth,
             chartHeight: chartHeight,
-            maxCanvasHeight: maxCanvasHeight,
+            targetChartHeight: targetChartHeight,
+            containerHeight: containerRect.height,
+            containerPadding: chartContainerPadding,
             isCollapsed: isCollapsed,
-            legendSpace: legendSpace
+            legendSpace: legendSpace,
+            isTimeSeries: isTimeSeries
         });
         
-        chartContainer.innerHTML = '<div id="lensChartCanvas" style="width: ' + chartWidth + 'px; height: ' + maxCanvasHeight + 'px; min-height: ' + (isTimeSeries ? '300px' : '400px') + ';"></div>';
+        const lensChartCanvasId = this.ids ? this.ids.lensChartCanvas : this.getInstanceId('lensChartCanvas');
+        // Use full container width and targetChartHeight for consistent dimensions
+        // C3.js will handle legend space internally
+        // Move chart up by 10px to give more space at bottom for labels
+        chartContainer.innerHTML = '<div id="' + lensChartCanvasId + '" style="width: 100%; height: ' + finalChartHeight + 'px; min-height: ' + finalChartHeight + 'px; max-height: ' + finalChartHeight + 'px; margin-top: -10px;"></div>';
         
-        this.createLensChart(chartData, maxCanvasHeight);
+        this.createLensChart(chartData, finalChartHeight);
         
         // Render table
         this.renderLensTable(chartData);
     }
 
     renderLensTable(data) {
-        const tableContainer = document.getElementById('lensTable');
+        const tableContainer = this.getElementById('lensTable');
         
         if (Object.keys(data.data).length === 0) {
             tableContainer.innerHTML = '<div class="table-placeholder"><p>No data to display</p></div>';
@@ -3945,7 +4415,7 @@ class WaveAnalytics {
         }
         
         // Create table HTML
-        let tableHTML = '<div class="table-wrapper"><table class="wave-table">';
+        let tableHTML = '<div class="table-wrapper"><table class="genieAnalytics-table">';
         
         // Create header
         tableHTML += '<thead><tr>';
@@ -4004,7 +4474,7 @@ class WaveAnalytics {
     }
 
     renderAllDataTable() {
-        const tableContainer = document.getElementById('lensTable');
+        const tableContainer = this.getElementById('lensTable');
         
         if (!this.filteredData || this.filteredData.length === 0) {
             tableContainer.innerHTML = '<div class="table-placeholder"><p>No data to display</p></div>';
@@ -4032,7 +4502,7 @@ class WaveAnalytics {
         console.log('Column types after initialization:', this.columnTypes);
         
         // Create table HTML
-        let tableHTML = '<div class="table-wrapper"><table class="wave-table">';
+        let tableHTML = '<div class="table-wrapper"><table class="genieAnalytics-table">';
         
         // Create header
         tableHTML += '<thead><tr>';
@@ -4163,7 +4633,7 @@ class WaveAnalytics {
         
         // Create modal overlay
         const modalOverlay = document.createElement('div');
-        modalOverlay.className = 'wave-modal-overlay modal-overlay rows-popup-overlay';
+        modalOverlay.className = 'genieAnalytics-modal-overlay modal-overlay rows-popup-overlay';
         modalOverlay.innerHTML = 
             '<div class="modal-content rows-popup-content">' +
                 '<div class="modal-header">' +
@@ -4173,7 +4643,7 @@ class WaveAnalytics {
                 '<div class="modal-body">' +
                     '<div class="rows-popup-table-container">' +
                         '<div class="rows-popup-table-wrapper">' +
-                            '<table class="wave-table rows-popup-table">' +
+                            '<table class="genieAnalytics-table rows-popup-table">' +
                                 '<thead>' +
                                     '<tr>' +
                                         '<th class="ignore-header">Ignore</th>' +
@@ -4246,7 +4716,7 @@ class WaveAnalytics {
         if (tableContainer) {
             tableContainer.innerHTML = 
                 '<div class="rows-popup-table-wrapper">' +
-                    '<table class="wave-table rows-popup-table">' +
+                    '<table class="genieAnalytics-table rows-popup-table">' +
                         '<thead>' +
                             '<tr>' +
                                 '<th class="ignore-header">Ignore</th>' +
@@ -4888,7 +5358,7 @@ class WaveAnalytics {
         filterContainer.innerHTML = 
             '<div class="filter-header">' +
                 '<h4>Date/Time Filter: ' + this.formatHeader(dimensionName) + '</h4>' +
-                '<button class="close-filter" onclick="waveAnalytics.hideDateTimeFilter(\'' + dimensionName + '\')">×</button>' +
+                '<button class="close-filter" onclick="genieAnalytics.hideDateTimeFilter(\'' + dimensionName + '\')">×</button>' +
             '</div>' +
             '<div class="filter-options">' +
                 '<div class="filter-type">' +
@@ -4915,8 +5385,8 @@ class WaveAnalytics {
                     '</div>' +
                 '</div>' +
                 '<div class="filter-actions">' +
-                    '<button class="apply-filter" onclick="waveAnalytics.applyDateTimeFilter(\'' + dimensionName + '\')">Apply Filter</button>' +
-                    '<button class="clear-filter" onclick="waveAnalytics.clearDateTimeFilter(\'' + dimensionName + '\')">Clear</button>' +
+                    '<button class="apply-filter" onclick="genieAnalytics.applyDateTimeFilter(\'' + dimensionName + '\')">Apply Filter</button>' +
+                    '<button class="clear-filter" onclick="genieAnalytics.clearDateTimeFilter(\'' + dimensionName + '\')">Clear</button>' +
                 '</div>' +
             '</div>';
         
@@ -5031,14 +5501,41 @@ class WaveAnalytics {
             });
         });
         
-        // Calculate optimal dimensions for line chart
-        const containerWidth = document.getElementById('lensChartCanvas').offsetWidth;
-        const containerHeight = document.getElementById('lensChartCanvas').offsetHeight;
+        // Calculate optimal dimensions for line chart - lensChartCanvas is created dynamically within chartContainer
+        const chartContainer = this.getElementById('lensChart');
+        const lensChartCanvasId = this.ids ? this.ids.lensChartCanvas : this.getInstanceId('lensChartCanvas');
+        const lensChartCanvas = chartContainer ? chartContainer.querySelector('#' + lensChartCanvasId) : null;
+        if (!lensChartCanvas) {
+            console.warn('lensChartCanvas not found');
+            return;
+        }
+        const containerWidth = lensChartCanvas.offsetWidth;
+        const containerHeight = lensChartCanvas.offsetHeight;
+        // Subtract 4px from width for debugging
+        const finalContainerWidth = Math.max(0, containerWidth - 4);
         const totalLegendItems = groups.length * metrics.length;
+        
+        // Calculate stacked label height upfront if stacked labels will be shown (similar to bar chart)
+        // Stacked labels are shown when: multiple dimensions
+        const hasMultipleDimensions = this.selectedDimensions && this.selectedDimensions.length > 1;
+        const willShowStackedLabels = hasMultipleDimensions;
+        let stackedLabelHeight = 0;
+        if (willShowStackedLabels) {
+            // Stacked labels are positioned from bottom of SVG: svgHeight - 20 - (reverseIndex * 14)
+            // Each label is 11px tall, spaced 14px apart
+            // Total space needed: just the spacing between labels
+            const numDimensions = this.selectedDimensions.length;
+            stackedLabelHeight = (numDimensions - 1) * 14; // Just spacing between labels
+        }
+        
+        // Use padding.bottom to reduce the chart area while keeping total SVG height = chartHeight
+        // Add 10px extra padding for line charts
+        const bottomPadding = willShowStackedLabels && stackedLabelHeight > 0 ? 
+            Math.max(40, stackedLabelHeight + 10) : 40; // Use stackedLabelHeight + 10px as padding, default 40px (reduced from 50)
         
         // Optimized legend width calculation
         const baseLegendWidth = totalLegendItems * 7;
-        const maxLegendWidth = containerWidth * 0.1;
+        const maxLegendWidth = finalContainerWidth * 0.1;
         const legendWidth = Math.max(80, Math.min(maxLegendWidth, baseLegendWidth));
         const legendPadding = Math.max(100, legendWidth + 10);
         
@@ -5056,8 +5553,10 @@ class WaveAnalytics {
                 return;
             }
             
-            // Ensure the container exists and is empty
-            const container = document.getElementById('lensChartCanvas');
+            // Ensure the container exists and is empty - lensChartCanvas is created dynamically
+            const chartContainer = this.getElementById('lensChart');
+            const lensChartCanvasId = this.ids ? this.ids.lensChartCanvas : this.getInstanceId('lensChartCanvas');
+            const container = chartContainer ? chartContainer.querySelector('#' + lensChartCanvasId) : null;
             if (!container) {
                 console.error('Chart container not found');
                 return;
@@ -5067,12 +5566,151 @@ class WaveAnalytics {
             container.innerHTML = '';
             
             // Create C3.js line chart with proper grouping and styling
+                const self = this;
+            
+            // Create height adjustment plugin for line chart
+            const heightAdjustmentPlugin = {
+                onrendered: function() {
+                    const chart = this;
+                    const container = chart.element;
+                    if (!container || !container.node()) return;
+                    
+                    // Use requestAnimationFrame to ensure measurement happens after all rendering
+                    requestAnimationFrame(() => {
+                        const containerNode = container.node();
+                        if (!containerNode) return;
+                        
+                        const containerRect = containerNode.getBoundingClientRect();
+                        const containerHeight = containerRect.height;
+                        
+                        const svg = container.select('svg');
+                        let svgHeight = 0;
+                        if (!svg.empty()) {
+                            const svgNode = svg.node();
+                            const svgRect = svgNode.getBoundingClientRect();
+                            svgHeight = svgRect.height;
+                        }
+                        
+                        const xAxis = svg.select('.c3-axis-x');
+                        let maxLabelHeight = 0;
+                        if (!xAxis.empty()) {
+                            const tickTexts = xAxis.selectAll('.tick text');
+                            tickTexts.each(function() {
+                                const tickRect = this.getBoundingClientRect();
+                                const transform = this.getAttribute('transform');
+                                const rotation = transform ? parseFloat(transform.match(/rotate\(([^)]+)\)/)?.[1] || '0') : 0;
+                                
+                                if (Math.abs(rotation) > 0) {
+                                    const radians = Math.abs(rotation) * Math.PI / 180;
+                                    const textHeight = tickRect.height;
+                                    const textWidth = tickRect.width;
+                                    const verticalExtent = Math.abs(textHeight * Math.sin(radians)) + Math.abs(textWidth * Math.cos(radians));
+                                    maxLabelHeight = Math.max(maxLabelHeight, verticalExtent);
+                                } else {
+                                    maxLabelHeight = Math.max(maxLabelHeight, tickRect.height);
+                                }
+                            });
+                        }
+                        
+                        const labelSpace = maxLabelHeight > 0 ? maxLabelHeight + 20 : 60;
+                        const calculatedHeight = Math.max(containerHeight, svgHeight + labelSpace);
+                        
+                        // Get the target height and width: use full container dimensions since padding was removed
+                        const chartContainer = containerNode.closest('#lensChart') || 
+                                             containerNode.closest('.chart-container');
+                        let targetHeight = 0;
+                        let targetWidth = 0;
+                        
+                        if (chartContainer) {
+                            const chartContainerRect = chartContainer.getBoundingClientRect();
+                            const chartContainerPadding = 0; // Padding removed from chart-container
+                            targetHeight = chartContainerRect.height - chartContainerPadding;
+                            targetWidth = chartContainerRect.width; // Use full container width
+                        }
+                        
+                        // Use the target height (full container height) as the final height
+                        // This ensures charts use the full available height
+                        const totalHeight = targetHeight > 0 ? targetHeight : Math.max(calculatedHeight, 300);
+                        
+                        const lensChartCanvasId = self.ids ? self.ids.lensChartCanvas : self.getInstanceId('lensChartCanvas');
+                        const lensChartCanvas = document.getElementById(lensChartCanvasId) || 
+                                               containerNode.closest('#' + lensChartCanvasId);
+                        const lensDisplay = containerNode.closest('.lens-display');
+                        
+                        if (lensChartCanvas) {
+                            // Set width to 100% to use full container width
+                            lensChartCanvas.style.width = '100%';
+                            lensChartCanvas.style.height = totalHeight + 'px';
+                            lensChartCanvas.style.minHeight = totalHeight + 'px';
+                            lensChartCanvas.style.maxHeight = totalHeight + 'px';
+                            lensChartCanvas.style.overflow = 'hidden';
+                            
+                            // Resize the C3.js chart if width has changed
+                            // 'this' refers to the chart instance in the onrendered callback
+                            if (targetWidth > 0 && this && typeof this.resize === 'function') {
+                                const currentWidth = lensChartCanvas.offsetWidth;
+                                if (Math.abs(currentWidth - targetWidth) > 1) {
+                                    // Width changed, resize the chart
+                                    this.resize({
+                                        width: currentWidth,
+                                        height: totalHeight
+                                    });
+                                }
+                            }
+                        }
+                        
+                        if (chartContainer) {
+                            chartContainer.style.height = totalHeight + 'px';
+                            chartContainer.style.minHeight = totalHeight + 'px';
+                            chartContainer.style.maxHeight = totalHeight + 'px';
+                            
+                            // Check if chart is expanded and set overflow accordingly
+                            // Check both self.chartExpandedWidth and the actual lensChart width
+                            const lensChart = self.getElementById('lensChart');
+                            const isExpanded = (self.chartExpandedWidth > 0) || 
+                                             (lensChart && lensChart.style && lensChart.style.width && 
+                                              parseFloat(lensChart.style.width) > 0 && 
+                                              parseFloat(lensChart.style.width) > chartContainer.getBoundingClientRect().width);
+                            
+                            if (isExpanded) {
+                                chartContainer.style.overflowX = 'auto';
+                                chartContainer.style.overflowY = 'hidden';
+                                chartContainer.classList.add('expanded');
+                            } else {
+                            chartContainer.style.overflow = 'hidden';
+                                chartContainer.classList.remove('expanded');
+                            }
+                        }
+                        
+                        if (lensDisplay) {
+                            // Calculate min-height based on lens-canvas height minus drop zone (200px) and header (20px)
+                            const lensCanvas = containerNode.closest('.lens-canvas') || 
+                                             document.querySelector('.lens-canvas');
+                            let calculatedMinHeight = totalHeight;
+                            
+                            if (lensCanvas) {
+                                const lensCanvasRect = lensCanvas.getBoundingClientRect();
+                                const lensCanvasHeight = lensCanvasRect.height;
+                                // min-height = lens-canvas height - max drop zone height (200px) - genieAnalytics-header height (20px)
+                                calculatedMinHeight = Math.max(0, lensCanvasHeight - 200 - 20);
+                            }
+                            
+                            lensDisplay.style.height = totalHeight + 'px';
+                            lensDisplay.style.minHeight = calculatedMinHeight + 'px';
+                            lensDisplay.style.maxHeight = totalHeight + 'px';
+                            lensDisplay.style.overflow = 'hidden';
+                        }
+                    });
+                }
+            };
+            
             const chart = c3.generate({
-                bindto: '#lensChartCanvas',
+                bindto: container,
                 size: {
-                    width: containerWidth,
-                    height: chartHeight || containerHeight
+                    width: finalContainerWidth,
+                    height: chartHeight || containerHeight  // Full available height - padding.bottom will reduce chart area
                 },
+                onrendered: heightAdjustmentPlugin.onrendered,
                 data: {
                     columns: columns,
                     type: 'line',
@@ -5128,7 +5766,7 @@ class WaveAnalytics {
                 },
                 padding: {
                     top: 20,
-                    bottom: 40
+                    bottom: bottomPadding  // Use calculated bottom padding to make room for stacked labels
                 },
                 legend: {
                     show: true,
@@ -5136,14 +5774,31 @@ class WaveAnalytics {
                 }
             });
             
+            // Store chart instance for cleanup
+            self.c3ChartInstance = chart;
+            
             // Add custom stacked labels after chart generation
             setTimeout(() => {
                 this.addStackedLabels(groups);
-            }, 100);
+                // Re-run height adjustment after stacked labels are added
+                setTimeout(() => {
+                    if (heightAdjustmentPlugin.onrendered) {
+                        heightAdjustmentPlugin.onrendered.call(chart);
+                    }
+                }, 100);
+                // Second attempt after a longer delay to catch any delayed rendering
+                setTimeout(() => {
+                    if (heightAdjustmentPlugin.onrendered) {
+                        heightAdjustmentPlugin.onrendered.call(chart);
+                    }
+                }, 300);
+            }, 150);
         } catch (error) {
             console.error('C3.js line chart error:', error);
-            // Show error message to user
-            const container = document.getElementById('lensChartCanvas');
+            // Show error message to user - lensChartCanvas is created dynamically
+            const chartContainer = this.getElementById('lensChart');
+            const lensChartCanvasId = this.ids ? this.ids.lensChartCanvas : this.getInstanceId('lensChartCanvas');
+            const container = chartContainer ? chartContainer.querySelector('#' + lensChartCanvasId) : null;
             if (container) {
                 container.innerHTML = '<div style="padding: 20px; text-align: center; color: #d32f2f;">Error creating line chart. Please check console for details.</div>';
             }
@@ -5189,9 +5844,18 @@ class WaveAnalytics {
             });
         });
         
-        // Calculate optimal dimensions for bar chart
-        const containerWidth = document.getElementById('lensChartCanvas').offsetWidth;
-        const containerHeight = document.getElementById('lensChartCanvas').offsetHeight;
+        // Calculate optimal dimensions for bar chart - lensChartCanvas is created dynamically
+        const chartContainer = this.getElementById('lensChart');
+        const lensChartCanvasId = this.ids ? this.ids.lensChartCanvas : this.getInstanceId('lensChartCanvas');
+        const lensChartCanvas = chartContainer ? chartContainer.querySelector('#' + lensChartCanvasId) : null;
+        if (!lensChartCanvas) {
+            console.warn('lensChartCanvas not found');
+            return;
+        }
+        const containerWidth = lensChartCanvas.offsetWidth;
+        const containerHeight = lensChartCanvas.offsetHeight;
+        // Use full container width (no subtraction)
+        const finalContainerWidth = containerWidth;
         const totalLegendItems = groups.length * metrics.length;
         
         // Determine if we should show value labels based on number of bars
@@ -5199,9 +5863,36 @@ class WaveAnalytics {
         const maxBarsForLabels = 50; // Hide labels if more than 50 bars
         const showValueLabels = totalBars <= maxBarsForLabels;
         
+        // Calculate stacked label height upfront if stacked labels will be shown
+        // Stacked labels are shown when: multiple dimensions AND showValueLabels is true
+        const hasMultipleDimensions = this.selectedDimensions && this.selectedDimensions.length > 1;
+        const willShowStackedLabels = hasMultipleDimensions && showValueLabels;
+        let stackedLabelHeight = 0;
+        if (willShowStackedLabels) {
+            // Stacked labels are positioned from bottom of SVG: svgHeight - 20 - (reverseIndex * 14)
+            // Each label is 11px tall, spaced 14px apart
+            // For numDimensions labels:
+            //   - First label (bottom) y position: svgHeight - 20
+            //   - Last label (top) y position: svgHeight - 20 - ((numDimensions-1) * 14)
+            //   - Last label top: svgHeight - 20 - ((numDimensions-1) * 14) - 11
+            // Total space needed: spacing between labels + one more label space (14px) to show all labels
+            const numDimensions = this.selectedDimensions.length;
+            stackedLabelHeight = (numDimensions - 1) * 14 + 14; // Spacing + one more 14px to show all labels
+        }
+        
+        // The total height should be: chartHeight (available space)
+        // Chart area height = chartHeight - stackedLabelHeight (to leave room for labels at bottom)
+        // This way: chart area + stacked labels = total height fits within available space
+        // We'll use padding.bottom to reduce the chart area while keeping total SVG height = chartHeight
+        // Use stackedLabelHeight as padding - this should match the space needed for labels
+        const bottomPadding = willShowStackedLabels && stackedLabelHeight > 0 ? 
+            Math.max(40, stackedLabelHeight) : 30; // Use stackedLabelHeight as padding, default 30px (reduced from 40)
+        // Chart height remains chartHeight (full available), padding.bottom creates space for labels
+        const adjustedChartHeight = chartHeight || 500;
+        
         // Optimized legend width calculation
         const baseLegendWidth = totalLegendItems * 7;
-        const maxLegendWidth = containerWidth * 0.1;
+        const maxLegendWidth = finalContainerWidth * 0.1;
         const legendWidth = Math.max(80, Math.min(maxLegendWidth, baseLegendWidth));
         const legendPadding = Math.max(100, legendWidth + 10);
         
@@ -5219,23 +5910,378 @@ class WaveAnalytics {
                 return;
             }
             
-            // Ensure the container exists and is empty
-            const container = document.getElementById('lensChartCanvas');
-            if (!container) {
-                console.error('Chart container not found');
-                return;
-            }
-            
+            // Ensure the container exists and is empty - lensChartCanvas is created dynamically
+        const chartContainer = this.getElementById('lensChart');
+        const lensChartCanvasId = this.ids ? this.ids.lensChartCanvas : this.getInstanceId('lensChartCanvas');
+        const container = chartContainer ? chartContainer.querySelector('#' + lensChartCanvasId) : null;
+        if (!container) {
+            console.error('Chart container not found');
+            return;
+        }
+        
             // Clear any existing content
-            container.innerHTML = '';
+        container.innerHTML = '';
             
             // Create C3.js bar chart with proper grouping and styling
             const self = this; // Capture reference to this for use in C3.js callbacks
+            
+            // Create height adjustment plugin for C3.js
+            const heightAdjustmentPlugin = {
+                lastAdjustmentTime: 0, // Track last adjustment time for debouncing
+                adjustmentInProgress: false, // Flag to prevent concurrent adjustments
+                isFirstRender: true, // Track if this is the first render to avoid unnecessary resizes
+                showValueLabels: showValueLabels, // Store showValueLabels for use in onrendered
+                onrendered: function() {
+                    const chart = this;
+                    const container = chart.element;
+                    // Safely check if container is a D3 selection and has a node
+                    if (!container) return;
+                    const containerNode = (typeof container.node === 'function') ? container.node() : container;
+                    if (!containerNode) return;
+                    
+                    // Debounce: prevent multiple adjustments within 200ms
+                    const now = Date.now();
+                    if (heightAdjustmentPlugin.adjustmentInProgress) {
+                        return; // Already adjusting, skip this call
+                    }
+                    if (now - heightAdjustmentPlugin.lastAdjustmentTime < 200) {
+                        // Too soon since last adjustment, skip this call
+                        return;
+                    }
+                    
+                    heightAdjustmentPlugin.adjustmentInProgress = true;
+                    heightAdjustmentPlugin.lastAdjustmentTime = now;
+                    
+                    // Use requestAnimationFrame with multiple frames to ensure measurement happens after all rendering
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            // Get the actual container node (already obtained above)
+                            // Check if SVG is actually rendered
+                            let svg, svgNode;
+                            if (typeof container.select === 'function') {
+                                // container is a D3 selection
+                                svg = container.select('svg');
+                            if (svg.empty()) {
+                                    // SVG not ready yet, reset flag and retry after a delay
+                                    heightAdjustmentPlugin.adjustmentInProgress = false;
+                                setTimeout(() => {
+                                    if (heightAdjustmentPlugin.onrendered) {
+                                        heightAdjustmentPlugin.onrendered.call(chart);
+                                    }
+                                }, 100);
+                                return;
+                                }
+                                svgNode = svg.node();
+                            } else {
+                                // container is a DOM element, use querySelector
+                                svgNode = containerNode.querySelector('svg');
+                                if (!svgNode) {
+                                    // SVG not ready yet, reset flag and retry after a delay
+                                    heightAdjustmentPlugin.adjustmentInProgress = false;
+                                    setTimeout(() => {
+                                        if (heightAdjustmentPlugin.onrendered) {
+                                            heightAdjustmentPlugin.onrendered.call(chart);
+                                        }
+                                    }, 100);
+                                    return;
+                                }
+                                svg = d3.select(svgNode);
+                            }
+                            
+                            // Measure the actual rendered height of the entire container content
+                            // This includes SVG, labels, legend, and any other elements
+                            const containerRect = containerNode.getBoundingClientRect();
+                            const containerHeight = containerRect.height;
+                            
+                            // Also measure the SVG to understand chart area
+                            let svgHeight = 0;
+                            if (svgNode) {
+                                const svgRect = svgNode.getBoundingClientRect();
+                                svgHeight = svgRect.height;
+                            }
+                            
+                            // Get x-axis to measure label space
+                            const xAxis = svg.select('.c3-axis-x');
+                            let maxLabelHeight = 0;
+                            if (!xAxis.empty()) {
+                                const tickTexts = xAxis.selectAll('.tick text');
+                                tickTexts.each(function() {
+                                    const tickRect = this.getBoundingClientRect();
+                                    const transform = this.getAttribute('transform');
+                                    const rotation = transform ? parseFloat(transform.match(/rotate\(([^)]+)\)/)?.[1] || '0') : 0;
+                                    
+                                    if (Math.abs(rotation) > 0) {
+                                        // For rotated labels, calculate the vertical extent
+                                        const radians = Math.abs(rotation) * Math.PI / 180;
+                                        const textHeight = tickRect.height;
+                                        const textWidth = tickRect.width;
+                                        const verticalExtent = Math.abs(textHeight * Math.sin(radians)) + Math.abs(textWidth * Math.cos(radians));
+                                        maxLabelHeight = Math.max(maxLabelHeight, verticalExtent);
+                                    } else {
+                                        maxLabelHeight = Math.max(maxLabelHeight, tickRect.height);
+                                    }
+                                });
+                            }
+                            
+                            // Check for custom stacked labels (for bar charts)
+                            const customLabels = containerNode.querySelectorAll('.custom-stacked-label');
+                            let stackedLabelHeight = 0;
+                            if (customLabels.length > 0) {
+                                customLabels.forEach(label => {
+                                    const labelRect = label.getBoundingClientRect();
+                                    const containerTop = containerRect.top;
+                                    const labelBottom = labelRect.bottom;
+                                    const labelSpace = labelBottom - containerTop;
+                                    stackedLabelHeight = Math.max(stackedLabelHeight, labelSpace - svgHeight);
+                                });
+                            }
+                            
+                            // Get the target height and width: use full container dimensions since padding was removed
+                            const targetChartContainer = containerNode.closest('#lensChart') || 
+                                                 containerNode.closest('.chart-container');
+                            let targetHeight = 0;
+                            let targetWidth = 0;
+                            
+                            if (targetChartContainer) {
+                                const chartContainerRect = targetChartContainer.getBoundingClientRect();
+                                const chartContainerPadding = 0; // Padding removed from chart-container
+                                targetHeight = chartContainerRect.height - chartContainerPadding;
+                                targetWidth = chartContainerRect.width; // Use full container width
+                            }
+                            
+                            // Calculate total required height including labels
+                            const labelSpace = Math.max(maxLabelHeight > 0 ? maxLabelHeight + 20 : 60, stackedLabelHeight + 10); // Add padding
+                            const calculatedHeight = Math.max(containerHeight, svgHeight + labelSpace);
+                            
+                            // Use the target height (full container height) as the final height
+                            // This ensures charts use the full available height without overlapping toolbar/drop zones
+                            const totalHeight = targetHeight > 0 ? targetHeight : Math.max(calculatedHeight, 400);
+                            
+                            // Find all related containers
+                            const chartContainer = targetChartContainer;
+                            const lensChartCanvasId = self.ids ? self.ids.lensChartCanvas : self.getInstanceId('lensChartCanvas');
+                            const lensChartCanvas = document.getElementById(lensChartCanvasId) || 
+                                                   containerNode.closest('#' + lensChartCanvasId);
+                            const lensDisplay = containerNode.closest('.lens-display');
+                            
+                            // Check if chart is expanded - check multiple sources to be robust
+                            const lensChart = self.getElementById('lensChart');
+                            
+                            // Check if expanded by looking at:
+                            // 1. self.chartExpandedWidth value
+                            // 2. lensChart width style
+                            // 3. lensDisplay overflow-x style (set by expandChartWidth)
+                            // 4. chartContainer expanded class
+                            const lensDisplayOverflowX = lensDisplay && lensDisplay.style && 
+                                                       (lensDisplay.style.overflowX === 'auto' || 
+                                                        window.getComputedStyle(lensDisplay).overflowX === 'auto');
+                            const lensChartWidth = lensChart && lensChart.style && lensChart.style.width ? 
+                                                  parseFloat(lensChart.style.width) : 0;
+                            const chartContainerWidth = chartContainer ? chartContainer.getBoundingClientRect().width : 0;
+                            const hasExpandedClass = chartContainer && chartContainer.classList.contains('expanded');
+                            
+                            const isExpanded = (self.chartExpandedWidth > 0) || 
+                                             lensDisplayOverflowX ||
+                                             (lensChartWidth > 0 && lensChartWidth > chartContainerWidth) ||
+                                             hasExpandedClass;
+                            
+                            // Get lens-display dimensions to use as maximum constraints
+                            let lensDisplayWidth = targetWidth;
+                            let lensDisplayHeight = targetHeight;
+                            if (lensDisplay) {
+                                const lensDisplayRect = lensDisplay.getBoundingClientRect();
+                                lensDisplayWidth = lensDisplayRect.width;
+                                lensDisplayHeight = lensDisplayRect.height;
+                            }
+                            
+                            // Calculate finalHeight for lens-display first (to prevent shrinking)
+                            // But ensure it doesn't exceed lens-display height
+                            let finalHeight = totalHeight;
+                            if (lensDisplay) {
+                                // Get current height to prevent shrinking
+                                const currentHeight = lensDisplay.getBoundingClientRect().height;
+                                // Only increase height, never shrink it, but don't exceed lens-display
+                                finalHeight = Math.min(Math.max(totalHeight, currentHeight), lensDisplayHeight);
+                            } else {
+                                // If no lensDisplay, ensure finalHeight doesn't exceed calculated max
+                                finalHeight = Math.min(totalHeight, lensDisplayHeight);
+                            }
+                            
+                            // Calculate finalWidth - ensure it doesn't exceed lens-display width
+                            let finalWidth = targetWidth;
+                            if (lensDisplayWidth > 0) {
+                                finalWidth = Math.min(targetWidth, lensDisplayWidth);
+                            }
+                            
+                            // Update all container heights and widths
+                            // Only update if values actually need to change (to minimize layout shifts)
+                            if (lensChartCanvas) {
+                                const currentCanvasHeight = parseFloat(lensChartCanvas.style.height) || lensChartCanvas.offsetHeight;
+                                const canvasHeightNeedsUpdate = Math.abs(currentCanvasHeight - finalHeight) > 5;
+                                
+                                // Set width constraints to prevent parent expansion
+                                // Ensure width doesn't exceed lens-display width
+                                if (lensChartCanvas.style.width !== '100%') {
+                                    lensChartCanvas.style.width = '100%';
+                                }
+                                if (lensChartCanvas.style.maxWidth !== '100%') {
+                                    lensChartCanvas.style.maxWidth = '100%';
+                                }
+                                if (lensChartCanvas.style.boxSizing !== 'border-box') {
+                                    lensChartCanvas.style.boxSizing = 'border-box';
+                                }
+                                
+                                // Only update height if it actually needs to change
+                                // Ensure height doesn't exceed lens-display height
+                                if (canvasHeightNeedsUpdate) {
+                                    const constrainedHeight = Math.min(finalHeight, lensDisplayHeight);
+                                    lensChartCanvas.style.height = constrainedHeight + 'px';
+                                    lensChartCanvas.style.minHeight = constrainedHeight + 'px';
+                                    lensChartCanvas.style.maxHeight = constrainedHeight + 'px';
+                                }
+                                
+                                // Set overflow - but allow visible if stacked labels are present to prevent truncation
+                                // Check if stacked labels will be shown
+                                const hasMultipleDimensions = self.selectedDimensions && self.selectedDimensions.length > 1;
+                                const showValueLabels = heightAdjustmentPlugin.showValueLabels !== undefined ? heightAdjustmentPlugin.showValueLabels : true;
+                                const willShowStackedLabels = hasMultipleDimensions && showValueLabels;
+                                
+                                if (willShowStackedLabels) {
+                                    // Allow overflow visible for stacked labels
+                                    lensChartCanvas.style.overflow = 'visible';
+                                } else {
+                                    // Set overflow hidden for normal charts
+                                    if (lensChartCanvas.style.overflow !== 'hidden') {
+                                lensChartCanvas.style.overflow = 'hidden';
+                                    }
+                                }
+                                
+                                // Only resize the C3.js chart if width has actually changed (not on initial render)
+                                // The chart is already created with the correct width, so we should avoid unnecessary resizes
+                                // 'this' refers to the chart instance in the onrendered callback
+                                if (targetWidth > 0 && this && typeof this.resize === 'function') {
+                                    // Use the actual container width, not the canvas width, to prevent expansion
+                                    const containerActualWidth = chartContainer ? chartContainer.getBoundingClientRect().width : targetWidth;
+                                    const currentCanvasWidth = lensChartCanvas.offsetWidth;
+                                    // Use the smaller of container width, canvas width, target width, or lens-display width
+                                    // Keep the same 20px reduction as initial creation to prevent flicker
+                                    const chartWidth = Math.max(0, Math.min(containerActualWidth, currentCanvasWidth, targetWidth, lensDisplayWidth) - 20);
+                                    const chartHeight = Math.min(finalHeight, lensDisplayHeight);
+                                    
+                                    // Avoid resizing on first render to prevent flicker
+                                    // The chart is created with correct dimensions, so we should only resize if really needed
+                                    const widthDiff = Math.abs(currentCanvasWidth - chartWidth);
+                                    const heightDiff = Math.abs(currentCanvasHeight - chartHeight);
+                                    
+                                    // Only resize if there's a significant difference (10px+) to avoid flicker
+                                    // On first render, be even more conservative - only resize if height difference is very large (20px+)
+                                    const shouldResize = heightAdjustmentPlugin.isFirstRender 
+                                        ? heightDiff > 20  // Very conservative on first render - only if height is way off
+                                        : (widthDiff > 10 || heightDiff > 10);  // More lenient threshold on subsequent renders
+                                    
+                                    if (shouldResize) {
+                                        // Width or height changed significantly, resize the chart using constrained dimensions
+                                        this.resize({
+                                            width: chartWidth,
+                                            height: chartHeight
+                                        });
+                                    }
+                                    
+                                    // Mark that first render is complete after a delay to allow chart to fully render
+                                    if (heightAdjustmentPlugin.isFirstRender) {
+                                        setTimeout(() => {
+                                            heightAdjustmentPlugin.isFirstRender = false;
+                                        }, 500);
+                                    }
+                                }
+                            }
+                            
+                            if (chartContainer) {
+                                const currentContainerHeight = parseFloat(chartContainer.style.height) || chartContainer.offsetHeight;
+                                const containerHeightNeedsUpdate = Math.abs(currentContainerHeight - finalHeight) > 5;
+                                
+                                // Only update height if it actually needs to change
+                                // Ensure height doesn't exceed lens-display height
+                                if (containerHeightNeedsUpdate) {
+                                    const constrainedHeight = Math.min(finalHeight, lensDisplayHeight);
+                                    chartContainer.style.height = constrainedHeight + 'px';
+                                    chartContainer.style.minHeight = constrainedHeight + 'px';
+                                    chartContainer.style.maxHeight = constrainedHeight + 'px';
+                                }
+                                
+                                // Ensure width doesn't exceed lens-display width
+                                const currentContainerWidth = parseFloat(chartContainer.style.width) || chartContainer.offsetWidth;
+                                if (currentContainerWidth > lensDisplayWidth && lensDisplayWidth > 0) {
+                                    chartContainer.style.maxWidth = lensDisplayWidth + 'px';
+                                }
+                                
+                                // Set overflow based on expanded state (only if needed)
+                                if (isExpanded) {
+                                    if (chartContainer.style.overflowX !== 'auto') {
+                                        chartContainer.style.overflowX = 'auto';
+                                        chartContainer.style.overflowY = 'hidden';
+                                    }
+                                    if (!chartContainer.classList.contains('expanded')) {
+                                        chartContainer.classList.add('expanded');
+                                    }
+                                } else {
+                                    if (chartContainer.style.overflow !== 'hidden') {
+                                chartContainer.style.overflow = 'hidden';
+                                    }
+                                    if (chartContainer.classList.contains('expanded')) {
+                                        chartContainer.classList.remove('expanded');
+                                    }
+                                }
+                            }
+                            
+                            if (lensDisplay) {
+                                const currentDisplayHeight = parseFloat(lensDisplay.style.height) || lensDisplay.getBoundingClientRect().height;
+                                const displayHeightNeedsUpdate = Math.abs(currentDisplayHeight - finalHeight) > 5;
+                                
+                                // Only update lens-display height if it actually needs to change
+                                // This prevents unnecessary reflows that affect other page elements
+                                // Ensure we don't exceed the actual lens-display dimensions
+                                if (displayHeightNeedsUpdate) {
+                                    const constrainedHeight = Math.min(finalHeight, lensDisplayHeight);
+                                    lensDisplay.style.height = constrainedHeight + 'px';
+                                    lensDisplay.style.minHeight = constrainedHeight + 'px';
+                                    lensDisplay.style.maxHeight = constrainedHeight + 'px';
+                                }
+                                
+                                // Ensure width constraints are set
+                                if (lensDisplay.style.maxWidth !== '100%') {
+                                    lensDisplay.style.maxWidth = '100%';
+                                }
+                                
+                                // Don't override lensDisplay overflow if it's already set to auto (by expandChartWidth)
+                                if (!lensDisplayOverflowX && lensDisplay.style.overflow !== 'hidden') {
+                                lensDisplay.style.overflow = 'hidden';
+                                }
+                            }
+                            
+                            console.log('Height adjustment (bar chart):', {
+                                containerHeight,
+                                svgHeight,
+                                maxLabelHeight,
+                                stackedLabelHeight,
+                                labelSpace,
+                                totalHeight
+            });
+                            
+                            // Mark adjustment as complete
+                            heightAdjustmentPlugin.adjustmentInProgress = false;
+        });
+                    });
+                }
+            };
+            
             const chart = c3.generate({
-                bindto: '#lensChartCanvas',
+                bindto: container,
                 size: {
-                    height: chartHeight || 400
+                    width: Math.max(0, finalContainerWidth - 20),  // Reduce by 20px for debugging to prevent other elements from moving
+                    height: adjustedChartHeight  // Full available height - padding.bottom will reduce chart area
                 },
+                onrendered: heightAdjustmentPlugin.onrendered,
                 data: {
                     columns: columns,
                     type: 'bar',
@@ -5296,7 +6342,7 @@ class WaveAnalytics {
                 },
                 padding: {
                     top: 20,
-                    bottom: 40
+                    bottom: bottomPadding  // Use calculated bottom padding to make room for stacked labels
                 },
                 legend: {
                     show: true,
@@ -5304,16 +6350,79 @@ class WaveAnalytics {
                 }
             });
             
+            // Store chart instance for cleanup
+            self.c3ChartInstance = chart;
+            
             // Add custom stacked labels after chart generation only if showing custom labels
             if (showValueLabels) {
                 setTimeout(() => {
                     this.addStackedLabels(groups);
-                }, 100);
+                    
+                    // Rotate value labels vertically after chart is rendered
+                    const rotateValueLabels = () => {
+                        if (!container) return;
+                        
+                        const svg = container.querySelector('svg');
+                        if (!svg) return;
+                        
+                        // Find all value label text elements in .c3-texts group
+                        const textGroups = svg.querySelectorAll('.c3-texts');
+                        textGroups.forEach(group => {
+                            const texts = group.querySelectorAll('text');
+                            texts.forEach(text => {
+                                // Skip if already processed
+                                if (text.getAttribute('data-rotated') === 'true') {
+                                    return;
+                                }
+                                
+                                // Get current position - don't modify it, just use it for rotation
+                                const x = parseFloat(text.getAttribute('x') || 0);
+                                const y = parseFloat(text.getAttribute('y') || 0);
+                                
+                                // Get original text content
+                                const originalText = text.textContent || '';
+                                if (!originalText) return;
+                                
+                                // Store original text if not already stored
+                                if (!text.getAttribute('data-original-text')) {
+                                    text.setAttribute('data-original-text', originalText);
+                                }
+                                
+                                // Reverse text so it reads bottom-to-top when rotated -30
+                                const storedOriginal = text.getAttribute('data-original-text');
+                                text.textContent = storedOriginal.split('').reverse().join('');
+                                
+                                // Apply rotation transform - rotate around the current position
+                                // With -30 rotation, text extends diagonally upward from the rotation point
+                                text.setAttribute('transform', `rotate(-30 ${x} ${y})`);
+                                text.setAttribute('text-anchor', 'start');
+                                // Keep the original y position
+                                text.setAttribute('y', y);
+                                // Mark as processed
+                                text.setAttribute('data-rotated', 'true');
+                            });
+                        });
+                    };
+                    
+                    // Try rotating labels multiple times to ensure they're rendered
+                    setTimeout(rotateValueLabels, 50);
+                    setTimeout(rotateValueLabels, 150);
+                    setTimeout(rotateValueLabels, 300);
+                    
+                    // Don't manually call onrendered - it will be called automatically by C3.js
+                    // Manually calling it causes unnecessary resizes and flicker
+                    // The onrendered callback already handles height adjustments when needed
+                }, 150);
+            } else {
+                // Even without stacked labels, ensure height adjustment runs after chart is fully rendered
+                // The onrendered callback will handle this automatically, no need for extra setTimeout
             }
         } catch (error) {
             console.error('C3.js bar chart error:', error);
-            // Show error message to user
-            const container = document.getElementById('lensChartCanvas');
+            // Show error message to user - lensChartCanvas is created dynamically
+            const chartContainer = this.getElementById('lensChart');
+            const lensChartCanvasId = this.ids ? this.ids.lensChartCanvas : this.getInstanceId('lensChartCanvas');
+            const container = chartContainer ? chartContainer.querySelector('#' + lensChartCanvasId) : null;
             if (container) {
                 container.innerHTML = '<div style="padding: 20px; text-align: center; color: #d32f2f;">Error creating bar chart. Please check console for details.</div>';
             }
@@ -5461,18 +6570,27 @@ class WaveAnalytics {
             }
         });
         
-        // Calculate optimal legend positioning based on available space
+        // Calculate optimal legend positioning based on available space - lensChartCanvas is created dynamically
+        const chartContainer = this.getElementById('lensChart');
+        const lensChartCanvasId = this.ids ? this.ids.lensChartCanvas : this.getInstanceId('lensChartCanvas');
+        const lensChartCanvas = chartContainer ? chartContainer.querySelector('#' + lensChartCanvasId) : null;
+        if (!lensChartCanvas) {
+            console.warn('lensChartCanvas not found');
+            return;
+        }
         const totalLegendItems = groupCombinations.length * this.selectedMetrics.length;
-        const containerWidth = document.getElementById('lensChartCanvas').offsetWidth;
-        const containerHeight = document.getElementById('lensChartCanvas').offsetHeight;
+        const containerWidth = lensChartCanvas.offsetWidth;
+        const containerHeight = lensChartCanvas.offsetHeight;
+        // Subtract 4px from width for debugging
+        const finalContainerWidth = Math.max(0, containerWidth - 4);
         
         // Calculate dynamic tick culling based on chart width
-        const maxTicks = Math.max(5, Math.floor(containerWidth / 80));
-        console.log('Time series chart - containerWidth:', containerWidth, 'maxTicks:', maxTicks);
+        const maxTicks = Math.max(5, Math.floor(finalContainerWidth / 80));
+        console.log('Time series chart - containerWidth:', containerWidth, 'finalContainerWidth:', finalContainerWidth, 'maxTicks:', maxTicks);
         
         // Force maximum chart width - ultra-minimal legend space
         const baseLegendWidth = totalLegendItems * 2; // Ultra-compact legend
-        const maxLegendWidth = containerWidth * 0.015; // Only 1.5% of container width for legend
+        const maxLegendWidth = finalContainerWidth * 0.015; // Only 1.5% of container width for legend
         const legendWidth = Math.max(30, Math.min(maxLegendWidth, baseLegendWidth));
         
         // Calculate optimal padding based on container dimensions
@@ -5498,8 +6616,10 @@ class WaveAnalytics {
                 return;
             }
             
-            // Ensure the container exists and is empty
-            const container = document.getElementById('lensChartCanvas');
+            // Ensure the container exists and is empty - lensChartCanvas is created dynamically
+            const chartContainer = this.getElementById('lensChart');
+            const lensChartCanvasId = this.ids ? this.ids.lensChartCanvas : this.getInstanceId('lensChartCanvas');
+            const container = chartContainer ? chartContainer.querySelector('#' + lensChartCanvasId) : null;
             if (!container) {
                 console.error('Chart container not found');
                 return;
@@ -5523,11 +6643,149 @@ class WaveAnalytics {
             });
             
             
+            // Create height adjustment plugin for time series chart
+            const self = this;
+            const heightAdjustmentPlugin = {
+                onrendered: function() {
+                    const chart = this;
+                    const container = chart.element;
+                    if (!container || !container.node()) return;
+                    
+                    // Use requestAnimationFrame to ensure measurement happens after all rendering
+                    requestAnimationFrame(() => {
+                        const containerNode = container.node();
+                        if (!containerNode) return;
+                        
+                        const containerRect = containerNode.getBoundingClientRect();
+                        const containerHeight = containerRect.height;
+                        
+                        const svg = container.select('svg');
+                        let svgHeight = 0;
+                        if (!svg.empty()) {
+                            const svgNode = svg.node();
+                            const svgRect = svgNode.getBoundingClientRect();
+                            svgHeight = svgRect.height;
+                        }
+                        
+                        const xAxis = svg.select('.c3-axis-x');
+                        let maxLabelHeight = 0;
+                        if (!xAxis.empty()) {
+                            const tickTexts = xAxis.selectAll('.tick text');
+                            tickTexts.each(function() {
+                                const tickRect = this.getBoundingClientRect();
+                                const transform = this.getAttribute('transform');
+                                const rotation = transform ? parseFloat(transform.match(/rotate\(([^)]+)\)/)?.[1] || '0') : 0;
+                                
+                                if (Math.abs(rotation) > 0) {
+                                    const radians = Math.abs(rotation) * Math.PI / 180;
+                                    const textHeight = tickRect.height;
+                                    const textWidth = tickRect.width;
+                                    const verticalExtent = Math.abs(textHeight * Math.sin(radians)) + Math.abs(textWidth * Math.cos(radians));
+                                    maxLabelHeight = Math.max(maxLabelHeight, verticalExtent);
+                                } else {
+                                    maxLabelHeight = Math.max(maxLabelHeight, tickRect.height);
+                                }
+                            });
+                        }
+                        
+                        const labelSpace = maxLabelHeight > 0 ? maxLabelHeight + 20 : 60;
+                        const calculatedHeight = Math.max(containerHeight, svgHeight + labelSpace);
+                        
+                        // Get the target height and width: use full container dimensions since padding was removed
+                        const chartContainer = containerNode.closest('#lensChart') || 
+                                             containerNode.closest('.chart-container');
+                        let targetHeight = 0;
+                        let targetWidth = 0;
+                        
+                        if (chartContainer) {
+                            const chartContainerRect = chartContainer.getBoundingClientRect();
+                            const chartContainerPadding = 0; // Padding removed from chart-container
+                            targetHeight = chartContainerRect.height - chartContainerPadding;
+                            targetWidth = chartContainerRect.width; // Use full container width
+                        }
+                        
+                        // Use the target height (full container height) as the final height
+                        // This ensures charts use the full available height
+                        const totalHeight = targetHeight > 0 ? targetHeight : Math.max(calculatedHeight, 300);
+                        
+                        const lensChartCanvasId = self.ids ? self.ids.lensChartCanvas : self.getInstanceId('lensChartCanvas');
+                        const lensChartCanvas = document.getElementById(lensChartCanvasId) || 
+                                               containerNode.closest('#' + lensChartCanvasId);
+                        const lensDisplay = containerNode.closest('.lens-display');
+                        
+                        if (lensChartCanvas) {
+                            // Set width to 100% to use full container width
+                            lensChartCanvas.style.width = '100%';
+                            lensChartCanvas.style.height = totalHeight + 'px';
+                            lensChartCanvas.style.minHeight = totalHeight + 'px';
+                            lensChartCanvas.style.maxHeight = totalHeight + 'px';
+                            lensChartCanvas.style.overflow = 'hidden';
+                            
+                            // Resize the C3.js chart if width has changed
+                            // 'this' refers to the chart instance in the onrendered callback
+                            if (targetWidth > 0 && this && typeof this.resize === 'function') {
+                                const currentWidth = lensChartCanvas.offsetWidth;
+                                if (Math.abs(currentWidth - targetWidth) > 1) {
+                                    // Width changed, resize the chart
+                                    this.resize({
+                                        width: currentWidth,
+                                        height: totalHeight
+                                    });
+                                }
+                            }
+                        }
+                        
+                        if (chartContainer) {
+                            chartContainer.style.height = totalHeight + 'px';
+                            chartContainer.style.minHeight = totalHeight + 'px';
+                            chartContainer.style.maxHeight = totalHeight + 'px';
+                            
+                            // Check if chart is expanded and set overflow accordingly
+                            // Check both self.chartExpandedWidth and the actual lensChart width
+                            const lensChart = self.getElementById('lensChart');
+                            const isExpanded = (self.chartExpandedWidth > 0) || 
+                                             (lensChart && lensChart.style && lensChart.style.width && 
+                                              parseFloat(lensChart.style.width) > 0 && 
+                                              parseFloat(lensChart.style.width) > chartContainer.getBoundingClientRect().width);
+                            
+                            if (isExpanded) {
+                                chartContainer.style.overflowX = 'auto';
+                                chartContainer.style.overflowY = 'hidden';
+                                chartContainer.classList.add('expanded');
+                            } else {
+                            chartContainer.style.overflow = 'hidden';
+                                chartContainer.classList.remove('expanded');
+                            }
+                        }
+                        
+                        if (lensDisplay) {
+                            // Calculate min-height based on lens-canvas height minus drop zone (200px) and header (20px)
+                            const lensCanvas = containerNode.closest('.lens-canvas') || 
+                                             document.querySelector('.lens-canvas');
+                            let calculatedMinHeight = totalHeight;
+                            
+                            if (lensCanvas) {
+                                const lensCanvasRect = lensCanvas.getBoundingClientRect();
+                                const lensCanvasHeight = lensCanvasRect.height;
+                                // min-height = lens-canvas height - max drop zone height (200px) - genieAnalytics-header height (20px)
+                                calculatedMinHeight = Math.max(0, lensCanvasHeight - 200 - 20);
+                            }
+                            
+                            lensDisplay.style.height = totalHeight + 'px';
+                            lensDisplay.style.minHeight = calculatedMinHeight + 'px';
+                            lensDisplay.style.maxHeight = totalHeight + 'px';
+                            lensDisplay.style.overflow = 'hidden';
+                        }
+                    });
+                }
+            };
+            
             const chart = c3.generate({
-            bindto: '#lensChartCanvas',
+                bindto: container,
             size: {
                 height: chartHeight || 400
             },
+            onrendered: heightAdjustmentPlugin.onrendered,
             data: {
                 x: 'x', // Specify which column contains x-axis data
                 columns: validColumns,
@@ -5551,7 +6809,19 @@ class WaveAnalytics {
                         type: 'timeseries',
                         show: true,
                         tick: {
-                            format: '%m-%d %H:%M:%S', // C3.js native time format
+                            format: function(x) {
+                                // Format timestamp as "Mar-10 hr:min" (e.g., "Mar-10 14:30")
+                                const date = new Date(x);
+                                if (isNaN(date.getTime())) {
+                                    return '';
+                                }
+                                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                const month = monthNames[date.getMonth()];
+                                const day = date.getDate();
+                                const hours = String(date.getHours()).padStart(2, '0');
+                                const minutes = String(date.getMinutes()).padStart(2, '0');
+                                return `${month}-${day} ${hours}:${minutes}`;
+                            },
                             rotate: -45, // Rotate labels to prevent overlapping
                             multiline: false
                             // count removed to allow auto tick count
@@ -5600,19 +6870,26 @@ class WaveAnalytics {
             
             console.log('C3.js chart created successfully');
             
+            // Store chart instance for cleanup
+            self.c3ChartInstance = chart;
+            
         } catch (error) {
             console.error('C3.js time series chart error:', error);
             console.error('Error details:', error.message, error.stack);
-            // Show error message to user
-            const container = document.getElementById('lensChartCanvas');
+            // Show error message to user - lensChartCanvas is created dynamically
+            const chartContainer = this.getElementById('lensChart');
+            const lensChartCanvasId = this.ids ? this.ids.lensChartCanvas : this.getInstanceId('lensChartCanvas');
+            const container = chartContainer ? chartContainer.querySelector('#' + lensChartCanvasId) : null;
             if (container) {
                 container.innerHTML = '<div style="padding: 20px; text-align: center; color: #d32f2f;">Error creating time series chart. Please check console for details.</div>';
             }
         }
         } catch (error) {
             console.error('C3.js time series chart setup error:', error);
-            // Show error message to user
-            const container = document.getElementById('lensChartCanvas');
+            // Show error message to user - lensChartCanvas is created dynamically
+            const chartContainer = this.getElementById('lensChart');
+            const lensChartCanvasId = this.ids ? this.ids.lensChartCanvas : this.getInstanceId('lensChartCanvas');
+            const container = chartContainer ? chartContainer.querySelector('#' + lensChartCanvasId) : null;
             if (container) {
                 container.innerHTML = '<div style="padding: 20px; text-align: center; color: #d32f2f;">Error setting up time series chart. Please check console for details.</div>';
             }
@@ -5638,10 +6915,15 @@ class WaveAnalytics {
         });
     }
 
-    // Custom function to add stacked labels
+    // Custom function to add stacked labels - lensChartCanvas is created dynamically
     addStackedLabels(groups) {
-        const container = document.getElementById('lensChartCanvas');
+        const chartContainer = this.getElementById('lensChart');
+        const lensChartCanvasId = this.ids ? this.ids.lensChartCanvas : this.getInstanceId('lensChartCanvas');
+        const container = chartContainer ? chartContainer.querySelector('#' + lensChartCanvasId) : null;
         if (!container) return;
+        
+        // Set container overflow to visible so stacked labels are not truncated
+        container.style.overflow = 'visible';
         
         // Remove existing custom labels
         const existingLabels = container.querySelectorAll('.custom-stacked-label');
@@ -5650,6 +6932,9 @@ class WaveAnalytics {
         // Get the chart SVG
         const svg = container.querySelector('svg');
         if (!svg) return;
+        
+        // Set SVG overflow to visible so stacked labels are not truncated
+        svg.style.overflow = 'visible';
         
         // Get actual chart area dimensions from C3.js
         const chartArea = svg.querySelector('.c3-chart');
@@ -5716,9 +7001,23 @@ class WaveAnalytics {
                 }
                 
                 // Create stacked labels at the bottom of the chart
-                // Get the chart height to position labels at the bottom
+                // Position labels from bottom of SVG to ensure they're visible
+                // Get the SVG height to position labels at the bottom
                 const svgHeight = parseFloat(svg.getAttribute('height') || 0);
+                const svgViewBox = svg.getAttribute('viewBox');
+                let actualSvgHeight = svgHeight;
+                if (svgViewBox) {
+                    // If viewBox is set, use viewBox height for accurate positioning
+                    const viewBoxParts = svgViewBox.split(' ');
+                    if (viewBoxParts.length >= 4) {
+                        actualSvgHeight = parseFloat(viewBoxParts[3]) || svgHeight;
+                    }
+                }
                 
+                // Position labels from bottom: use a reasonable offset to place them just below x-axis
+                // The x-axis is typically near the bottom of the chart area, so we position labels below it
+                // Moved up by 14px to show all labels (9th label was cut off)
+                const labelStartFromBottom = 34; // Offset from bottom of SVG (20 + 14 to move up)
                 
                 parts.forEach((part, partIndex) => {
                     // Convert timestamp to readable date string if it's a timestamp
@@ -5732,14 +7031,19 @@ class WaveAnalytics {
                     
                     const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                     label.setAttribute('x', x);
-                    label.setAttribute('y', svgHeight - 60 + (partIndex * 14)); // Top element at svgHeight - 60, then move down
+                    // Position from bottom: actualSvgHeight - labelStartFromBottom - (reverse index * 14)
+                    // First label (partIndex=0) is closest to bottom, last label is highest
+                    // Reverse order: last part in group is at bottom, first part is at top
+                    const reverseIndex = (parts.length - 1) - partIndex; // Reverse order: last part is at bottom
+                    const labelY = actualSvgHeight - labelStartFromBottom - (reverseIndex * 14);
+                    label.setAttribute('y', labelY); // Stack from bottom upward
                     label.setAttribute('text-anchor', 'middle');
                     label.setAttribute('class', 'custom-stacked-label');
                     label.setAttribute('style', 'font-size: 11px; fill: #333; text-anchor: middle;');
                     label.textContent = truncatedText;
                     
                     svg.appendChild(label);
-                    console.log('Created label for group ' + index + ', part ' + partIndex + ': "' + truncatedText + '" (original: "' + part + '", display: "' + displayText + '") at x=' + x + ', y=' + (svgHeight - 60 + (partIndex * 14)) + ', availableWidth=' + availableWidth);
+                    console.log('Created label for group ' + index + ', part ' + partIndex + ': "' + truncatedText + '" (original: "' + part + '", display: "' + displayText + '") at x=' + x + ', y=' + labelY + ', svgHeight=' + actualSvgHeight + ', availableWidth=' + availableWidth);
                 });
             } else {
                 console.log('Skipping group ' + index + ' - no corresponding tick position');
@@ -5799,12 +7103,13 @@ class WaveAnalytics {
         }
         
         const date = new Date(parsedTimestamp);
-        // Format as MM/DD/YYYY for compact display
-        return date.toLocaleDateString('en-US', {
-            month: '2-digit',
-            day: '2-digit',
-            year: 'numeric'
-        });
+        // Format: Mar-10 hr:min (e.g., "Mar-10 14:30")
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const month = monthNames[date.getMonth()];
+        const day = date.getDate();
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${month}-${day} ${hours}:${minutes}`;
     }
 
     createTimeSeriesChart(ctx, data, width, height) {
@@ -6286,7 +7591,15 @@ class WaveAnalytics {
         timestamps.forEach((timestamp, index) => {
             if (index % Math.ceil(timestamps.length / 8) === 0 || index === timestamps.length - 1) {
                 const date = new Date(this.parseTimestamp(timestamp));
-                labels.push(date.toLocaleDateString() + ' ' + date.toLocaleTimeString().slice(0, 5));
+                // Format: Mar-10 hr:min (e.g., "Mar-10 14:30")
+                if (!isNaN(date.getTime())) {
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    const month = monthNames[date.getMonth()];
+                    const day = date.getDate();
+                    const hours = String(date.getHours()).padStart(2, '0');
+                    const minutes = String(date.getMinutes()).padStart(2, '0');
+                    labels.push(`${month}-${day} ${hours}:${minutes}`);
+                }
             }
         });
         
@@ -6751,10 +8064,10 @@ class WaveAnalytics {
     }
 
     renderTable() {
-        const tableContainer = document.getElementById('waveTable');
+        const tableContainer = document.getElementById('genieAnalyticsTable');
         const headers = Object.keys(this.filteredData[0] || {});
         
-        let tableHTML = '<table class="wave-table">';
+        let tableHTML = '<table class="genieAnalytics-table">';
         tableHTML += '<thead><tr>';
         headers.forEach(header => {
             tableHTML += '<th>' + this.formatHeader(header) + '</th>';
@@ -6774,7 +8087,7 @@ class WaveAnalytics {
     }
 
     renderCharts() {
-        const chartsContainer = document.getElementById('waveCharts');
+        const chartsContainer = document.getElementById('genieAnalyticsCharts');
         
         // Use detected metrics for charts (limit to first 6 for performance)
         const chartMetrics = this.metrics.slice(0, 6);
@@ -7014,6 +8327,62 @@ class WaveAnalytics {
         this.isLoading = true;
 
         try {
+            // Ensure container exists and is in the DOM before proceeding
+            if (!this.container) {
+                console.warn('refreshData: Container not found, cannot refresh');
+                throw new Error('Container element not found');
+            }
+            
+            // Log state when refreshData is called
+            console.log('refreshData: Starting refresh', {
+                containerInDOM: document.body.contains(this.container),
+                dataFetchFunction: !!this.dataFetchFunction,
+                accordion: !!this.container.closest('.modern-accordion'),
+                accordionVisible: this.container.closest('.modern-accordion')?.classList.contains('visible')
+            });
+            
+            // Wait for container to be in the DOM AND visible (accordion expanded)
+            // Styles are injected at script load time, so they should always be available
+            let retries = 0;
+            const maxRetries = 50; // Increase retries for accordion expansion
+            const accordionContent = this.container.closest('.modern-accordion-content');
+            const accordion = this.container.closest('.modern-accordion');
+            
+            while (retries < maxRetries) {
+                const inDOM = document.body.contains(this.container);
+                const isVisible = accordion && (
+                    accordion.classList.contains('visible') || 
+                    (accordionContent && accordionContent.style.display !== 'none' && accordionContent.offsetParent !== null)
+                );
+                
+                if (inDOM && isVisible) {
+                    console.log('refreshData: Container is in DOM and accordion is visible, proceeding to render');
+                    break;
+                }
+                
+                if (retries % 10 === 0) {
+                    console.log('refreshData: Waiting for container to be ready...', {
+                        attempt: retries,
+                        inDOM: inDOM,
+                        isVisible: isVisible
+                    });
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 100));
+                retries++;
+            }
+            
+            if (retries >= maxRetries) {
+                const inDOM = document.body.contains(this.container);
+                const isVisible = accordion && accordion.classList.contains('visible');
+                const errorMsg = `Container may not be ready after waiting (inDOM: ${inDOM}, isVisible: ${isVisible})`;
+                console.warn('refreshData: ' + errorMsg, {
+                    inDOM: inDOM,
+                    isVisible: isVisible,
+                    retries: retries
+                });
+                // Don't throw error - proceed anyway, but initialization methods will handle missing elements
+            }
             
             // Store current state before refresh (exclude lens names from dimensions/metrics)
             const currentDimensions = [...this.selectedDimensions].filter(item => 
@@ -7026,8 +8395,77 @@ class WaveAnalytics {
             const currentChartType = this.chartType;
             
             // For testing: use hardcoded CSV data instead of API call
+            // Check if dataFetchFunction exists and is ready
+            if (!this.dataFetchFunction || typeof this.dataFetchFunction !== 'function') {
+                console.warn('refreshData: dataFetchFunction not set, cannot fetch data');
+                // Don't throw error - allow component to render with empty data
+                this.parsedData = this.parsedData || [];
+                this.filteredData = this.filteredData || [];
+            } else {
             this.fetchCSVDataAndParse();
+            }
+            
+            // Ensure parsedData exists before proceeding
+            if (!this.parsedData || this.parsedData.length === 0) {
+                console.warn('refreshData: No parsed data available, rendering with empty state');
+                this.parsedData = [];
+                this.filteredData = [];
+            }
+            
             this.render();
+            
+            // Wait for render to complete and elements to be in DOM
+            // Use requestAnimationFrame to ensure DOM is updated
+            await new Promise(resolve => {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        resolve();
+                    });
+                });
+            });
+            
+            // NOW check if key elements exist AFTER render
+            // Wait for elements to be created within the container
+            retries = 0;
+            const maxElementRetries = 30;
+            while (retries < maxElementRetries) {
+                const fieldPalette = this.getElementById('fieldPalette');
+                const lensChart = this.getElementById('lensChart');
+                const dimensionsArea = this.getElementById('dimensionsArea');
+                const metricsArea = this.getElementById('metricsArea');
+                
+                if (fieldPalette && lensChart && dimensionsArea && metricsArea) {
+                    console.log('refreshData: Key elements found after render, proceeding');
+                    break;
+                }
+                
+                if (retries % 5 === 0) {
+                    console.log('refreshData: Waiting for elements after render...', {
+                        attempt: retries,
+                        fieldPalette: !!fieldPalette,
+                        lensChart: !!lensChart,
+                        dimensionsArea: !!dimensionsArea,
+                        metricsArea: !!metricsArea,
+                        containerHTML: this.container.innerHTML.substring(0, 200)
+                    });
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 50));
+                retries++;
+            }
+            
+            if (retries >= maxElementRetries) {
+                const fieldPalette = this.getElementById('fieldPalette');
+                const lensChart = this.getElementById('lensChart');
+                console.warn('refreshData: Key elements may not exist after render', {
+                    fieldPalette: !!fieldPalette,
+                    lensChart: !!lensChart,
+                    containerExists: !!this.container,
+                    containerInDOM: document.body.contains(this.container),
+                    containerHTML: this.container ? this.container.innerHTML.substring(0, 500) : 'N/A'
+                });
+                // Don't return - proceed anyway, but initialization methods will handle missing elements
+            }
             
             // Re-evaluate all derived metrics with the new data
             this.evaluateExpressions();
@@ -7053,6 +8491,9 @@ class WaveAnalytics {
             // Update field palette and preserve existing selections (don't clear missing items during refresh)
             this.updateFieldPalettePreservingSelections();
             
+            // Wait a bit more for field palette to be rendered
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
             // Update the UI with restored state
             this.updateDropZone('dimensionsArea', this.selectedDimensions);
             this.updateDropZone('metricsArea', this.selectedMetrics);
@@ -7061,32 +8502,119 @@ class WaveAnalytics {
             this.updateFieldItemIcons();
             
             // Re-initialize drag and drop for new DOM elements
+            // Wait longer to ensure DOM is fully ready, especially if accordion was just expanded
             this.dragAndDropSetup = false; // Reset the flag
             setTimeout(() => {
+                if (this.container && document.body.contains(this.container)) {
+                    // Double-check that key elements exist before setup - use instance-specific ID
+                    const fieldPalette = this.getElementById('fieldPalette');
+                    if (fieldPalette) {
                 this.setupDragAndDrop();
-            }, 10);
+                    } else {
+                        console.warn('refreshData: fieldPalette not found in container, retrying drag and drop setup');
+                        setTimeout(() => {
+                            const retryFieldPalette = this.getElementById('fieldPalette');
+                            if (retryFieldPalette) {
+                                this.setupDragAndDrop();
+                            } else {
+                                console.warn('refreshData: fieldPalette still not found after retry');
+                            }
+                        }, 200);
+                    }
+                } else {
+                    console.warn('refreshData: Container not ready for drag and drop setup');
+                }
+            }, 200);
             
             // Re-initialize collapse functionality for new DOM elements
+            // Wait longer for accordion animation to complete and retry if elements aren't found
             this.collapseInitialized = false; // Reset the flag
-            setTimeout(() => {
+            
+            // Wait for accordion to be fully expanded before initializing
+            // Increased delay to allow populateFieldPalette() to complete
+            const waitForAccordionAndInit = async () => {
+                const accordion = this.container ? this.container.closest('.modern-accordion') : null;
+                const accordionContent = this.container ? this.container.closest('.modern-accordion-content') : null;
+                
+                // Wait for accordion to be visible and have dimensions
+                let retries = 0;
+                const maxRetries = 30; // Increased from 20 to 30
+                while (retries < maxRetries) {
+                    const isVisible = accordion && (
+                        accordion.classList.contains('visible') || 
+                        (accordionContent && accordionContent.style.display !== 'none' && accordionContent.offsetParent !== null)
+                    );
+                    const hasDimensions = accordionContent && accordionContent.offsetHeight > 0;
+                    
+                    if (isVisible && hasDimensions && this.container && document.body.contains(this.container)) {
+                        // Check if elements exist and are stable - use instance-specific IDs
+                        const fieldPalette = this.getElementById('fieldPalette');
+                        const collapseBtn = this.getElementById('collapseBtn');
+                        if (fieldPalette && collapseBtn) {
+                            // Verify elements are stable by checking multiple times
+                            let stableCount = 0;
+                            for (let i = 0; i < 3; i++) {
+                                await new Promise(resolve => setTimeout(resolve, 50));
+                                const checkFieldPalette = this.getElementById('fieldPalette');
+                                const checkCollapseBtn = this.getElementById('collapseBtn');
+                                if (checkFieldPalette && checkCollapseBtn) {
+                                    stableCount++;
+                                } else {
+                                    break;
+                                }
+                            }
+                            if (stableCount === 3) {
+                                console.log('refreshData: Accordion expanded and elements found and stable, initializing collapse panel');
                 this.initializeCollapsePanel();
-            }, 100);
+                                return;
+                            }
+                        }
+                    }
+                    
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    retries++;
+                }
+                
+                // Fallback: try to initialize anyway after max retries
+                if (this.container && document.body.contains(this.container)) {
+                    console.warn('refreshData: Accordion may not be fully expanded, but attempting to initialize collapse panel');
+                    this.initializeCollapsePanel();
+                } else {
+                    console.warn('refreshData: Container not ready for collapse panel initialization');
+                }
+            };
+            
+            // Start waiting after a longer delay to allow render and populateFieldPalette to complete
+            setTimeout(waitForAccordionAndInit, 800); // Increased from 500ms to 800ms
             
             // Re-setup search input event listeners after UI recreation
+            // Wait longer and retry if element isn't found
+            // Increased delay to allow populateFieldPalette() to complete
             setTimeout(() => {
+                if (this.container && document.body.contains(this.container)) {
                 this.setupSearchInput();
-            }, 150);
+                } else {
+                    console.warn('refreshData: Container not ready for search input setup');
+                }
+            }, 900); // Increased from 600ms to 900ms
             
             // Apply filters first to update filteredData, then re-render the lens chart if we have selected dimensions/metrics
             this.applyFilters();
-            if (this.selectedDimensions.length > 0 || this.selectedMetrics.length > 0) {
+            // Only render chart if we have data and selections
+            if ((this.selectedDimensions.length > 0 || this.selectedMetrics.length > 0) && 
+                this.parsedData && this.parsedData.length > 0) {
+                try {
                 this.renderLensChart();
+                } catch (error) {
+                    console.error('Error rendering lens chart:', error);
+                    // Don't throw - allow component to continue
+                }
             }
             
             // Reload lenses and expressions from backend after refresh
             if(loadlens == undefined || loadlens == true){
-            getCanaryLenses();
-                getCanaryExpressions();
+            this.getCanaryLenses();
+                this.getCanaryExpressions();
             }
         } catch (error) {
             this.showErrorState(error);
@@ -7165,7 +8693,7 @@ class WaveAnalytics {
 
     setupEventListeners() {
         // Chart type buttons
-        const lineChartBtn = document.getElementById('lineChartBtn');
+        const lineChartBtn = this.getElementById('lineChartBtn');
         if (lineChartBtn) {
             lineChartBtn.addEventListener('click', () => {
             this.setChartType('line');
@@ -7173,7 +8701,7 @@ class WaveAnalytics {
         });
         }
         
-        const barChartBtn = document.getElementById('barChartBtn');
+        const barChartBtn = this.getElementById('barChartBtn');
         if (barChartBtn) {
             barChartBtn.addEventListener('click', () => {
             this.setChartType('bar');
@@ -7182,7 +8710,7 @@ class WaveAnalytics {
         }
         
         // View toggle events
-        const tableViewBtn = document.getElementById('tableViewBtn');
+        const tableViewBtn = this.getElementById('tableViewBtn');
         if (tableViewBtn) {
             tableViewBtn.addEventListener('click', () => {
             this.toggleView('table');
@@ -7190,7 +8718,7 @@ class WaveAnalytics {
         }
         
         // Clear lens event
-        const clearLensBtn = document.getElementById('clearLensBtn');
+        const clearLensBtn = this.getElementById('clearLensBtn');
         if (clearLensBtn) {
             clearLensBtn.addEventListener('click', () => {
             this.clearLens();
@@ -7198,7 +8726,7 @@ class WaveAnalytics {
         }
         
         // Export event
-        const exportBtn = document.getElementById('exportBtn');
+        const exportBtn = this.getElementById('exportBtn');
         if (exportBtn) {
             exportBtn.addEventListener('click', () => {
             this.exportToCSV();
@@ -7206,7 +8734,7 @@ class WaveAnalytics {
         }
         
         // Refresh event
-        const refreshBtn = document.getElementById('refreshBtn');
+        const refreshBtn = this.getElementById('refreshBtn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
             this.refreshData();
@@ -7214,7 +8742,7 @@ class WaveAnalytics {
         }
         
         // Save lens event
-        const saveLensBtn = document.getElementById('saveLensBtn');
+        const saveLensBtn = this.getElementById('saveLensBtn');
         if (saveLensBtn) {
             saveLensBtn.addEventListener('click', () => {
             this.saveLensOptions();
@@ -7222,7 +8750,7 @@ class WaveAnalytics {
         }
         
         // Load lens event
-        const loadLensSelect = document.getElementById('loadLensSelect');
+        const loadLensSelect = this.getElementById('loadLensSelect');
         if (loadLensSelect) {
             loadLensSelect.addEventListener('change', (e) => {
             if (e.target.value) {
@@ -7232,7 +8760,7 @@ class WaveAnalytics {
         }
 
         // Load expression event
-        const loadDerivedMetricSelect = document.getElementById('loadDerivedMetricSelect');
+        const loadDerivedMetricSelect = this.getElementById('loadDerivedMetricSelect');
         if (loadDerivedMetricSelect) {
             loadDerivedMetricSelect.addEventListener('change', (e) => {
                 if (e.target.value) {
@@ -7242,7 +8770,7 @@ class WaveAnalytics {
         }
         
         // Chart expand icon event
-        const chartExpandIcon = document.getElementById('chartExpandIcon');
+        const chartExpandIcon = this.getElementById('chartExpandIcon');
         if (chartExpandIcon) {
             chartExpandIcon.addEventListener('click', () => {
             this.expandChartWidth();
@@ -7250,7 +8778,7 @@ class WaveAnalytics {
         }
         
         // Chart reduce icon event
-        const chartReduceIcon = document.getElementById('chartReduceIcon');
+        const chartReduceIcon = this.getElementById('chartReduceIcon');
         if (chartReduceIcon) {
             chartReduceIcon.addEventListener('click', () => {
             this.reduceChartWidth();
@@ -7268,7 +8796,7 @@ class WaveAnalytics {
     }
 
     setupCollapsibleCategories() {
-        const categoryHeaders = document.querySelectorAll('.category-header');
+        const categoryHeaders = this.container ? this.container.querySelectorAll('.category-header') : [];
         
         categoryHeaders.forEach(header => {
             header.addEventListener('click', (event) => {
@@ -7280,7 +8808,7 @@ class WaveAnalytics {
                 }
                 
                 const targetId = header.getAttribute('data-target');
-                const targetElement = document.getElementById(targetId);
+                const targetElement = this.container ? this.container.querySelector('#' + targetId) : null;
                 const collapseIcon = header.querySelector('.collapse-icon');
                 
                 if (targetElement.style.display === 'none') {
@@ -7396,15 +8924,15 @@ class WaveAnalytics {
     }
     
     updateFloatingControlsPosition() {
-        const waveControls = document.querySelector('.wave-controls');
+        // Floating controls are now sticky positioned relative to lens-display
+        // No need to manually update position - CSS handles it
+        // This method is kept for compatibility but does nothing now
         const floatingControls = document.querySelector('.floating-chart-controls');
-        
-        if (waveControls && floatingControls) {
-            const waveControlsRect = waveControls.getBoundingClientRect();
-            // Update floating controls position
-            floatingControls.style.top = waveControlsRect.bottom + 10 + 'px';
-            floatingControls.style.left = waveControlsRect.left + 'px';
-            
+        if (floatingControls) {
+            // Ensure it's visible and positioned correctly
+            // The sticky positioning in CSS will handle the rest
+            floatingControls.style.top = '';
+            floatingControls.style.left = '';
         }
     }
 
@@ -7422,21 +8950,21 @@ class WaveAnalytics {
         });
         
         // Update dimensions count - show available count (blue) only when collapsed
-        const dimensionsCount = document.getElementById('dimensionsCount');
+        const dimensionsCount = this.getElementById('dimensionsCount');
         if (dimensionsCount) {
             dimensionsCount.textContent = availableDimensionsCount > 0 ? availableDimensionsCount : '';
             // Only show when collapsed and there are available items
-            const dimensionsZone = document.getElementById('dimensionsZone');
+            const dimensionsZone = this.getElementById('dimensionsZone');
             const isCollapsed = dimensionsZone && dimensionsZone.classList.contains('collapsed');
             dimensionsCount.style.display = (isCollapsed && availableDimensionsCount > 0) ? 'inline-block' : 'none';
         }
         
         // Update dimensions missing indicator - show missing count (orange)
-        const dimensionsMissing = document.getElementById('dimensionsMissing');
+        const dimensionsMissing = this.getElementById('dimensionsMissing');
         if (dimensionsMissing) {
             dimensionsMissing.textContent = missingDimensionsCount;
             // Only show when collapsed and there are missing items
-            const dimensionsZone = document.getElementById('dimensionsZone');
+            const dimensionsZone = this.getElementById('dimensionsZone');
             const isCollapsed = dimensionsZone && dimensionsZone.classList.contains('collapsed');
             dimensionsMissing.style.display = (isCollapsed && missingDimensionsCount > 0) ? 'inline-block' : 'none';
         }
@@ -7457,21 +8985,21 @@ class WaveAnalytics {
         });
         
         // Update metrics count - show available count (blue) only when collapsed
-        const metricsCount = document.getElementById('metricsCount');
+        const metricsCount = this.getElementById('metricsCount');
         if (metricsCount) {
             metricsCount.textContent = availableMetricsCount > 0 ? availableMetricsCount : '';
             // Only show when collapsed and there are available items
-            const metricsZone = document.getElementById('metricsZone');
+            const metricsZone = this.getElementById('metricsZone');
             const isCollapsed = metricsZone && metricsZone.classList.contains('collapsed');
             metricsCount.style.display = (isCollapsed && availableMetricsCount > 0) ? 'inline-block' : 'none';
         }
         
         // Update metrics missing indicator - show missing count (orange)
-        const metricsMissing = document.getElementById('metricsMissing');
+        const metricsMissing = this.getElementById('metricsMissing');
         if (metricsMissing) {
             metricsMissing.textContent = missingMetricsCount;
             // Only show when collapsed and there are missing items
-            const metricsZone = document.getElementById('metricsZone');
+            const metricsZone = this.getElementById('metricsZone');
             const isCollapsed = metricsZone && metricsZone.classList.contains('collapsed');
             metricsMissing.style.display = (isCollapsed && missingMetricsCount > 0) ? 'inline-block' : 'none';
         }
@@ -7511,21 +9039,21 @@ class WaveAnalytics {
         }
         
         // Update filters count - show available count (blue) only when collapsed
-        const filtersCount = document.getElementById('filtersCount');
+        const filtersCount = this.getElementById('filtersCount');
         if (filtersCount) {
             filtersCount.textContent = availableFiltersCount > 0 ? availableFiltersCount : '';
             // Only show when collapsed and there are available items
-            const filtersZone = document.getElementById('filtersZone');
+            const filtersZone = this.getElementById('filtersZone');
             const isCollapsed = filtersZone && filtersZone.classList.contains('collapsed');
             filtersCount.style.display = (isCollapsed && availableFiltersCount > 0) ? 'inline-block' : 'none';
         }
         
         // Update filters missing indicator - show missing count (orange)
-        const filtersMissing = document.getElementById('filtersMissing');
+        const filtersMissing = this.getElementById('filtersMissing');
         if (filtersMissing) {
             filtersMissing.textContent = missingFiltersCount;
             // Only show when collapsed and there are missing items
-            const filtersZone = document.getElementById('filtersZone');
+            const filtersZone = this.getElementById('filtersZone');
             const isCollapsed = filtersZone && filtersZone.classList.contains('collapsed');
             filtersMissing.style.display = (isCollapsed && missingFiltersCount > 0) ? 'inline-block' : 'none';
         }
@@ -7574,8 +9102,14 @@ class WaveAnalytics {
         this.chartType = type;
         
         // Update button states
-        document.getElementById('lineChartBtn').classList.toggle('active', type === 'line');
-        document.getElementById('barChartBtn').classList.toggle('active', type === 'bar');
+        const lineChartBtn = this.getElementById('lineChartBtn');
+        const barChartBtn = this.getElementById('barChartBtn');
+        if (lineChartBtn) {
+            lineChartBtn.classList.toggle('active', type === 'line');
+        }
+        if (barChartBtn) {
+            barChartBtn.classList.toggle('active', type === 'bar');
+        }
         
         // Force re-render of the chart
         this.renderLensChart();
@@ -7583,11 +9117,11 @@ class WaveAnalytics {
 
     toggleView(viewType) {
         console.log('toggleView called with:', viewType);
-        const chartContainer = document.getElementById('lensChart');
-        const tableContainer = document.getElementById('lensTable');
-        const tableBtn = document.getElementById('tableViewBtn');
-        const lineBtn = document.getElementById('lineChartBtn');
-        const barBtn = document.getElementById('barChartBtn');
+        const chartContainer = this.getElementById('lensChart');
+        const tableContainer = this.getElementById('lensTable');
+        const tableBtn = this.getElementById('tableViewBtn');
+        const lineBtn = this.getElementById('lineChartBtn');
+        const barBtn = this.getElementById('barChartBtn');
         
         if (viewType === 'table') {
             chartContainer.style.display = 'none';
@@ -7704,12 +9238,12 @@ class WaveAnalytics {
         this.populateFieldPalette(true);
         
         // Reset dropdown selections to show placeholder text
-        const loadLensSelect = document.getElementById('loadLensSelect');
+        const loadLensSelect = this.getElementById('loadLensSelect');
         if (loadLensSelect) {
             loadLensSelect.value = '';
         }
         
-        const loadDerivedMetricSelect = document.getElementById('loadDerivedMetricSelect');
+        const loadDerivedMetricSelect = this.getElementById('loadDerivedMetricSelect');
         if (loadDerivedMetricSelect) {
             loadDerivedMetricSelect.value = '';
         }
@@ -7724,52 +9258,98 @@ class WaveAnalytics {
     }
     
     clearAllDOMFilterSelections() {
-        // Clear dimension filter checkboxes
+        // Clear dimension filter checkboxes (including all-checkbox and value-checkbox)
+        const container = this.getElementById(this.containerId);
+        if (container) {
+            // Clear all dimension checkboxes within the container
+            container.querySelectorAll('.dimension-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            // Clear all dimension dropdown menus
+            container.querySelectorAll('.dimension-dropdown-menu').forEach(menu => {
+                menu.querySelectorAll('.dimension-checkbox').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+            });
+        } else {
+            // Fallback: clear from entire document
         document.querySelectorAll('.dimension-checkbox').forEach(checkbox => {
             checkbox.checked = false;
         });
+        }
         
         // Clear metric filter inputs
-        document.querySelectorAll('.filter-input').forEach(input => {
+        const filterInputs = this.getElementById(this.containerId)?.querySelectorAll('.filter-input') || 
+                             document.querySelectorAll('.filter-input');
+        filterInputs.forEach(input => {
             input.value = '';
         });
         
         // Clear metric filter operators
-        document.querySelectorAll('.filter-operator').forEach(select => {
+        const filterOperators = this.getElementById(this.containerId)?.querySelectorAll('.filter-operator') || 
+                                document.querySelectorAll('.filter-operator');
+        filterOperators.forEach(select => {
+            if (select.options.length > 0) {
             select.selectedIndex = 0;
+            }
         });
         
         // Clear date/time filter inputs
-        document.querySelectorAll('input[type="date"], input[type="datetime-local"]').forEach(input => {
+        const dateInputs = this.getElementById(this.containerId)?.querySelectorAll('input[type="date"], input[type="datetime-local"]') || 
+                          document.querySelectorAll('input[type="date"], input[type="datetime-local"]');
+        dateInputs.forEach(input => {
             input.value = '';
         });
         
         // Clear search filters
-        const searchInputs = document.querySelectorAll('input[type="text"]');
+        const searchInput = this.getElementById('genieAnalyticsSearchInput');
+        if (searchInput) {
+            searchInput.value = '';
+            // Reset visual state
+            searchInput.classList.remove('genieAnalytics-search-pending', 'genieAnalytics-search-applied');
+            // Remove setup marker to allow re-setup
+            searchInput.removeAttribute('data-search-setup');
+        }
+        
+        // Also check for any other search inputs
+        const searchInputs = this.getElementById(this.containerId)?.querySelectorAll('input[type="text"]') || 
+                            document.querySelectorAll('input[type="text"]');
         searchInputs.forEach(input => {
             if (input.placeholder && input.placeholder.toLowerCase().includes('search')) {
                 input.value = '';
                 // Reset visual state
-                input.classList.remove('wave-search-pending', 'wave-search-applied');
+                input.classList.remove('genieAnalytics-search-pending', 'genieAnalytics-search-applied');
                 // Remove setup marker to allow re-setup
                 input.removeAttribute('data-search-setup');
             }
         });
         
         // Clear relative period selects
-        document.querySelectorAll('select[id^="relativePeriod_"]').forEach(select => {
+        const relativePeriodSelects = this.getElementById(this.containerId)?.querySelectorAll('select[id^="relativePeriod_"]') || 
+                                      document.querySelectorAll('select[id^="relativePeriod_"]');
+        relativePeriodSelects.forEach(select => {
+            if (select.options.length > 0) {
             select.selectedIndex = 0;
+            }
         });
         
         // Clear from/to date inputs
-        document.querySelectorAll('input[id^="fromDate_"], input[id^="toDate_"]').forEach(input => {
+        const dateRangeInputs = this.getElementById(this.containerId)?.querySelectorAll('input[id^="fromDate_"], input[id^="toDate_"]') || 
+                               document.querySelectorAll('input[id^="fromDate_"], input[id^="toDate_"]');
+        dateRangeInputs.forEach(input => {
             input.value = '';
         });
         
         // Clear cell/instance filter dropdowns
-        document.querySelectorAll('select[id="cellFilter"], select[id="instanceFilter"]').forEach(select => {
-            select.selectedIndex = 0;
-        });
+        const cellFilter = document.getElementById('cellFilter');
+        if (cellFilter && cellFilter.options.length > 0) {
+            cellFilter.selectedIndex = 0;
+        }
+        const instanceFilter = document.getElementById('instanceFilter');
+        if (instanceFilter && instanceFilter.options.length > 0) {
+            instanceFilter.selectedIndex = 0;
+        }
     }
 
     restoreDOMFilterStates() {
@@ -7856,12 +9436,12 @@ class WaveAnalytics {
         
         // Restore search filters
         if (this.currentFilters.search) {
-            const searchInput = document.getElementById('waveSearchInput');
+            const searchInput = this.getElementById('genieAnalyticsSearchInput');
             if (searchInput) {
                 searchInput.value = this.currentFilters.search;
                 // Apply visual state based on current value
                 if (searchInput.value.trim() !== '') {
-                    searchInput.classList.add('wave-search-applied');
+                    searchInput.classList.add('genieAnalytics-search-applied');
                 }
             }
         }
@@ -8082,7 +9662,7 @@ class WaveAnalytics {
         if (!lens) {
             alert('Lens not found!');
             // Reset dropdown to show placeholder text
-            const loadLensSelect = document.getElementById('loadLensSelect');
+            const loadLensSelect = this.getElementById('loadLensSelect');
             if (loadLensSelect) {
                 loadLensSelect.value = '';
             }
@@ -8147,12 +9727,15 @@ class WaveAnalytics {
         // Rebuild availability maps from current data
         this.rebuildAvailabilityMaps();
         
-        this.metricAggregations = { ...(lens.metricAggregations || {}) };
+        this.metricAggregations = JSON.parse(JSON.stringify(lens.metricAggregations || {}));
         this.chartType = lens.chartType || 'bar';
-        this.selectedFilters = [...(lens.selectedFilters || [])];
-        this.dimensionFilters = { ...(lens.dimensionFilters || {}) };
-        this.currentFilters = { ...(lens.currentFilters || {}) };
-        this.dateTimeFilters = { ...(lens.dateTimeFilters || {}) };
+        this.selectedFilters = JSON.parse(JSON.stringify(lens.selectedFilters || []));
+        // Deep copy dimensionFilters to avoid reference issues
+        this.dimensionFilters = JSON.parse(JSON.stringify(lens.dimensionFilters || {}));
+        // Deep copy currentFilters to avoid reference issues
+        this.currentFilters = JSON.parse(JSON.stringify(lens.currentFilters || {}));
+        // Deep copy dateTimeFilters to avoid reference issues
+        this.dateTimeFilters = JSON.parse(JSON.stringify(lens.dateTimeFilters || {}));
         this.sortColumn = lens.sortColumn;
         this.sortDirection = lens.sortDirection || 'asc';
         this.ignoredRows = new Set(lens.ignoredRows || []); // Restore ignored rows
@@ -8181,8 +9764,14 @@ class WaveAnalytics {
         this.updateFieldItemIcons();
         
         // Update chart type buttons
-        document.getElementById('lineChartBtn').classList.toggle('active', this.chartType === 'line');
-        document.getElementById('barChartBtn').classList.toggle('active', this.chartType === 'bar');
+        const lineChartBtn = this.getElementById('lineChartBtn');
+        const barChartBtn = this.getElementById('barChartBtn');
+        if (lineChartBtn) {
+            lineChartBtn.classList.toggle('active', this.chartType === 'line');
+        }
+        if (barChartBtn) {
+            barChartBtn.classList.toggle('active', this.chartType === 'bar');
+        }
 
         // Setup search input with current value
         this.setupSearchInput();
@@ -8209,7 +9798,7 @@ class WaveAnalytics {
         this.suppressMissingClear = false;
 
         // Keep the selected lens visible in the dropdown
-        const loadLensSelect = document.getElementById('loadLensSelect');
+        const loadLensSelect = this.getElementById('loadLensSelect');
         if (loadLensSelect) {
             loadLensSelect.value = lensName;
         }
@@ -8219,8 +9808,13 @@ class WaveAnalytics {
     }
 
     updateLensDropdown() {
-        const select = document.getElementById('loadLensSelect');
-        if (!select) return;
+        // Use instance-specific ID
+        if (!this.container) return;
+        const select = this.getElementById('loadLensSelect');
+        if (!select) {
+            console.warn('updateLensDropdown: loadLensSelect not found in container');
+            return;
+        }
 
         // Clear existing options
         // Show "No lenses found" if count is 0, otherwise show placeholder
@@ -8237,9 +9831,14 @@ class WaveAnalytics {
     }
 
     setLensDropdownLoading(loading = true, status = 'loading') {
-        const select = document.getElementById('loadLensSelect');
+        // Use scoped query within container
+        if (!this.container) {
+            console.log('setLensDropdownLoading: Container not found');
+            return;
+        }
+        const select = this.getElementById('loadLensSelect');
         if (!select) {
-            console.log('loadLensSelect not found, cannot set loading state');
+            console.log('setLensDropdownLoading: loadLensSelect not found in container');
             return;
         }
 
@@ -8405,8 +10004,8 @@ class WaveAnalytics {
     }
 
     switchView(view) {
-        const tableView = document.getElementById('waveTable');
-        const chartView = document.getElementById('waveCharts');
+        const tableView = document.getElementById('genieAnalyticsTable');
+        const chartView = document.getElementById('genieAnalyticsCharts');
         const tableBtn = document.getElementById('tableViewBtn');
         const chartBtn = document.getElementById('chartViewBtn');
         
@@ -8480,17 +10079,13 @@ class WaveAnalytics {
             if (numericValue > 1000000000000 && numericValue < 5000000000000) { // Between 2001 and 2128
                 const date = new Date(numericValue);
                 if (!isNaN(date.getTime())) {
-                    // Format: yyyy-mm-dd hr:mm:ss SSS UTC (ddd)
-                    const year = date.getFullYear();
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const day = String(date.getDate()).padStart(2, '0');
+                    // Format: Mar-10 hr:min (e.g., "Mar-10 14:30")
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    const month = monthNames[date.getMonth()];
+                    const day = date.getDate();
                     const hours = String(date.getHours()).padStart(2, '0');
                     const minutes = String(date.getMinutes()).padStart(2, '0');
-                    const seconds = String(date.getSeconds()).padStart(2, '0');
-                    const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
-                    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                    const dayOfWeek = dayNames[date.getDay()];
-                    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} ${milliseconds} UTC (${dayOfWeek})`;
+                    return `${month}-${day} ${hours}:${minutes}`;
                 }
             }
             return numericValue.toFixed(2);
@@ -9231,7 +10826,7 @@ class WaveAnalytics {
     // Force container size recalculation
     forceContainerResize() {
         // Force browser to recalculate layout
-        const container = document.getElementById('lensChart');
+        const container = this.getElementById('lensChart');
         if (container) {
             // Trigger reflow to ensure CSS changes are applied
             container.offsetHeight;
@@ -9324,33 +10919,92 @@ class WaveAnalytics {
         }
         
         // Try multiple times to find elements
+        // Increase attempts and check if container is in DOM first
         let attempts = 0;
-        const maxAttempts = 10;
+        const maxAttempts = 50; // Increase to 50 for more retries
+        let stableChecks = 0;
+        const requiredStableChecks = 3; // Elements must be found 3 times in a row to be considered stable
         
         const tryInitialize = () => {
             attempts++;
-            const collapseBtn = document.getElementById('collapseBtn');
-            const fieldPalette = document.getElementById('fieldPalette');
             
+            // First check if container is in DOM
+            if (!this.container || !document.body.contains(this.container)) {
+                if (attempts < maxAttempts) {
+                    if (attempts % 5 === 0) {
+                        console.log('Attempt ' + attempts + ': Container not in DOM yet, retrying...');
+                    }
+                    setTimeout(tryInitialize, 200);
+                } else {
+                    console.warn('initializeCollapsePanel: Container not in DOM after', maxAttempts, 'attempts');
+                }
+                stableChecks = 0; // Reset stable checks
+                return false;
+            }
+            
+            // Also check if accordion is expanded
+            const accordion = this.container.closest('.modern-accordion');
+            const accordionContent = this.container.closest('.modern-accordion-content');
+            const isAccordionExpanded = accordion && (
+                accordion.classList.contains('visible') || 
+                (accordionContent && accordionContent.style.display !== 'none' && accordionContent.offsetParent !== null && accordionContent.offsetHeight > 0)
+            );
+            
+            if (!isAccordionExpanded && attempts < maxAttempts) {
+                setTimeout(tryInitialize, 200);
+                stableChecks = 0; // Reset stable checks
+                return false;
+            }
+            
+            // Search within container, not globally - use instance-specific IDs
+            const collapseBtn = this.getElementById('collapseBtn');
+            const fieldPalette = this.getElementById('fieldPalette');
+            
+            if (attempts % 5 === 0 || (collapseBtn && fieldPalette)) {
             console.log('Attempt ' + attempts + ': Collapse elements found:', { 
                 collapseBtn: !!collapseBtn, 
                 fieldPalette: !!fieldPalette,
-                collapseBtnElement: collapseBtn,
-                fieldPaletteElement: fieldPalette
-            });
+                    containerInDOM: document.body.contains(this.container),
+                    accordionExpanded: isAccordionExpanded,
+                    accordionContentHeight: accordionContent ? accordionContent.offsetHeight : 0,
+                    stableChecks: stableChecks
+                });
+            }
             
+            // Check if elements are found and stable
+            if (collapseBtn && fieldPalette) {
+                stableChecks++;
+                if (stableChecks < requiredStableChecks) {
+                    // Elements found but not stable yet, check again
+                    setTimeout(tryInitialize, 100);
+                    return false;
+                }
+                // Elements are stable, proceed with initialization
+            } else {
+                stableChecks = 0; // Reset if elements not found
+                if (attempts < maxAttempts) {
+                    setTimeout(tryInitialize, 200);
+                } else {
+                    console.warn('initializeCollapsePanel: Elements not found after', maxAttempts, 'attempts');
+                }
+                return false;
+            }
+            
+            // Elements are stable, proceed with initialization
             if (collapseBtn && fieldPalette) {
                 // Use event delegation to handle dynamic content - now works for entire header
-                document.addEventListener('click', (e) => {
+                // But scope the event listener to the container
+                this.container.addEventListener('click', (e) => {
                     // Check if click is on palette header (including button or title)
                     const header = e.target.closest('.palette-header');
-                    if (header) {
+                    if (header && header.closest('#fieldPalette')) {
                         e.preventDefault();
                         e.stopPropagation();
                         console.log('Palette header clicked!');
                         
-                        const currentFieldPalette = document.getElementById('fieldPalette');
-                        const collapseBtn = document.getElementById('collapseBtn');
+                        // Search within container - use instance-specific IDs
+                        const currentFieldPalette = this.getElementById('fieldPalette');
+                        const collapseBtn = this.getElementById('collapseBtn');
                         
                         if (currentFieldPalette && collapseBtn) {
                             currentFieldPalette.classList.toggle('collapsed');
@@ -9466,8 +11120,21 @@ class WaveAnalytics {
             return; // No expressions to evaluate
         }
 
+        // Ensure data arrays exist
+        if (!this.parsedData || !Array.isArray(this.parsedData)) {
+            console.warn('evaluateExpressions: parsedData is not available');
+            return;
+        }
+        if (!this.filteredData || !Array.isArray(this.filteredData)) {
+            console.warn('evaluateExpressions: filteredData is not available');
+            return;
+        }
+
         // Process both parsedData and filteredData
         [this.parsedData, this.filteredData].forEach(dataArray => {
+            if (!dataArray || dataArray.length === 0) {
+                return; // Skip empty arrays
+            }
             dataArray.forEach(row => {
                 Object.keys(this.expressions).forEach(expressionName => {
                     const expression = this.expressions[expressionName];
@@ -10005,7 +11672,7 @@ class WaveAnalytics {
         if (!savedExpressionGroup) {
             alert('Derived metric group not found!');
             // Reset dropdown to show placeholder text
-            const loadDerivedMetricSelect = document.getElementById('loadDerivedMetricSelect');
+            const loadDerivedMetricSelect = this.getElementById('loadDerivedMetricSelect');
             if (loadDerivedMetricSelect) {
                 loadDerivedMetricSelect.value = '';
             }
@@ -10061,7 +11728,7 @@ class WaveAnalytics {
         this.setupDragAndDrop();
 
         // Keep the selected derived metric group visible in the dropdown
-        const loadDerivedMetricSelect = document.getElementById('loadDerivedMetricSelect');
+        const loadDerivedMetricSelect = this.getElementById('loadDerivedMetricSelect');
         if (loadDerivedMetricSelect) {
             loadDerivedMetricSelect.value = expressionName;
         }
@@ -10076,8 +11743,13 @@ class WaveAnalytics {
      * Update the derived metric dropdown with saved derived metrics
      */
     updateExpressionDropdown() {
-        const select = document.getElementById('loadDerivedMetricSelect');
-        if (!select) return;
+        // Use instance-specific ID
+        if (!this.container) return;
+        const select = this.getElementById('loadDerivedMetricSelect');
+        if (!select) {
+            console.warn('updateExpressionDropdown: loadDerivedMetricSelect not found in container');
+            return;
+        }
 
         // Clear existing options
         // Show "No derived metrics found" if count is 0, otherwise show placeholder
@@ -10094,9 +11766,14 @@ class WaveAnalytics {
     }
 
     setDerivedMetricsDropdownLoading(loading = true, status = 'loading') {
-        const select = document.getElementById('loadDerivedMetricSelect');
+        // Use scoped query within container
+        if (!this.container) {
+            console.log('setDerivedMetricsDropdownLoading: Container not found');
+            return;
+        }
+        const select = this.getElementById('loadDerivedMetricSelect');
         if (!select) {
-            console.log('loadDerivedMetricSelect not found, cannot set loading state');
+            console.log('setDerivedMetricsDropdownLoading: loadDerivedMetricSelect not found in container');
             return;
         }
 
@@ -10273,10 +11950,289 @@ class WaveAnalytics {
         // Close on ESC key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                const modal = document.getElementById('expressionBuilderModal');
+                const modal = this.getElementById('expressionBuilderModal');
                 if (modal && modal.style.display === 'flex') {
                     modal.style.display = 'none';
                 }
+            }
+        });
+    }
+
+    /**
+     * Get canary lenses from backend (instance method)
+     */
+    getCanaryLenses() {
+        // Get dataHost from URL params or window.dataHost, with fallback
+       let dataHost = defaultDataHost;
+        if (typeof window.urlParams !== 'undefined' && window.urlParams) {
+            dataHost = window.urlParams.get('host') || dataHost;
+        } else if (typeof window.dataHost !== 'undefined' && window.dataHost) {
+            dataHost = window.dataHost;
+        }
+        
+        const URL = "/component/casp/v1/getlenses/"+dataHost+"/?metadata_query=" + encodeURIComponent("type=" + "perfswat");
+            showSpinner("spinner1");
+        
+        // Set loading state for lens dropdown
+        this.instanceLensLoadingRequested = true;
+        console.log('Setting lens dropdown loading state to true');
+        this.setLensDropdownLoading(true);
+        
+        const self = this;
+        $.ajax({
+            url: URL, 
+            success: function (result) {
+                if (result != undefined && Array.isArray(result)) {
+                    // Parse each string element to get config objects
+                    const parsedLenses = [];
+                    result.forEach(lensString => {
+                        try {
+                            const lensData = JSON.parse(lensString);
+                            if (lensData.config) {
+                                // Parse the config string to get the actual lens configuration
+                                const lensConfig = JSON.parse(lensData.config);
+                                // Ignore entries without names
+                                if (!lensConfig.name) {
+                                    console.log('Ignoring lens entry without name');
+                                    return;
+                                }
+                                // Store the backend timestamp if available
+                                if (lensData.timestamp) {
+                                    lensConfig.backendTimestamp = lensData.timestamp;
+                                }
+                                parsedLenses.push(lensConfig);
+                            }
+                        } catch (error) {
+                            console.error('Error parsing lens data:', error, lensString);
+                        }
+                    });
+                    
+                    // Deduplicate lenses by name, keeping only the latest timestamp
+                    const lensMap = new Map();
+                    parsedLenses.forEach(lens => {
+                        // Name should already be validated during parsing, but check again for safety
+                        if (!lens.name) {
+                            console.log('Warning: Found lens without name during deduplication, skipping');
+                            return;
+                        }
+                        
+                        const existingLens = lensMap.get(lens.name);
+                        
+                        if (!existingLens) {
+                            // First lens with this name
+                            lensMap.set(lens.name, lens);
+                        } else {
+                            // Compare timestamps to keep the latest one
+                            // Priority: backendTimestamp (epoch in seconds) > savedAt (ISO string)
+                            let existingTime = 0;
+                            if (existingLens.backendTimestamp) {
+                                // Backend timestamp is epoch in seconds, convert to milliseconds
+                                existingTime = existingLens.backendTimestamp * 1000;
+                            } else if (existingLens.savedAt) {
+                                // savedAt is ISO string
+                                existingTime = new Date(existingLens.savedAt).getTime();
+                            }
+                            
+                            let currentTime = 0;
+                            if (lens.backendTimestamp) {
+                                // Backend timestamp is epoch in seconds, convert to milliseconds
+                                currentTime = lens.backendTimestamp * 1000;
+                            } else if (lens.savedAt) {
+                                // savedAt is ISO string
+                                currentTime = new Date(lens.savedAt).getTime();
+                            }
+                            
+                            if (currentTime > existingTime) {
+                                // Current lens is newer, replace the existing one
+                                console.log(`Replacing older lens "${lens.name}" with newer one`);
+                                lensMap.set(lens.name, lens);
+                            } else {
+                                // Existing lens is newer or same, keep it
+                                console.log(`Ignoring older lens "${lens.name}", keeping newer one`);
+                            }
+                        }
+                    });
+                    
+                    // Convert map values back to array (remove backendTimestamp before assigning)
+                    const deduplicatedLenses = Array.from(lensMap.values()).map(lens => {
+                        const { backendTimestamp, ...lensWithoutTimestamp } = lens;
+                        return lensWithoutTimestamp;
+                    });
+                    
+                    // Update the genieAnalytics saved lenses
+                    self.savedLenses = deduplicatedLenses;
+                    
+                    // Show appropriate status based on result
+                    if (deduplicatedLenses.length === 0) {
+                        self.setLensDropdownLoading(true, 'empty');
+                        // Auto-clear after 2 seconds
+                        setTimeout(() => {
+                            self.setLensDropdownLoading(false);
+                        }, 2000);
+                    } else {
+                        self.setLensDropdownLoading(true, 'success');
+                        // Auto-clear after 1 second
+                        setTimeout(() => {
+                            self.setLensDropdownLoading(false);
+                        }, 1000);
+                    }
+                    
+                    console.log('Loaded', parsedLenses.length, 'lenses from backend,', deduplicatedLenses.length, 'unique lenses after deduplication');
+                }
+                    hideSpinner("spinner1");
+                self.instanceLensLoadingRequested = false;
+            },
+            error: function (xhr, status, error) {
+                console.error('Failed to get lenses:', error);
+                    toastMessage(toastType.ERROR, "Failed to get lenses");
+                    hideSpinner("spinner1");
+                
+                // Show error status
+                self.setLensDropdownLoading(true, 'error');
+                // Auto-clear after 3 seconds
+                setTimeout(() => {
+                    self.setLensDropdownLoading(false);
+                }, 3000);
+                self.instanceLensLoadingRequested = false;
+            }
+            });
+    }
+
+    /**
+     * Get canary expressions from backend (instance method)
+     */
+    getCanaryExpressions() {
+        // Get dataHost from URL params or window.dataHost, with fallback
+        let dataHost = defaultDataHost;
+        if (typeof window.urlParams !== 'undefined' && window.urlParams) {
+            dataHost = window.urlParams.get('host') || dataHost;
+        } else if (typeof window.dataHost !== 'undefined' && window.dataHost) {
+            dataHost = window.dataHost;
+        }
+        
+        const URL = "/component/casp/v1/getexpressions/"+dataHost+"/?metadata_query=" + encodeURIComponent("type=" + "expression");
+            showSpinner("spinner1");
+        
+        // Set loading state for derived metrics dropdown
+        this.instanceExpressionsLoadingRequested = true;
+        this.setDerivedMetricsDropdownLoading(true);
+        
+        const self = this;
+        $.ajax({
+            url: URL, 
+            success: function (result) {
+                if (result != undefined && Array.isArray(result)) {
+                    // Parse each string element to get config objects
+                    const parsedExpressions = [];
+                    result.forEach(expressionString => {
+                        try {
+                            const expressionData = JSON.parse(expressionString);
+                            if (expressionData.config) {
+                                // Parse the config string to get the actual expression configuration
+                                const expressionConfig = JSON.parse(expressionData.config);
+                                // Ignore entries without names
+                                if (!expressionConfig.name) {
+                                    console.log('Ignoring derived metric entry without name');
+                                    return;
+                                }
+                                // Store the backend timestamp if available
+                                if (expressionData.timestamp) {
+                                    expressionConfig.backendTimestamp = expressionData.timestamp;
+                                }
+                                parsedExpressions.push(expressionConfig);
+                            }
+                        } catch (error) {
+                            console.error('Error parsing expression data:', error, expressionString);
+                        }
+                    });
+                    
+                    // Deduplicate expressions by name, keeping only the latest timestamp
+                    const expressionMap = new Map();
+                    parsedExpressions.forEach(expression => {
+                        // Name should already be validated during parsing, but check again for safety
+                        if (!expression.name) {
+                            console.log('Warning: Found derived metric without name during deduplication, skipping');
+                            return;
+                        }
+                        
+                        const existingExpression = expressionMap.get(expression.name);
+                        
+                        if (!existingExpression) {
+                            // First expression with this name
+                            expressionMap.set(expression.name, expression);
+                        } else {
+                            // Compare timestamps to keep the latest one
+                            // Priority: backendTimestamp (epoch in seconds) > savedAt (ISO string)
+                            let existingTime = 0;
+                            if (existingExpression.backendTimestamp) {
+                                // Backend timestamp is epoch in seconds, convert to milliseconds
+                                existingTime = existingExpression.backendTimestamp * 1000;
+                            } else if (existingExpression.savedAt) {
+                                // savedAt is ISO string
+                                existingTime = new Date(existingExpression.savedAt).getTime();
+                            }
+                            
+                            let currentTime = 0;
+                            if (expression.backendTimestamp) {
+                                // Backend timestamp is epoch in seconds, convert to milliseconds
+                                currentTime = expression.backendTimestamp * 1000;
+                            } else if (expression.savedAt) {
+                                // savedAt is ISO string
+                                currentTime = new Date(expression.savedAt).getTime();
+                            }
+                            
+                            if (currentTime > existingTime) {
+                                // Current expression is newer, replace the existing one
+                                console.log(`Replacing older derived metric "${expression.name}" with newer one`);
+                                expressionMap.set(expression.name, expression);
+                            } else {
+                                // Existing expression is newer or same, keep it
+                                console.log(`Ignoring older derived metric "${expression.name}", keeping newer one`);
+                            }
+                        }
+                    });
+                    
+                    // Convert map values back to array (remove backendTimestamp before assigning)
+                    const deduplicatedExpressions = Array.from(expressionMap.values()).map(expression => {
+                        const { backendTimestamp, ...expressionWithoutTimestamp } = expression;
+                        return expressionWithoutTimestamp;
+                    });
+                    
+                    // Update the genieAnalytics saved expressions
+                    self.savedExpressions = deduplicatedExpressions;
+                    
+                    // Show appropriate status based on result
+                    if (deduplicatedExpressions.length === 0) {
+                        self.setDerivedMetricsDropdownLoading(true, 'empty');
+                        // Auto-clear after 2 seconds
+                        setTimeout(() => {
+                            self.setDerivedMetricsDropdownLoading(false);
+                        }, 2000);
+                    } else {
+                        self.setDerivedMetricsDropdownLoading(true, 'success');
+                        // Auto-clear after 1 second
+                        setTimeout(() => {
+                            self.setDerivedMetricsDropdownLoading(false);
+                        }, 1000);
+                    }
+                    
+                    console.log('Loaded', parsedExpressions.length, 'derived metrics from backend,', deduplicatedExpressions.length, 'unique after deduplication');
+                }
+                    hideSpinner("spinner1");
+                self.instanceExpressionsLoadingRequested = false;
+            },
+            error: function (xhr, status, error) {
+                console.error('Failed to get expressions:', error);
+                    toastMessage(toastType.ERROR, "Failed to get expressions");
+                    hideSpinner("spinner1");
+                
+                // Show error status
+                self.setDerivedMetricsDropdownLoading(true, 'error');
+                // Auto-clear after 3 seconds
+                setTimeout(() => {
+                    self.setDerivedMetricsDropdownLoading(false);
+                }, 3000);
+                self.instanceExpressionsLoadingRequested = false;
             }
         });
     }
@@ -10286,7 +12242,7 @@ class WaveAnalytics {
         // Add CSS styles
         const style = document.createElement('style');
         style.textContent = `
-            .wave-analytics-container {
+            .genieAnalytics-analytics-container {
                 background: #ffffff;
                 border-radius: 0;
                 box-shadow: none;
@@ -10298,7 +12254,7 @@ class WaveAnalytics {
                 box-sizing: border-box;
             }
             
-            .wave-search-input {
+            .genieAnalytics-search-input {
                 width: 200px;
                 max-width: 200px;
                 height: 30px;
@@ -10311,23 +12267,23 @@ class WaveAnalytics {
                 transition: border-color 0.2s ease;
             }
             
-            .wave-search-input:focus {
+            .genieAnalytics-search-input:focus {
                 outline: none;
                 border-color: #007bff;
                 box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
             }
             
-            .wave-search-input.wave-search-pending {
+            .genieAnalytics-search-input.genieAnalytics-search-pending {
                 border-color: #ffc107;
                 background-color: #fff3cd;
             }
             
-            .wave-search-input.wave-search-applied {
+            .genieAnalytics-search-input.genieAnalytics-search-applied {
                 border-color: #28a745;
                 background-color: #d4edda;
             }
     
-    .wave-header {
+    .genieAnalytics-header {
         position: relative;
         background: transparent;
         color: #333;
@@ -10341,7 +12297,7 @@ class WaveAnalytics {
     }
     
     
-    .wave-controls {
+    .genieAnalytics-controls {
         width: 100%;
         display: flex;
         justify-content: flex-start;
@@ -10355,7 +12311,7 @@ class WaveAnalytics {
         align-items: center;
     }
     
-    .wave-btn {
+    .genieAnalytics-btn {
         width: 30px;
         height: 30px;
         padding: 0;
@@ -10371,12 +12327,12 @@ class WaveAnalytics {
         justify-content: center;
     }
     
-    .wave-btn:hover {
+    .genieAnalytics-btn:hover {
         background: #f8f9fa;
         border-color: #0070d2;
     }
     
-    .wave-btn.active {
+    .genieAnalytics-btn.active {
         background: #46a5e3;
         border-color: #46a5e3;
         color: white;
@@ -10406,9 +12362,9 @@ class WaveAnalytics {
         box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
     }
 
-    /* Modal Styles - Scoped to wave-analytics-container and wave-modal-overlay */
-    .wave-analytics-container .modal-overlay,
-    .wave-modal-overlay {
+    /* Modal Styles - Scoped to genieAnalytics-analytics-container and genieAnalytics-modal-overlay */
+    .genieAnalytics-analytics-container .modal-overlay,
+    .genieAnalytics-modal-overlay {
         position: fixed;
         top: 0;
         left: 0;
@@ -10421,8 +12377,8 @@ class WaveAnalytics {
         justify-content: center;
     }
 
-    .wave-analytics-container .modal-content,
-    .wave-modal-overlay .modal-content {
+    .genieAnalytics-analytics-container .modal-content,
+    .genieAnalytics-modal-overlay .modal-content {
         background: white;
         border-radius: 8px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -10432,8 +12388,8 @@ class WaveAnalytics {
         overflow-y: auto;
     }
 
-    .wave-analytics-container .modal-header,
-    .wave-modal-overlay .modal-header {
+    .genieAnalytics-analytics-container .modal-header,
+    .genieAnalytics-modal-overlay .modal-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -10441,16 +12397,16 @@ class WaveAnalytics {
         border-bottom: 1px solid #e5e5e5;
     }
 
-    .wave-analytics-container .modal-header h3,
-    .wave-modal-overlay .modal-header h3 {
+    .genieAnalytics-analytics-container .modal-header h3,
+    .genieAnalytics-modal-overlay .modal-header h3 {
         margin: 0;
         font-size: 18px;
         font-weight: 600;
         color: #333;
     }
 
-    .wave-analytics-container .modal-close,
-    .wave-modal-overlay .modal-close {
+    .genieAnalytics-analytics-container .modal-close,
+    .genieAnalytics-modal-overlay .modal-close {
         background: none;
         border: none;
         font-size: 24px;
@@ -10465,19 +12421,19 @@ class WaveAnalytics {
         border-radius: 4px;
     }
 
-    .wave-analytics-container .modal-close:hover,
-    .wave-modal-overlay .modal-close:hover {
+    .genieAnalytics-analytics-container .modal-close:hover,
+    .genieAnalytics-modal-overlay .modal-close:hover {
         background: #f5f5f5;
         color: #333;
     }
 
-    .wave-analytics-container .modal-body,
-    .wave-modal-overlay .modal-body {
+    .genieAnalytics-analytics-container .modal-body,
+    .genieAnalytics-modal-overlay .modal-body {
         padding: 20px 24px;
     }
 
-    .wave-analytics-container .modal-footer,
-    .wave-modal-overlay .modal-footer {
+    .genieAnalytics-analytics-container .modal-footer,
+    .genieAnalytics-modal-overlay .modal-footer {
         display: flex;
         justify-content: flex-end;
         gap: 12px;
@@ -10485,13 +12441,13 @@ class WaveAnalytics {
         border-top: 1px solid #e5e5e5;
     }
 
-    .wave-analytics-container .form-group,
-    .wave-modal-overlay .form-group {
+    .genieAnalytics-analytics-container .form-group,
+    .genieAnalytics-modal-overlay .form-group {
         margin-bottom: 20px;
     }
 
-    .wave-analytics-container .form-group label,
-    .wave-modal-overlay .form-group label {
+    .genieAnalytics-analytics-container .form-group label,
+    .genieAnalytics-modal-overlay .form-group label {
         display: block;
         margin-bottom: 6px;
         font-weight: 500;
@@ -10499,10 +12455,10 @@ class WaveAnalytics {
         font-size: 14px;
     }
 
-    .wave-analytics-container .form-input, 
-    .wave-analytics-container .form-textarea,
-    .wave-modal-overlay .form-input, 
-    .wave-modal-overlay .form-textarea {
+    .genieAnalytics-analytics-container .form-input, 
+    .genieAnalytics-analytics-container .form-textarea,
+    .genieAnalytics-modal-overlay .form-input, 
+    .genieAnalytics-modal-overlay .form-textarea {
         width: 100%;
         padding: 10px 12px;
         border: 1px solid #ddd;
@@ -10512,23 +12468,23 @@ class WaveAnalytics {
         box-sizing: border-box;
     }
 
-    .wave-analytics-container .form-input:focus, 
-    .wave-analytics-container .form-textarea:focus,
-    .wave-modal-overlay .form-input:focus, 
-    .wave-modal-overlay .form-textarea:focus {
+    .genieAnalytics-analytics-container .form-input:focus, 
+    .genieAnalytics-analytics-container .form-textarea:focus,
+    .genieAnalytics-modal-overlay .form-input:focus, 
+    .genieAnalytics-modal-overlay .form-textarea:focus {
         outline: none;
         border-color: #0070d2;
         box-shadow: 0 0 0 2px rgba(0, 112, 210, 0.1);
     }
 
-    .wave-analytics-container .form-textarea,
-    .wave-modal-overlay .form-textarea {
+    .genieAnalytics-analytics-container .form-textarea,
+    .genieAnalytics-modal-overlay .form-textarea {
         resize: vertical;
         min-height: 80px;
     }
 
-    .wave-analytics-container .form-help,
-    .wave-modal-overlay .form-help {
+    .genieAnalytics-analytics-container .form-help,
+    .genieAnalytics-modal-overlay .form-help {
         font-size: 12px;
         color: #666;
         margin-top: 4px;
@@ -10572,9 +12528,9 @@ class WaveAnalytics {
         font-weight: 500;
     }
 
-    /* Button styles - Scoped to wave-analytics-container */
-    .wave-analytics-container .btn,
-    .wave-analytics-container .modal-overlay .btn {
+    /* Button styles - Scoped to genieAnalytics-analytics-container */
+    .genieAnalytics-analytics-container .btn,
+    .genieAnalytics-analytics-container .modal-overlay .btn {
         padding: 8px 16px;
         border: 1px solid #ddd;
         border-radius: 4px;
@@ -10585,39 +12541,39 @@ class WaveAnalytics {
         min-width: 80px;
     }
 
-    .wave-analytics-container .btn-secondary,
-    .wave-analytics-container .modal-overlay .btn-secondary {
+    .genieAnalytics-analytics-container .btn-secondary,
+    .genieAnalytics-analytics-container .modal-overlay .btn-secondary {
         background: white;
         color: #333;
         border-color: #ddd;
     }
 
-    .wave-analytics-container .btn-secondary:hover,
-    .wave-analytics-container .modal-overlay .btn-secondary:hover {
+    .genieAnalytics-analytics-container .btn-secondary:hover,
+    .genieAnalytics-analytics-container .modal-overlay .btn-secondary:hover {
         background: #f8f9fa;
         border-color: #bbb;
     }
 
-    .wave-analytics-container .btn-primary,
-    .wave-analytics-container .modal-overlay .btn-primary {
+    .genieAnalytics-analytics-container .btn-primary,
+    .genieAnalytics-analytics-container .modal-overlay .btn-primary {
         background: #0070d2;
         color: white;
         border-color: #0070d2;
     }
 
-    .wave-analytics-container .btn-primary:hover,
-    .wave-analytics-container .modal-overlay .btn-primary:hover {
+    .genieAnalytics-analytics-container .btn-primary:hover,
+    .genieAnalytics-analytics-container .modal-overlay .btn-primary:hover {
         background: #005fb2;
         border-color: #005fb2;
     }
 
-    .wave-analytics-container .btn:disabled,
-    .wave-analytics-container .modal-overlay .btn:disabled {
+    .genieAnalytics-analytics-container .btn:disabled,
+    .genieAnalytics-analytics-container .modal-overlay .btn:disabled {
         opacity: 0.6;
         cursor: not-allowed;
     }
     
-    .wave-content {
+    .genieAnalytics-content {
         padding: 0;
         width: 100%;
         max-width: 100%;
@@ -11176,7 +13132,7 @@ class WaveAnalytics {
         flex: 1;
         background: white;
         border-radius: 6px;
-        padding: 12px;
+        padding: 0;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -11207,14 +13163,14 @@ class WaveAnalytics {
         overflow-y: auto;
     }
     
-    .wave-table {
+    .genieAnalytics-table {
         width: auto;
         min-width: 100%;
         border-collapse: collapse;
         background: white;
     }
     
-    .wave-table th {
+    .genieAnalytics-table th {
         background: #f8f9fa;
         padding: 8px 10px;
         text-align: left;
@@ -11227,7 +13183,7 @@ class WaveAnalytics {
         white-space: nowrap;
     }
     
-    .wave-table td {
+    .genieAnalytics-table td {
         padding: 8px 10px;
         border-bottom: 1px solid #dddbda;
         font-size: 11px;
@@ -11235,11 +13191,11 @@ class WaveAnalytics {
         white-space: nowrap;
     }
     
-    .wave-table tbody tr:hover {
+    .genieAnalytics-table tbody tr:hover {
         background: #f8f9fa;
     }
     
-    .wave-table tbody tr:nth-child(even) {
+    .genieAnalytics-table tbody tr:nth-child(even) {
         background: #fafbfc;
     }
     
@@ -11253,7 +13209,7 @@ class WaveAnalytics {
     .chart-container {
         background: white;
         border-radius: 8px;
-        padding: 20px;
+        padding: 0;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
     
@@ -11269,7 +13225,7 @@ class WaveAnalytics {
         justify-content: center;
         align-items: center;
         width: 100%;
-        overflow: auto;
+        overflow: hidden;
         position: relative;
         z-index: 1;
     }
@@ -11298,12 +13254,12 @@ class WaveAnalytics {
         border: 1px solid #dddbda;
         box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         min-height: 300px;
-        max-height: 600px;
         overflow: hidden;
         display: flex;
         flex-direction: column;
         width: 100%;
         min-width: 0;
+        position: relative; /* Enable sticky positioning for child elements */
     }
     
     /* Horizontal scrolling for expanded charts */
@@ -11377,7 +13333,7 @@ class WaveAnalytics {
         background: #a8a8a8;
     }
 
-    .wave-table {
+    .genieAnalytics-table {
         width: auto;
         min-width: 100%;
         border-collapse: collapse;
@@ -11386,7 +13342,7 @@ class WaveAnalytics {
         table-layout: auto;
     }
 
-    .wave-table th {
+    .genieAnalytics-table th {
         background: #f8f9fa;
         color: #495057;
         font-weight: 600;
@@ -11397,7 +13353,7 @@ class WaveAnalytics {
         font-size: 12px;
     }
 
-    .wave-table td {
+    .genieAnalytics-table td {
         padding: 8px 10px;
         border-bottom: 1px solid #dee2e6;
         vertical-align: top;
@@ -11405,15 +13361,15 @@ class WaveAnalytics {
         white-space: nowrap;
     }
 
-    .wave-table tbody tr:hover {
+    .genieAnalytics-table tbody tr:hover {
         background: #f8f9fa;
     }
 
-    .wave-table tbody tr:nth-child(even) {
+    .genieAnalytics-table tbody tr:nth-child(even) {
         background: #fafbfc;
     }
 
-    .wave-table tbody tr:nth-child(even):hover {
+    .genieAnalytics-table tbody tr:nth-child(even):hover {
         background: #f1f3f4;
     }
 
@@ -11431,15 +13387,15 @@ class WaveAnalytics {
         bottom: 0 !important;
     }
 
-    .wave-table {
+    .genieAnalytics-table {
         width: max-content !important;
         min-width: 100% !important;
         table-layout: auto !important;
         box-sizing: border-box !important;
     }
 
-    .wave-table th,
-    .wave-table td {
+    .genieAnalytics-table th,
+    .genieAnalytics-table td {
         white-space: nowrap !important;
         padding: 4px 6px !important;
     }
@@ -11519,15 +13475,15 @@ class WaveAnalytics {
         color: #495057;
     }
 
-    .wave-btn.active {
+    .genieAnalytics-btn.active {
         background: #46a5e3;
         color: white;
     }
     
     .floating-chart-controls {
-        position: fixed;
-        top: 187px; /* Position below Load Lens dropdown */
-        left: 229px; /* Align with Load Lens dropdown */
+        position: sticky;
+        top: 0; /* Stick to top of lens-display */
+        left: 0; /* Stick to left of lens-display */
         display: flex;
         gap: 4px; /* Reduced spacing between icons */
         align-items: center;
@@ -11535,17 +13491,20 @@ class WaveAnalytics {
         
         padding: 2px 4px; /* Reduced padding */
         border-radius: 6px;
-       
+        align-self: flex-start; /* Align to start of flex container */
+        margin: 0; /* No margin */
+        background: rgba(255, 255, 255, 0.9); /* Semi-transparent background for visibility */
+        backdrop-filter: blur(4px); /* Blur effect for better visibility */
     }
     
-    .floating-chart-controls .wave-btn {
+    .floating-chart-controls .genieAnalytics-btn {
         border: none; /* Remove borders from buttons */
         width: 20px; /* Further reduce button width */
         height: 20px; /* Further reduce button height */
         padding: 0;
     }
     
-    .floating-chart-controls .wave-btn i {
+    .floating-chart-controls .genieAnalytics-btn i {
         font-size: 12px; /* Reduce icon size */
     }
     
@@ -11565,7 +13524,7 @@ class WaveAnalytics {
     }
     
     /* Hide floating chart controls in table view */
-    .lens-display.table-view ~ .floating-chart-controls {
+    .lens-display.table-view .floating-chart-controls {
         display: none !important;
     }
 
@@ -11773,13 +13732,13 @@ class WaveAnalytics {
     }
     
     @media (max-width: 768px) {
-        .wave-header {
+        .genieAnalytics-header {
             flex-direction: column;
             align-items: flex-start;
             gap: 15px;
         }
         
-        .wave-controls {
+        .genieAnalytics-controls {
             width: 100%;
             justify-content: space-between;
         }
@@ -12170,33 +14129,33 @@ class WaveAnalytics {
 document.head.appendChild(style);
 
 // Global functions for expression builder (called from onclick handlers in HTML)
-window.waveAnalyticsShowExpressionBuilder = function() {
-    if (window.waveAnalytics) {
-        window.waveAnalytics.showExpressionBuilder();
+window.genieAnalyticsShowExpressionBuilder = function() {
+    if (window.genieAnalytics) {
+        window.genieAnalytics.showExpressionBuilder();
     }
 };
 
-window.waveAnalyticsAddExpressionPart = function(type) {
-    if (window.waveAnalytics) {
-        window.waveAnalytics.addExpressionPart(type);
+window.genieAnalyticsAddExpressionPart = function(type) {
+    if (window.genieAnalytics) {
+        window.genieAnalytics.addExpressionPart(type);
     }
 };
 
-window.waveAnalyticsClearExpression = function() {
-    if (window.waveAnalytics) {
-        window.waveAnalytics.clearExpression();
+window.genieAnalyticsClearExpression = function() {
+    if (window.genieAnalytics) {
+        window.genieAnalytics.clearExpression();
     }
 };
 
-window.waveAnalyticsShowSaveExpressionModal = function() {
-    if (window.waveAnalytics) {
-        window.waveAnalytics.showSaveExpressionModal();
+window.genieAnalyticsShowSaveExpressionModal = function() {
+    if (window.genieAnalytics) {
+        window.genieAnalytics.showSaveExpressionModal();
     }
 };
 
-window.waveAnalyticsSaveExpression = function() {
-    if (window.waveAnalytics) {
-        window.waveAnalytics.saveExpression();
+window.genieAnalyticsSaveExpression = function() {
+    if (window.genieAnalytics) {
+        window.genieAnalytics.saveExpression();
     }
 };
 

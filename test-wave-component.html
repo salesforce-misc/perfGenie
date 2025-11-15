@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wave Analytics Component - Comprehensive Test Suite</title>
+    <title>Genie Analytics Component - Comprehensive Test Suite</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body {
@@ -212,7 +212,7 @@
             background: #17a2b8;
         }
         
-        .wave-container {
+        .genieAnalytics-container {
             margin-top: 20px;
             border: 2px solid #dee2e6;
             border-radius: 8px;
@@ -262,7 +262,7 @@
             color: #424242;
         }
         
-        /* Wave Component Styles (from wave-js.ftl) */
+        /* Genie Analytics Component Styles (from wave-js.ftl) */
         .c3-line-zero-line,
         .c3-grid-lines .c3-ygrid-line,
         .c3-grid-lines .c3-ygrid-line[data-value="0"],
@@ -292,20 +292,20 @@
             dominant-baseline: hanging !important;
         }
         
-        /* Note: Wave component CSS is automatically injected by the component itself */
+        /* Note: Genie Analytics component CSS is automatically injected by the component itself */
     </style>
 </head>
 <body>
     <div class="test-container">
         <div class="test-header">
-            <h1>🌊 Wave Analytics Component</h1>
+            <h1>🌊 Genie Analytics Component</h1>
             <p>Comprehensive Test Suite for All Features and Scenarios</p>
         </div>
         
         <div class="test-controls">
             <div class="test-description">
                 <h4>📋 Test Overview</h4>
-                <p>This test suite covers all features of the Wave Analytics component including data parsing, chart rendering, filtering, sorting, lens management, and various chart types. Use the buttons below to test different scenarios and data sets.</p>
+                <p>This test suite covers all features of the Genie Analytics component including data parsing, chart rendering, filtering, sorting, lens management, and various chart types. Use the buttons below to test different scenarios and data sets.</p>
             </div>
             
             <div class="test-section">
@@ -361,6 +361,12 @@ Chair,Furniture,US,150,50</pre>
                         <button class="test-btn test-btn-primary" onclick="loadLargeDataset()">Load</button>
                         <pre>Generated 1000+ rows with multiple dimensions and metrics for performance testing</pre>
                     </div>
+                    
+                    <div class="data-sample">
+                        <h4>📊 10 Dimensions Dataset</h4>
+                        <button class="test-btn test-btn-primary" onclick="load10DimensionsData()">Load</button>
+                        <pre>Generated data with 10 dimensions to test stacked labels height calculation</pre>
+                    </div>
                 </div>
             </div>
             
@@ -396,8 +402,8 @@ Chair,Furniture,US,150,50</pre>
             </div>
         </div>
         
-        <div class="wave-container">
-            <div id="waveAnalytics"></div>
+        <div class="genieAnalytics-container">
+            <div id="genieAnalytics"></div>
         </div>
         
         <div class="test-results">
@@ -411,18 +417,18 @@ Chair,Furniture,US,150,50</pre>
     <script src="perfgenie/src/main/resources/static/plugins/d3/d3-4.10.0.min.js"></script>
     <script src="perfgenie/src/main/resources/static/plugins/c3/c3-0.7.14.min.js"></script>
     
-    <!-- Include the Wave Analytics component -->
-    <script src="perfgenie/src/main/resources/static/js/wave-component.js"></script>
+    <!-- Include the Genie Analytics component -->
+    <script src="perfgenie/src/main/resources/static/js/genieAnalytics-component.js?v=20250107"></script>
     
     <script>
-        let waveAnalytics;
+        let genieAnalytics;
         let testResults = [];
         
         // Initialize the component when page loads
         document.addEventListener('DOMContentLoaded', function() {
             try {
-                waveAnalytics = new WaveAnalytics('waveAnalytics');
-                logTestResult('✅ Component Initialization', 'Wave Analytics component initialized successfully');
+                genieAnalytics = new GenieAnalytics('genieAnalytics');
+                logTestResult('✅ Component Initialization', 'Genie Analytics component initialized successfully');
             } catch (error) {
                 logTestResult('❌ Component Initialization', 'Failed to initialize component: ' + error.message);
             }
@@ -509,19 +515,19 @@ Headphones,Electronics,EU,120,30,15`;
                 logTestResult('✅ Basic Functionality', 'Testing component initialization and basic methods...', 'info');
                 
                 // Test component exists
-                if (waveAnalytics) {
-                    logTestResult('✅ Component Instance', 'Wave Analytics instance created successfully', 'success');
+                if (genieAnalytics) {
+                    logTestResult('✅ Component Instance', 'Genie Analytics instance created successfully', 'success');
                 } else {
-                    logTestResult('❌ Component Instance', 'Wave Analytics instance not found', 'error');
+                    logTestResult('❌ Component Instance', 'Genie Analytics instance not found', 'error');
                     return;
                 }
                 
                 // Test data setting methods
-                waveAnalytics.setCSVDataAsString(timeSeriesData);
+                genieAnalytics.setCSVDataAsString(timeSeriesData);
                 logTestResult('✅ CSV Data Setting', 'setCSVDataAsString method works', 'success');
                 
                 // Test data fetch function
-                waveAnalytics.setDataFetchFunction(() => timeSeriesData);
+                genieAnalytics.setDataFetchFunction(() => timeSeriesData);
                 logTestResult('✅ Data Fetch Function', 'setDataFetchFunction method works', 'success');
                 
                 logTestResult('✅ Basic Functionality', 'All basic functionality tests passed', 'success');
@@ -535,15 +541,15 @@ Headphones,Electronics,EU,120,30,15`;
                 logTestResult('📊 Data Parsing', 'Testing CSV parsing and data analysis...', 'info');
                 
                 // Test time series data parsing
-                waveAnalytics.setCSVDataAsString(timeSeriesData);
+                genieAnalytics.setCSVDataAsString(timeSeriesData);
                 logTestResult('✅ Time Series Parsing', 'Time series data parsed successfully', 'success');
                 
                 // Test multi-dimensional data parsing
-                waveAnalytics.setCSVDataAsString(multiDimensionalData);
+                genieAnalytics.setCSVDataAsString(multiDimensionalData);
                 logTestResult('✅ Multi-Dimensional Parsing', 'Multi-dimensional data parsed successfully', 'success');
                 
                 // Test complex metrics data parsing
-                waveAnalytics.setCSVDataAsString(complexMetricsData);
+                genieAnalytics.setCSVDataAsString(complexMetricsData);
                 logTestResult('✅ Complex Metrics Parsing', 'Complex metrics data parsed successfully', 'success');
                 
                 logTestResult('✅ Data Parsing', 'All data parsing tests passed', 'success');
@@ -557,22 +563,22 @@ Headphones,Electronics,EU,120,30,15`;
                 logTestResult('📈 Chart Types', 'Testing different chart types...', 'info');
                 
                 // Load test data
-                waveAnalytics.setCSVDataAsString(multiDimensionalData);
+                genieAnalytics.setCSVDataAsString(multiDimensionalData);
                 
                 // Test bar chart
-                waveAnalytics.setChartType('bar');
+                genieAnalytics.setChartType('bar');
                 logTestResult('✅ Bar Chart', 'Bar chart type set successfully', 'success');
                 
                 // Test line chart
-                waveAnalytics.setChartType('line');
+                genieAnalytics.setChartType('line');
                 logTestResult('✅ Line Chart', 'Line chart type set successfully', 'success');
                 
                 // Test table view
-                waveAnalytics.toggleView('table');
+                genieAnalytics.toggleView('table');
                 logTestResult('✅ Table View', 'Table view toggled successfully', 'success');
                 
                 // Test chart view
-                waveAnalytics.toggleView('chart');
+                genieAnalytics.toggleView('chart');
                 logTestResult('✅ Chart View', 'Chart view toggled successfully', 'success');
                 
                 logTestResult('✅ Chart Types', 'All chart type tests passed', 'success');
@@ -586,10 +592,10 @@ Headphones,Electronics,EU,120,30,15`;
                 logTestResult('🔍 Filters', 'Testing filtering and sorting functionality...', 'info');
                 
                 // Load test data
-                waveAnalytics.setCSVDataAsString(complexMetricsData);
+                genieAnalytics.setCSVDataAsString(complexMetricsData);
                 
                 // Test search functionality
-                const searchInput = document.getElementById('waveSearchInput');
+                const searchInput = document.getElementById('genieAnalyticsSearchInput');
                 if (searchInput) {
                     searchInput.value = 'Engineering';
                     searchInput.dispatchEvent(new Event('input'));
@@ -610,14 +616,14 @@ Headphones,Electronics,EU,120,30,15`;
                 logTestResult('💾 Lens Management', 'Testing lens save/load functionality...', 'info');
                 
                 // Load test data and configure
-                waveAnalytics.setCSVDataAsString(multiDimensionalData);
+                genieAnalytics.setCSVDataAsString(multiDimensionalData);
                 
                 // Test saving lens
-                waveAnalytics.saveLensOptions();
+                genieAnalytics.saveLensOptions();
                 logTestResult('✅ Save Lens', 'Lens save functionality tested', 'success');
                 
                 // Test lens dropdown update
-                waveAnalytics.updateLensDropdown();
+                genieAnalytics.updateLensDropdown();
                 logTestResult('✅ Lens Dropdown', 'Lens dropdown updated successfully', 'success');
                 
                 logTestResult('✅ Lens Management', 'All lens management tests passed', 'success');
@@ -631,15 +637,15 @@ Headphones,Electronics,EU,120,30,15`;
                 logTestResult('🔧 Advanced Features', 'Testing advanced functionality...', 'info');
                 
                 // Test data refresh
-                waveAnalytics.refreshData();
+                genieAnalytics.refreshData();
                 logTestResult('✅ Data Refresh', 'Data refresh functionality tested', 'success');
                 
                 // Test export functionality
-                waveAnalytics.exportToCSV();
+                genieAnalytics.exportToCSV();
                 logTestResult('✅ CSV Export', 'CSV export functionality tested', 'success');
                 
                 // Test clear lens
-                waveAnalytics.clearLens();
+                genieAnalytics.clearLens();
                 logTestResult('✅ Clear Lens', 'Clear lens functionality tested', 'success');
                 
                 logTestResult('✅ Advanced Features', 'All advanced feature tests passed', 'success');
@@ -654,28 +660,28 @@ Headphones,Electronics,EU,120,30,15`;
                 logTestResult('📈 Time Series Data', 'Loading time series data...', 'info');
                 
                 // Check data before loading
-                logTestResult('🔍 Before Loading', `Parsed data length: ${waveAnalytics.parsedData ? waveAnalytics.parsedData.length : 'not set'}`, 'info');
+                logTestResult('🔍 Before Loading', `Parsed data length: ${genieAnalytics.parsedData ? genieAnalytics.parsedData.length : 'not set'}`, 'info');
                 
-                waveAnalytics.setCSVDataAsString(timeSeriesData);
+                genieAnalytics.setCSVDataAsString(timeSeriesData);
                 
                 // Check data after loading
-                logTestResult('🔍 After Loading', `Parsed data length: ${waveAnalytics.parsedData ? waveAnalytics.parsedData.length : 'not set'}`, 'info');
+                logTestResult('🔍 After Loading', `Parsed data length: ${genieAnalytics.parsedData ? genieAnalytics.parsedData.length : 'not set'}`, 'info');
                 
-                if (waveAnalytics.parsedData && waveAnalytics.parsedData.length > 0) {
-                    logTestResult('🔍 First Row', `First row: ${JSON.stringify(waveAnalytics.parsedData[0])}`, 'info');
+                if (genieAnalytics.parsedData && genieAnalytics.parsedData.length > 0) {
+                    logTestResult('🔍 First Row', `First row: ${JSON.stringify(genieAnalytics.parsedData[0])}`, 'info');
                     
                     // Check all unique region values
-                    const allRegionValues = [...new Set(waveAnalytics.parsedData.map(row => row.region).filter(val => val !== null && val !== undefined && val !== ''))];
+                    const allRegionValues = [...new Set(genieAnalytics.parsedData.map(row => row.region).filter(val => val !== null && val !== undefined && val !== ''))];
                     logTestResult('🔍 All Region Values', `Unique region values: ${JSON.stringify(allRegionValues)}`, 'info');
                 }
                 
                 // Force render to update the UI
-                waveAnalytics.render();
+                genieAnalytics.render();
                 
                 // Check if dimensions and metrics were populated
-                const dimensions = waveAnalytics.dimensions || [];
-                const metrics = waveAnalytics.metrics || [];
-                const timestampDimensions = waveAnalytics.timestampDimensions || [];
+                const dimensions = genieAnalytics.dimensions || [];
+                const metrics = genieAnalytics.metrics || [];
+                const timestampDimensions = genieAnalytics.timestampDimensions || [];
                 
                 logTestResult('📈 Time Series Data', `Data loaded - Dimensions: ${dimensions.length}, Metrics: ${metrics.length}, Timestamps: ${timestampDimensions.length}`, 'success');
                 
@@ -709,12 +715,12 @@ Headphones,Electronics,EU,120,30,15`;
         
         function loadMultiDimensionalData() {
             try {
-                waveAnalytics.setCSVDataAsString(multiDimensionalData);
-                waveAnalytics.render();
+                genieAnalytics.setCSVDataAsString(multiDimensionalData);
+                genieAnalytics.render();
                 
-                const dimensions = waveAnalytics.dimensions || [];
-                const metrics = waveAnalytics.metrics || [];
-                const timestampDimensions = waveAnalytics.timestampDimensions || [];
+                const dimensions = genieAnalytics.dimensions || [];
+                const metrics = genieAnalytics.metrics || [];
+                const timestampDimensions = genieAnalytics.timestampDimensions || [];
                 
                 logTestResult('📊 Multi-Dimensional Data', `Data loaded - Dimensions: ${dimensions.length}, Metrics: ${metrics.length}, Timestamps: ${timestampDimensions.length}`, 'success');
                 
@@ -728,12 +734,12 @@ Headphones,Electronics,EU,120,30,15`;
         
         function loadComplexMetricsData() {
             try {
-                waveAnalytics.setCSVDataAsString(complexMetricsData);
-                waveAnalytics.render();
+                genieAnalytics.setCSVDataAsString(complexMetricsData);
+                genieAnalytics.render();
                 
-                const dimensions = waveAnalytics.dimensions || [];
-                const metrics = waveAnalytics.metrics || [];
-                const timestampDimensions = waveAnalytics.timestampDimensions || [];
+                const dimensions = genieAnalytics.dimensions || [];
+                const metrics = genieAnalytics.metrics || [];
+                const timestampDimensions = genieAnalytics.timestampDimensions || [];
                 
                 logTestResult('🔢 Complex Metrics Data', `Data loaded - Dimensions: ${dimensions.length}, Metrics: ${metrics.length}, Timestamps: ${timestampDimensions.length}`, 'success');
                 
@@ -748,9 +754,14 @@ Headphones,Electronics,EU,120,30,15`;
         function loadLargeDataset() {
             try {
                 // Generate large dataset
+                // Use epoch timestamps (milliseconds) for better compatibility with C3.js timeseries
                 let largeData = 'id,timestamp,metric,value,region,department\n';
+                const baseDate = new Date(2024, 0, 1).getTime(); // Start from Jan 1, 2024
                 for (let i = 1; i <= 1000; i++) {
-                    const timestamp = new Date(2024, 0, 1, Math.floor(Math.random() * 24), Math.floor(Math.random() * 60)).toISOString();
+                    // Generate random timestamp within the first day of 2024 (in milliseconds)
+                    const randomHours = Math.floor(Math.random() * 24);
+                    const randomMinutes = Math.floor(Math.random() * 60);
+                    const timestamp = baseDate + (randomHours * 60 * 60 * 1000) + (randomMinutes * 60 * 1000);
                     const metric = ['CPU', 'Memory', 'Disk', 'Network'][Math.floor(Math.random() * 4)];
                     const value = (Math.random() * 100).toFixed(2);
                     const region = ['US', 'EU', 'APAC'][Math.floor(Math.random() * 3)];
@@ -758,12 +769,12 @@ Headphones,Electronics,EU,120,30,15`;
                     largeData += `${i},${timestamp},${metric},${value},${region},${department}\n`;
                 }
                 
-                waveAnalytics.setCSVDataAsString(largeData);
-                waveAnalytics.render();
+                genieAnalytics.setCSVDataAsString(largeData);
+                genieAnalytics.render();
                 
-                const dimensions = waveAnalytics.dimensions || [];
-                const metrics = waveAnalytics.metrics || [];
-                const timestampDimensions = waveAnalytics.timestampDimensions || [];
+                const dimensions = genieAnalytics.dimensions || [];
+                const metrics = genieAnalytics.metrics || [];
+                const timestampDimensions = genieAnalytics.timestampDimensions || [];
                 
                 logTestResult('🌐 Large Dataset', `Large dataset (1000+ rows) loaded - Dimensions: ${dimensions.length}, Metrics: ${metrics.length}, Timestamps: ${timestampDimensions.length}`, 'success');
             } catch (error) {
@@ -771,11 +782,80 @@ Headphones,Electronics,EU,120,30,15`;
             }
         }
         
+        function load10DimensionsData() {
+            try {
+                // Generate dataset with 10 dimensions to test stacked labels height calculation
+                // Keep total bars <= 50 to ensure showValueLabels is true
+                let tenDimData = 'dim1,dim2,dim3,dim4,dim5,dim6,dim7,dim8,dim9,dim10,metric1,metric2\n';
+                
+                // Generate data with combinations of 10 dimensions
+                // Use 2-3 values per dimension to keep total combinations manageable (<= 50 bars)
+                const dimValues = {
+                    dim1: ['A', 'B'],
+                    dim2: ['X', 'Y'],
+                    dim3: ['1', '2'],
+                    dim4: ['Alpha', 'Beta'],
+                    dim5: ['North', 'South'],
+                    dim6: ['Red', 'Blue'],
+                    dim7: ['High', 'Low'],
+                    dim8: ['Fast', 'Slow'],
+                    dim9: ['Big', 'Small'],
+                    dim10: ['Hot', 'Cold']
+                };
+                
+                let rowCount = 0;
+                // Generate combinations - limit to 30 rows to keep total bars <= 50 (30 rows * 2 metrics = 60, but we'll use fewer)
+                for (let d1 of dimValues.dim1) {
+                    for (let d2 of dimValues.dim2) {
+                        for (let d3 of dimValues.dim3) {
+                            if (rowCount >= 25) break; // Limit to 25 rows (25 * 2 metrics = 50 bars max)
+                            const metric1 = (Math.random() * 100).toFixed(2);
+                            const metric2 = (Math.random() * 100).toFixed(2);
+                            tenDimData += `${d1},${d2},${d3},${dimValues.dim4[rowCount % 2]},${dimValues.dim5[rowCount % 2]},${dimValues.dim6[rowCount % 2]},${dimValues.dim7[rowCount % 2]},${dimValues.dim8[rowCount % 2]},${dimValues.dim9[rowCount % 2]},${dimValues.dim10[rowCount % 2]},${metric1},${metric2}\n`;
+                            rowCount++;
+                        }
+                        if (rowCount >= 25) break;
+                    }
+                    if (rowCount >= 25) break;
+                }
+                
+                genieAnalytics.setCSVDataAsString(tenDimData);
+                genieAnalytics.render();
+                
+                const dimensions = genieAnalytics.dimensions || [];
+                const metrics = genieAnalytics.metrics || [];
+                const timestampDimensions = genieAnalytics.timestampDimensions || [];
+                
+                logTestResult('📊 10 Dimensions Dataset', `10 dimensions dataset loaded - Dimensions: ${dimensions.length}, Metrics: ${metrics.length}, Timestamps: ${timestampDimensions.length}`, 'success');
+                
+                // Auto-select all dimensions and metrics for bar chart
+                setTimeout(() => {
+                    dimensions.forEach(dim => {
+                        const dimElement = document.querySelector(`[data-field="${dim}"]`);
+                        if (dimElement) {
+                            dimElement.click();
+                        }
+                    });
+                    metrics.forEach(metric => {
+                        const metricElement = document.querySelector(`[data-field="${metric}"]`);
+                        if (metricElement) {
+                            metricElement.click();
+                        }
+                    });
+                    // Set chart type to bar to see stacked labels
+                    genieAnalytics.setChartType('bar');
+                    genieAnalytics.toggleView('chart');
+                }, 500);
+            } catch (error) {
+                logTestResult('❌ 10 Dimensions Dataset', 'Error loading 10 dimensions dataset: ' + error.message, 'error');
+            }
+        }
+        
         function testBarChart() {
             try {
-                waveAnalytics.setCSVDataAsString(multiDimensionalData);
-                waveAnalytics.setChartType('bar');
-                waveAnalytics.toggleView('chart');
+                genieAnalytics.setCSVDataAsString(multiDimensionalData);
+                genieAnalytics.setChartType('bar');
+                genieAnalytics.toggleView('chart');
                 logTestResult('📊 Bar Chart', 'Bar chart test completed', 'success');
             } catch (error) {
                 logTestResult('❌ Bar Chart', 'Error testing bar chart: ' + error.message, 'error');
@@ -784,9 +864,9 @@ Headphones,Electronics,EU,120,30,15`;
         
         function testLineChart() {
             try {
-                waveAnalytics.setCSVDataAsString(timeSeriesData);
-                waveAnalytics.setChartType('line');
-                waveAnalytics.toggleView('chart');
+                genieAnalytics.setCSVDataAsString(timeSeriesData);
+                genieAnalytics.setChartType('line');
+                genieAnalytics.toggleView('chart');
                 logTestResult('📈 Line Chart', 'Line chart test completed', 'success');
             } catch (error) {
                 logTestResult('❌ Line Chart', 'Error testing line chart: ' + error.message, 'error');
@@ -795,10 +875,22 @@ Headphones,Electronics,EU,120,30,15`;
         
         function testTimeSeriesChart() {
             try {
-                waveAnalytics.setCSVDataAsString(timeSeriesData);
-                waveAnalytics.setChartType('line');
-                waveAnalytics.toggleView('chart');
-                logTestResult('⏰ Time Series Chart', 'Time series chart test completed', 'success');
+                genieAnalytics.setCSVDataAsString(timeSeriesData);
+                genieAnalytics.setChartType('line');
+                genieAnalytics.toggleView('chart');
+                
+                // Wait for chart to be created (async operations)
+                setTimeout(() => {
+                    const chartInstance = genieAnalytics.chartInstance;
+                    const chartContainer = document.getElementById('genieAnalytics-lensChart');
+                    const canvas = chartContainer ? chartContainer.querySelector('canvas') : null;
+                    
+                    if (chartInstance && canvas) {
+                        logTestResult('⏰ Time Series Chart', 'Time series chart created successfully', 'success');
+                    } else {
+                        logTestResult('❌ Time Series Chart', 'Chart instance or canvas not found. Chart may have failed to create.', 'error');
+                    }
+                }, 2000); // Wait 2 seconds for async chart creation
             } catch (error) {
                 logTestResult('❌ Time Series Chart', 'Error testing time series chart: ' + error.message, 'error');
             }
@@ -806,8 +898,8 @@ Headphones,Electronics,EU,120,30,15`;
         
         function testTableView() {
             try {
-                waveAnalytics.setCSVDataAsString(complexMetricsData);
-                waveAnalytics.toggleView('table');
+                genieAnalytics.setCSVDataAsString(complexMetricsData);
+                genieAnalytics.toggleView('table');
                 logTestResult('📋 Table View', 'Table view test completed', 'success');
             } catch (error) {
                 logTestResult('❌ Table View', 'Error testing table view: ' + error.message, 'error');
@@ -824,7 +916,7 @@ Headphones,Electronics,EU,120,30,15`;
         
         function testFiltering() {
             try {
-                waveAnalytics.setCSVDataAsString(complexMetricsData);
+                genieAnalytics.setCSVDataAsString(complexMetricsData);
                 logTestResult('🔍 Filtering', 'Filtering functionality tested', 'success');
             } catch (error) {
                 logTestResult('❌ Filtering', 'Error testing filtering: ' + error.message, 'error');
@@ -833,7 +925,7 @@ Headphones,Electronics,EU,120,30,15`;
         
         function testSorting() {
             try {
-                waveAnalytics.setCSVDataAsString(complexMetricsData);
+                genieAnalytics.setCSVDataAsString(complexMetricsData);
                 logTestResult('🔄 Sorting', 'Sorting functionality tested', 'success');
             } catch (error) {
                 logTestResult('❌ Sorting', 'Error testing sorting: ' + error.message, 'error');
@@ -842,7 +934,7 @@ Headphones,Electronics,EU,120,30,15`;
         
         function testAggregations() {
             try {
-                waveAnalytics.setCSVDataAsString(complexMetricsData);
+                genieAnalytics.setCSVDataAsString(complexMetricsData);
                 logTestResult('📊 Aggregations', 'Aggregation functionality tested', 'success');
             } catch (error) {
                 logTestResult('❌ Aggregations', 'Error testing aggregations: ' + error.message, 'error');
@@ -851,7 +943,7 @@ Headphones,Electronics,EU,120,30,15`;
         
         function testSearch() {
             try {
-                const searchInput = document.getElementById('waveSearchInput');
+                const searchInput = document.getElementById('genieAnalyticsSearchInput');
                 if (searchInput) {
                     searchInput.value = 'test';
                     searchInput.dispatchEvent(new Event('input'));
@@ -864,7 +956,7 @@ Headphones,Electronics,EU,120,30,15`;
         
         function testExport() {
             try {
-                waveAnalytics.exportToCSV();
+                genieAnalytics.exportToCSV();
                 logTestResult('💾 Export', 'Export functionality tested', 'success');
             } catch (error) {
                 logTestResult('❌ Export', 'Error testing export: ' + error.message, 'error');
@@ -873,8 +965,8 @@ Headphones,Electronics,EU,120,30,15`;
         
         function testSaveLens() {
             try {
-                waveAnalytics.setCSVDataAsString(multiDimensionalData);
-                waveAnalytics.saveLensOptions();
+                genieAnalytics.setCSVDataAsString(multiDimensionalData);
+                genieAnalytics.saveLensOptions();
                 logTestResult('💾 Save Lens', 'Save lens functionality tested', 'success');
             } catch (error) {
                 logTestResult('❌ Save Lens', 'Error testing save lens: ' + error.message, 'error');
@@ -883,7 +975,7 @@ Headphones,Electronics,EU,120,30,15`;
         
         function testLoadLens() {
             try {
-                waveAnalytics.updateLensDropdown();
+                genieAnalytics.updateLensDropdown();
                 logTestResult('📂 Load Lens', 'Load lens functionality tested', 'success');
             } catch (error) {
                 logTestResult('❌ Load Lens', 'Error testing load lens: ' + error.message, 'error');
@@ -892,7 +984,7 @@ Headphones,Electronics,EU,120,30,15`;
         
         function testLensPersistence() {
             try {
-                waveAnalytics.refreshData();
+                genieAnalytics.refreshData();
                 logTestResult('🔄 Lens Persistence', 'Lens persistence functionality tested', 'success');
             } catch (error) {
                 logTestResult('❌ Lens Persistence', 'Error testing lens persistence: ' + error.message, 'error');
@@ -904,32 +996,32 @@ Headphones,Electronics,EU,120,30,15`;
                 logTestResult('🔍 Debug Data Loading', 'Starting data loading debug...', 'info');
                 
                 // Check component state
-                logTestResult('🔍 Component State', `Parsed data length: ${waveAnalytics.parsedData ? waveAnalytics.parsedData.length : 'undefined'}`, 'info');
-                logTestResult('🔍 Component State', `Dimensions: ${JSON.stringify(waveAnalytics.dimensions || [])}`, 'info');
-                logTestResult('🔍 Component State', `Metrics: ${JSON.stringify(waveAnalytics.metrics || [])}`, 'info');
-                logTestResult('🔍 Component State', `Timestamp Dimensions: ${JSON.stringify(waveAnalytics.timestampDimensions || [])}`, 'info');
+                logTestResult('🔍 Component State', `Parsed data length: ${genieAnalytics.parsedData ? genieAnalytics.parsedData.length : 'undefined'}`, 'info');
+                logTestResult('🔍 Component State', `Dimensions: ${JSON.stringify(genieAnalytics.dimensions || [])}`, 'info');
+                logTestResult('🔍 Component State', `Metrics: ${JSON.stringify(genieAnalytics.metrics || [])}`, 'info');
+                logTestResult('🔍 Component State', `Timestamp Dimensions: ${JSON.stringify(genieAnalytics.timestampDimensions || [])}`, 'info');
                 
                 // Test with time series data
                 logTestResult('🔍 Testing Time Series Data', 'Loading time series data for debug...', 'info');
-                waveAnalytics.setCSVDataAsString(timeSeriesData);
+                genieAnalytics.setCSVDataAsString(timeSeriesData);
                 
                 // Check after loading
-                logTestResult('🔍 After Loading', `Parsed data length: ${waveAnalytics.parsedData ? waveAnalytics.parsedData.length : 'undefined'}`, 'info');
-                logTestResult('🔍 After Loading', `Dimensions: ${JSON.stringify(waveAnalytics.dimensions || [])}`, 'info');
-                logTestResult('🔍 After Loading', `Metrics: ${JSON.stringify(waveAnalytics.metrics || [])}`, 'info');
-                logTestResult('🔍 After Loading', `Timestamp Dimensions: ${JSON.stringify(waveAnalytics.timestampDimensions || [])}`, 'info');
+                logTestResult('🔍 After Loading', `Parsed data length: ${genieAnalytics.parsedData ? genieAnalytics.parsedData.length : 'undefined'}`, 'info');
+                logTestResult('🔍 After Loading', `Dimensions: ${JSON.stringify(genieAnalytics.dimensions || [])}`, 'info');
+                logTestResult('🔍 After Loading', `Metrics: ${JSON.stringify(genieAnalytics.metrics || [])}`, 'info');
+                logTestResult('🔍 After Loading', `Timestamp Dimensions: ${JSON.stringify(genieAnalytics.timestampDimensions || [])}`, 'info');
                 
                 // Check first row of parsed data
-                if (waveAnalytics.parsedData && waveAnalytics.parsedData.length > 0) {
-                    logTestResult('🔍 First Row', `Sample data: ${JSON.stringify(waveAnalytics.parsedData[0])}`, 'info');
+                if (genieAnalytics.parsedData && genieAnalytics.parsedData.length > 0) {
+                    logTestResult('🔍 First Row', `Sample data: ${JSON.stringify(genieAnalytics.parsedData[0])}`, 'info');
                     
                     // Check all unique region values
-                    const allRegionValues = [...new Set(waveAnalytics.parsedData.map(row => row.region).filter(val => val !== null && val !== undefined && val !== ''))];
+                    const allRegionValues = [...new Set(genieAnalytics.parsedData.map(row => row.region).filter(val => val !== null && val !== undefined && val !== ''))];
                     logTestResult('🔍 All Region Values', `Unique region values: ${JSON.stringify(allRegionValues)}`, 'info');
                 }
                 
                 // Force render
-                waveAnalytics.render();
+                genieAnalytics.render();
                 logTestResult('🔍 After Render', 'Render called successfully', 'info');
                 
             } catch (error) {
@@ -966,14 +1058,14 @@ Headphones,Electronics,EU,120,30,15`;
                 }
                 
                 // Check component data
-                logTestResult('🔍 Component Data', `Dimensions: ${JSON.stringify(waveAnalytics.dimensions || [])}`, 'info');
-                logTestResult('🔍 Component Data', `Metrics: ${JSON.stringify(waveAnalytics.metrics || [])}`, 'info');
-                logTestResult('🔍 Component Data', `Timestamp Dimensions: ${JSON.stringify(waveAnalytics.timestampDimensions || [])}`, 'info');
+                logTestResult('🔍 Component Data', `Dimensions: ${JSON.stringify(genieAnalytics.dimensions || [])}`, 'info');
+                logTestResult('🔍 Component Data', `Metrics: ${JSON.stringify(genieAnalytics.metrics || [])}`, 'info');
+                logTestResult('🔍 Component Data', `Timestamp Dimensions: ${JSON.stringify(genieAnalytics.timestampDimensions || [])}`, 'info');
                 
                 // Try to manually populate field palette
-                if (waveAnalytics.dimensions && waveAnalytics.dimensions.length > 0) {
+                if (genieAnalytics.dimensions && genieAnalytics.dimensions.length > 0) {
                     logTestResult('🔍 Manual Population', 'Attempting to manually populate field palette...', 'info');
-                    waveAnalytics.populateFieldPalette();
+                    genieAnalytics.populateFieldPalette();
                     
                     // Check again after manual population
                     setTimeout(() => {
@@ -999,33 +1091,33 @@ Headphones,Electronics,EU,120,30,15`;
                 logTestResult('🔍 Debug Dimension Filter', 'Testing dimension filter creation...', 'info');
                 
                 // Load time series data first
-                waveAnalytics.setCSVDataAsString(timeSeriesData);
-                waveAnalytics.render();
+                genieAnalytics.setCSVDataAsString(timeSeriesData);
+                genieAnalytics.render();
                 
                 // Check parsed data
-                logTestResult('🔍 Parsed Data', `Data length: ${waveAnalytics.parsedData.length}`, 'info');
-                if (waveAnalytics.parsedData.length > 0) {
-                    logTestResult('🔍 Parsed Data', `First row: ${JSON.stringify(waveAnalytics.parsedData[0])}`, 'info');
-                    logTestResult('🔍 Parsed Data', `Sample region values: ${JSON.stringify(waveAnalytics.parsedData.slice(0, 5).map(row => row.region))}`, 'info');
+                logTestResult('🔍 Parsed Data', `Data length: ${genieAnalytics.parsedData.length}`, 'info');
+                if (genieAnalytics.parsedData.length > 0) {
+                    logTestResult('🔍 Parsed Data', `First row: ${JSON.stringify(genieAnalytics.parsedData[0])}`, 'info');
+                    logTestResult('🔍 Parsed Data', `Sample region values: ${JSON.stringify(genieAnalytics.parsedData.slice(0, 5).map(row => row.region))}`, 'info');
                     
                     // Check all unique region values
-                    const allRegionValues = [...new Set(waveAnalytics.parsedData.map(row => row.region).filter(val => val !== null && val !== undefined && val !== ''))];
+                    const allRegionValues = [...new Set(genieAnalytics.parsedData.map(row => row.region).filter(val => val !== null && val !== undefined && val !== ''))];
                     logTestResult('🔍 All Region Values', `Unique region values: ${JSON.stringify(allRegionValues)}`, 'info');
                 }
                 
                 // Check dimensions
-                logTestResult('🔍 Dimensions', `Available dimensions: ${JSON.stringify(waveAnalytics.dimensions)}`, 'info');
+                logTestResult('🔍 Dimensions', `Available dimensions: ${JSON.stringify(genieAnalytics.dimensions)}`, 'info');
                 
                 // Check if region is in dimensions
-                if (waveAnalytics.dimensions.includes('region')) {
+                if (genieAnalytics.dimensions.includes('region')) {
                     logTestResult('✅ Region Found', 'Region dimension found in data', 'success');
                     
                     // Add dimension filter
-                    waveAnalytics.addDimensionFilter('region');
+                    genieAnalytics.addDimensionFilter('region');
                     
                     // Check dimension filter creation
-                    if (waveAnalytics.dimensionFilters['region']) {
-                        const regionFilter = waveAnalytics.dimensionFilters['region'];
+                    if (genieAnalytics.dimensionFilters['region']) {
+                        const regionFilter = genieAnalytics.dimensionFilters['region'];
                         logTestResult('✅ Filter Created', `Available values: ${JSON.stringify(regionFilter.availableValues)}`, 'success');
                         logTestResult('✅ Filter Created', `Selected values: ${JSON.stringify(regionFilter.selectedValues)}`, 'success');
                         
@@ -1126,8 +1218,8 @@ Headphones,Electronics,EU,120,30,15`;
                     logTestResult('❌ Region Not Found', 'Region dimension not found in data', 'error');
                     
                     // Debug: Check what columns are available
-                    if (waveAnalytics.parsedData.length > 0) {
-                        const headers = Object.keys(waveAnalytics.parsedData[0]);
+                    if (genieAnalytics.parsedData.length > 0) {
+                        const headers = Object.keys(genieAnalytics.parsedData[0]);
                         logTestResult('🔍 Available Headers', `Headers: ${JSON.stringify(headers)}`, 'info');
                     }
                 }
@@ -1142,20 +1234,20 @@ Headphones,Electronics,EU,120,30,15`;
                 logTestResult('🔍 Test Dimension Filters', 'Testing dimension filter functionality...', 'info');
                 
                 // Load time series data first
-                waveAnalytics.setCSVDataAsString(timeSeriesData);
-                waveAnalytics.render();
+                genieAnalytics.setCSVDataAsString(timeSeriesData);
+                genieAnalytics.render();
                 
                 // Check if region dimension exists
-                if (waveAnalytics.dimensions.includes('region')) {
+                if (genieAnalytics.dimensions.includes('region')) {
                     logTestResult('✅ Region Dimension', 'Region dimension found in data', 'success');
                     
                     // Add dimension filter for region
-                    waveAnalytics.addDimensionFilter('region');
+                    genieAnalytics.addDimensionFilter('region');
                     logTestResult('✅ Add Dimension Filter', 'Added dimension filter for region', 'success');
                     
                     // Check if dimension filter was created
-                    if (waveAnalytics.dimensionFilters['region']) {
-                        const regionFilter = waveAnalytics.dimensionFilters['region'];
+                    if (genieAnalytics.dimensionFilters['region']) {
+                        const regionFilter = genieAnalytics.dimensionFilters['region'];
                         logTestResult('✅ Dimension Filter Created', `Available values: ${JSON.stringify(regionFilter.availableValues)}`, 'success');
                         
                         // Check if dropdown is rendered
