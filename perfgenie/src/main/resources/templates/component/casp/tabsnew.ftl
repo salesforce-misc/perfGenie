@@ -519,29 +519,28 @@
     }
     
     .modern-accordion-content {
-        display: none;
-        padding: 16px;
+        height: 0;
+        overflow: hidden;
+        padding: 0 16px;
         background: #ffffff;
-        animation: slideDown 0.2s ease-out;
+        transition: height 0.35s ease-in-out,
+                    padding-top 0.35s ease-in-out,
+                    padding-bottom 0.35s ease-in-out;
     }
     
     #canary-dataview-content {
-        padding: 8px;
+        padding: 0 8px;
     }
     
     .modern-accordion-content.active {
-        display: block;
+        /* Height will be set dynamically by JavaScript */
+        padding-top: 16px;
+        padding-bottom: 16px;
     }
     
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            max-height: 0;
-        }
-        to {
-            opacity: 1;
-            max-height: 1000px;
-        }
+    #canary-dataview-content.active {
+        padding-top: 8px;
+        padding-bottom: 8px;
     }
     
     /* Left Navigation Sidebar */
@@ -1506,6 +1505,10 @@
             // Start collapsed (active: false equivalent)
             accordionContent.classList.remove('active');
             newHeader.classList.remove('active');
+            // Ensure content starts with height 0 and is hidden
+            accordionContent.style.height = '0px';
+            accordionContent.style.overflow = 'hidden';
+            accordionContent.style.display = 'block';
             
             // Add click handler
             newHeader.addEventListener('click', function(e) {
@@ -1515,8 +1518,27 @@
                 const isActive = accordionContent.classList.contains('active');
                 
                 if (isActive) {
+                    // Collapsing - smooth slide up (jQuery UI style)
+                    const startHeight = accordionContent.scrollHeight;
+                    accordionContent.style.height = startHeight + 'px';
+                    accordionContent.style.overflow = 'hidden';
+                    
+                    // Force reflow
+                    accordionContent.offsetHeight;
+                    
+                    // Remove active class and animate to 0
                     accordionContent.classList.remove('active');
                     newHeader.classList.remove('active');
+                    accordionContent.style.height = '0px';
+                    
+                    // Clean up after animation
+                    setTimeout(function() {
+                        if (!accordionContent.classList.contains('active')) {
+                            accordionContent.style.height = '';
+                            accordionContent.style.overflow = '';
+                        }
+                    }, 350);
+                    
                     // Remove inline styles when closing - CSS will handle the default state
                     newHeader.style.removeProperty('background');
                     newHeader.style.removeProperty('background-image');
@@ -1531,8 +1553,30 @@
                     newHeader.style.removeProperty('font-weight');
                     newHeader.style.removeProperty('transform');
                 } else {
+                    // Expanding - smooth slide down (jQuery UI style)
+                    accordionContent.style.display = 'block';
+                    accordionContent.style.overflow = 'hidden';
+                    accordionContent.style.height = '0px';
                     accordionContent.classList.add('active');
                     newHeader.classList.add('active');
+                    
+                    // Force reflow to ensure active class is applied
+                    accordionContent.offsetHeight;
+                    
+                    // Measure height with active class applied (padding included)
+                    const targetHeight = accordionContent.scrollHeight;
+                    
+                    // Animate smoothly to measured height
+                    accordionContent.style.height = targetHeight + 'px';
+                    
+                    // Clean up after animation completes
+                    setTimeout(function() {
+                        if (accordionContent.classList.contains('active')) {
+                            accordionContent.style.height = 'auto';
+                            accordionContent.style.overflow = '';
+                        }
+                    }, 350);
+                    
                     // CSS will handle the glassmorphism styles via .active class
                     // No need to set inline styles - let CSS take precedence
                 }
