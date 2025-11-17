@@ -54,26 +54,27 @@
     }
 
     $(document).ready(() => {
-        // Initialize jQuery UI tabs
-        $( "#tabs" ).tabs({
-            activate: function( event, ui ) {
-                const tabId = ui.newPanel.attr("id");
-                updateTabUrl("#" + tabId);
-                if(tabId == "cct"){
-                    updateProfilerViewCCT(prevSelectedLevel,true);
-                }else if(tabId == "flame"){
-                    updateProfilerViewFlame(prevSelectedLevel,true);
-                }else if(tabId == "samples"){
-                    updateProfilerViewSample(prevSelectedLevel,true);
-                }else if(tabId == "tsview"){
-                    updateProfilerViewTsview(prevSelectedLevel,true);
-                }else if(tabId == "river"){
-                    updateProfilerViewRiver(prevSelectedLevel,true);
-                }else if(tabId == "surface"){
-                    updateProfilerViewSurface(prevSelectedLevel,true);
+        // Initialize modern tabs component
+        if (typeof initModernTabs !== 'undefined') {
+            window.tabsAPI = initModernTabs('#tabs', {
+                onTabActivate: function(tabId) {
+                    updateTabUrl("#" + tabId);
+                    if(tabId == "cct"){
+                        updateProfilerViewCCT(prevSelectedLevel,true);
+                    }else if(tabId == "flame"){
+                        updateProfilerViewFlame(prevSelectedLevel,true);
+                    }else if(tabId == "samples"){
+                        updateProfilerViewSample(prevSelectedLevel,true);
+                    }else if(tabId == "tsview"){
+                        updateProfilerViewTsview(prevSelectedLevel,true);
+                    }else if(tabId == "river"){
+                        updateProfilerViewRiver(prevSelectedLevel,true);
+                    }else if(tabId == "surface"){
+                        updateProfilerViewSurface(prevSelectedLevel,true);
+                    }
                 }
-            }
-        });
+            });
+        }
         
         // Handle URL hash for initial tab activation
        /* const hashTabId = getTabIdFromHash();
@@ -846,7 +847,8 @@
 
     //create html tree recursively
     function updateProfilerView(level) {
-        const activeTabId = $("#tabs .ui-tabs-panel:visible").attr("id");
+        // Get active tab ID from modern tabs component
+        const activeTabId = window.tabsAPI ? window.tabsAPI.getActiveTabId() : $("#tabs .modern-tab-panel.active").attr("id");
         if(activeTabId == "flame"){
             updateTabUrl("#flame");
             updateProfilerViewFlame(level);

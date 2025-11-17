@@ -184,22 +184,22 @@
     padding-left: 14px !important;
     padding-right: 14px !important;
     /* Default state: Same glassmorphism as active tabs (will be overridden by active class) */
-    /* Glassmorphism background with blue tint */
-    background: rgba(90, 159, 212, 0.35) !important;
+    /* Glassmorphism background with blue tint - using same base color as hover for consistency */
+    background: rgba(90, 159, 212, 0.45) !important;
     background-image: 
-        linear-gradient(135deg, rgba(90, 159, 212, 0.4) 0%, rgba(127, 192, 232, 0.3) 50%, rgba(90, 159, 212, 0.4) 100%),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+        linear-gradient(135deg, rgba(90, 159, 212, 0.5) 0%, rgba(127, 192, 232, 0.4) 50%, rgba(90, 159, 212, 0.5) 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%) !important;
     /* Glassy effect with backdrop blur */
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-    /* Visible edges - matching active tabs */
-    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    /* Visible edges - matching hover state for consistency */
+    border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
     border-radius: 8px !important;
-    /* Shadow matching active tabs style */
+    /* Shadow matching hover state for consistency */
     box-shadow: 
-        0 4px 16px rgba(90, 159, 212, 0.4),
-        0 2px 8px rgba(90, 159, 212, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        0 6px 20px rgba(90, 159, 212, 0.5),
+        0 3px 10px rgba(90, 159, 212, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7),
         inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
     color: #ffffff !important;
     font-weight: 500 !important;
@@ -227,7 +227,7 @@
 
 /* Inactive tabs: Apply grayscale filter and reduced opacity (matching modern-button:disabled style) */
 .modern-tabs-nav-button:not(.active) {
-    opacity: 0.6 !important;
+    opacity: 0.7 !important;
     filter: grayscale(100%) !important;
     -webkit-filter: grayscale(100%) !important;
     /* Text styling matching inactive modern-button */
@@ -262,7 +262,7 @@
 /* Hover State - Enhanced glassmorphism for inactive tabs */
 .modern-tabs-nav-button:hover:not(.active) {
     /* Keep grayscale filter but slightly increase opacity on hover */
-    opacity: 0.7 !important;
+    opacity: 0.8 !important;
     filter: grayscale(100%) !important;
     -webkit-filter: grayscale(100%) !important;
     /* Text styling matching inactive modern-button (font-weight 500) */

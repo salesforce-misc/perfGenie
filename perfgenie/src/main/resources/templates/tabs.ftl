@@ -92,38 +92,42 @@
 
 </script>
 
+<link rel="stylesheet" href="/css/modern-tabs.css">
+<script src="/js/modern-tabs.js"></script>
 <#include "tabs-js.ftl">
 <#include "geniehostselector.ftl">
-<div id="tabs">
+<div id="tabs" class="modern-tabs-container">
     <#include "tab-filter-toolbar.ftl">
-    <ul>
-        <li><a href="#cct">Calling context tree</a></li>
-        <li><a href="#samples">Samples Explorer</a></li>
-        <li><a href="#flame">Flame graph</a></li>
-        <li><a href="#river">River view</a></li>
-        <li><a href="#surface">Hotspot surface</a></li>
-        <li><a href="#tsview">Thread state view</a></li>
+    <ul class="modern-tabs-nav">
+        <li class="modern-tabs-nav-item"><a href="#cct" class="modern-tabs-nav-button" data-tab-target="cct">Calling context tree</a></li>
+        <li class="modern-tabs-nav-item"><a href="#samples" class="modern-tabs-nav-button" data-tab-target="samples">Samples Explorer</a></li>
+        <li class="modern-tabs-nav-item"><a href="#flame" class="modern-tabs-nav-button" data-tab-target="flame">Flame graph</a></li>
+        <li class="modern-tabs-nav-item"><a href="#river" class="modern-tabs-nav-button" data-tab-target="river">River view</a></li>
+        <li class="modern-tabs-nav-item"><a href="#surface" class="modern-tabs-nav-button" data-tab-target="surface">Hotspot surface</a></li>
+        <li class="modern-tabs-nav-item"><a href="#tsview" class="modern-tabs-nav-button" data-tab-target="tsview">Thread state view</a></li>
     </ul>
     <div id="view-info" class="ui-state-highlight ui-widget-header ui-corner-all" style="float: right !important;display:none">
         <span class="ui-icon ui-icon-info"></span> <span id="view-info-text"></span>
     </div>
-    <div id="cct" style="min-height: 900px; paddingt-left: 0px" class="row no-padding">
-        <#include "cct.ftl">
-    </div>
-    <div id="samples">
-        <#include "sample.ftl">
-    </div>
-    <div id="flame">
-        <#include "flame.ftl">
-    </div>
-    <div id="river">
-        <#include "river.ftl">
-    </div>
-    <div id="surface">
-        <#include "surface.ftl">
-    </div>
-    <div id="tsview">
-        <#include "tsview-new.ftl">
+    <div class="modern-tabs-content">
+        <div id="cct" class="modern-tab-panel row no-padding" style="min-height: 900px; paddingt-left: 0px">
+            <#include "cct.ftl">
+        </div>
+        <div id="samples" class="modern-tab-panel">
+            <#include "sample.ftl">
+        </div>
+        <div id="flame" class="modern-tab-panel">
+            <#include "flame.ftl">
+        </div>
+        <div id="river" class="modern-tab-panel">
+            <#include "river.ftl">
+        </div>
+        <div id="surface" class="modern-tab-panel">
+            <#include "surface.ftl">
+        </div>
+        <div id="tsview" class="modern-tab-panel">
+            <#include "tsview-new.ftl">
+        </div>
     </div>
 </div>
 <div id="modals-guid" class="col-lg-12">
