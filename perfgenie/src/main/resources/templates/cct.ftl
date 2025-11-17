@@ -916,10 +916,10 @@
             }
 
             if (isJfrContext && !compareTree) {
-                resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + " <span class=\"fieldlable\">Total samples:</span> "
+                resetTreeHeader("<span style=\"\">" + graphType + "</span>," + " <span class=\"fieldlable\">Total samples:</span> "
                     + treeToProcess.sz + ", <span title=\"Exclude samples below threshold %\" class=\"fieldlable\">Threshold:</span> " + threshold + timeRange + (isAggregation() ? getTextForAggregationInput(contextTree1["1"]) : ""));
             } else {
-                resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + " Total samples: "
+                resetTreeHeader("<span style=\"\">" + graphType + "</span>," + " Total samples: "
                     + (((treeToProcess.bsize !== undefined) ? treeToProcess.bsize : treeToProcess.bsz) + ((treeToProcess.csize !== undefined) ? treeToProcess.csize : treeToProcess.csz)) + ", <span title=\"Exclude samples below threshold %\" class=\"fieldlable\">Threshold:</span> "
                     + threshold + timeRange);
             }
@@ -964,10 +964,10 @@
 
             let graphType = isCalltree ? "Call tree view" : "Backtrace view";
             if (isJfrContext && !compareTree) {
-                resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + " <span class=\"fieldlable\">Total samples:</span> "
+                resetTreeHeader("<span style=\"\">" + graphType + "</span>," + " <span class=\"fieldlable\">Total samples:</span> "
                     + treeToProcess.sz + ", <span title=\"Exclude samples below threshold %\" class=\"fieldlable\">Threshold:</span> " + threshold + timeRange + (isAggregation() ? getTextForAggregationInput(contextTree1["1"]) : ""));
             } else {
-                resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + " Total samples: "
+                resetTreeHeader("<span style=\"\">" + graphType + "</span>," + " Total samples: "
                     + (((treeToProcess.bsize !== undefined) ? treeToProcess.bsize : treeToProcess.bsz) + ((treeToProcess.csize !== undefined) ? treeToProcess.csize : treeToProcess.csz)) + ", <span title=\"Exclude samples below threshold %\" class=\"fieldlable\">Threshold:</span> "
                     + threshold + timeRange);
             }

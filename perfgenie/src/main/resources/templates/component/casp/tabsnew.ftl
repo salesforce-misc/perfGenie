@@ -1663,8 +1663,8 @@
         if (pageParam && (pageParam === 'canaries' || pageParam === 'profiler' || pageParam === 'aidashboard')) {
             switchToPage(pageParam);
         } else {
-            // Default to canaries page if no page parameter
-            switchToPage('canaries');
+            // Default to profiler page if no page parameter
+            switchToPage('profiler');
         }
     }
     
@@ -2037,7 +2037,11 @@ function getCanaryHeader(start, end, source){
     <!-- Collapse/Expand Arrow - Middle Right Aligned -->
     <i class="fa fa-chevron-left left-nav-collapse-arrow" id="leftNavCollapseArrow" title="Collapse/Expand Navigation"></i>
     <div class="left-nav-menu">
-        <a href="#" class="left-nav-item active" data-page="canaries" id="nav-canaries" title="Canary Hub">
+        <a href="#" class="left-nav-item active" data-page="profiler" id="nav-profiler" title="Profiler & Diagnostics">
+            <i class="fa fa-diamond left-nav-icon" aria-hidden="true"></i>
+            <span class="left-nav-label">Profiler & Diagnostics</span>
+        </a>
+        <a href="#" class="left-nav-item" data-page="canaries" id="nav-canaries" title="Canary Hub">
             <i class="fa fa-fw fa-table left-nav-icon" aria-hidden="true"></i>
             <span class="left-nav-label">Canary Hub</span>
         </a>
@@ -2045,17 +2049,29 @@ function getCanaryHeader(start, end, source){
             <i class="fa fa-line-chart left-nav-icon" aria-hidden="true"></i>
             <span class="left-nav-label">AI dashboard</span>
         </a>
-        <a href="#" class="left-nav-item" data-page="profiler" id="nav-profiler" title="Profiler & Diagnostics">
-            <i class="fa fa-diamond left-nav-icon" aria-hidden="true"></i>
-            <span class="left-nav-label">Profiler & Diagnostics</span>
-        </a>
     </div>
 </div>
 
 <!-- Main Content Wrapper -->
 <div class="main-content-wrapper" id="mainContentWrapper">
+<!-- Profiler & Diagnostics Page Content -->
+<div id="profiler-page" class="page-content active">
+    <div class="data-view-header-placeholder" style="height: 44px; width: 100%;">
+        <div class="collapsed-header-logo">
+            <span class="collapsed-header-title">Perf Genie</span>
+        </div>
+        <span>Explore profiles and diagnostics data</span>
+    </div>
+    <div style="padding: 0px;">
+        <#include "../../input.ftl">
+        <#include "../../filter-panel.ftl">
+        <#include "../../context-view.ftl">
+        <#include "../../tabs.ftl">
+    </div>
+</div>
+
 <!-- Canaries Page Content -->
-<div id="canaries-page" class="page-content active">
+<div id="canaries-page" class="page-content">
 <div class="data-view-header-placeholder" style="height: 44px; width: 100%;">
     <div class="collapsed-header-logo">
         <span class="collapsed-header-title">Perf Genie</span>
@@ -2145,21 +2161,6 @@ function getCanaryHeader(start, end, source){
 </div>
 </div>
 
-<!-- Profiler & Diagnostics Page Content -->
-<div id="profiler-page" class="page-content">
-    <div class="data-view-header-placeholder" style="height: 44px; width: 100%;">
-        <div class="collapsed-header-logo">
-            <span class="collapsed-header-title">Perf Genie</span>
-        </div>
-        <span>Explore profiles and diagnostics data</span>
-    </div>
-    <div style="padding: 0px;">
-        <#include "../../input.ftl">
-        <#include "../../filter-panel.ftl">
-        <#include "../../context-view.ftl">
-        <#include "../../tabs.ftl">
-    </div>
-</div>
 
 <!-- AI Dashboard Page Content -->
 <div id="aidashboard-page" class="page-content">

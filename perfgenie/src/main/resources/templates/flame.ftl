@@ -188,10 +188,10 @@ In other words, data that's in the second set but not in the first will not be d
             }
 
             if (isJfrContext && !compareTree) {
-                resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + " <span class=\"fieldlable\">Total samples:</span> "
+                resetTreeHeader("<span style=\"\">" + graphType + "</span>," + " <span class=\"fieldlable\">Total samples:</span> "
                     + treeToProcess.sz + ", <span title=\"Exclude samples below threshold %\" class=\"fieldlable\">Threshold:</span> " + threshold + timeRange + (isAggregation() ? getTextForAggregationInput(contextTree1["1"]) : ""));
             } else {
-                resetTreeHeader("<span style=\"font-weight:bold\">" + graphType + "</span>," + "<span class=\"fieldlable\">Total samples:</span>"
+                resetTreeHeader("<span style=\"\">" + graphType + "</span>," + "<span class=\"fieldlable\">Total samples:</span>"
                     + (((treeToProcess.bsize !== undefined) ? treeToProcess.bsize : treeToProcess.bsz) + ((treeToProcess.csize !== undefined) ? treeToProcess.csize : treeToProcess.csz)) + ", <span title=\"Exclude samples below threshold %\" class=\"fieldlable\">Threshold:</span> "
                     + threshold + timeRange);
             }
