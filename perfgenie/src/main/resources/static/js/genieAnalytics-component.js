@@ -26,14 +26,25 @@ function getCanaryLenses() {
     URL = "/component/casp/v1/getlenses/"+dataHost+"/?metadata_query=" + encodeURIComponent("type=" + "perfswat");
     showSpinner("spinner1");
     
-    // Set loading state for lens dropdown
-    lensLoadingRequested = true;
-    if (window.genieAnalytics) {
-        console.log('Setting lens dropdown loading state to true');
-        window.genieAnalytics.setLensDropdownLoading(true);
-    } else {
-        console.log('genieAnalytics not available yet, will set loading state later');
-    }
+            // Set loading state for lens dropdown
+            // NOTE: This is a global function, so we need to find all instances
+            lensLoadingRequested = true;
+            // Find all GenieAnalytics instances and set loading state
+            const allContainers = document.querySelectorAll('[data-genie-analytics-instance-id]');
+            allContainers.forEach(container => {
+                const instance = container._genieAnalyticsInstance;
+                if (instance && typeof instance.setLensDropdownLoading === 'function') {
+                    console.log('Setting lens dropdown loading state to true for instance:', instance.instanceId);
+                    instance.setLensDropdownLoading(true);
+                }
+            });
+            // Legacy support for single instance
+            if (window.genieAnalytics && typeof window.genieAnalytics.setLensDropdownLoading === 'function') {
+                console.log('Setting lens dropdown loading state to true (legacy)');
+                window.genieAnalytics.setLensDropdownLoading(true);
+            } else {
+                console.log('genieAnalytics not available yet, will set loading state later');
+            }
     
     $.ajax({
         url: URL, 
@@ -117,27 +128,47 @@ function getCanaryLenses() {
                     return lensWithoutTimestamp;
                 });
                 
-                // Update the genieAnalytics saved lenses
+                // Update all GenieAnalytics instances with saved lenses
+                const allContainers = document.querySelectorAll('[data-genie-analytics-instance-id]');
+                allContainers.forEach(container => {
+                    const instance = container._genieAnalyticsInstance;
+                    if (instance) {
+                        instance.savedLenses = deduplicatedLenses;
+                        
+                        // Show appropriate status based on result
+                        if (deduplicatedLenses.length === 0) {
+                            instance.setLensDropdownLoading(true, 'empty');
+                            // Auto-clear after 2 seconds
+                            setTimeout(() => {
+                                instance.setLensDropdownLoading(false);
+                            }, 2000);
+                        } else {
+                            instance.setLensDropdownLoading(true, 'success');
+                            // Auto-clear after 1 second
+                            setTimeout(() => {
+                                instance.setLensDropdownLoading(false);
+                            }, 1000);
+                        }
+                    }
+                });
+                
+                // Legacy support for single instance
                 if (window.genieAnalytics) {
                     window.genieAnalytics.savedLenses = deduplicatedLenses;
-                    
-                    // Show appropriate status based on result
                     if (deduplicatedLenses.length === 0) {
                         window.genieAnalytics.setLensDropdownLoading(true, 'empty');
-                        // Auto-clear after 2 seconds
                         setTimeout(() => {
                             window.genieAnalytics.setLensDropdownLoading(false);
                         }, 2000);
                     } else {
                         window.genieAnalytics.setLensDropdownLoading(true, 'success');
-                        // Auto-clear after 1 second
                         setTimeout(() => {
                             window.genieAnalytics.setLensDropdownLoading(false);
                         }, 1000);
                     }
-                    
-                    console.log('Loaded', parsedLenses.length, 'lenses from backend,', deduplicatedLenses.length, 'unique lenses after deduplication');
                 }
+                
+                console.log('Loaded', parsedLenses.length, 'lenses from backend,', deduplicatedLenses.length, 'unique lenses after deduplication');
                 lensLoadingRequested = false;
             }
             hideSpinner("spinner1");
@@ -147,10 +178,20 @@ function getCanaryLenses() {
             toastMessage(toastType.ERROR, "Failed to get lenses");
             hideSpinner("spinner1");
             
-            // Show error status
-            if (window.genieAnalytics) {
+            // Show error status for all instances
+            const allContainers = document.querySelectorAll('[data-genie-analytics-instance-id]');
+            allContainers.forEach(container => {
+                const instance = container._genieAnalyticsInstance;
+                if (instance && typeof instance.setLensDropdownLoading === 'function') {
+                    instance.setLensDropdownLoading(true, 'error');
+                    setTimeout(() => {
+                        instance.setLensDropdownLoading(false);
+                    }, 3000);
+                }
+            });
+            // Legacy support
+            if (window.genieAnalytics && typeof window.genieAnalytics.setLensDropdownLoading === 'function') {
                 window.genieAnalytics.setLensDropdownLoading(true, 'error');
-                // Auto-clear after 3 seconds
                 setTimeout(() => {
                     window.genieAnalytics.setLensDropdownLoading(false);
                 }, 3000);
@@ -1304,12 +1345,24 @@ class GenieAnalytics {
             this.updateExpressionDropdown();
             
             // Set loading states if they were requested before GenieAnalytics was available
+            // Use instance-specific flags instead of global
+            if (this.instanceLensLoadingRequested) {
+                console.log('Setting delayed lens dropdown loading state for instance:', this.instanceId);
+                this.setLensDropdownLoading(true);
+                this.instanceLensLoadingRequested = false;
+            }
+            if (this.instanceExpressionsLoadingRequested) {
+                console.log('Setting delayed derived metrics dropdown loading state for instance:', this.instanceId);
+                this.setDerivedMetricsDropdownLoading(true);
+                this.instanceExpressionsLoadingRequested = false;
+            }
+            // Also check global flags for backward compatibility
             if (lensLoadingRequested) {
-                console.log('Setting delayed lens dropdown loading state');
+                console.log('Setting delayed lens dropdown loading state (global flag)');
                 this.setLensDropdownLoading(true);
             }
             if (expressionsLoadingRequested) {
-                console.log('Setting delayed derived metrics dropdown loading state');
+                console.log('Setting delayed derived metrics dropdown loading state (global flag)');
                 this.setDerivedMetricsDropdownLoading(true);
             }
             
@@ -1456,8 +1509,9 @@ class GenieAnalytics {
     
     setupSearchInputRetry() {
         console.warn('DEBUG: Search input not found during setup, retrying...');
-            console.log('DEBUG: Available elements with id containing "search":');
-            const searchElements = document.querySelectorAll('[id*="search"]');
+            console.log('DEBUG: Available elements with id containing "search" in container:', this.instanceId);
+            // Scope search to this instance's container only
+            const searchElements = this.container ? this.container.querySelectorAll('[id*="search"]') : [];
             searchElements.forEach((el, index) => {
                 console.log(`  Element ${index}: id="${el.id}", tagName="${el.tagName}"`);
             });
@@ -5531,26 +5585,30 @@ class GenieAnalytics {
     }
 
     showDateTimeFilter(dimensionName) {
-        // Check if filter already exists
-        if (document.getElementById('dateTimeFilter_' + dimensionName)) {
+        // Use instance-specific ID to prevent conflicts between multiple instances
+        const filterId = this.getInstanceId('dateTimeFilter_' + dimensionName);
+        // Check if filter already exists in this instance
+        if (this.getElementById('dateTimeFilter_' + dimensionName) || document.getElementById(filterId)) {
             return;
         }
         
         const filterContainer = document.createElement('div');
-        filterContainer.id = 'dateTimeFilter_' + dimensionName;
+        filterContainer.id = filterId;
         filterContainer.className = 'date-time-filter';
+        // Store instance reference on filter container for event handlers
+        filterContainer._genieAnalyticsInstance = this;
         filterContainer.innerHTML = 
             '<div class="filter-header">' +
                 '<h4>Date/Time Filter: ' + this.formatHeader(dimensionName) + '</h4>' +
-                '<button class="close-filter" onclick="genieAnalytics.hideDateTimeFilter(\'' + dimensionName + '\')">×</button>' +
+                '<button class="close-filter" data-dimension="' + dimensionName + '">×</button>' +
             '</div>' +
             '<div class="filter-options">' +
                 '<div class="filter-type">' +
-                    '<label><input type="radio" name="filterType_' + dimensionName + '" value="relative" checked> Relative</label>' +
-                    '<label><input type="radio" name="filterType_' + dimensionName + '" value="absolute"> Absolute</label>' +
+                    '<label><input type="radio" name="filterType_' + this.instanceId + '_' + dimensionName + '" value="relative" checked> Relative</label>' +
+                    '<label><input type="radio" name="filterType_' + this.instanceId + '_' + dimensionName + '" value="absolute"> Absolute</label>' +
                 '</div>' +
-                '<div class="relative-options" id="relative_' + dimensionName + '">' +
-                    '<select id="relativePeriod_' + dimensionName + '">' +
+                '<div class="relative-options" id="' + this.getInstanceId('relative_' + dimensionName) + '">' +
+                    '<select id="' + this.getInstanceId('relativePeriod_' + dimensionName) + '">' +
                         '<option value="last_hour">Last Hour</option>' +
                         '<option value="last_24h">Last 24 Hours</option>' +
                         '<option value="last_7d" selected>Last 7 Days</option>' +
@@ -5558,32 +5616,52 @@ class GenieAnalytics {
                         '<option value="last_90d">Last 90 Days</option>' +
                     '</select>' +
                 '</div>' +
-                '<div class="absolute-options" id="absolute_' + dimensionName + '" style="display: none;">' +
+                '<div class="absolute-options" id="' + this.getInstanceId('absolute_' + dimensionName) + '" style="display: none;">' +
                     '<div class="date-range">' +
                         '<label>From:</label>' +
-                        '<input type="datetime-local" id="fromDate_' + dimensionName + '">' +
+                        '<input type="datetime-local" id="' + this.getInstanceId('fromDate_' + dimensionName) + '">' +
                     '</div>' +
                     '<div class="date-range">' +
                         '<label>To:</label>' +
-                        '<input type="datetime-local" id="toDate_' + dimensionName + '">' +
+                        '<input type="datetime-local" id="' + this.getInstanceId('toDate_' + dimensionName) + '">' +
                     '</div>' +
                 '</div>' +
                 '<div class="filter-actions">' +
-                    '<button class="apply-filter" onclick="genieAnalytics.applyDateTimeFilter(\'' + dimensionName + '\')">Apply Filter</button>' +
-                    '<button class="clear-filter" onclick="genieAnalytics.clearDateTimeFilter(\'' + dimensionName + '\')">Clear</button>' +
+                    '<button class="apply-filter" data-dimension="' + dimensionName + '">Apply Filter</button>' +
+                    '<button class="clear-filter" data-dimension="' + dimensionName + '">Clear</button>' +
                 '</div>' +
             '</div>';
+        
+        // Add event listeners using instance reference
+        const closeBtn = filterContainer.querySelector('.close-filter');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.hideDateTimeFilter(dimensionName);
+            });
+        }
+        const applyBtn = filterContainer.querySelector('.apply-filter');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', () => {
+                this.applyDateTimeFilter(dimensionName);
+            });
+        }
+        const clearBtn = filterContainer.querySelector('.clear-filter');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                this.clearDateTimeFilter(dimensionName);
+            });
+        }
         
         // Insert after the lens builder
         const lensBuilder = this.container ? this.container.querySelector('.genieAnalytics-lens-builder') : null;
         lensBuilder.parentNode.insertBefore(filterContainer, lensBuilder.nextSibling);
         
         // Add event listeners for filter type change
-        const filterTypeRadios = filterContainer.querySelectorAll('input[name="filterType_' + dimensionName + '"]');
+        const filterTypeRadios = filterContainer.querySelectorAll('input[name="filterType_' + this.instanceId + '_' + dimensionName + '"]');
         filterTypeRadios.forEach(radio => {
             radio.addEventListener('change', () => {
-                const relativeDiv = document.getElementById('relative_' + dimensionName);
-                const absoluteDiv = document.getElementById('absolute_' + dimensionName);
+                const relativeDiv = document.getElementById(this.getInstanceId('relative_' + dimensionName));
+                const absoluteDiv = document.getElementById(this.getInstanceId('absolute_' + dimensionName));
                 
                 if (radio.value === 'relative') {
                     relativeDiv.style.display = 'block';
@@ -5597,7 +5675,9 @@ class GenieAnalytics {
     }
 
     hideDateTimeFilter(dimensionName) {
-        const filterElement = document.getElementById('dateTimeFilter_' + dimensionName);
+        // Use instance-specific ID
+        const filterId = this.getInstanceId('dateTimeFilter_' + dimensionName);
+        const filterElement = document.getElementById(filterId);
         if (filterElement) {
             filterElement.remove();
         }
@@ -5605,20 +5685,38 @@ class GenieAnalytics {
     }
 
     removeExistingTimestampFilters() {
-        // Remove any existing timestamp filter elements
-        const existingFilters = document.querySelectorAll('[id^="dateTimeFilter_"]');
+        // Remove only timestamp filter elements for this instance
+        const instancePrefix = this.instanceId + '-dateTimeFilter_';
+        const existingFilters = this.container.querySelectorAll('[id^="' + instancePrefix + '"]');
         existingFilters.forEach(filter => filter.remove());
     }
 
     applyDateTimeFilter(dimensionName) {
-        const filterType = document.querySelector('input[name="filterType_' + dimensionName + '"]:checked').value;
+        // Use instance-specific name and IDs
+        const filterTypeRadio = this.container.querySelector('input[name="filterType_' + this.instanceId + '_' + dimensionName + '"]:checked');
+        if (!filterTypeRadio) {
+            console.error('Filter type radio not found for dimension:', dimensionName);
+            return;
+        }
+        const filterType = filterTypeRadio.value;
         
         if (filterType === 'relative') {
-            const period = document.getElementById('relativePeriod_' + dimensionName).value;
+            const periodElement = document.getElementById(this.getInstanceId('relativePeriod_' + dimensionName));
+            if (!periodElement) {
+                console.error('Relative period element not found for dimension:', dimensionName);
+                return;
+            }
+            const period = periodElement.value;
             this.dateTimeFilters[dimensionName] = { type: 'relative', period: period };
         } else {
-            const fromDate = document.getElementById('fromDate_' + dimensionName).value;
-            const toDate = document.getElementById('toDate_' + dimensionName).value;
+            const fromDateElement = document.getElementById(this.getInstanceId('fromDate_' + dimensionName));
+            const toDateElement = document.getElementById(this.getInstanceId('toDate_' + dimensionName));
+            if (!fromDateElement || !toDateElement) {
+                console.error('Date elements not found for dimension:', dimensionName);
+                return;
+            }
+            const fromDate = fromDateElement.value;
+            const toDate = toDateElement.value;
             this.dateTimeFilters[dimensionName] = { type: 'absolute', from: fromDate, to: toDate };
         }
         
@@ -6567,14 +6665,16 @@ class GenieAnalytics {
                                 const originalText = text.textContent || '';
                                 if (!originalText) return;
                                 
-                                // Store original text if not already stored
+                                // Store original text if not already stored (for restoration if needed)
                                 if (!text.getAttribute('data-original-text')) {
                                     text.setAttribute('data-original-text', originalText);
                                 }
                                 
-                                // Reverse text so it reads bottom-to-top when rotated -30
+                                // DO NOT reverse the text - keep the original value
+                                // The text should remain as-is, just rotated
+                                // Reversing characters corrupts numeric values (e.g., "123.45" becomes "54.321")
                                 const storedOriginal = text.getAttribute('data-original-text');
-                                text.textContent = storedOriginal.split('').reverse().join('');
+                                text.textContent = storedOriginal; // Keep original text, don't reverse
                                 
                                 // Apply rotation transform - rotate around the current position
                                 // With -30 rotation, text extends diagonally upward from the rotation point
