@@ -1647,6 +1647,54 @@
     }
     
     /**
+     * Function to restore sidebar state from URL parameter
+     */
+    function restoreSidebarFromUrl() {
+        const sidebar = document.getElementById('leftNavSidebar');
+        const mainContent = document.getElementById('mainContentWrapper');
+        const collapseArrow = document.getElementById('leftNavCollapseArrow');
+        
+        if (!sidebar) {
+            return;
+        }
+        
+        // Get sidebar parameter from URL
+        let sidebarParam = null;
+        if (typeof window.urlParams !== 'undefined') {
+            sidebarParam = window.urlParams.get('sidebar');
+        } else {
+            const urlParams = new URLSearchParams(window.location.search);
+            sidebarParam = urlParams.get('sidebar');
+        }
+        
+        // Restore sidebar state from URL
+        if (sidebarParam === 'collapsed') {
+            sidebar.classList.remove('expanded');
+            sidebar.classList.add('collapsed');
+            if (mainContent) {
+                mainContent.classList.add('sidebar-collapsed');
+            }
+            // Update arrow to point right (expand)
+            if (collapseArrow) {
+                collapseArrow.classList.remove('fa-chevron-left');
+                collapseArrow.classList.add('fa-chevron-right');
+            }
+        } else if (sidebarParam === 'expanded') {
+            sidebar.classList.remove('collapsed');
+            sidebar.classList.add('expanded');
+            if (mainContent) {
+                mainContent.classList.remove('sidebar-collapsed');
+            }
+            // Update arrow to point left (collapse)
+            if (collapseArrow) {
+                collapseArrow.classList.remove('fa-chevron-right');
+                collapseArrow.classList.add('fa-chevron-left');
+            }
+        }
+        // If no sidebar parameter, keep default state (expanded by default)
+    }
+    
+    /**
      * Function to restore page from URL parameter
      */
     function restorePageFromUrl() {
@@ -1712,6 +1760,16 @@
                     collapseArrow.classList.remove('fa-chevron-right');
                     collapseArrow.classList.add('fa-chevron-left');
                 }
+                // Update URL with expanded state
+                if (typeof updateUrl === 'function') {
+                    updateUrl('sidebar', 'expanded');
+                } else {
+                    // Fallback: use URLSearchParams if updateUrl is not available
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set('sidebar', 'expanded');
+                    const newUrl = window.location.pathname + '?' + urlParams.toString() + window.location.hash;
+                    window.history.pushState({}, '', newUrl);
+                }
             } else {
                 sidebar.classList.remove('expanded');
                 sidebar.classList.add('collapsed');
@@ -1722,6 +1780,16 @@
                 if (collapseArrow) {
                     collapseArrow.classList.remove('fa-chevron-left');
                     collapseArrow.classList.add('fa-chevron-right');
+                }
+                // Update URL with collapsed state
+                if (typeof updateUrl === 'function') {
+                    updateUrl('sidebar', 'collapsed');
+                } else {
+                    // Fallback: use URLSearchParams if updateUrl is not available
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set('sidebar', 'collapsed');
+                    const newUrl = window.location.pathname + '?' + urlParams.toString() + window.location.hash;
+                    window.history.pushState({}, '', newUrl);
                 }
             }
         }
@@ -1783,6 +1851,8 @@
     function initializeLeftNav() {
         if (typeof jQuery !== 'undefined' && jQuery.fn) {
             jQuery(document).ready(function() {
+                // Restore sidebar state from URL first (before initializing navigation)
+                restoreSidebarFromUrl();
                 initLeftNavigation();
                 // Restore page from URL after navigation is initialized
                 restorePageFromUrl();
@@ -1790,11 +1860,15 @@
         } else {
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', function() {
+                    // Restore sidebar state from URL first (before initializing navigation)
+                    restoreSidebarFromUrl();
                     initLeftNavigation();
                     // Restore page from URL after navigation is initialized
                     restorePageFromUrl();
                 });
             } else {
+                // Restore sidebar state from URL first (before initializing navigation)
+                restoreSidebarFromUrl();
                 initLeftNavigation();
                 // Restore page from URL after navigation is initialized
                 restorePageFromUrl();
@@ -1810,6 +1884,8 @@
         positionSidebarBelowHeader();
         const sidebar = document.getElementById('leftNavSidebar');
         if (sidebar && !sidebar.hasEventListener) {
+            // Restore sidebar state from URL first (before initializing navigation)
+            restoreSidebarFromUrl();
             initLeftNavigation();
             // Restore page from URL after navigation is initialized
             restorePageFromUrl();
@@ -1832,6 +1908,8 @@
     // Also try after a longer delay to ensure header is fully loaded
     setTimeout(function() {
         positionSidebarBelowHeader();
+        // Restore sidebar state from URL (fallback)
+        restoreSidebarFromUrl();
         // Restore page from URL (fallback)
         restorePageFromUrl();
         // Disable button first (fallback)
