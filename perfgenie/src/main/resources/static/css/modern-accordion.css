@@ -1,0 +1,317 @@
+/* Modern Accordion Styles - Reusable Component */
+.modern-accordion {
+    display: flex !important;
+    flex-direction: column;
+    width: 100%;
+    border: none;
+    border-radius: 0 !important;
+    background: #ffffff;
+    margin-bottom: 0;
+    overflow: hidden;
+}
+
+/* Add 4px gap when accordion is collapsed */
+.modern-accordion:has(.modern-accordion-header:not(.active)),
+.modern-accordion:has([class*="accordion-header"]:not(.active)) {
+    margin-bottom: 4px !important;
+}
+
+.modern-accordion-header,
+[class*="accordion-header"],
+#accordion-header,
+#contextfilter-header,
+#contextdataview-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 4px 14px !important; /* Default padding for active state */
+    /* Default state: Same glassmorphism as active tabs (will be overridden by active class) */
+    /* Glassmorphism background with blue tint */
+    background: rgba(90, 159, 212, 0.35) !important;
+    background-image: 
+        linear-gradient(135deg, rgba(90, 159, 212, 0.4) 0%, rgba(127, 192, 232, 0.3) 50%, rgba(90, 159, 212, 0.4) 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+    /* Glassy effect with backdrop blur */
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    /* Visible edges - matching tabs */
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    border-radius: 8px !important;
+    /* Shadow matching tabs style */
+    box-shadow: 
+        0 4px 16px rgba(90, 159, 212, 0.4),
+        0 2px 8px rgba(90, 159, 212, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+    color: #ffffff !important;
+    font-weight: 500 !important;
+    text-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.3),
+        0 0 8px rgba(90, 159, 212, 0.5),
+        0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+    height: auto !important;
+    min-height: 30px !important; /* Default min-height for active state */
+    box-sizing: border-box !important;
+    line-height: 1.3 !important; /* Default line-height for active state */
+    font-size: 13.5px !important;
+    letter-spacing: 0.01em;
+}
+
+/* Inactive accordion headers: Apply grayscale filter and reduced opacity (matching inactive button exactly) */
+.modern-accordion-header:not(.active),
+[class*="accordion-header"]:not(.active),
+#accordion-header:not(.active),
+#contextfilter-header:not(.active),
+#contextdataview-header:not(.active) {
+    /* Reduced height by 4px for inactive accordion */
+    padding: 4px 14px !important; /* Same as base - matching inactive button */
+    min-height: 26px !important; /* Reduced by 4px from 30px */
+    line-height: 1.3 !important; /* Same as base - matching inactive button */
+    /* Matching inactive button style exactly - just apply grayscale filter and opacity */
+    opacity: 0.6 !important;
+    filter: grayscale(100%) !important;
+    -webkit-filter: grayscale(100%) !important;
+    font-weight: 500 !important;
+    /* Explicitly set white text color (matching inactive button) */
+    color: #ffffff !important;
+    /* Keep same text-shadow as base (grayscale filter will affect the colored glow) */
+    text-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.3),
+        0 0 8px rgba(90, 159, 212, 0.5),
+        0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Ensure all child elements in inactive accordion have white text (matching inactive button) */
+.modern-accordion-header:not(.active) *,
+[class*="accordion-header"]:not(.active) *,
+#accordion-header:not(.active) *,
+#contextfilter-header:not(.active) *,
+#contextdataview-header:not(.active) * {
+    color: #ffffff !important;
+}
+
+/* Override inline styles on inner span */
+.modern-accordion-header span,
+[class*="accordion-header"] span,
+#accordion-header span,
+#contextfilter-header span,
+#contextdataview-header span {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    line-height: 1.3 !important;
+    font-size: 13.5px !important;
+    font-weight: 500;
+}
+
+/* Hover State - Enhanced glassmorphism for inactive accordion headers (matching inactive button hover effect) */
+.modern-accordion-header:hover:not(.active),
+[class*="accordion-header"]:hover:not(.active),
+#accordion-header:hover:not(.active),
+#contextfilter-header:hover:not(.active),
+#contextdataview-header:hover:not(.active) {
+    /* Keep grayscale filter but slightly increase opacity on hover (inactive buttons don't hover, but this simulates it) */
+    opacity: 0.7 !important;
+    filter: grayscale(100%) !important;
+    -webkit-filter: grayscale(100%) !important;
+    font-weight: 500 !important;
+    /* Enhanced glassmorphism background (still with blue base, but grayscale filter applied) */
+    background: rgba(90, 159, 212, 0.45) !important;
+    background-image: 
+        linear-gradient(135deg, rgba(90, 159, 212, 0.5) 0%, rgba(127, 192, 232, 0.4) 50%, rgba(90, 159, 212, 0.5) 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%) !important;
+    /* Glassy effect with backdrop blur */
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    /* Enhanced border */
+    border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+    border-radius: 8px !important;
+    /* Enhanced shadow */
+    box-shadow: 
+        0 6px 20px rgba(90, 159, 212, 0.5),
+        0 3px 10px rgba(90, 159, 212, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+    /* Explicitly set white text color (matching inactive button) */
+    color: #ffffff !important;
+    /* Keep same text-shadow as base (grayscale filter will affect the colored glow) */
+    text-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.3),
+        0 0 8px rgba(90, 159, 212, 0.5),
+        0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(-1px);
+}
+
+/* Ensure all child elements in inactive accordion hover have white text */
+.modern-accordion-header:hover:not(.active) *,
+[class*="accordion-header"]:hover:not(.active) *,
+#accordion-header:hover:not(.active) *,
+#contextfilter-header:hover:not(.active) *,
+#contextdataview-header:hover:not(.active) * {
+    color: #ffffff !important;
+}
+
+/* Active State - matching active tabs */
+.modern-accordion-header.active,
+[class*="accordion-header"].active,
+#accordion-header.active,
+#contextfilter-header.active,
+#contextdataview-header.active {
+    /* Remove grayscale filter and restore full opacity for active accordion */
+    opacity: 1 !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+    /* Glassmorphism background with blue tint */
+    background: rgba(90, 159, 212, 0.35) !important;
+    background-image: 
+        linear-gradient(135deg, rgba(90, 159, 212, 0.4) 0%, rgba(127, 192, 232, 0.3) 50%, rgba(90, 159, 212, 0.4) 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+    /* Glassy effect with backdrop blur */
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    /* Visible edges - matching active tabs */
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    border-radius: 8px !important;
+    /* Shadow in between original and reduced */
+    box-shadow: 
+        0 3px 12px rgba(90, 159, 212, 0.32),
+        0 1.5px 6px rgba(90, 159, 212, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.55),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.09) !important;
+    /* Dominating text - bright white with strong shadow */
+    color: #ffffff !important;
+    font-weight: 500 !important;
+    text-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.3),
+        0 0 8px rgba(90, 159, 212, 0.5),
+        0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(-1px);
+}
+
+/* Active State Hover - Enhanced glassmorphism (matching active tabs hover) */
+.modern-accordion-header.active:hover,
+[class*="accordion-header"].active:hover,
+#accordion-header.active:hover,
+#contextfilter-header.active:hover,
+#contextdataview-header.active:hover {
+    /* Enhanced glassmorphism background with blue tint */
+    background: rgba(90, 159, 212, 0.45) !important;
+    background-image: 
+        linear-gradient(135deg, rgba(90, 159, 212, 0.5) 0%, rgba(127, 192, 232, 0.4) 50%, rgba(90, 159, 212, 0.5) 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%) !important;
+    /* Glassy effect with backdrop blur */
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    /* Enhanced border */
+    border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+    border-radius: 8px !important;
+    /* Reduced shadow for hover (similar reduction as active state) */
+    box-shadow: 
+        0 4.5px 15px rgba(90, 159, 212, 0.4),
+        0 2.25px 7.5px rgba(90, 159, 212, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.625),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.095) !important;
+    /* Dominating text - bright white with strong shadow */
+    color: #ffffff !important;
+    font-weight: 500 !important;
+    text-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.3),
+        0 0 8px rgba(90, 159, 212, 0.5),
+        0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(-1px);
+}
+
+.modern-accordion-header.active *,
+[class*="accordion-header"].active *,
+#accordion-header.active *,
+#contextfilter-header.active *,
+#contextdataview-header.active * {
+    color: #ffffff !important;
+    font-weight: 500 !important;
+}
+
+.modern-accordion-header.active .modern-accordion-icon,
+[class*="accordion-header"].active .modern-accordion-icon,
+#accordion-header.active .modern-accordion-icon,
+#contextfilter-header.active .modern-accordion-icon,
+#contextdataview-header.active .modern-accordion-icon {
+    color: #ffffff !important;
+    font-size: 10px;
+}
+
+/* Ensure span text matches active tab text styling (exclude icon) */
+.modern-accordion-header.active span:not(.modern-accordion-icon),
+[class*="accordion-header"].active span:not(.modern-accordion-icon),
+#accordion-header.active span:not(.modern-accordion-icon),
+#contextfilter-header.active span:not(.modern-accordion-icon),
+#contextdataview-header.active span:not(.modern-accordion-icon) {
+    font-weight: 500 !important;
+    text-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.3),
+        0 0 8px rgba(90, 159, 212, 0.5),
+        0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.modern-accordion-icon {
+    transition: transform 0.2s ease;
+    color: #6b7280; /* Default color for inactive state */
+    font-size: 10px;
+    order: -1;
+    flex-shrink: 0;
+    width: 12px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Inactive accordion icon should be white (matching inactive button) */
+.modern-accordion-header:not(.active) .modern-accordion-icon,
+[class*="accordion-header"]:not(.active) .modern-accordion-icon,
+#accordion-header:not(.active) .modern-accordion-icon,
+#contextfilter-header:not(.active) .modern-accordion-icon,
+#contextdataview-header:not(.active) .modern-accordion-icon {
+    color: #ffffff !important;
+}
+
+.modern-accordion-header.active .modern-accordion-icon,
+[class*="accordion-header"].active .modern-accordion-icon,
+#accordion-header.active .modern-accordion-icon,
+#contextfilter-header.active .modern-accordion-icon,
+#contextdataview-header.active .modern-accordion-icon {
+    transform: rotate(180deg);
+}
+
+.modern-accordion-content,
+[class*="accordion-content"],
+#accordion-content,
+#contextfilter-content,
+#contextdataview-content {
+    height: 0;
+    overflow: hidden;
+    padding: 0 16px;
+    background: #ffffff;
+    transition: height 0.35s ease-in-out,
+                padding-top 0.35s ease-in-out,
+                padding-bottom 0.35s ease-in-out;
+}
+
+.modern-accordion-content.active,
+[class*="accordion-content"].active,
+#accordion-content.active {
+    /* Height will be set dynamically by JavaScript */
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+#contextfilter-content.active,
+#contextdataview-content.active {
+    /* Height will be set dynamically by JavaScript */
+    padding-top: 16px;
+    padding-bottom: 16px;
+}
+
