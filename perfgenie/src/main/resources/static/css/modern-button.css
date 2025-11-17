@@ -14,7 +14,7 @@
     border: none !important;
     border-radius: 8px !important;
     font-size: 13.5px !important;
-    font-weight: 500 !important;
+    font-weight: 700 !important;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     height: 30px;
@@ -88,10 +88,22 @@
     --button-color-light: 74, 222, 128;
 }
 
+/* Dark Green */
+.modern-button-dark-green {
+    --button-color: 20, 120, 60;
+    --button-color-light: 30, 150, 80;
+}
+
 /* Blue */
 .modern-button-blue {
     --button-color: 90, 159, 212;
     --button-color-light: 127, 192, 232;
+}
+
+/* Dark Blue */
+.modern-button-dark-blue {
+    --button-color: 30, 100, 180;
+    --button-color-light: 50, 130, 210;
 }
 
 /* Blue-teal (for filter buttons) */
@@ -129,7 +141,7 @@
 .modern-tabs-container .modern-tabs-content .modern-button:not(:disabled) {
     /* Ensure all button styles are preserved - match base .modern-button styles exactly */
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
-    font-weight: 500 !important;
+    font-weight: 700 !important;
     font-size: 13.5px !important;
     color: #ffffff !important;
     text-shadow: 
@@ -164,8 +176,12 @@
 .modern-tabs-container .modern-tabs-content .modern-button:disabled,
 .modern-tabs-container .modern-tab-panel .modern-button-green:disabled,
 .modern-tabs-container .modern-tabs-content .modern-button-green:disabled,
+.modern-tabs-container .modern-tab-panel .modern-button-dark-green:disabled,
+.modern-tabs-container .modern-tabs-content .modern-button-dark-green:disabled,
 .modern-tabs-container .modern-tab-panel .modern-button-blue:disabled,
 .modern-tabs-container .modern-tabs-content .modern-button-blue:disabled,
+.modern-tabs-container .modern-tab-panel .modern-button-dark-blue:disabled,
+.modern-tabs-container .modern-tabs-content .modern-button-dark-blue:disabled,
 .modern-tabs-container .modern-tab-panel .modern-button-blue-teal:disabled,
 .modern-tabs-container .modern-tabs-content .modern-button-blue-teal:disabled,
 .modern-tabs-container .modern-tab-panel .modern-button-red:disabled,

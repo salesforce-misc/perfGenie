@@ -45,7 +45,7 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.6),
         inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
     color: #ffffff !important;
-    font-weight: 500 !important;
+    font-weight: 700 !important;
     text-shadow: 
         0 1px 3px rgba(0, 0, 0, 0.3),
         0 0 8px rgba(90, 159, 212, 0.5),
@@ -76,7 +76,7 @@
     opacity: 0.6 !important;
     filter: grayscale(100%) !important;
     -webkit-filter: grayscale(100%) !important;
-    font-weight: 500 !important;
+    font-weight: 700 !important;
     /* Explicitly set white text color (matching inactive button) */
     color: #ffffff !important;
     /* Keep same text-shadow as base (grayscale filter will affect the colored glow) */
@@ -105,7 +105,7 @@
     padding-bottom: 0 !important;
     line-height: 1.3 !important;
     font-size: 13.5px !important;
-    font-weight: 500;
+    font-weight: 700;
 }
 
 /* Hover State - Enhanced glassmorphism for inactive accordion headers (matching inactive button hover effect) */
@@ -118,7 +118,7 @@
     opacity: 0.7 !important;
     filter: grayscale(100%) !important;
     -webkit-filter: grayscale(100%) !important;
-    font-weight: 500 !important;
+    font-weight: 700 !important;
     /* Enhanced glassmorphism background (still with blue base, but grayscale filter applied) */
     background: rgba(90, 159, 212, 0.45) !important;
     background-image: 
@@ -184,7 +184,7 @@
         inset 0 -1px 0 rgba(0, 0, 0, 0.09) !important;
     /* Dominating text - bright white with strong shadow */
     color: #ffffff !important;
-    font-weight: 500 !important;
+    font-weight: 700 !important;
     text-shadow: 
         0 1px 3px rgba(0, 0, 0, 0.3),
         0 0 8px rgba(90, 159, 212, 0.5),
@@ -217,7 +217,7 @@
         inset 0 -1px 0 rgba(0, 0, 0, 0.095) !important;
     /* Dominating text - bright white with strong shadow */
     color: #ffffff !important;
-    font-weight: 500 !important;
+    font-weight: 700 !important;
     text-shadow: 
         0 1px 3px rgba(0, 0, 0, 0.3),
         0 0 8px rgba(90, 159, 212, 0.5),
@@ -231,7 +231,7 @@
 #contextfilter-header.active *,
 #contextdataview-header.active * {
     color: #ffffff !important;
-    font-weight: 500 !important;
+    font-weight: 700 !important;
 }
 
 .modern-accordion-header.active .modern-accordion-icon,
@@ -249,7 +249,7 @@
 #accordion-header.active span:not(.modern-accordion-icon),
 #contextfilter-header.active span:not(.modern-accordion-icon),
 #contextdataview-header.active span:not(.modern-accordion-icon) {
-    font-weight: 500 !important;
+    font-weight: 700 !important;
     text-shadow: 
         0 1px 3px rgba(0, 0, 0, 0.3),
         0 0 8px rgba(90, 159, 212, 0.5),

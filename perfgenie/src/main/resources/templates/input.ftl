@@ -104,14 +104,12 @@
         box-sizing: border-box;
     }
 
-    /* Submit Button - uses modern-button.css with custom height and darker green variant */
+    /* Submit Button - uses modern-button.css with custom height and blue variant */
     #submit-input {
         /* Use modern-button base styles - override only what's unique to this button */
         height: 70px !important;
         min-height: 70px !important;
-        /* Custom darker green color variant (to differentiate from default green) */
-        --button-color: 22, 163, 74;
-        --button-color-light: 34, 197, 94;
+        /* Blue color is already set by modern-button-blue class */
     }
 
     /* Modern Backup Icon - font-size preserved (20px) */
@@ -321,7 +319,7 @@
             
             <!-- Submit button spans both rows -->
             <div class="submit-button-container" style="grid-column: 11; grid-row: 1 / 3;">
-                <button id="submit-input" style="alignment:center;height:70px" class="modern-button ui-button ui-widget ui-corner-all" disabled>Submit</button>
+                <button id="submit-input" class="modern-button modern-button-green" disabled>Submit</button>
             </div>
             
             <!-- Backup icon - row 1 -->
@@ -427,11 +425,8 @@
     // Track if initialization is complete to avoid triggering change events during page load
     let initializationComplete = false;
     
-    // Override jQuery's val() method to trigger change events when values are set programmatically
-    // This ensures onChange events fire for both user input and programmatic changes (like URL parameters)
-    // But only AFTER initialization is complete to avoid interfering with page load
-    // IMPORTANT: Only trigger change events for date pickers, not for dropdowns that are set during data loading
-    // This prevents loops while still allowing time range changes to trigger metadata calls
+    // Override jQuery's val() method to trigger validation when values are set programmatically
+    // This ensures validation runs when fields are populated from URL parameters or API responses
     (function() {
         const originalVal = $.fn.val;
         
@@ -446,19 +441,23 @@
                 const result = originalVal.call(this, value);
                 const newValue = originalVal.call($this);
                 
-                // Only trigger change events after initialization is complete
-                // Only trigger for date pickers (startpicker1, endpicker1) - these trigger the data loading flow
-                // Do NOT trigger for dropdowns (tenant-input1, host-input1, bases1) that are set during data loading
-                // to prevent loops, but the existing code in input.js directly calls metadata functions
-                // so the flow should still work
-                if (initializationComplete && oldValue !== newValue) {
+                // Trigger validation immediately when any field value is set programmatically
+                // This ensures submit button enables even with slow API responses
+                if (oldValue !== newValue) {
                     const fieldId = $this.attr('id');
-                    // Only trigger change events for date pickers
-                    // Dropdowns are set by input.js during data loading and should not trigger change events
+                    // Trigger validation for all required fields
+                    const requiredFields = ['startpicker1', 'endpicker1', 'tenant-input1', 'host-input1', 'bases1'];
+                    if (requiredFields.indexOf(fieldId) !== -1) {
+                        // Use setTimeout to trigger validation asynchronously
+                        // This allows the field value to be fully set before validation
+                        setTimeout(function() {
+                            validateInputForm();
+                        }, 0);
+                    }
+                    
+                    // Also trigger change events for date pickers (for input.js compatibility)
                     const datePickerFields = ['startpicker1', 'endpicker1'];
-                    if (datePickerFields.indexOf(fieldId) !== -1) {
-                        // Use setTimeout to trigger change event asynchronously
-                        // This allows the existing change handlers in input.js to fire
+                    if (datePickerFields.indexOf(fieldId) !== -1 && initializationComplete) {
                         setTimeout(function() {
                             $this.trigger('change');
                         }, 0);
@@ -469,6 +468,40 @@
             }
         };
     })();
+    
+    // Use MutationObserver to watch for field value changes (catches programmatic updates)
+    // This ensures validation runs even if $.fn.val override doesn't catch everything
+    function setupFieldValueObserver() {
+        const requiredFields = ['startpicker1', 'endpicker1', 'tenant-input1', 'host-input1', 'bases1'];
+        
+        requiredFields.forEach(function(fieldId) {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                // Watch for value attribute changes and input events
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+                            setTimeout(function() {
+                                validateInputForm();
+                            }, 50);
+                        }
+                    });
+                });
+                
+                observer.observe(field, {
+                    attributes: true,
+                    attributeFilter: ['value']
+                });
+                
+                // Also listen for input events (catches programmatic changes that don't use $.fn.val)
+                field.addEventListener('input', function() {
+                    setTimeout(function() {
+                        validateInputForm();
+                    }, 50);
+                }, { passive: true });
+            }
+        });
+    }
     
     /**
      * Initialize input accordion - uses shared modern accordion component
@@ -495,10 +528,13 @@
         setTimeout(function() {
             initInputFormValidation();
             
+            // Set up MutationObserver to watch for field value changes
+            setupFieldValueObserver();
+            
             // Periodically validate during initialization to catch async field population
             // This ensures validation runs when fields are populated from URL parameters
             let validationAttempts = 0;
-            const maxAttempts = 20; // Check for up to 4 seconds (20 * 200ms)
+            const maxAttempts = 50; // Check for up to 10 seconds (50 * 200ms) - increased for slow API responses
             const validationInterval = setInterval(function() {
                 validationAttempts++;
                 validateInputForm();
@@ -516,10 +552,18 @@
                     host1 && host1.trim() !== '' && 
                     bases1 && bases1.trim() !== '';
                 
-                if (allFieldsFilled || validationAttempts >= maxAttempts) {
+                if (allFieldsFilled) {
                     clearInterval(validationInterval);
                     // Mark initialization as complete
                     initializationComplete = true;
+                    // Final validation to ensure button is enabled
+                    validateInputForm();
+                } else if (validationAttempts >= maxAttempts) {
+                    clearInterval(validationInterval);
+                    // Mark initialization as complete even if fields aren't filled
+                    initializationComplete = true;
+                    // Final validation attempt
+                    validateInputForm();
                 }
             }, 200);
         }, 100);

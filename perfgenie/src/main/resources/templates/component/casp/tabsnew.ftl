@@ -576,9 +576,28 @@
     .main-content-wrapper.sidebar-collapsed .collapsed-header-logo .collapsed-header-title {
         font-family: 'Tangerine', cursive;
         font-size: 32px;
-        color: white;
         font-weight: bold;
         margin-left: 4px;
+        /* Gradient text effect with sea blue tones */
+        background: linear-gradient(135deg, rgba(150, 220, 255, 0.95) 0%, rgba(200, 240, 255, 1) 25%, rgba(100, 200, 255, 0.95) 50%, rgba(80, 190, 240, 0.9) 75%, rgba(50, 170, 230, 0.95) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        /* Glossy embossed text effect with sea blue shades */
+        text-shadow: 
+            /* Strong top-left highlight for glossy reflection */
+            -2px -2px 0 rgba(255, 255, 255, 0.9),
+            -1px -1px 0 rgba(200, 240, 255, 0.8),
+            /* Multiple shadow layers for depth with sea blue tint */
+            1px 1px 0 rgba(0, 80, 150, 0.6),
+            2px 2px 2px rgba(0, 100, 180, 0.5),
+            3px 3px 4px rgba(0, 120, 200, 0.4),
+            4px 4px 6px rgba(0, 140, 220, 0.3),
+            /* Sea blue glow */
+            0 0 10px rgba(100, 200, 255, 0.5),
+            0 0 20px rgba(80, 180, 240, 0.4),
+            0 0 30px rgba(60, 160, 230, 0.3),
+            0 0 40px rgba(40, 140, 220, 0.2);
     }
     
     /* Page title on the right side */
@@ -2041,7 +2060,6 @@ function getCanaryHeader(start, end, source){
 <div id="canaries-page" class="page-content active">
 <div class="data-view-header-placeholder" style="height: 44px; width: 100%;">
     <div class="collapsed-header-logo">
-        <img src="/images/warden-white.svg" alt="Warden" />
         <span class="collapsed-header-title">Perf Genie</span>
     </div>
     <span>Canary hub (process and explore data)</span>
@@ -2133,7 +2151,6 @@ function getCanaryHeader(start, end, source){
 <div id="profiler-page" class="page-content">
     <div class="data-view-header-placeholder" style="height: 44px; width: 100%;">
         <div class="collapsed-header-logo">
-            <img src="/images/warden-white.svg" alt="Warden" />
             <span class="collapsed-header-title">Perf Genie</span>
         </div>
         <span>Explore profiles and diagnostics data</span>
@@ -2150,10 +2167,9 @@ function getCanaryHeader(start, end, source){
 <div id="aidashboard-page" class="page-content">
     <div class="data-view-header-placeholder" style="height: 44px; width: 100%;">
         <div class="collapsed-header-logo">
-            <img src="/images/warden-white.svg" alt="Warden" />
             <span class="collapsed-header-title">Perf Genie</span>
         </div>
-        <span>AI dashboard</span>
+        <span>AI dashboard (WIP ...)</span>
     </div>
     <div style="padding: 0px;">
         <#include "geniedash.ftl">

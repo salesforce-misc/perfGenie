@@ -215,7 +215,7 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.7),
         inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
     color: #ffffff !important;
-    font-weight: 500 !important;
+    font-weight: 700 !important;
     text-shadow: 
         0 1px 3px rgba(0, 0, 0, 0.3),
         0 0 8px rgba(90, 159, 212, 0.5),
@@ -244,7 +244,7 @@
     filter: grayscale(100%) !important;
     -webkit-filter: grayscale(100%) !important;
     /* Text styling matching inactive modern-button */
-    font-weight: 500 !important;
+    font-weight: 700 !important;
     /* Reduce text-shadow glow to prevent blurriness (matching inactive button appearance) */
     text-shadow: 
         0 1px 2px rgba(0, 0, 0, 0.3),
@@ -263,7 +263,7 @@
 /* Show only title as button text */
 .modern-tabs-nav-button .card-title {
     font-size: 13.5px !important;
-    font-weight: 600;
+    font-weight: 700;
     color: inherit;
     margin: 0;
     line-height: 1.3;
@@ -279,7 +279,7 @@
     filter: grayscale(100%) !important;
     -webkit-filter: grayscale(100%) !important;
     /* Text styling matching inactive modern-button (font-weight 500) */
-    font-weight: 500 !important;
+    font-weight: 700 !important;
     /* Enhanced glassmorphism background (still with blue base, but grayscale filter applied) */
     background: rgba(90, 159, 212, 0.45) !important;
     background-image: 
@@ -331,7 +331,7 @@
         inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
     /* Dominating text - bright white with strong shadow */
     color: #ffffff !important;
-    font-weight: 500 !important;
+    font-weight: 700 !important;
     text-shadow: 
         0 1px 3px rgba(0, 0, 0, 0.3),
         0 0 8px rgba(90, 159, 212, 0.5),
@@ -360,7 +360,7 @@
         inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
     /* Dominating text - bright white with strong shadow */
     color: #ffffff !important;
-    font-weight: 500 !important;
+    font-weight: 700 !important;
     text-shadow: 
         0 1px 3px rgba(0, 0, 0, 0.3),
         0 0 8px rgba(90, 159, 212, 0.5),
@@ -370,7 +370,7 @@
 
 .modern-tabs-nav-button.active .card-title {
     color: #ffffff !important;
-    font-weight: 500 !important;
+    font-weight: 700 !important;
     text-shadow: 
         0 1px 3px rgba(0, 0, 0, 0.3),
         0 0 8px rgba(90, 159, 212, 0.5),
@@ -381,13 +381,13 @@
 .modern-tabs-nav-button.active,
 .modern-tabs-nav-button.active * {
     color: #ffffff !important;
-    font-weight: 500 !important;
+    font-weight: 700 !important;
 }
 
 /* Active hover text styling (same as active, but ensures consistency) */
 .modern-tabs-nav-button.active:hover .card-title {
     color: #ffffff !important;
-    font-weight: 500 !important;
+    font-weight: 700 !important;
     text-shadow: 
         0 1px 3px rgba(0, 0, 0, 0.3),
         0 0 8px rgba(90, 159, 212, 0.5),
@@ -397,7 +397,7 @@
 .modern-tabs-nav-button.active:hover,
 .modern-tabs-nav-button.active:hover * {
     color: #ffffff !important;
-    font-weight: 500 !important;
+    font-weight: 700 !important;
 }
 
 /* Override any inline styles or other CSS - iPhone 16 Glassmorphism */
@@ -416,7 +416,7 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.6),
         inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
     color: #ffffff !important;
-    font-weight: 500 !important;
+    font-weight: 700 !important;
     text-shadow: 
         0 1px 3px rgba(0, 0, 0, 0.3),
         0 0 8px rgba(90, 159, 212, 0.5),
