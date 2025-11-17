@@ -14,8 +14,8 @@
         </td>
 
         <td style="padding: 10px;border: none;align-items:center;" rowspan="2">
-            <button onclick="processPerfSwat()" id="submit-perfswat-input" style="alignment:center;height:30px"
-                    class="modern-button modern-button-green ui-button ui-widget ui-corner-all">Process
+            <button onclick="processPerfSwat()" id="submit-perfswat-input"
+                    class="modern-button modern-button-green" disabled>Process
             </button>
         </td>
     </tr>

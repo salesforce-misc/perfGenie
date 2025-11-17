@@ -14,8 +14,8 @@
         </td>
 
         <td style="padding: 10px;border: none;align-items:center;">
-            <button onclick="processCanary()" id="submit-canary-input" style="alignment:center;height:30px"
-                    class="modern-button modern-button-green ui-button ui-widget ui-corner-all" disabled>Process
+            <button onclick="processCanary()" id="submit-canary-input"
+                    class="modern-button modern-button-green" disabled>Process
             </button>
         </td>
     </tr>
@@ -87,12 +87,67 @@
     }
     
     // Initialize validation when document is ready
+    // Also ensure button is disabled by default
     $(document).ready(function() {
+        // Disable button immediately on page load
+        const submitButton = document.getElementById('submit-canary-input');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+        
         // Wait a bit for datetime pickers to be initialized
         setTimeout(function() {
             initCanaryCustomFormValidation();
         }, 200);
     });
+    
+    // Also initialize validation when tab becomes visible (for dynamically loaded content)
+    // This ensures validation runs even if the tab content is loaded after page load
+    if (typeof MutationObserver !== 'undefined') {
+        var observer = new MutationObserver(function(mutations) {
+            var shouldInit = false;
+            mutations.forEach(function(mutation) {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === 1) { // Element node
+                        // Check if submit-canary-input button was added
+                        if (node.id === 'submit-canary-input' || 
+                            (node.querySelector && node.querySelector('#submit-canary-input'))) {
+                            shouldInit = true;
+                        }
+                    }
+                });
+            });
+            if (shouldInit) {
+                setTimeout(function() {
+                    const submitButton = document.getElementById('submit-canary-input');
+                    if (submitButton && submitButton.disabled === false) {
+                        // Only disable if it's not already disabled (to avoid overriding user input)
+                        submitButton.disabled = true;
+                    }
+                    if (typeof initCanaryCustomFormValidation === 'function') {
+                        initCanaryCustomFormValidation();
+                    }
+                }, 100);
+            }
+        });
+        
+        // Start observing when DOM is ready
+        if (document.body) {
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        } else {
+            document.addEventListener('DOMContentLoaded', function() {
+                if (document.body) {
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true
+                    });
+                }
+            });
+        }
+    }
 
     function processCanary() {
         let info = " start: " + moment.utc($("#startpicker3").val()).format('ddd, MMM D YYYY HH:mm:ss [UTC]') + " end: " + moment.utc($("#endpicker3").val()).format('ddd, MMM D YYYY HH:mm:ss [UTC]') + " cell: '" + $('#cell-input1').val()  + "'";

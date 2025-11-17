@@ -843,6 +843,7 @@
         return;//todo: remove addClickActionsToElementNew, no need any more
     }
 
+
     function updateProfilerViewCCT(level, skipFilter) {
         if (skipFilter == undefined) {
             skipFilter = false;
@@ -869,6 +870,9 @@
             console.log("filterToLevel time:" + (end - start));
 
             let treeToProcess = getActiveTree(getEventType(), isCalltree);
+            if(treeToProcess == undefined){
+                return;
+            }
             //let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
             let selectedLevel = getSelectedLevel(getTree(1, getEventType()));//both trees should be at same level
 
@@ -881,6 +885,7 @@
                 console.log("change in tree, option:" + (prevCustomEvent == customEvent) + ":" + (currentLoadedTree === treeToProcess)+":"+ (prevOption === currentOption) +" isRefresh:"+(isRefresh === false)+":"+" isLevelRefresh:"+(isLevelRefresh === false)+" selectedLevel:"+ (prevSelectedLevel === selectedLevel));
             }
             $("ul.tree").html("");//reset
+
 
             currentLoadedTree = treeToProcess;
             prevOption = currentOption;
@@ -941,6 +946,9 @@
         } else {
             let start = performance.now();
             let treeToProcess = getActiveTree(getEventType(), isCalltree);
+            if(treeToProcess == undefined){
+                return;
+            }
             let selectedLevel = getSelectedLevel(getActiveTree(getEventType(), false));
 
             let timeRange = "";

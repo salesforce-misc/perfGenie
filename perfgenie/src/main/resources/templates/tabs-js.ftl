@@ -55,8 +55,13 @@
 
     $(document).ready(() => {
         // Initialize modern tabs component
-        if (typeof initModernTabs !== 'undefined') {
-            window.tabsAPI = initModernTabs('#tabs', {
+        // Use window.initModernTabs to ensure we get the component function, not any local wrapper
+        var componentInitModernTabs = (typeof window !== 'undefined' && typeof window.initModernTabs === 'function') 
+            ? window.initModernTabs 
+            : (typeof initModernTabs !== 'undefined' ? initModernTabs : null);
+        
+        if (componentInitModernTabs && typeof componentInitModernTabs === 'function') {
+            window.tabsAPI = componentInitModernTabs('#tabs', {
                 onTabActivate: function(tabId) {
                     updateTabUrl("#" + tabId);
                     if(tabId == "cct"){

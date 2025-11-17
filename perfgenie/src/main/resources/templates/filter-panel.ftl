@@ -4942,6 +4942,9 @@
         }
 
         let tree = getContextTree(1, eventType);
+        if(tree == undefined){
+            return undefined;
+        }
         if (tree['tree'] !== undefined) {
             tree =  tree['tree'];
         }

@@ -1496,7 +1496,7 @@
                 return;
             }
 
-            resetTreeHeader("");
+            resetTreeHeader("Thread state view");
 
             gentsviewtable(true, level);
 
@@ -1507,7 +1507,7 @@
 
             let start = performance.now();
 
-            resetTreeHeader("");
+            resetTreeHeader("Thread state view");
 
             gentsviewtable(true, level);
 

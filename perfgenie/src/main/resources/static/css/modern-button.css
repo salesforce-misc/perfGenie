@@ -31,12 +31,12 @@
     --button-color-light: 74, 222, 128;
     
     /* Glassmorphism background */
-    background: rgba(var(--button-color), 0.35) !important;
+    background: rgba(var(--button-color), 0.25) !important;
     background-image: 
         linear-gradient(135deg, 
-            rgba(var(--button-color), 0.4) 0%, 
-            rgba(var(--button-color-light), 0.3) 50%, 
-            rgba(var(--button-color), 0.4) 100%),
+            rgba(var(--button-color), 0.3) 0%, 
+            rgba(var(--button-color-light), 0.2) 50%, 
+            rgba(var(--button-color), 0.3) 100%),
         linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -48,21 +48,19 @@
         inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
     color: #ffffff !important;
     text-shadow: 
-        0 0 1px rgba(0, 0, 0, 0.8),
-        0 1px 2px rgba(0, 0, 0, 0.6),
-        0 1px 3px rgba(0, 0, 0, 0.4),
+        0 1px 3px rgba(0, 0, 0, 0.3),
         0 0 8px rgba(var(--button-color), 0.5),
-        0 2px 4px rgba(0, 0, 0, 0.3) !important;
+        0 2px 4px rgba(0, 0, 0, 0.2) !important;
 }
 
 /* Hover state */
 .modern-button:hover:not(:disabled) {
-    background: rgba(var(--button-color), 0.45) !important;
+    background: rgba(var(--button-color), 0.35) !important;
     background-image: 
         linear-gradient(135deg, 
-            rgba(var(--button-color), 0.5) 0%, 
-            rgba(var(--button-color-light), 0.4) 50%, 
-            rgba(var(--button-color), 0.5) 100%),
+            rgba(var(--button-color), 0.4) 0%, 
+            rgba(var(--button-color-light), 0.3) 50%, 
+            rgba(var(--button-color), 0.4) 100%),
         linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%) !important;
     border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
     box-shadow: 
@@ -75,7 +73,7 @@
 
 /* Disabled state */
 .modern-button:disabled {
-    opacity: 0.6 !important;
+    opacity: 0.8 !important;
     cursor: not-allowed !important;
     pointer-events: none;
     filter: grayscale(100%) !important;
@@ -123,4 +121,71 @@
 /* Custom color usage example:
  * <button class="modern-button" style="--button-color: 255, 0, 0; --button-color-light: 255, 100, 100;">Custom Red</button>
  */
+
+/* Universal rules for buttons inside tabs or other containers that reset styles */
+/* These ensure buttons maintain their appearance regardless of parent container */
+/* Enabled buttons inside tabs - ensure they match buttons outside tabs exactly */
+.modern-tabs-container .modern-tab-panel .modern-button:not(:disabled),
+.modern-tabs-container .modern-tabs-content .modern-button:not(:disabled) {
+    /* Ensure all button styles are preserved - match base .modern-button styles exactly */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    font-weight: 500 !important;
+    font-size: 13.5px !important;
+    color: #ffffff !important;
+    text-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.3),
+        0 0 8px rgba(var(--button-color), 0.5),
+        0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    /* Glassmorphism background - ensure it's not reset */
+    background: rgba(var(--button-color), 0.25) !important;
+    background-image: 
+        linear-gradient(135deg, 
+            rgba(var(--button-color), 0.3) 0%, 
+            rgba(var(--button-color-light), 0.2) 50%, 
+            rgba(var(--button-color), 0.3) 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 
+        0 4px 16px rgba(var(--button-color), 0.4),
+        0 2px 8px rgba(var(--button-color), 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+    transform: none !important;
+    white-space: normal !important;
+}
+
+/* Disabled state inside tabs - ensure it works with tab content reset */
+/* Must override tab content reset rules that set filter: none */
+.modern-tabs-container .modern-tab-panel .modern-button:disabled,
+.modern-tabs-container .modern-tabs-content .modern-button:disabled,
+.modern-tabs-container .modern-tab-panel .modern-button-green:disabled,
+.modern-tabs-container .modern-tabs-content .modern-button-green:disabled,
+.modern-tabs-container .modern-tab-panel .modern-button-blue:disabled,
+.modern-tabs-container .modern-tabs-content .modern-button-blue:disabled,
+.modern-tabs-container .modern-tab-panel .modern-button-blue-teal:disabled,
+.modern-tabs-container .modern-tabs-content .modern-button-blue-teal:disabled,
+.modern-tabs-container .modern-tab-panel .modern-button-red:disabled,
+.modern-tabs-container .modern-tabs-content .modern-button-red:disabled,
+.modern-tabs-container .modern-tab-panel .modern-button-orange:disabled,
+.modern-tabs-container .modern-tabs-content .modern-button-orange:disabled,
+.modern-tabs-container .modern-tab-panel .modern-button-purple:disabled,
+.modern-tabs-container .modern-tabs-content .modern-button-purple:disabled {
+    opacity: 0.8 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    /* CRITICAL: Override tab content reset that sets filter: none */
+    filter: grayscale(100%) !important;
+    -webkit-filter: grayscale(100%) !important;
+}
+
+/* Hover state inside tabs */
+.modern-tabs-container .modern-tab-panel .modern-button:hover:not(:disabled),
+.modern-tabs-container .modern-tabs-content .modern-button:hover:not(:disabled) {
+    /* Hover styles are already defined above, but ensure they're not overridden */
+    transform: translateY(-1px);
+}
 

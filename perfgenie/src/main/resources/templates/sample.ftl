@@ -1364,7 +1364,30 @@
                 return;
             }
 
-            resetTreeHeader("");
+
+            //////////////
+            //resetTreeHeader("");
+            let timeRange = "";
+            if (compareTree) {
+                let $profile1 = "";
+                let $profile2 = "";
+                $profile1 = $("#bases1 :selected").text();
+                $profile2 = $("#bases2 :selected").text();
+                timeRange = ", <span class=\"fieldlable\">Profile(s):</span> <span class=\"bclr\">" + $profile1 + "</span> <span class=\"tclr\">" + $profile2 + "</span>";
+            } else {
+                timeRange = ", <span class=\"fieldlable\">Profile:</span> <span>" + $("#bases1 :selected").text() + "</span>";
+            }
+
+            if (isJfrContext && !compareTree) {
+                resetTreeHeader(" <span class=\"fieldlable\">Total samples:</span> "
+                    + treeToProcess.sz + ", <span title=\"Exclude samples below threshold %\" class=\"fieldlable\">Threshold:</span> " + threshold + timeRange + (isAggregation() ? getTextForAggregationInput(contextTree1["1"]) : ""));
+            } else {
+                resetTreeHeader(" Total samples: "
+                    + (((treeToProcess.bsize !== undefined) ? treeToProcess.bsize : treeToProcess.bsz) + ((treeToProcess.csize !== undefined) ? treeToProcess.csize : treeToProcess.csz)) + ", <span title=\"Exclude samples below threshold %\" class=\"fieldlable\">Threshold:</span> "
+                    + threshold + timeRange);
+            }
+
+            //////////////
 
             genSampleTable(true, level);
 
@@ -1375,7 +1398,30 @@
 
             let start = performance.now();
 
-            resetTreeHeader("");
+            //////////////
+            //resetTreeHeader("");
+            let treeToProcess = getActiveTree(eventType, isCalltree);
+            let timeRange = "";
+            if (compareTree) {
+                let $profile1 = "";
+                let $profile2 = "";
+                $profile1 = $("#bases1 :selected").text();
+                $profile2 = $("#bases2 :selected").text();
+                timeRange = ", <span class=\"fieldlable\">Profile(s):</span> <span class=\"bclr\">" + $profile1 + "</span> <span class=\"tclr\">" + $profile2 + "</span>";
+            } else {
+                timeRange = ", <span class=\"fieldlable\">Profile:</span> <span>" + $("#bases1 :selected").text() + "</span>";
+            }
+
+            if (isJfrContext && !compareTree) {
+                resetTreeHeader(" <span class=\"fieldlable\">Total samples:</span> "
+                    + treeToProcess.sz + ", <span title=\"Exclude samples below threshold %\" class=\"fieldlable\">Threshold:</span> " + threshold + timeRange + (isAggregation() ? getTextForAggregationInput(contextTree1["1"]) : ""));
+            } else {
+                resetTreeHeader(" Total samples: "
+                    + (((treeToProcess.bsize !== undefined) ? treeToProcess.bsize : treeToProcess.bsz) + ((treeToProcess.csize !== undefined) ? treeToProcess.csize : treeToProcess.csz)) + ", <span title=\"Exclude samples below threshold %\" class=\"fieldlable\">Threshold:</span> "
+                    + threshold + timeRange);
+            }
+
+            //////////////
 
             genSampleTable(true, level);
 

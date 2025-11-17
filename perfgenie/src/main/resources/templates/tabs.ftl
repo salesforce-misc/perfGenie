@@ -29,8 +29,17 @@
         font-weight: 500 !important;
         font-size: 0.85em !important; /* Smaller font */
         margin: 0 !important;
-        float: right !important; /* Float right for right-to-left slide */
+        /* Use absolute positioning instead of float for better slide control */
+        position: absolute !important;
+        right: 0 !important;
+        top: 0 !important;
+        z-index: 10 !important; /* Ensure it's above other content */
         line-height: 1.1 !important; /* Very tight line height */
+        /* Constrain width to content so it stops when all text is shown */
+        width: auto !important;
+        max-width: 100% !important;
+        white-space: nowrap !important; /* Prevent text wrapping */
+        overflow: hidden !important; /* Hide overflow */
         /* Don't set display or transition - let jQuery slide animation handle it */
     }
     
@@ -106,7 +115,7 @@
         <li class="modern-tabs-nav-item"><a href="#surface" class="modern-tabs-nav-button" data-tab-target="surface">Hotspot surface</a></li>
         <li class="modern-tabs-nav-item"><a href="#tsview" class="modern-tabs-nav-button" data-tab-target="tsview">Thread state view</a></li>
     </ul>
-    <div id="view-info" class="ui-state-highlight ui-widget-header ui-corner-all" style="float: right !important;display:none">
+    <div id="view-info" class="ui-state-highlight ui-widget-header ui-corner-all" style="display:none">
         <span class="ui-icon ui-icon-info"></span> <span id="view-info-text"></span>
     </div>
     <div class="modern-tabs-content">

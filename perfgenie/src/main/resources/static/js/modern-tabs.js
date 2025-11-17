@@ -20,6 +20,16 @@
  * @returns {Object} - Tabs API object with methods: switchTab(tabId), getActiveTabId()
  */
 function initModernTabs(containerSelector, options) {
+    // Validate containerSelector first
+    if (!containerSelector) {
+        console.error('[ModernTabs Component] ERROR: containerSelector is missing or undefined!', {
+            containerSelector: containerSelector,
+            type: typeof containerSelector,
+            stack: new Error().stack
+        });
+        return null;
+    }
+    
     options = options || {};
     
     // Get container element
@@ -28,16 +38,23 @@ function initModernTabs(containerSelector, options) {
         : containerSelector;
     
     if (!container) {
-        console.warn('[ModernTabs] Container not found:', containerSelector);
+        console.warn('[ModernTabs Component] Container not found:', containerSelector);
         return null;
     }
+    
+    // Generate instance ID for this tabs instance (for debugging and isolation)
+    const instanceId = (container.id || 'tabs') + '-' + Math.random().toString(36).substr(2, 9);
+    container._modernTabsInstanceId = instanceId;
+    
+    // Make isUpdatingHash instance-specific
+    container._isUpdatingHash = false;
     
     // Scoped query selectors within container
     const tabButtons = container.querySelectorAll('.modern-tabs-nav-button');
     const tabPanels = container.querySelectorAll('.modern-tab-panel');
     
     if (tabButtons.length === 0 || tabPanels.length === 0) {
-        console.warn('[ModernTabs] Tab buttons or panels not found in container:', containerSelector);
+        console.warn('[ModernTabs Component] [' + instanceId + '] Tab buttons or panels not found in container:', containerSelector);
         return null;
     }
     
@@ -68,8 +85,13 @@ function initModernTabs(containerSelector, options) {
         // Default no-op - can be overridden
     };
     
-    // Flag to prevent hashchange handler from reacting to our own hash updates
-    let isUpdatingHash = false;
+    // Flag to prevent hashchange handler from reacting to our own hash updates (instance-specific)
+    const isUpdatingHash = function() {
+        return container._isUpdatingHash || false;
+    };
+    const setIsUpdatingHash = function(value) {
+        container._isUpdatingHash = value;
+    };
     
     /**
      * Switch to a specific tab
@@ -77,14 +99,32 @@ function initModernTabs(containerSelector, options) {
      * @param {boolean} skipHashUpdate - If true, skip updating URL hash (used for default first tab)
      */
     function switchTab(tabId, skipHashUpdate) {
+        console.log('[ModernTabs Component] [' + instanceId + '] switchTab ENTRY:', {
+            tabId: tabId,
+            skipHashUpdate: skipHashUpdate,
+            containerId: container.id,
+            tabIdType: typeof tabId,
+            tabIdTruthy: !!tabId
+        });
+        
         if (!tabId) {
-            console.warn('[ModernTabs] switchTab called without tabId');
+            console.warn('[ModernTabs Component] [' + instanceId + '] switchTab called without tabId');
             return;
         }
         
         // Re-query buttons and panels from container to get fresh references (in case DOM changed)
         const currentTabButtons = container.querySelectorAll('.modern-tabs-nav-button');
         const currentTabPanels = container.querySelectorAll('.modern-tab-panel');
+        
+        console.log('[ModernTabs Component] [' + instanceId + '] switchTab DOM query:', {
+            buttonsFound: currentTabButtons.length,
+            panelsFound: currentTabPanels.length,
+            searchingForTabId: tabId,
+            buttonIds: Array.from(currentTabButtons).map(btn => {
+                return btn.getAttribute('href')?.substring(1) || btn.getAttribute('data-tab-target');
+            }),
+            panelIds: Array.from(currentTabPanels).map(panel => panel.id)
+        });
         
         // Remove active class from all buttons and panels
         currentTabButtons.forEach(btn => {
@@ -133,14 +173,25 @@ function initModernTabs(containerSelector, options) {
         
         // Activate the target panel
         const targetPanel = document.getElementById(tabId);
+        console.log('[ModernTabs Component] [' + instanceId + '] switchTab panel activation:', {
+            tabId: tabId,
+            targetPanelFound: !!targetPanel,
+            targetPanelId: targetPanel ? targetPanel.id : 'null',
+            targetPanelInContainer: targetPanel ? container.contains(targetPanel) : false,
+            buttonFound: buttonFound
+        });
+        
         if (targetPanel) {
             targetPanel.classList.add('active');
+            console.log('[ModernTabs Component] [' + instanceId + '] Activated panel:', tabId);
         } else {
-            console.warn('[ModernTabs] Tab panel not found:', tabId);
+            console.warn('[ModernTabs Component] [' + instanceId + '] Tab panel not found:', tabId);
         }
         
         if (!buttonFound) {
-            console.warn('[ModernTabs] Tab button not found for:', tabId);
+            console.warn('[ModernTabs Component] [' + instanceId + '] Tab button not found for:', tabId);
+        } else {
+            console.log('[ModernTabs Component] [' + instanceId + '] Activated button for:', tabId);
         }
         
         // Call onTabChange callback
@@ -173,7 +224,7 @@ function initModernTabs(containerSelector, options) {
             const currentHash = window.location.hash.substring(1);
             if (currentHash !== tabId) {
                 // Set flag to prevent hashchange handler from reacting
-                isUpdatingHash = true;
+                setIsUpdatingHash(true);
                 // Update URL hash without triggering page scroll
                 if (window.history && window.history.replaceState) {
                     const newUrl = window.location.pathname + window.location.search + '#' + tabId;
@@ -184,7 +235,7 @@ function initModernTabs(containerSelector, options) {
                 }
                 // Reset flag after a short delay (hashchange fires asynchronously)
                 setTimeout(() => {
-                    isUpdatingHash = false;
+                    setIsUpdatingHash(false);
                 }, 0);
             }
         }
@@ -270,8 +321,21 @@ function initModernTabs(containerSelector, options) {
     
     // Set first tab as active by default if none is active and no URL parameter/hash
     const hasActive = Array.from(tabButtons).some(btn => btn.classList.contains('active'));
+    const hasActivePanel = Array.from(tabPanels).some(panel => panel.classList.contains('active'));
+    console.log('[ModernTabs Component] Tab activation decision:', {
+        hasActiveButton: hasActive,
+        hasActivePanel: hasActivePanel,
+        hasActive: hasActive || hasActivePanel,
+        tabButtonsCount: tabButtons.length,
+        tabPanelsCount: tabPanels.length,
+        tabToActivate: tabToActivate,
+        firstTabId: tabPanels[0]?.id,
+        firstPanelElement: tabPanels[0]
+    });
+    
     if (!hasActive && tabButtons.length > 0 && tabPanels.length > 0) {
         if (tabToActivate) {
+            console.log('[ModernTabs Component] Activating tab from URL/hash/options:', tabToActivate);
             // Activate tab from URL parameter, hash, or initialTab option
             switchTab(tabToActivate);
             // Update URL if updateUrl is provided and urlParam is set
@@ -282,16 +346,32 @@ function initModernTabs(containerSelector, options) {
             // Default to first tab - use switchTab to ensure consistency
             // Skip hash update when defaulting to first tab (don't add hash if URL has none)
             const firstTabId = tabPanels[0]?.id;
+            console.log('[ModernTabs Component] No tab to activate from URL/hash/options, defaulting to first tab:', {
+                firstTabId: firstTabId,
+                firstPanelElement: tabPanels[0],
+                willCallSwitchTab: !!firstTabId,
+                skipHashUpdate: true
+            });
             if (firstTabId) {
                 switchTab(firstTabId, true); // Pass true to skip hash update
+            } else {
+                console.warn('[ModernTabs Component] First tab panel has no ID, cannot activate');
             }
         }
     } else if (tabToActivate && !hasActive) {
+        console.log('[ModernTabs Component] Tab to activate exists but no active tab yet:', tabToActivate);
         // URL parameter/hash/initialTab exists but no tab is active yet
         switchTab(tabToActivate);
         if (options.urlParam && updateUrlParam) {
             updateUrlParam(options.urlParam, tabToActivate);
         }
+    } else {
+        console.log('[ModernTabs Component] Tab activation skipped:', {
+            reason: hasActive ? 'Tab already active' : (tabButtons.length === 0 ? 'No tab buttons' : 'No tab panels'),
+            hasActive: hasActive,
+            tabButtonsCount: tabButtons.length,
+            tabPanelsCount: tabPanels.length
+        });
     }
     
     // Add click handlers to tab buttons
@@ -329,7 +409,7 @@ function initModernTabs(containerSelector, options) {
     if (!options.urlParam && options.hashParam !== false) {
         const handleHashChange = function() {
             // Ignore hash changes that we triggered ourselves
-            if (isUpdatingHash) {
+            if (isUpdatingHash()) {
                 return;
             }
             

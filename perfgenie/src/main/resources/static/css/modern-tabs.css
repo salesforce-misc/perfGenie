@@ -90,6 +90,12 @@
     display: none !important; /* Hidden by default */
     flex-direction: column;
     width: 100%;
+    /* Ensure no border on any tabs container */
+    border: none !important;
+    border-width: 0 !important;
+    border-style: none !important;
+    border-color: transparent !important;
+    outline: none !important;
 }
 
 /* Show tabs container when it has the visible class */
@@ -101,6 +107,7 @@
 #tabs.modern-tabs-container,
 #canary-tabs.modern-tabs-container {
     display: flex !important;
+    position: relative !important; /* Needed for absolutely positioned children like #view-info */
     /* Glass Room Effect - Enhanced transparency with embossing */
     background: rgba(255, 255, 255, 0.05) !important;
     background-image: 
@@ -109,8 +116,12 @@
     /* Strong glass room effect with heavy backdrop blur */
     backdrop-filter: blur(30px) saturate(200%) brightness(1.1);
     -webkit-backdrop-filter: blur(30px) saturate(200%) brightness(1.1);
-    /* Visible glass edges - more pronounced */
-    border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
+    /* Border removed - use multiple properties to ensure it's gone */
+    border: none !important;
+    border-width: 0 !important;
+    border-style: none !important;
+    border-color: transparent !important;
+    outline: none !important;
     border-radius: 12px !important;
     /* Enhanced embossed shadows with glass room depth */
     box-shadow: 
@@ -124,15 +135,14 @@
         inset 0 0 30px rgba(255, 255, 255, 0.1),
         /* Depth shadow */
         0 2px 8px rgba(0, 0, 0, 0.08) !important;
-    padding: 16px !important;
+    /* Top padding removed, keep sides and bottom */
+    padding: 0 16px 16px 16px !important;
     box-sizing: border-box;
-    /* Dominating text - ensure text is prominent */
-    color: #1a1a1a !important;
-    font-weight: 600 !important;
 }
 
-/* Ensure text inside is dominating and visible */
-.modern-tabs-container * {
+/* Ensure text inside NAVIGATION is dominating and visible - ONLY target nav area */
+.modern-tabs-container .modern-tabs-nav,
+.modern-tabs-container .modern-tabs-nav * {
     color: inherit;
 }
 
@@ -141,6 +151,9 @@
     font-weight: 700 !important;
     text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
 }
+
+/* Reset styles for tab content to prevent inheritance from tab buttons */
+/* These rules are placed early but will be overridden by more specific rules at the end if needed */
 
 /* Show tabs container when visible class is added */
 .modern-tabs-container.visible {
@@ -444,5 +457,49 @@
     to {
         opacity: 1;
     }
+}
+
+/* ============================================
+   CRITICAL: Reset ONLY specific tab button styles that leak into content
+   Only reset properties that tab buttons explicitly set - be very selective
+   ============================================ */
+
+/* Reset ONLY the specific properties that tab buttons set - don't touch anything else */
+/* Tab buttons set: font-weight: 500/700, text-shadow, color: #ffffff, font-family, font-size: 13.5px */
+/* We only reset these specific properties that buttons explicitly set */
+/* Use revert to restore browser/user styles, not inherit which might get parent styles */
+/* EXCLUDE all modern buttons from reset - they need their own styling */
+.modern-tabs-container .modern-tabs-content *:not(.modern-button),
+.modern-tabs-container .modern-tab-panel *:not(.modern-button),
+#tabs.modern-tabs-container .modern-tabs-content *:not(.modern-button),
+#tabs.modern-tabs-container .modern-tab-panel *:not(.modern-button),
+#canary-tabs.modern-tabs-container .modern-tabs-content *:not(.modern-button),
+#canary-tabs.modern-tabs-container .modern-tab-panel *:not(.modern-button) {
+    /* ONLY reset the specific text properties that tab buttons explicitly set */
+    /* Use revert to restore original styles, not inherit or unset */
+    font-weight: revert !important; /* Remove button's font-weight: 500/700 */
+    text-shadow: none !important; /* Remove button's text-shadow */
+    /* Reset backdrop-filter and filter that buttons use for glassmorphism */
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+    /* Reset transform that buttons use for translateY(-1px) */
+    transform: none !important;
+    /* Reset white-space that buttons set to nowrap */
+    white-space: normal !important;
+}
+
+/* Ensure content containers maintain their layout properties */
+.modern-tabs-container .modern-tabs-content {
+    display: flex !important; /* Keep flex for layout */
+}
+
+.modern-tabs-container .modern-tab-panel {
+    display: none !important; /* Keep display control */
+}
+
+.modern-tabs-container .modern-tab-panel.active {
+    display: block !important; /* Keep display control for active state */
 }
 

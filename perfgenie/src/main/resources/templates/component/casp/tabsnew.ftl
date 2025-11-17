@@ -489,12 +489,9 @@
     /* The modern-button component handles all styling via CSS classes */
     /* Apply modern-button-green, modern-button-blue, etc. for different colors */
     
-    /* Disabled state for all modern buttons */
-    .modern-button:disabled,
-    .ui-button.ui-widget.ui-corner-all:disabled,
-    #submit-canary-data:disabled,
-    #submit-perfswat-input:disabled,
-    #submit-canary-input:disabled {
+    
+    /* jQuery UI button disabled state for backward compatibility */
+    .ui-button.ui-widget.ui-corner-all:disabled {
         opacity: 0.6 !important;
         cursor: not-allowed !important;
         pointer-events: none;
@@ -733,9 +730,18 @@
     
     // Store reference to component function BEFORE any variable assignments that might shadow it
     // This must be done before we create our local initModernTabs variable
-    var componentInitModernTabsFunction = (typeof window !== 'undefined' && typeof window.initModernTabs === 'function') 
-        ? window.initModernTabs 
-        : null;
+    // Capture the component function from modern-tabs.js (it's assigned to window.initModernTabs)
+    // Use an IIFE to capture it immediately when the script runs
+    var componentInitModernTabsFunction = (function() {
+        // Try to get the component function from window
+        // This should be the function from modern-tabs.js that accepts (containerSelector, options)
+        if (typeof window !== 'undefined' && typeof window.initModernTabs === 'function') {
+            var func = window.initModernTabs;
+            // Store it in a way that won't be shadowed
+            return func;
+        }
+        return null;
+    })();
     
     // Track if initialization has been done
     var tabsInitialized = false;
@@ -757,12 +763,20 @@
     
     // Use jQuery ready if available, otherwise DOMContentLoaded
     function initializeTabs() {
+        console.log('[ModernTabs Wrapper] initializeTabs called, tabsInitialized:', tabsInitialized);
+        
         if (tabsInitialized) {
+            console.log('[ModernTabs Wrapper] Tabs already initialized, skipping');
             return; // Already initialized
         }
         
         // Initialize modern tabs
-        initModernTabs();
+        console.log('[ModernTabs Wrapper] Calling initCanaryTabs()');
+        if (typeof initCanaryTabs !== 'function') {
+            console.error('[ModernTabs Wrapper] CRITICAL: initCanaryTabs is not a function!', typeof initCanaryTabs);
+            return;
+        }
+        initCanaryTabs();
         
         // Initialize modern accordion
         initCanaryDataViewAccordion();
@@ -771,6 +785,7 @@
         initDateTimePickers();
         
         tabsInitialized = true;
+        console.log('[ModernTabs Wrapper] initializeTabs completed, tabsInitialized set to true');
     }
     
     // Wait for both DOM and scripts to be ready
@@ -874,37 +889,211 @@
     /**
      * Initialize modern tabs using the reusable component
      * Note: This wrapper function calls window.initModernTabs from modern-tabs.js
-     * We use a function expression (not declaration) to avoid hoisting issues
+     * We use a function declaration so it's hoisted and available when initializeTabs calls it
      * and explicitly reference window.initModernTabs to get the component function
+     * IMPORTANT: Named initCanaryTabs to avoid conflict with window.initModernTabs
      */
-    var initModernTabs = function() {
-        // Use the stored reference to the component function (captured before variable assignment)
-        var componentFunction = componentInitModernTabsFunction;
+    function initCanaryTabs() {
+        console.log('[ModernTabs Wrapper] initCanaryTabs called');
         
-        if (componentFunction && typeof componentFunction === 'function') {
+        // Ensure container selector is valid - hardcode it FIRST to prevent any issues
+        var containerSelector = '#canary-tabs';
+        console.log('[ModernTabs Wrapper] Container selector:', containerSelector);
+        
+        if (!containerSelector || containerSelector === 'undefined' || containerSelector === undefined || containerSelector === null) {
+            console.error('[ModernTabs Wrapper] Invalid container selector:', containerSelector);
+            return;
+        }
+        
+        // Get the component function FRESH from window each time
+        // This ensures we get the actual component function, not a stale reference
+        // The component function from modern-tabs.js is assigned to window.initModernTabs
+        var componentFunction = null;
+        
+        // First, try the stored reference (captured early)
+        if (componentInitModernTabsFunction && typeof componentInitModernTabsFunction === 'function') {
+            componentFunction = componentInitModernTabsFunction;
+            console.log('[ModernTabs Wrapper] Using stored component function reference');
+        }
+        
+        // If stored reference is not available, get it fresh from window
+        // IMPORTANT: We need to get the ORIGINAL component function from modern-tabs.js
+        // The component function accepts (containerSelector, options) as parameters
+        if (!componentFunction || typeof componentFunction !== 'function') {
+            if (typeof window !== 'undefined' && typeof window.initModernTabs === 'function') {
+                var windowFunc = window.initModernTabs;
+                // CRITICAL: Make sure we're not getting this wrapper function itself
+                // The wrapper function doesn't accept parameters, but the component function does
+                // We can check by comparing function references
+                if (windowFunc !== initCanaryTabs) {
+                    componentFunction = windowFunc;
+                    console.log('[ModernTabs Wrapper] Using window.initModernTabs (fresh, not wrapper)');
+                } else {
+                    console.error('[ModernTabs Wrapper] ERROR: window.initModernTabs is the wrapper itself! This should not happen.');
+                    // Try to get it from the original source - but we can't, so we'll fail
+                    return;
+                }
+            } else {
+                console.error('[ModernTabs Wrapper] Component function not found. modern-tabs.js may not be loaded yet.');
+                return;
+            }
+        }
+        
+        // Verify we have the component function (not the wrapper)
+        // The component function should have 2 parameters (containerSelector, options)
+        // The wrapper function has 0 parameters
+        var isComponentFunction = componentFunction && 
+                                  typeof componentFunction === 'function' && 
+                                  componentFunction !== initCanaryTabs &&
+                                  componentFunction.length === 2; // Component function has 2 params
+        
+        console.log('[ModernTabs Wrapper] Component function check:', {
+            hasComponentFunction: !!componentFunction,
+            isFunction: componentFunction && typeof componentFunction === 'function',
+            componentFunctionType: typeof componentFunction,
+            isWrapper: componentFunction === initCanaryTabs,
+            functionLength: componentFunction ? componentFunction.length : 'N/A',
+            expectedLength: 2,
+            isComponentFunction: isComponentFunction
+        });
+        
+        if (!isComponentFunction) {
+            console.error('[ModernTabs Wrapper] Invalid component function!', {
+                hasFunction: !!componentFunction,
+                isFunction: componentFunction && typeof componentFunction === 'function',
+                isWrapper: componentFunction === initCanaryTabs,
+                functionLength: componentFunction ? componentFunction.length : 'N/A',
+                expectedLength: 2
+            });
+                return;
+            }
+            
+        if (componentFunction && typeof componentFunction === 'function' && componentFunction !== initCanaryTabs) {
+            
+            // Check if container exists in DOM
+            var container = document.querySelector(containerSelector);
+            console.log('[ModernTabs Wrapper] Container check:', {
+                selector: containerSelector,
+                found: !!container,
+                hasButtons: container ? container.querySelectorAll('.modern-tabs-nav-button').length : 0,
+                hasPanels: container ? container.querySelectorAll('.modern-tab-panel').length : 0,
+                buttonIds: container ? Array.from(container.querySelectorAll('.modern-tabs-nav-button')).map(btn => {
+                    return btn.getAttribute('href')?.substring(1) || btn.getAttribute('data-tab-target');
+                }) : [],
+                panelIds: container ? Array.from(container.querySelectorAll('.modern-tab-panel')).map(panel => panel.id) : []
+            });
+            
+            // Check current hash
+            var currentHash = window.location.hash;
+            console.log('[ModernTabs Wrapper] Current URL hash:', currentHash);
+            
             // Store tabs API for global access
             // Component automatically checks URL hash (#tabid) on load and updates hash when switching tabs
             // Works like jQuery UI tabs - no urlParam needed
-            window.canaryTabsAPI = componentFunction('#canary-tabs', {
-                onTabChange: function(tabId) {
-                    // Call updateCanaryView when tab changes
-                if (typeof updateCanaryView === 'function') {
-                        setTimeout(() => updateCanaryView(tabId), 50);
-                    }
-                    // Re-initialize datetime pickers when tab becomes visible
-                    setTimeout(function() {
-                        initDateTimePickers();
-                    }, 200);
+            try {
+                console.log('[ModernTabs Wrapper] About to call component function with:', {
+                    containerSelector: containerSelector,
+                    containerSelectorType: typeof containerSelector,
+                    hasOnTabChange: true,
+                    componentFunctionType: typeof componentFunction
+                });
+                
+                // CRITICAL: Ensure we pass the containerSelector explicitly
+                // Double-check that containerSelector is still valid (should be '#canary-tabs')
+                if (!containerSelector || containerSelector === 'undefined' || containerSelector === undefined || containerSelector === null) {
+                    console.error('[ModernTabs Wrapper] containerSelector is falsy before calling component function!', {
+                        containerSelector: containerSelector,
+                        type: typeof containerSelector,
+                        value: String(containerSelector)
+                    });
+                    return;
                 }
-            });
+                
+                // Final verification before calling
+                console.log('[ModernTabs Wrapper] FINAL CHECK before calling component:', {
+                    containerSelector: containerSelector,
+                    containerSelectorType: typeof containerSelector,
+                    containerSelectorValue: String(containerSelector),
+                    componentFunctionType: typeof componentFunction,
+                    componentFunctionIsFunction: typeof componentFunction === 'function'
+                });
+                
+                // DEFENSIVE: Re-assign containerSelector to ensure it's definitely set
+                // This prevents any potential scoping or timing issues
+                var finalContainerSelector = '#canary-tabs';
+                if (!finalContainerSelector) {
+                    console.error('[ModernTabs Wrapper] CRITICAL: finalContainerSelector is falsy!');
+                    return;
+                }
+                
+                // Call component function with explicit string literal
+                // Log the actual call to verify we're passing the right parameters
+                console.log('[ModernTabs Wrapper] CALLING component function with:', {
+                    finalContainerSelector: finalContainerSelector,
+                    finalContainerSelectorType: typeof finalContainerSelector,
+                    componentFunctionName: componentFunction.name || 'anonymous',
+                    componentFunctionLength: componentFunction.length, // Should be 2 (containerSelector, options)
+                    isWrapper: componentFunction === initCanaryTabs
+                });
+                
+                // CRITICAL: Verify we're not calling the wrapper
+                if (componentFunction === initCanaryTabs) {
+                    console.error('[ModernTabs Wrapper] CRITICAL ERROR: About to call wrapper function instead of component!');
+            return;
+        }
+        
+                window.canaryTabsAPI = componentFunction(finalContainerSelector, {
+                    onTabChange: function(tabId) {
+                        console.log('[ModernTabs Wrapper] Tab changed to:', tabId);
+                        // Call updateCanaryView when tab changes
+                    if (typeof updateCanaryView === 'function') {
+                            setTimeout(() => updateCanaryView(tabId), 50);
+                        }
+                        // Re-initialize datetime pickers when tab becomes visible
+                        setTimeout(function() {
+                            initDateTimePickers();
+                        }, 200);
+                    }
+                });
+                
+                console.log('[ModernTabs Wrapper] Component function returned:', {
+                    hasAPI: !!window.canaryTabsAPI,
+                    apiType: typeof window.canaryTabsAPI,
+                    hasSwitchTab: window.canaryTabsAPI && typeof window.canaryTabsAPI.switchTab === 'function',
+                    hasGetActiveTabId: window.canaryTabsAPI && typeof window.canaryTabsAPI.getActiveTabId === 'function',
+                    activeTabId: window.canaryTabsAPI && window.canaryTabsAPI.getActiveTabId ? window.canaryTabsAPI.getActiveTabId() : 'N/A'
+                });
+                
+                // Check active tab state after initialization
+            setTimeout(function() {
+                    var activePanel = document.querySelector('#canary-tabs .modern-tab-panel.active');
+                    var activeButton = document.querySelector('#canary-tabs .modern-tabs-nav-button.active');
+                    console.log('[ModernTabs Wrapper] Post-init active tab check (200ms delay):', {
+                        activePanel: activePanel ? activePanel.id : 'none',
+                        activeButton: activeButton ? (activeButton.getAttribute('href')?.substring(1) || activeButton.getAttribute('data-tab-target')) : 'none',
+                        apiActiveTabId: window.canaryTabsAPI && window.canaryTabsAPI.getActiveTabId ? window.canaryTabsAPI.getActiveTabId() : 'N/A'
+                    });
+            }, 200);
+                
+            } catch (e) {
+                console.error('[ModernTabs Wrapper] Error calling component function:', e);
+                console.error('[ModernTabs Wrapper] Error details:', {
+                    containerSelector: containerSelector,
+                    componentFunctionType: typeof componentFunction,
+                    errorMessage: e.message,
+                    errorStack: e.stack
+                });
+            }
         } else {
-            console.error('[ModernTabs] Component function not found. Make sure modern-tabs.js is loaded before this script.');
-            console.log('[ModernTabs] Debug info:', {
+            console.error('[ModernTabs Wrapper] Component function not found. Make sure modern-tabs.js is loaded before this script.');
+            console.log('[ModernTabs Wrapper] Debug info:', {
                 windowInitModernTabs: typeof window !== 'undefined' ? typeof window.initModernTabs : 'window undefined',
-                windowType: typeof window
+                windowType: typeof window,
+                componentInitModernTabsFunctionType: typeof componentInitModernTabsFunction,
+                componentInitModernTabsFunctionValue: componentInitModernTabsFunction
             });
         }
-    };
+    }
     
     /**
      * Switch to a specific tab (wrapper for component API)
@@ -1881,7 +2070,7 @@ function getCanaryHeader(start, end, source){
                 <input style="height:30px;text-align: center;" class="filterinput" id="canary-source-input" type="text" value="perf-genie-test45">
             </td>
             <td style="padding: 0 0 0 8px; border: none; align-items: center;">
-                <button onclick="submitCanaryData()" id="submit-canary-data" style="alignment:center;height:30px" class="modern-button modern-button-green ui-button ui-widget ui-corner-all" disabled>Submit</button>
+                <button onclick="submitCanaryData()" id="submit-canary-data" class="modern-button modern-button-green" disabled>Submit</button>
             </td>
         </tr>
     </table>
