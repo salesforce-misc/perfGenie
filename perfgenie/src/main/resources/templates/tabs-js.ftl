@@ -392,7 +392,7 @@
     function retrievAndcreateContextTree(dateRanges, pods, queries, profilers, tenants, hosts, profiles, uploads, fileIds, uploadTimes, aggregates, retry, eventType) {
         let start = performance.now();
         if(getEventType() === eventType) {
-            resetTreeHeader("<div style='padding-left: 10px; padding-right: 10px'>Retrieving profile data, <span style='color:darkorange'>this may take few sec ...</span> <span style='float: right;' class='spinner' id='profilespinner'></span></div>");
+            resetTreeHeader("<div style='padding-left: 0px; padding-right: 10px'>Retrieving profile data, <span style='color:darkorange'>this may take few sec ...</span> <span style='float: right;' class='spinner' id='profilespinner'></span></div>");
             //showSpinner('profilespinner');
             //ProgressBar.start({id: 'profilespinner',container: 'tabs',position: 'top'});
         }

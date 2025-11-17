@@ -217,6 +217,39 @@
     #compare-context-selector-form {
         padding-top: 16px;
     }
+    
+    /* Make center 50% of accordion header non-clickable (input.ftl page specific) */
+    #accordion-header {
+        position: relative;
+        cursor: pointer;
+    }
+    
+    /* Visual indicator for non-clickable center area - shows default cursor */
+    #accordion-header::after {
+        content: '';
+        position: absolute;
+        left: 25%;
+        right: 25%;
+        top: 0;
+        bottom: 0;
+        pointer-events: none; /* Allow clicks to pass through to check position in JS */
+        z-index: 1;
+        cursor: default !important; /* Show default cursor over center area */
+    }
+    
+    /* Make center portion (span text) show default cursor instead of pointer */
+    #accordion-header span {
+        cursor: default !important;
+        position: relative;
+        z-index: 2;
+    }
+    
+    /* Ensure icon remains clickable with pointer cursor */
+    #accordion-header .modern-accordion-icon {
+        cursor: pointer !important;
+        position: relative;
+        z-index: 2;
+    }
 </style>
 <link rel="stylesheet" href="/css/modern-accordion.css">
 <link rel="stylesheet" href="/css/modern-button.css">
@@ -229,7 +262,7 @@
         <span>Data source selector</span>
     </div>
     <div class="modern-accordion-content" id="accordion-content">
-        <div style="padding-left:20px; padding-bottom: 0px; " class="col-lg-12">
+        <div style="padding-left:4px; padding-bottom: 0px; " class="col-lg-12">
             <form  id="compare-context-selector-form" action="javascript:submitTo()" method="get"
                    content="application/x-www-form-urlencoded">
             <span style="float:right;" class="spinner" id="spinner"></span>
@@ -505,10 +538,123 @@
     
     /**
      * Initialize input accordion - uses shared modern accordion component
+     * Makes center 50% of header non-clickable (input.ftl page specific)
      */
     function initInputAccordion() {
         // Use shared accordion component, start expanded (true)
         initModernAccordion('accordion-header', 'accordion-content', true);
+        
+        // Make center 50% non-clickable (input.ftl page specific)
+        const accordionHeader = document.getElementById('accordion-header');
+        if (accordionHeader) {
+            // Remove the default click handler added by initModernAccordion
+            const newHeader = accordionHeader.cloneNode(true);
+            accordionHeader.parentNode.replaceChild(newHeader, accordionHeader);
+            
+            const accordionContent = document.getElementById('accordion-content');
+            
+            // Handle cursor change based on mouse position
+            newHeader.addEventListener('mousemove', function(e) {
+                const rect = newHeader.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const headerWidth = rect.width;
+                const mousePercent = (mouseX / headerWidth) * 100;
+                
+                // Change cursor to default in center 50% (25% to 75%)
+                if (mousePercent >= 25 && mousePercent <= 75) {
+                    newHeader.style.cursor = 'default';
+                } else {
+                    newHeader.style.cursor = 'pointer';
+                }
+            });
+            
+            // Reset cursor when mouse leaves
+            newHeader.addEventListener('mouseleave', function(e) {
+                newHeader.style.cursor = 'pointer';
+            });
+            
+            // Add custom click handler that checks click position
+            newHeader.addEventListener('click', function(e) {
+                const rect = newHeader.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const headerWidth = rect.width;
+                const clickPercent = (clickX / headerWidth) * 100;
+                
+                // Block clicks in center 50% (25% to 75%)
+                if (clickPercent >= 25 && clickPercent <= 75) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+                
+                // Allow clicks on left 25% or right 25% - proceed with normal accordion toggle
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const isActive = accordionContent.classList.contains('active');
+                
+                if (isActive) {
+                    // Collapsing - smooth slide up (jQuery UI style)
+                    const startHeight = accordionContent.scrollHeight;
+                    accordionContent.style.height = startHeight + 'px';
+                    accordionContent.style.overflow = 'hidden';
+                    
+                    // Force reflow
+                    accordionContent.offsetHeight;
+                    
+                    // Remove active class and animate to 0
+                    accordionContent.classList.remove('active');
+                    newHeader.classList.remove('active');
+                    accordionContent.style.height = '0px';
+                    
+                    // Clean up after animation
+                    setTimeout(function() {
+                        if (!accordionContent.classList.contains('active')) {
+                            accordionContent.style.height = '';
+                            accordionContent.style.overflow = '';
+                        }
+                    }, 350);
+                    
+                    // Remove inline styles when closing
+                    newHeader.style.removeProperty('background');
+                    newHeader.style.removeProperty('background-image');
+                    newHeader.style.removeProperty('background-color');
+                    newHeader.style.removeProperty('color');
+                    newHeader.style.removeProperty('border');
+                    newHeader.style.removeProperty('border-radius');
+                    newHeader.style.removeProperty('box-shadow');
+                    newHeader.style.removeProperty('backdrop-filter');
+                    newHeader.style.removeProperty('-webkit-backdrop-filter');
+                    newHeader.style.removeProperty('text-shadow');
+                    newHeader.style.removeProperty('font-weight');
+                    newHeader.style.removeProperty('transform');
+                } else {
+                    // Expanding - smooth slide down (jQuery UI style)
+                    accordionContent.style.display = 'block';
+                    accordionContent.style.overflow = 'hidden';
+                    accordionContent.style.height = '0px';
+                    accordionContent.classList.add('active');
+                    newHeader.classList.add('active');
+                    
+                    // Force reflow to ensure active class is applied
+                    accordionContent.offsetHeight;
+                    
+                    // Measure height with active class applied (padding included)
+                    const targetHeight = accordionContent.scrollHeight;
+                    
+                    // Animate smoothly to measured height
+                    accordionContent.style.height = targetHeight + 'px';
+                    
+                    // Clean up after animation completes
+                    setTimeout(function() {
+                        if (accordionContent.classList.contains('active')) {
+                            accordionContent.style.height = 'auto';
+                            accordionContent.style.overflow = '';
+                        }
+                    }, 350);
+                }
+            });
+        }
     }
 
     $(document).ready(function () {

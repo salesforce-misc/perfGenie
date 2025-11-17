@@ -398,7 +398,7 @@
             .api-progress-splash {
                 position: absolute;
                 pointer-events: none;
-                z-index: 10002;
+                z-index: 9998; /* Behind icon (10000) so icon appears in front like surfboard */
             }
 
             .api-progress-splash-particle {
@@ -1196,9 +1196,10 @@
             return;
         }
 
-        // Get icon position - splash should appear at the icon's X position when it touches progress bar
+        // Get icon position - splash should appear 10px behind (to the left of) the icon
         const iconRect = progressIconElement.getBoundingClientRect();
         const iconX = iconRect.left + iconRect.width / 2;
+        const splashOffsetX = -10; // 10px behind (to the left) of icon
         
         // Create splash container
         const splashContainer = document.createElement('div');
@@ -1208,7 +1209,8 @@
         if (isInsideContainer && instance.currentContainer) {
             // Inside container: use absolute positioning relative to container
             const containerRect = instance.currentContainer.getBoundingClientRect();
-            const splashX = iconRect.left - containerRect.left + iconRect.width / 2;
+            const iconCenterX = iconRect.left - containerRect.left + iconRect.width / 2;
+            const splashX = iconCenterX + splashOffsetX; // 10px behind icon
             const splashY = progressBarY - containerRect.top;
             
             splashContainer.style.position = 'absolute';
@@ -1218,8 +1220,9 @@
             instance.currentContainer.appendChild(splashContainer);
         } else {
             // Fixed position: use fixed positioning relative to viewport
+            const splashX = iconX + splashOffsetX; // 10px behind icon
             splashContainer.style.position = 'fixed';
-            splashContainer.style.left = iconX + 'px';
+            splashContainer.style.left = splashX + 'px';
             splashContainer.style.top = progressBarY + 'px'; // Splash at progress bar level
             splashContainer.style.transform = 'translate(-50%, -50%)';
             document.body.appendChild(splashContainer);

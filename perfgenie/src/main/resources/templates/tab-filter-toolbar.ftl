@@ -7,7 +7,7 @@
 */
 </script>
 
-<div style="padding-top: 5px; padding-left: 5px;"><span id="cct-note" style="color:#F0B778; display: none"></span></div>
+<div style="padding-top: 5px; padding-left: 0px;"><span id="cct-note" style="color:#F0B778; display: none"></span></div>
 
 <div style="padding-top: 5px; padding-left: 5 px;"><span class="cct-header-guid" id="cct-header-guid"></span> <span class="cct-search-guid" id="cct-search-guid"></span></div>
 

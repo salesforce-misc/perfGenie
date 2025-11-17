@@ -23,7 +23,7 @@
         <span>Context / Diagnostics data explorer</span>
     </div>
     <div class="modern-accordion-content" id="contextdataview-content">
-        <div style="padding-left: 23px;padding-top: 10px;padding-bottom: 0px;" id="context-view-panel" class="col-lg-12">
+        <div style="padding-left: 0px;padding-top: 10px;padding-bottom: 0px;" id="context-view-panel" class="col-lg-12">
 
         <span id="filter-view-status" style="" class="hide"></span>
         <div id="contextviewpanel" class="hide">

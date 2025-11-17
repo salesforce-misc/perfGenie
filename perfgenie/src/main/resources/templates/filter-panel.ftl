@@ -159,6 +159,7 @@
     .statetable {
         overflow: auto;
         padding-right: 3px !important;
+
         padding-top: 6px !important;
     }
     div.dataTables_info {
@@ -1299,6 +1300,33 @@
             $("#cct-panel").css("height", "");
         }
         $("#filter-view-status").removeClass("hide");
+        // Expand contextdataview accordion
+                const contextDataViewHeader = document.getElementById('contextdataview-header');
+                const contextDataViewContent = document.getElementById('contextdataview-content');
+                if (contextDataViewHeader && contextDataViewContent && !contextDataViewContent.classList.contains('active')) {
+                    contextDataViewContent.style.display = 'block';
+                    contextDataViewContent.style.overflow = 'hidden';
+                    contextDataViewContent.style.height = '0px';
+                    contextDataViewContent.classList.add('active');
+                    contextDataViewHeader.classList.add('active');
+
+                    // Force reflow to ensure active class is applied
+                    contextDataViewContent.offsetHeight;
+
+                    // Measure height with active class applied (padding included)
+                    const targetHeight = contextDataViewContent.scrollHeight;
+
+                    // Animate smoothly to measured height
+                    contextDataViewContent.style.height = targetHeight + 'px';
+
+                    // Clean up after animation completes
+                    setTimeout(function() {
+                        if (contextDataViewContent.classList.contains('active')) {
+                            contextDataViewContent.style.height = 'auto';
+                            contextDataViewContent.style.overflow = '';
+                        }
+                    }, 350);
+                }
     }
 
     function updateFilterViewStatus(status) {
@@ -3853,7 +3881,7 @@
         }
         let localContextData = getContextData(1);
         let eventToUse = $("#event-input").val();
-        let table = "<table  class='ui-widget' style='padding: 0px; border-spacing: 2px; border-collapse: separate;border: hidden'><tr><td style='padding:0px; border: hidden'  id='filter-heading'><span class='fieldlable'>Context hints:</span></td>";
+        let table = "<table  class='ui-widget' style='padding: 0px; border-spacing: 2px; border-collapse: separate;border: hidden'><tr><td style='padding:0px; border: hidden'  id='filter-heading'><span class='fieldlable'>Hints:</span></td>";
         table += "<td style='border: hidden' class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('context=with');\" title='context=with, filter samples that match context. default is all samples' tabindex='-1'>with-context</a></td>";
         table += "<td style='border: hidden' class='all-hints'><a class='send-ga' href=\"javascript:addToFilter('context=without');\" title='context=without, filter samples that do not match context. default is all samples' tabindex='-1'>without-context</a></td>";
         /*if(eventToUse.includes(".Async")){//todo choose default all using config
@@ -6928,12 +6956,12 @@
         <span>Context filter</span>
     </div>
     <div class="modern-accordion-content" id="contextfilter-content">
-        <div style="padding-left: 23px;padding-bottom: 0px;padding-top: 0px;" id="cct-panel" class="col-lg-12">
+        <div style="padding-left: 4px;padding-bottom: 0px;padding-top: 0px;" id="cct-panel" class="col-lg-12">
         <div id="contextpanel" class="hide">
             <div id="contexthints" style="padding: 0px !important;" class="col-lg-12">
                 <table style="padding:0px; border-spacing: 0px; border-collapse: separate;">
                     <tr>
-                        <td style="padding:0px;" id="filter-heading"><span class='fieldlable'>Context hints:</span></td>
+                        <td style="padding:0px;" id="filter-heading"><span class='fieldlable'>Hints:</span></td>
                     </tr>
                 </table>
             </div>
