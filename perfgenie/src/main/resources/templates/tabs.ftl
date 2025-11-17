@@ -1,3 +1,71 @@
+<style>
+    /* View Info - toast-style yellow warning with glassmorphism (same as input-info, but slides from right) */
+    #view-info {
+        padding: 0 !important; /* No padding to minimize height */
+        color: #ffffff !important; /* White text for toast style */
+        /* Don't set display here - let inline style and jQuery control it */
+        /* Toast-style glassmorphism with darker yellow warning tint for better text visibility */
+        background: rgba(255, 183, 77, 0.35) !important; /* Darker yellow/orange warning tint */
+        background-image: 
+            linear-gradient(135deg, rgba(255, 183, 77, 0.45) 0%, rgba(255, 152, 0, 0.3) 50%, rgba(255, 183, 77, 0.45) 100%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+        /* Toast-style border */
+        border: 1px solid rgba(255, 255, 255, 0.4) !important;
+        border-radius: 8px !important; /* Toast-style rounded corners */
+        /* Toast-style shadows */
+        box-shadow: 
+            0 4px 16px rgba(255, 183, 77, 0.3),
+            0 2px 8px rgba(255, 183, 77, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.5),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+            0 8px 32px rgba(255, 152, 0, 0.18) !important;
+        /* Toast-style text shadow for white text on yellow background */
+        text-shadow: 
+            0 1px 3px rgba(0, 0, 0, 0.4),
+            0 0 8px rgba(255, 183, 77, 0.6),
+            0 2px 4px rgba(0, 0, 0, 0.3) !important;
+        font-weight: 500 !important;
+        font-size: 0.85em !important; /* Smaller font */
+        margin: 0 !important;
+        float: right !important; /* Float right for right-to-left slide */
+        line-height: 1.1 !important; /* Very tight line height */
+        /* Don't set display or transition - let jQuery slide animation handle it */
+    }
+    
+    /* Don't force display - let inline style and jQuery control it for slide animation */
+    /* The inline style="display:none" will handle initial hidden state */
+    /* jQuery's .toggle("slide", {direction: "right"}) will slide from right to left */
+
+    /* Ensure jQuery UI classes don't override our toast styling */
+    #view-info.ui-state-highlight,
+    #view-info.ui-widget-header {
+        background: rgba(255, 183, 77, 0.35) !important;
+        background-image: 
+            linear-gradient(135deg, rgba(255, 183, 77, 0.45) 0%, rgba(255, 152, 0, 0.3) 50%, rgba(255, 183, 77, 0.45) 100%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.4) !important;
+        color: #ffffff !important;
+        padding: 0 !important;
+    }
+    
+    /* No padding on inner content to minimize height */
+    #view-info-text {
+        padding: 0 !important;
+        display: inline-block !important;
+    }
+    
+    /* Icon styling - no padding */
+    #view-info .ui-icon {
+        display: inline-block;
+        margin-right: 4px;
+        vertical-align: middle;
+        padding: 0 !important;
+        margin: 0 4px 0 0 !important;
+    }
+</style>
+
 <script>
     /*
 * Copyright (c) 2022, Salesforce.com, Inc.

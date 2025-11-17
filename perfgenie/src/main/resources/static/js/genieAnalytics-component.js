@@ -677,9 +677,25 @@ class GenieAnalytics {
             throw new Error(`Container with ID '${containerId}' not found`);
         }
         
+        // Prevent re-initialization: check if container already has a GenieAnalytics instance
+        if (this.container._genieAnalyticsInstance) {
+            console.warn(`GenieAnalytics instance already exists for container '${containerId}'. This may cause layout issues.`);
+        }
+        
         // Create instance identifier for unique IDs (similar to GenieDashboard pattern)
         // Use containerId as base, sanitize it to be a valid ID prefix
-        this.instanceId = this.sanitizeId(containerId);
+        // Store instanceId on container to ensure stability even if containerId changes
+        // This prevents layout issues when the component is re-initialized
+        if (this.container.dataset.genieAnalyticsInstanceId) {
+            // Reuse existing instanceId to maintain ID stability and prevent layout issues
+            this.instanceId = this.container.dataset.genieAnalyticsInstanceId;
+            console.log(`Reusing stable instanceId '${this.instanceId}' for container '${containerId}' to prevent layout issues`);
+        } else {
+            this.instanceId = this.sanitizeId(containerId);
+            // Store instanceId on container element to ensure it remains stable across re-initializations
+            this.container.dataset.genieAnalyticsInstanceId = this.instanceId;
+            console.log(`Created new instanceId '${this.instanceId}' for container '${containerId}'`);
+        }
         
         this.parsedData = [];
         this.filteredData = [];
@@ -752,6 +768,9 @@ class GenieAnalytics {
         this.filtersDZMap.set('metric', new Map());
         this.filtersDZMap.set('derived', new Map());
         
+        // Store instance reference on container to prevent duplicate initialization
+        this.container._genieAnalyticsInstance = this;
+        
         console.log('DEBUG: GenieAnalytics constructor called, calling init()');
         this.init();
     }
@@ -817,6 +836,9 @@ class GenieAnalytics {
         this.derivedAvail.clear();
         this.dateAvail.clear();
 
+        // Get all selected metrics (from lens or current selection) to check availability
+        const allSelectedMetrics = [...new Set([...this.selectedMetrics, ...(this.metrics || [])])];
+
         // Check each data column and categorize based on current dimensions and metrics arrays
         dataCols.forEach(col => {
             if (this.timestampDimensions.includes(col)) {
@@ -824,7 +846,9 @@ class GenieAnalytics {
             } else if (this.expressions && this.expressions[col]) {
                 // This is a derived metric - don't add it to dimsAvail or metricsAvail
                 // It will be handled in the derived metrics availability check below
-            } else if (this.metrics.includes(col)) {
+            } else if (this.metrics.includes(col) || allSelectedMetrics.includes(col)) {
+                // Check if it's in metrics array OR if it's a selected metric from the lens
+                // This ensures lens metrics are found even if analyzeDataStructure() didn't detect them
                 this.metricsAvail.set(col, true);
             } else {
                 // Assume it's a dimension by default
@@ -1068,8 +1092,8 @@ class GenieAnalytics {
      */
     expandChartWidth() {
         const lensChart = this.getElementById('lensChart');
-        const lensDisplay = this.container ? this.container.querySelector('.lens-display') : null;
-        const lensCanvas = this.container ? this.container.querySelector('.lens-canvas') : null;
+        const lensDisplay = this.container ? this.container.querySelector('.genieAnalytics-lens-display') : null;
+        const lensCanvas = this.container ? this.container.querySelector('.genieAnalytics-lens-canvas') : null;
         const multiplierInput = this.getElementById('widthMultiplier');
         
         // Defensive check: ensure all required elements exist before proceeding
@@ -1149,8 +1173,8 @@ class GenieAnalytics {
      */
     reduceChartWidth() {
         const lensChart = this.getElementById('lensChart');
-        const lensDisplay = this.container ? this.container.querySelector('.lens-display') : null;
-        const lensCanvas = this.container ? this.container.querySelector('.lens-canvas') : null;
+        const lensDisplay = this.container ? this.container.querySelector('.genieAnalytics-lens-display') : null;
+        const lensCanvas = this.container ? this.container.querySelector('.genieAnalytics-lens-canvas') : null;
         const multiplierInput = this.getElementById('widthMultiplier');
         
         // Defensive check: ensure all required elements exist before proceeding
@@ -1215,8 +1239,8 @@ class GenieAnalytics {
     resetChartWidth() {
         this.chartExpandedWidth = 0;
         const lensChart = this.getElementById('lensChart');
-        const lensDisplay = this.container ? this.container.querySelector('.lens-display') : null;
-        const lensCanvas = this.container ? this.container.querySelector('.lens-canvas') : null;
+        const lensDisplay = this.container ? this.container.querySelector('.genieAnalytics-lens-display') : null;
+        const lensCanvas = this.container ? this.container.querySelector('.genieAnalytics-lens-canvas') : null;
         
         // Defensive checks: ensure elements exist and have style property before accessing
         if (lensChart && lensChart.style) {
@@ -1818,8 +1842,8 @@ class GenieAnalytics {
                     '<h2>Performance Analytics Dashboard</h2>' +
                 '</div>' +
                 '<div class="genieAnalytics-content">' +
-                    '<div class="loading-state">' +
-                        '<div class="spinner"></div>' +
+                    '<div class="genieAnalytics-loading-state">' +
+                        '<div class="genieAnalytics-spinner"></div>' +
                         '<p>Loading performance data...</p>' +
                     '</div>' +
                 '</div>' +
@@ -1853,8 +1877,8 @@ class GenieAnalytics {
                     '<h2>Performance Analytics Dashboard</h2>' +
                 '</div>' +
                 '<div class="genieAnalytics-content">' +
-                    '<div class="error-state">' +
-                        '<div class="error-icon">⚠️</div>' +
+                    '<div class="genieAnalytics-error-state">' +
+                        '<div class="genieAnalytics-error-icon">⚠️</div>' +
                         '<h3>Error Loading Data</h3>' +
                         '<p>' + error.message + '</p>' +
                         '<button id="' + this.getInstanceId('retryBtn') + '" class="genieAnalytics-btn">Retry</button>' +
@@ -1967,99 +1991,99 @@ class GenieAnalytics {
         this.container.innerHTML = 
             '<div class="genieAnalytics-analytics-container">' +
                 '<div class="genieAnalytics-content">' +
-                    '<div class="lens-builder">' +
-                        '<div class="field-palette" id="' + ids.fieldPalette + '">' +
-                            '<div class="palette-header">' +
-                                '<span class="palette-title">Categories</span>' +
-                                '<button id="' + ids.collapseBtn + '" class="collapse-toggle" title="Collapse/Expand Panel">‹</button>' +
+                    '<div class="genieAnalytics-lens-builder">' +
+                        '<div class="genieAnalytics-field-palette" id="' + ids.fieldPalette + '">' +
+                            '<div class="genieAnalytics-palette-header">' +
+                                '<span class="genieAnalytics-palette-title">Categories</span>' +
+                                '<button id="' + ids.collapseBtn + '" class="genieAnalytics-collapse-toggle" title="Collapse/Expand Panel">‹</button>' +
                             '</div>' +
-                            '<div class="category-section">' +
-                                '<h3 class="category-header" data-target="' + ids.dimensionsPalette + '">' +
-                                    '<span class="collapse-icon">▼</span> Dimensions' +
+                            '<div class="genieAnalytics-category-section">' +
+                                '<h3 class="genieAnalytics-category-header" data-target="' + ids.dimensionsPalette + '">' +
+                                    '<span class="genieAnalytics-collapse-icon">▼</span> Dimensions' +
                                 '</h3>' +
-                                '<div id="' + ids.dimensionsPalette + '" class="field-list">' +
+                                '<div id="' + ids.dimensionsPalette + '" class="genieAnalytics-field-list">' +
                                     '<!-- Dimensions will be populated here -->' +
                                 '</div>' +
                             '</div>' +
-                            '<div class="category-section">' +
-                                '<h3 class="category-header" data-target="' + ids.datePalette + '">' +
-                                    '<span class="collapse-icon">▼</span> Date' +
+                            '<div class="genieAnalytics-category-section">' +
+                                '<h3 class="genieAnalytics-category-header" data-target="' + ids.datePalette + '">' +
+                                    '<span class="genieAnalytics-collapse-icon">▼</span> Date' +
                                 '</h3>' +
-                                '<div id="' + ids.datePalette + '" class="field-list">' +
+                                '<div id="' + ids.datePalette + '" class="genieAnalytics-field-list">' +
                                     '<!-- Date fields will be populated here -->' +
                                 '</div>' +
                             '</div>' +
-                            '<div class="category-section">' +
-                                '<h3 class="category-header" data-target="' + ids.metricsPalette + '">' +
-                                    '<span class="collapse-icon">▼</span> Metrics' +
+                            '<div class="genieAnalytics-category-section">' +
+                                '<h3 class="genieAnalytics-category-header" data-target="' + ids.metricsPalette + '">' +
+                                    '<span class="genieAnalytics-collapse-icon">▼</span> Metrics' +
                                 '</h3>' +
-                                '<div id="' + ids.metricsPalette + '" class="field-list">' +
+                                '<div id="' + ids.metricsPalette + '" class="genieAnalytics-field-list">' +
                                     '<!-- Metrics will be populated here -->' +
                                 '</div>' +
                             '</div>' +
-                            '<div class="category-section">' +
-                                '<h3 class="category-header" data-target="' + ids.derivedMetricsPalette + '">' +
-                                    '<span class="collapse-icon">▼</span> Derived Metrics' +
-                                    '<div class="derived-metrics-controls">' +
-                                        '<button class="add-derived-metric-btn" onclick="window.genieAnalyticsShowExpressionBuilder()" title="Add Derived Metric">+</button>' +
-                                        '<button class="save-derived-metric-btn" onclick="window.genieAnalyticsShowSaveExpressionModal()" title="Save Derived Metric">💾</button>' +
+                            '<div class="genieAnalytics-category-section">' +
+                                '<h3 class="genieAnalytics-category-header" data-target="' + ids.derivedMetricsPalette + '">' +
+                                    '<span class="genieAnalytics-collapse-icon">▼</span> Derived Metrics' +
+                                    '<div class="genieAnalytics-derived-metrics-controls">' +
+                                        '<button class="genieAnalytics-add-derived-metric-btn" onclick="window.genieAnalyticsShowExpressionBuilder()" title="Add Derived Metric">+</button>' +
+                                        '<button class="genieAnalytics-save-derived-metric-btn" onclick="window.genieAnalyticsShowSaveExpressionModal()" title="Save Derived Metric">💾</button>' +
                                     '</div>' +
                                 '</h3>' +
-                                '<div id="' + ids.derivedMetricsPalette + '" class="field-list">' +
+                                '<div id="' + ids.derivedMetricsPalette + '" class="genieAnalytics-field-list">' +
                                     '<!-- Derived Metrics will be populated here -->' +
                                 '</div>' +
                             '</div>' +
                         '</div>' +
-                        '<div class="lens-canvas">' +
-                            '<div class="drop-zones">' +
-                                '<div class="drop-zone" id="' + ids.dimensionsZone + '">' +
-                                    '<div class="drop-zone-header">' +
-                                        '<div class="drop-zone-title-section">' +
+                        '<div class="genieAnalytics-lens-canvas">' +
+                            '<div class="genieAnalytics-drop-zones">' +
+                                '<div class="genieAnalytics-drop-zone" id="' + ids.dimensionsZone + '">' +
+                                    '<div class="genieAnalytics-drop-zone-header">' +
+                                        '<div class="genieAnalytics-drop-zone-title-section">' +
                                             '<h4>Group by dimensions</h4>' +
-                                            '<span class="drop-zone-count" id="' + ids.dimensionsCount + '">0</span>' +
-                                            '<span class="missing-items-indicator" id="' + ids.dimensionsMissing + '" style="display: none;">0</span>' +
+                                            '<span class="genieAnalytics-drop-zone-count" id="' + ids.dimensionsCount + '">0</span>' +
+                                            '<span class="genieAnalytics-missing-items-indicator" id="' + ids.dimensionsMissing + '" style="display: none;">0</span>' +
                                         '</div>' +
-                                        '<button class="drop-zone-collapse-btn" data-zone="' + ids.dimensionsZone + '" title="Collapse/Expand Drop Zone"><i class="fa fa-chevron-down"></i></button>' +
+                                        '<button class="genieAnalytics-drop-zone-collapse-btn" data-zone="' + ids.dimensionsZone + '" title="Collapse/Expand Drop Zone"><i class="fa fa-chevron-down"></i></button>' +
                                     '</div>' +
-                                    '<div class="drop-area" id="' + ids.dimensionsArea + '">' +
-                                        '<span class="drop-hint">Drag dimensions here</span>' +
+                                    '<div class="genieAnalytics-drop-area genieAnalytics-drop-area-dimensions" id="' + ids.dimensionsArea + '">' +
+                                        '<span class="genieAnalytics-drop-hint">Drag dimensions here</span>' +
                                     '</div>' +
                                 '</div>' +
-                                '<div class="drop-zone" id="' + ids.metricsZone + '">' +
-                                    '<div class="drop-zone-header">' +
-                                        '<div class="drop-zone-title-section">' +
+                                '<div class="genieAnalytics-drop-zone" id="' + ids.metricsZone + '">' +
+                                    '<div class="genieAnalytics-drop-zone-header">' +
+                                        '<div class="genieAnalytics-drop-zone-title-section">' +
                                             '<h4>Metric aggregations</h4>' +
-                                            '<span class="drop-zone-count" id="' + ids.metricsCount + '">0</span>' +
-                                            '<span class="missing-items-indicator" id="' + ids.metricsMissing + '" style="display: none;">0</span>' +
+                                            '<span class="genieAnalytics-drop-zone-count" id="' + ids.metricsCount + '">0</span>' +
+                                            '<span class="genieAnalytics-missing-items-indicator" id="' + ids.metricsMissing + '" style="display: none;">0</span>' +
                                         '</div>' +
-                                        '<button class="drop-zone-collapse-btn" data-zone="' + ids.metricsZone + '" title="Collapse/Expand Drop Zone"><i class="fa fa-chevron-down"></i></button>' +
+                                        '<button class="genieAnalytics-drop-zone-collapse-btn" data-zone="' + ids.metricsZone + '" title="Collapse/Expand Drop Zone"><i class="fa fa-chevron-down"></i></button>' +
                                     '</div>' +
-                                    '<div class="drop-area" id="' + ids.metricsArea + '">' +
-                                        '<span class="drop-hint">Drag metrics here</span>' +
+                                    '<div class="genieAnalytics-drop-area genieAnalytics-drop-area-metrics" id="' + ids.metricsArea + '">' +
+                                        '<span class="genieAnalytics-drop-hint">Drag metrics here</span>' +
                                     '</div>' +
                                 '</div>' +
-                                '<div class="drop-zone" id="' + ids.filtersZone + '">' +
-                                    '<div class="drop-zone-header">' +
-                                        '<div class="drop-zone-title-section">' +
+                                '<div class="genieAnalytics-drop-zone" id="' + ids.filtersZone + '">' +
+                                    '<div class="genieAnalytics-drop-zone-header">' +
+                                        '<div class="genieAnalytics-drop-zone-title-section">' +
                                     '<h4>Filters</h4>' +
-                                            '<span class="drop-zone-count" id="' + ids.filtersCount + '">0</span>' +
-                                            '<span class="missing-items-indicator" id="' + ids.filtersMissing + '" style="display: none;">0</span>' +
+                                            '<span class="genieAnalytics-drop-zone-count" id="' + ids.filtersCount + '">0</span>' +
+                                            '<span class="genieAnalytics-missing-items-indicator" id="' + ids.filtersMissing + '" style="display: none;">0</span>' +
                                         '</div>' +
-                                        '<button class="drop-zone-collapse-btn" data-zone="' + ids.filtersZone + '" title="Collapse/Expand Drop Zone"><i class="fa fa-chevron-down"></i></button>' +
+                                        '<button class="genieAnalytics-drop-zone-collapse-btn" data-zone="' + ids.filtersZone + '" title="Collapse/Expand Drop Zone"><i class="fa fa-chevron-down"></i></button>' +
                                     '</div>' +
-                                    '<div class="drop-area" id="' + ids.filtersArea + '">' +
-                                        '<span class="drop-hint">Drag metrics here to filter</span>' +
+                                    '<div class="genieAnalytics-drop-area genieAnalytics-drop-area-filters" id="' + ids.filtersArea + '">' +
+                                        '<span class="genieAnalytics-drop-hint">Drag metrics here to filter</span>' +
                                     '</div>' +
                                 '</div>' +
                             '</div>' +
                             '<div class="genieAnalytics-header">' +
                                 '<div class="genieAnalytics-controls">' +
-                                    '<div class="view-controls">' +
+                                    '<div class="genieAnalytics-view-controls">' +
                                         '<input type="text" id="' + ids.genieAnalyticsSearchInput + '" class="genieAnalytics-search-input" placeholder="Search... (Enter)" title="Search across all data - Press Enter to apply" style="font-size: 14px !important;">' +
-                                        '<select id="' + ids.loadLensSelect + '" class="lens-select" title="Load Saved Lens" style="font-size: 14px !important;">' +
+                                        '<select id="' + ids.loadLensSelect + '" class="genieAnalytics-lens-select" title="Load Saved Lens" style="font-size: 14px !important;">' +
                                             '<option value="">Load Lens...</option>' +
                                         '</select>' +
-                '<select id="' + ids.loadDerivedMetricSelect + '" class="lens-select" title="Load Saved Derived Metric" style="font-size: 14px !important;">' +
+                '<select id="' + ids.loadDerivedMetricSelect + '" class="genieAnalytics-lens-select" title="Load Saved Derived Metric" style="font-size: 14px !important;">' +
                     '<option value="">Load Derived Metrics...</option>' +
                                         '</select>' +
                                         '<button id="' + ids.saveLensBtn + '" class="genieAnalytics-btn" title="Save Lens">💾</button>' +
@@ -2073,11 +2097,11 @@ class GenieAnalytics {
                                 '</div>' +
                                                                 
                             '</div>' +
-                            '<div class="lens-display">' +
-'<div class="floating-chart-controls">' +
+                            '<div class="genieAnalytics-lens-display">' +
+'<div class="genieAnalytics-floating-chart-controls">' +
                                 '<button id="' + ids.chartReduceIcon + '" class="genieAnalytics-btn" title="Reduce Chart Width"><i class="fa fa-long-arrow-left"></i></button>' +
-                                '<div class="width-multiplier-container" title="Width Expansion Multiplier">' +
-                                    '<select id="' + ids.widthMultiplier + '" class="width-multiplier-select" title="Width Multiplier">' +
+                                '<div class="genieAnalytics-width-multiplier-container" title="Width Expansion Multiplier">' +
+                                    '<select id="' + ids.widthMultiplier + '" class="genieAnalytics-width-multiplier-select" title="Width Multiplier">' +
                                         '<option value="1">1x</option>' +
                                         '<option value="2">2x</option>' +
                                         '<option value="5">5x</option>' +
@@ -2085,13 +2109,13 @@ class GenieAnalytics {
                                 '</div>' +
                                 '<button id="' + ids.chartExpandIcon + '" class="genieAnalytics-btn" title="Expand Chart Width"><i class="fa fa-long-arrow-right"></i></button>' +
                             '</div>' +
-                                '<div class="chart-container" id="' + ids.lensChart + '">' +
-                                    '<div class="chart-placeholder">' +
+                                '<div class="genieAnalytics-chart-container" id="' + ids.lensChart + '">' +
+                                    '<div class="genieAnalytics-chart-placeholder">' +
                                         '<p>Build your lens by dragging dimensions and metrics</p>' +
                                     '</div>' +
                                 '</div>' +
-                                '<div class="table-container" id="' + ids.lensTable + '" style="display: none;">' +
-                                    '<div class="table-placeholder">' +
+                                '<div class="genieAnalytics-table-container" id="' + ids.lensTable + '" style="display: none;">' +
+                                    '<div class="genieAnalytics-table-placeholder">' +
                                         '<p>Build your lens by dragging dimensions and metrics</p>' +
                                     '</div>' +
                                 '</div>' +
@@ -2492,7 +2516,7 @@ class GenieAnalytics {
 
     createFieldElement(fieldName, type) {
         const fieldDiv = document.createElement('div');
-        fieldDiv.className = 'field-item';
+        fieldDiv.className = 'genieAnalytics-field-item';
         fieldDiv.draggable = true;
         fieldDiv.setAttribute('data-field', fieldName);
         fieldDiv.setAttribute('data-type', type);
@@ -2546,7 +2570,7 @@ class GenieAnalytics {
             fieldDiv.title = 'This ' + itemType + ' is missing from the current dataset';
         }
         
-        fieldDiv.innerHTML = this.formatHeader(fieldName) + ' <span class="click-hint">+</span>';
+        fieldDiv.innerHTML = this.formatHeader(fieldName) + ' <span class="genieAnalytics-click-hint">+</span>';
         
         return fieldDiv;
     }
@@ -2562,7 +2586,7 @@ class GenieAnalytics {
             console.warn('setupDragAndDrop: Container not found');
             return;
         }
-        const fieldItems = this.container.querySelectorAll('.field-item');
+        const fieldItems = this.container.querySelectorAll('.genieAnalytics-field-item');
         console.log('Setting up drag and drop for', fieldItems.length, 'field items');
         
         // Remove existing event listeners to prevent duplicates
@@ -2572,7 +2596,7 @@ class GenieAnalytics {
         });
         
         // Re-query after cloning to get fresh elements - search within container
-        const freshFieldItems = this.container.querySelectorAll('.field-item');
+        const freshFieldItems = this.container.querySelectorAll('.genieAnalytics-field-item');
         
         freshFieldItems.forEach(item => {
             item.addEventListener('dragstart', (e) => {
@@ -2606,20 +2630,36 @@ class GenieAnalytics {
             // Add click functionality with toggle behavior
             item.addEventListener('click', (e) => {
                 e.preventDefault();
-                const fieldName = e.target.getAttribute('data-field');
-                const fieldType = e.target.getAttribute('data-type');
+                e.stopPropagation();
+                
+                // Use currentTarget since the listener is attached to the item itself
+                // This ensures we get the field item even if clicking on child elements (like the span)
+                const fieldItem = e.currentTarget;
+                const fieldName = fieldItem.getAttribute('data-field');
+                const fieldType = fieldItem.getAttribute('data-type');
+                
+                // Validate we have the required attributes
+                if (!fieldName || !fieldType) {
+                    console.warn('Click handler: Could not find field name or type', {
+                        target: e.target,
+                        currentTarget: e.currentTarget,
+                        fieldName: fieldName,
+                        fieldType: fieldType
+                    });
+                    return;
+                }
                 
                 if (fieldType === 'dimension' || fieldType === 'date') {
                     if (this.selectedDimensions.includes(fieldName)) {
                         this.removeDimension(fieldName);
                     } else {
-                    this.addDimension(fieldName);
+                        this.addDimension(fieldName);
                     }
                 } else if (fieldType === 'metric' || fieldType === 'expression') {
                     if (this.selectedMetrics.includes(fieldName)) {
                         this.removeMetric(fieldName);
                     } else {
-                    this.addMetric(fieldName);
+                        this.addMetric(fieldName);
                     }
                 }
             });
@@ -2641,16 +2681,16 @@ class GenieAnalytics {
             
             area.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                area.classList.add('drag-over');
+                area.classList.add('genieAnalytics-drag-over');
             });
             
             area.addEventListener('dragleave', (e) => {
-                area.classList.remove('drag-over');
+                area.classList.remove('genieAnalytics-drag-over');
             });
             
             area.addEventListener('drop', (e) => {
                 e.preventDefault();
-                area.classList.remove('drag-over');
+                area.classList.remove('genieAnalytics-drag-over');
                 console.log('Drop event on:', area.id, 'draggedElement:', this.draggedElement);
                 
                 if (this.draggedElement) {
@@ -3075,14 +3115,14 @@ class GenieAnalytics {
         zone.innerHTML = '';
         
         if (items.length === 0) {
-            zone.innerHTML = '<span class="drop-hint">Drag ' + (zoneId === 'dimensionsArea' ? 'dimensions' : 'metrics') + ' here</span>';
+            zone.innerHTML = '<span class="genieAnalytics-drop-hint">Drag ' + (zoneId === 'dimensionsArea' ? 'dimensions' : 'metrics') + ' here</span>';
         } else {
             // Get colors for metrics
             const colors = this.generateColorsForMetrics(items);
             
             items.forEach(item => {
                 const itemDiv = document.createElement('div');
-                itemDiv.className = 'selected-item';
+                itemDiv.className = 'genieAnalytics-selected-item';
                 
                 // Determine item category and check if missing using new data model
                 // Compare with base ID, not instance-specific ID
@@ -3120,55 +3160,55 @@ class GenieAnalytics {
                                     '<span class="dropdown-arrow">▼</span>' +
                                 '</button>' +
                                 '<div class="aggregation-dropdown-menu" data-metric="' + metricName + '" style="display: none;">' +
-                                    '<div class="dropdown-item">' +
+                                    '<div class="genieAnalytics-dropdown-item">' +
                                         '<label class="aggregation-checkbox-label">' +
                                             '<input type="checkbox" class="aggregation-checkbox" data-metric="' + metricName + '" value="sum"' + (selectedAggregations.includes('sum') ? ' checked' : '') + '>' +
                                             '<span class="checkbox-text">Sum</span>' +
                                         '</label>' +
                                     '</div>' +
-                                    '<div class="dropdown-item">' +
+                                    '<div class="genieAnalytics-dropdown-item">' +
                                         '<label class="aggregation-checkbox-label">' +
                                             '<input type="checkbox" class="aggregation-checkbox" data-metric="' + metricName + '" value="count"' + (selectedAggregations.includes('count') ? ' checked' : '') + '>' +
                                             '<span class="checkbox-text">Count</span>' +
                                         '</label>' +
                                     '</div>' +
-                                    '<div class="dropdown-item">' +
+                                    '<div class="genieAnalytics-dropdown-item">' +
                                         '<label class="aggregation-checkbox-label">' +
                                             '<input type="checkbox" class="aggregation-checkbox" data-metric="' + metricName + '" value="average"' + (selectedAggregations.includes('average') ? ' checked' : '') + '>' +
                                             '<span class="checkbox-text">Average</span>' +
                                         '</label>' +
                                     '</div>' +
-                                    '<div class="dropdown-item">' +
+                                    '<div class="genieAnalytics-dropdown-item">' +
                                         '<label class="aggregation-checkbox-label">' +
                                             '<input type="checkbox" class="aggregation-checkbox" data-metric="' + metricName + '" value="median"' + (selectedAggregations.includes('median') ? ' checked' : '') + '>' +
                                             '<span class="checkbox-text">Median</span>' +
                                         '</label>' +
                                     '</div>' +
-                                    '<div class="dropdown-item">' +
+                                    '<div class="genieAnalytics-dropdown-item">' +
                                         '<label class="aggregation-checkbox-label">' +
                                             '<input type="checkbox" class="aggregation-checkbox" data-metric="' + metricName + '" value="p50"' + (selectedAggregations.includes('p50') ? ' checked' : '') + '>' +
                                             '<span class="checkbox-text">P50</span>' +
                                         '</label>' +
                                     '</div>' +
-                                    '<div class="dropdown-item">' +
+                                    '<div class="genieAnalytics-dropdown-item">' +
                                         '<label class="aggregation-checkbox-label">' +
                                             '<input type="checkbox" class="aggregation-checkbox" data-metric="' + metricName + '" value="p90"' + (selectedAggregations.includes('p90') ? ' checked' : '') + '>' +
                                             '<span class="checkbox-text">P90</span>' +
                                         '</label>' +
                                     '</div>' +
-                                    '<div class="dropdown-item">' +
+                                    '<div class="genieAnalytics-dropdown-item">' +
                                         '<label class="aggregation-checkbox-label">' +
                                             '<input type="checkbox" class="aggregation-checkbox" data-metric="' + metricName + '" value="p95"' + (selectedAggregations.includes('p95') ? ' checked' : '') + '>' +
                                             '<span class="checkbox-text">P95</span>' +
                                         '</label>' +
                                     '</div>' +
-                                    '<div class="dropdown-item">' +
+                                    '<div class="genieAnalytics-dropdown-item">' +
                                         '<label class="aggregation-checkbox-label">' +
                                             '<input type="checkbox" class="aggregation-checkbox" data-metric="' + metricName + '" value="max"' + (selectedAggregations.includes('max') ? ' checked' : '') + '>' +
                                             '<span class="checkbox-text">Max</span>' +
                                         '</label>' +
                                     '</div>' +
-                                    '<div class="dropdown-item">' +
+                                    '<div class="genieAnalytics-dropdown-item">' +
                                         '<label class="aggregation-checkbox-label">' +
                                             '<input type="checkbox" class="aggregation-checkbox" data-metric="' + metricName + '" value="min"' + (selectedAggregations.includes('min') ? ' checked' : '') + '>' +
                                             '<span class="checkbox-text">Min</span>' +
@@ -3176,18 +3216,18 @@ class GenieAnalytics {
                                     '</div>' +
                                 '</div>' +
                             '</div>' +
-                            '<span class="remove-btn" data-item="' + metricName + '">×</span>' +
+                            '<span class="genieAnalytics-remove-btn" data-item="' + metricName + '">×</span>' +
                         '</div>';
                 } else {
                     // For dimensions, simple display with default color
-                    itemDiv.innerHTML = this.formatHeader(item) + '<span class="remove-btn" data-item="' + item + '">×</span>';
+                    itemDiv.innerHTML = this.formatHeader(item) + '<span class="genieAnalytics-remove-btn" data-item="' + item + '">×</span>';
                 }
                 
                 zone.appendChild(itemDiv);
             });
             
             // Add remove functionality
-            zone.querySelectorAll('.remove-btn').forEach(btn => {
+            zone.querySelectorAll('.genieAnalytics-remove-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     if (zoneId === 'dimensionsArea') {
                         const itemName = e.target.dataset.item;
@@ -3208,10 +3248,27 @@ class GenieAnalytics {
                         const metricName = e.target.closest('.aggregation-dropdown-toggle').dataset.metric;
                         const menu = zone.querySelector('.aggregation-dropdown-menu[data-metric="' + metricName + '"]');
                         
-                        // Close all other dropdowns
-                        zone.querySelectorAll('.aggregation-dropdown-menu').forEach(otherMenu => {
+                        // Store original parent if not already stored
+                        if (!menu.dataset.originalParent) {
+                            menu.dataset.originalParent = menu.parentElement ? menu.parentElement.className : '';
+                        }
+                        const originalParent = zone.querySelector('.aggregation-dropdown-container[data-metric="' + metricName + '"]') || 
+                                             button.closest('.aggregation-dropdown-container');
+                        
+                        // Close all other dropdowns from this instance only
+                        zone.querySelectorAll('.aggregation-dropdown-menu[data-instance-id="' + this.instanceId + '"]').forEach(otherMenu => {
                             if (otherMenu !== menu && otherMenu.style.display === 'block') {
                                 otherMenu.style.display = 'none';
+                                // Return to original parent if it was moved to body
+                                if (otherMenu.parentElement === document.body) {
+                                    const otherMetricName = otherMenu.dataset.metric;
+                                    const otherOriginalParent = zone.querySelector('.aggregation-dropdown-container[data-metric="' + otherMetricName + '"]');
+                                    if (otherOriginalParent) {
+                                        otherOriginalParent.appendChild(otherMenu);
+                                        // Remove instance-specific class when returned
+                                        otherMenu.classList.remove('genieAnalytics-instance-' + this.instanceId);
+                                    }
+                                }
                             }
                         });
                         
@@ -3247,27 +3304,51 @@ class GenieAnalytics {
                                 leftPosition = 10;
                             }
                             
+                            // Mark dropdown with instance ID to track which instance it belongs to
+                            menu.dataset.instanceId = this.instanceId;
+                            
+                            // Ensure dropdown is appended to body for proper fixed positioning
+                            // This prevents positioning issues when dropdown is inside a scoped container
+                            if (menu.parentElement !== document.body) {
+                                document.body.appendChild(menu);
+                            }
+                            
+                            // Add instance-specific class to maintain CSS scoping even when in body
+                            menu.classList.add('genieAnalytics-instance-' + this.instanceId);
+                            
+                            // Apply inline styles to override any parent page styles
                             menu.style.position = 'fixed';
                             menu.style.top = topPosition + 'px';
                             menu.style.left = leftPosition + 'px';
                             menu.style.width = Math.max(buttonRect.width, 150) + 'px';
                             menu.style.display = 'block';
                             menu.style.backgroundColor = 'white';
-                            menu.style.border = '1px solid #ccc';
-                            menu.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                            menu.style.border = '1px solid #dddbda';
+                            menu.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
                             menu.style.borderRadius = '4px';
                             menu.style.padding = '4px 0';
                             menu.style.maxHeight = '200px';
                             menu.style.overflowY = 'auto';
+                            menu.style.boxSizing = 'border-box';
+                            menu.style.fontSize = '12px'; // Ensure consistent font size
+                            menu.style.lineHeight = '1.2'; // Ensure consistent line height
+                            menu.style.margin = '0'; // Remove any margins
                             
                             // Set very high z-index for this dropdown (appears above all other elements)
-                            const allDropdowns = zone.querySelectorAll('.aggregation-dropdown-menu, .dimension-dropdown-menu');
+                            // Only consider dropdowns from this instance to avoid conflicts
+                            const allDropdowns = document.querySelectorAll('.aggregation-dropdown-menu[data-instance-id="' + this.instanceId + '"], .dimension-dropdown-menu[data-instance-id="' + this.instanceId + '"]');
                             const maxZIndex = Math.max(50000, ...Array.from(allDropdowns).map(m => parseInt(m.style.zIndex) || 0));
                             const newZIndex = (maxZIndex + 1).toString();
                             menu.style.zIndex = newZIndex;
                             //console.log('DEBUG: Setting aggregation dropdown z-index to:', newZIndex);
                         } else {
                             menu.style.display = 'none';
+                            // Return dropdown to original parent container when hidden
+                            if (menu.parentElement === document.body && originalParent) {
+                                originalParent.appendChild(menu);
+                                // Remove instance-specific class when returned
+                                menu.classList.remove('genieAnalytics-instance-' + this.instanceId);
+                            }
                         }
                     });
                 });
@@ -3295,16 +3376,49 @@ class GenieAnalytics {
                     });
                 });
                 
-                // Close dropdowns when clicking outside
-                document.addEventListener('click', (e) => {
-                    if (!e.target.closest('.aggregation-dropdown-container') && !e.target.closest('.aggregation-dropdown-menu')) {
-                        zone.querySelectorAll('.aggregation-dropdown-menu').forEach(menu => {
-                            if (menu.style.display === 'block') {
+                // Close dropdowns when clicking outside - scope to this instance
+                // Remove any existing handler first to prevent duplicates
+                if (this._aggregationClickOutsideHandler) {
+                    document.removeEventListener('click', this._aggregationClickOutsideHandler);
+                }
+                
+                // Use a unique event handler per instance to avoid conflicts
+                const clickOutsideHandler = (e) => {
+                    // Only handle clicks for dropdowns from this instance
+                    const clickedMenu = e.target.closest('.aggregation-dropdown-menu[data-instance-id="' + this.instanceId + '"]');
+                    const clickedContainer = e.target.closest('.aggregation-dropdown-container');
+                    const clickedToggle = e.target.closest('.aggregation-dropdown-toggle');
+                    
+                    // Check if click is inside a container from this instance
+                    const isInsideInstanceContainer = (clickedContainer && 
+                        (clickedContainer.closest('#' + this.containerId) || 
+                         clickedContainer.closest('.genieAnalytics-analytics-container[data-instance-id="' + this.instanceId + '"]'))) ||
+                        (clickedToggle && clickedToggle.closest('#' + this.containerId));
+                    
+                    if (!isInsideInstanceContainer && !clickedMenu) {
+                        // Close all dropdowns from this instance only
+                        const instanceDropdowns = document.querySelectorAll('.aggregation-dropdown-menu[data-instance-id="' + this.instanceId + '"]');
+                        instanceDropdowns.forEach(menu => {
+                            if (menu.style.display === 'block' || menu.style.display === '') {
                                 menu.style.display = 'none';
+                                // Return dropdown to original parent container when hidden
+                                const metricName = menu.dataset.metric;
+                                if (metricName) {
+                                    const originalParent = zone.querySelector('.aggregation-dropdown-container[data-metric="' + metricName + '"]');
+                                    if (menu.parentElement === document.body && originalParent) {
+                                        originalParent.appendChild(menu);
+                                        // Remove instance-specific class when returned
+                                        menu.classList.remove('genieAnalytics-instance-' + this.instanceId);
+                                    }
+                                }
                             }
                         });
                     }
-                });
+                };
+                
+                // Store handler reference for cleanup
+                this._aggregationClickOutsideHandler = clickOutsideHandler;
+                document.addEventListener('click', clickOutsideHandler);
             }
         }
     }
@@ -3325,15 +3439,15 @@ class GenieAnalytics {
         // Always add rows filter (show by default)
         //console.log('DEBUG: Adding rows filter to drop zone');
         const rowsFilterDiv = document.createElement('div');
-        rowsFilterDiv.className = 'selected-item filter-item rows-filter';
+        rowsFilterDiv.className = 'genieAnalytics-selected-item genieAnalytics-filter-item genieAnalytics-rows-filter';
         
         // Show count only if there are ignored rows
         const countText = this.ignoredRows.size > 0 ? ' (' + this.ignoredRows.size + ' ignored)' : '';
         rowsFilterDiv.innerHTML = 
-            '<div class="filter-content">' +
-                '<span class="filter-metric">rows</span>' +
-                '<span class="filter-count">' + countText + '</span>' +
-                '<span class="table-icon" title="View all rows"><i class="fa fa-fw fa-table"></i></span>' +
+            '<div class="genieAnalytics-filter-content">' +
+                '<span class="genieAnalytics-filter-metric">rows</span>' +
+                '<span class="genieAnalytics-filter-count">' + countText + '</span>' +
+                '<span class="genieAnalytics-table-icon" title="View all rows"><i class="fa fa-fw fa-table"></i></span>' +
             '</div>';
         
         zone.appendChild(rowsFilterDiv);
@@ -3368,16 +3482,16 @@ class GenieAnalytics {
                         '<label class="dimension-checkbox-label">' +
                         '<input type="checkbox" class="dimension-checkbox value-checkbox" data-dimension="' + dimensionName + '" value="' + value + '"' + 
                         (dimensionFilter.selectedValues.includes(value) ? ' checked' : '') + '>' +
-                            '<span class="checkbox-text">' + value + '</span>' +
+                                            '<span class="genieAnalytics-checkbox-text">' + value + '</span>' +
                         '</label>' +
                     '</div>'
                 ).join('') : 
-                '<div class="dropdown-item"><span class="checkbox-text">No values available</span></div>';
+                '<div class="genieAnalytics-dropdown-item"><span class="genieAnalytics-checkbox-text">No values available</span></div>';
             
             console.log('Generated HTML for values:', testHTML);
             
             const filterDiv = document.createElement('div');
-            filterDiv.className = 'selected-item filter-item dimension-filter';
+            filterDiv.className = 'genieAnalytics-selected-item genieAnalytics-filter-item genieAnalytics-dimension-filter';
             
             // Apply orange styling if missing
             if (isMissing) {
@@ -3387,8 +3501,8 @@ class GenieAnalytics {
             }
             
             const fullHTML = 
-                '<div class="filter-content">' +
-                    '<span class="filter-metric">' + this.formatHeader(dimensionName) + '</span>' +
+                '<div class="genieAnalytics-filter-content">' +
+                    '<span class="genieAnalytics-filter-metric">' + this.formatHeader(dimensionName) + '</span>' +
                     '<div class="dimension-dropdown-container" data-dimension="' + dimensionName + '">' +
                         '<button class="dimension-dropdown-toggle" data-dimension="' + dimensionName + '">' +
                             '<span class="dropdown-text">' + displayText + '</span>' +
@@ -3440,7 +3554,7 @@ class GenieAnalytics {
         this.selectedFilters.forEach((filter, index) => {
                 //console.log('DEBUG: Creating filter div for filter:', filter, 'index:', index);
                 const filterDiv = document.createElement('div');
-                filterDiv.className = 'selected-item filter-item';
+                filterDiv.className = 'genieAnalytics-selected-item genieAnalytics-filter-item';
                 
                 // Check if this filter metric is missing
                 let category = 'metric';
@@ -3461,7 +3575,7 @@ class GenieAnalytics {
                 // Build filter content - only show operator dropdown for non-date filters
                 let operatorDropdown = '';
                 if (filter.operator !== 'date_range') {
-                    operatorDropdown = '<select class="filter-operator" data-index="' + index + '">' +
+                    operatorDropdown = '<select class="genieAnalytics-filter-operator" data-index="' + index + '">' +
                         this.filterOperators.map(op => 
                             '<option value="' + op.value + '"' + (filter.operator === op.value ? ' selected' : '') + '>' + op.label + '</option>'
                         ).join('') +
@@ -3469,8 +3583,8 @@ class GenieAnalytics {
                 }
                 
                 filterDiv.innerHTML = 
-                    '<div class="filter-content">' +
-                        '<span class="filter-metric">' + this.formatHeader(filter.metric) + '</span>' +
+                    '<div class="genieAnalytics-filter-content">' +
+                        '<span class="genieAnalytics-filter-metric">' + this.formatHeader(filter.metric) + '</span>' +
                         operatorDropdown +
                         this.renderFilterInputs(filter, index) +
                         '<span class="remove-btn" data-filter-index="' + index + '">×</span>' +
@@ -3481,7 +3595,7 @@ class GenieAnalytics {
         });
         
         // Add event listeners
-        zone.querySelectorAll('.filter-operator').forEach(select => {
+        zone.querySelectorAll('.genieAnalytics-filter-operator').forEach(select => {
             select.addEventListener('change', (e) => {
                 const index = parseInt(e.target.dataset.index);
                 const newOperator = e.target.value;
@@ -3509,7 +3623,7 @@ class GenieAnalytics {
             });
         });
         
-        zone.querySelectorAll('.filter-input').forEach(input => {
+        zone.querySelectorAll('.genieAnalytics-filter-input').forEach(input => {
             input.addEventListener('input', (e) => {
                 const index = parseInt(e.target.dataset.index);
                 const field = e.target.dataset.field;
@@ -3526,7 +3640,7 @@ class GenieAnalytics {
         });
         
         // Add event listener for table icon in rows filter
-        zone.querySelectorAll('.table-icon').forEach(icon => {
+        zone.querySelectorAll('.genieAnalytics-table-icon').forEach(icon => {
             icon.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.showRowsPopup();
@@ -3556,10 +3670,24 @@ class GenieAnalytics {
                     return;
                 }
                 
-                // Close all other dropdowns
-                zone.querySelectorAll('.dimension-dropdown-menu').forEach(otherMenu => {
+                // Store original parent container
+                const originalParent = dropdownButton.closest('.dimension-dropdown-container') || 
+                                     zone.querySelector('.dimension-dropdown-container[data-dimension="' + dimensionName + '"]');
+                
+                // Close all other dropdowns from this instance only
+                zone.querySelectorAll('.dimension-dropdown-menu[data-instance-id="' + this.instanceId + '"]').forEach(otherMenu => {
                     if (otherMenu !== menu && otherMenu.style.display === 'block') {
                         otherMenu.style.display = 'none';
+                        // Return to original parent if it was moved to body
+                        const otherDimensionName = otherMenu.dataset.dimension;
+                        if (otherDimensionName) {
+                            const otherOriginalParent = zone.querySelector('.dimension-dropdown-container[data-dimension="' + otherDimensionName + '"]');
+                            if (otherMenu.parentElement === document.body && otherOriginalParent) {
+                                otherOriginalParent.appendChild(otherMenu);
+                                // Remove instance-specific class when returned
+                                otherMenu.classList.remove('genieAnalytics-instance-' + this.instanceId);
+                            }
+                        }
                         // Apply filters when other dropdown is closed
                         this.applyFilters();
                     }
@@ -3601,21 +3729,38 @@ class GenieAnalytics {
                     console.log('Calculated position:', topPosition, leftPosition);
                     console.log('Button rect bottom:', buttonRect.bottom, 'top:', buttonRect.top);
                     
+                    // Mark dropdown with instance ID to track which instance it belongs to
+                    menu.dataset.instanceId = this.instanceId;
+                    
+                    // Ensure dropdown is appended to body for proper fixed positioning
+                    if (menu.parentElement !== document.body) {
+                        document.body.appendChild(menu);
+                    }
+                    
+                    // Add instance-specific class to maintain CSS scoping even when in body
+                    menu.classList.add('genieAnalytics-instance-' + this.instanceId);
+                    
+                    // Apply inline styles to override any parent page styles
                     menu.style.position = 'fixed';
                     menu.style.top = topPosition + 'px';
                     menu.style.left = leftPosition + 'px';
                     menu.style.width = Math.max(buttonRect.width, 150) + 'px';
                     menu.style.display = 'block';
                     menu.style.backgroundColor = 'white';
-                    menu.style.border = '1px solid #ccc';
-                    menu.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                    menu.style.borderRadius = '4px';
+                    menu.style.border = '1px solid #dddbda';
+                    menu.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                    menu.style.borderRadius = '3px';
                     menu.style.padding = '4px 0';
                     menu.style.maxHeight = '200px';
                     menu.style.overflowY = 'auto';
+                    menu.style.boxSizing = 'border-box';
+                    menu.style.fontSize = '12px'; // Ensure consistent font size
+                    menu.style.lineHeight = '1.2'; // Ensure consistent line height
+                    menu.style.margin = '0'; // Remove any margins
                     
                     // Set very high z-index for this dropdown (appears above all other elements)
-                    const allDropdowns = zone.querySelectorAll('.aggregation-dropdown-menu, .dimension-dropdown-menu');
+                    // Only consider dropdowns from this instance to avoid conflicts
+                    const allDropdowns = document.querySelectorAll('.aggregation-dropdown-menu[data-instance-id="' + this.instanceId + '"], .dimension-dropdown-menu[data-instance-id="' + this.instanceId + '"]');
                     const maxZIndex = Math.max(50000, ...Array.from(allDropdowns).map(m => parseInt(m.style.zIndex) || 0));
                     menu.style.zIndex = (maxZIndex + 1).toString();
                     
@@ -3626,6 +3771,12 @@ class GenieAnalytics {
                 } else {
                     console.log('Hiding dropdown menu');
                     menu.style.display = 'none';
+                    // Return dropdown to original parent container when hidden
+                    if (menu.parentElement === document.body && originalParent) {
+                        originalParent.appendChild(menu);
+                        // Remove instance-specific class when returned
+                        menu.classList.remove('genieAnalytics-instance-' + this.instanceId);
+                    }
                     // Apply filters when dropdown is closed
                     this.applyFilters();
                 }
@@ -3692,18 +3843,51 @@ class GenieAnalytics {
         // Add the event listener
         zone.addEventListener('change', this.handleDimensionCheckboxChange);
         
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.dimension-dropdown-container') && !e.target.closest('.dimension-dropdown-menu')) {
-                zone.querySelectorAll('.dimension-dropdown-menu').forEach(menu => {
-                    if (menu.style.display === 'block') {
+        // Close dropdowns when clicking outside - scope to this instance
+        // Remove any existing handler first to prevent duplicates
+        if (this._dimensionClickOutsideHandler) {
+            document.removeEventListener('click', this._dimensionClickOutsideHandler);
+        }
+        
+        // Use a unique event handler per instance to avoid conflicts
+        const dimensionClickOutsideHandler = (e) => {
+            // Only handle clicks for dropdowns from this instance
+            const clickedMenu = e.target.closest('.dimension-dropdown-menu[data-instance-id="' + this.instanceId + '"]');
+            const clickedContainer = e.target.closest('.dimension-dropdown-container');
+            const clickedToggle = e.target.closest('.dimension-dropdown-toggle');
+            
+            // Check if click is inside a container from this instance
+            const isInsideInstanceContainer = (clickedContainer && 
+                (clickedContainer.closest('#' + this.containerId) || 
+                 clickedContainer.closest('.genieAnalytics-analytics-container[data-instance-id="' + this.instanceId + '"]'))) ||
+                (clickedToggle && clickedToggle.closest('#' + this.containerId));
+            
+            if (!isInsideInstanceContainer && !clickedMenu) {
+                // Close all dropdowns from this instance only
+                const instanceDropdowns = document.querySelectorAll('.dimension-dropdown-menu[data-instance-id="' + this.instanceId + '"]');
+                instanceDropdowns.forEach(menu => {
+                    if (menu.style.display === 'block' || menu.style.display === '') {
                         menu.style.display = 'none';
+                        // Return dropdown to original parent container when hidden
+                        const dimensionName = menu.dataset.dimension;
+                        if (dimensionName) {
+                            const originalParent = zone.querySelector('.dimension-dropdown-container[data-dimension="' + dimensionName + '"]');
+                            if (menu.parentElement === document.body && originalParent) {
+                                originalParent.appendChild(menu);
+                                // Remove instance-specific class when returned
+                                menu.classList.remove('genieAnalytics-instance-' + this.instanceId);
+                            }
+                        }
                         // Apply filters when dropdown is closed
                         this.applyFilters();
                     }
                 });
             }
-        });
+        };
+        
+        // Store handler reference for cleanup
+        this._dimensionClickOutsideHandler = dimensionClickOutsideHandler;
+        document.addEventListener('click', dimensionClickOutsideHandler);
         
         // Add event listeners for dimension filter remove buttons
         zone.querySelectorAll('.remove-btn[data-dimension]').forEach(btn => {
@@ -3719,7 +3903,7 @@ class GenieAnalytics {
             //console.log('DEBUG: Rendering timestamp filter for:', timestampName, 'filter:', filter);
             
             const filterDiv = document.createElement('div');
-            filterDiv.className = 'selected-item filter-item timestamp-filter';
+            filterDiv.className = 'genieAnalytics-selected-item genieAnalytics-filter-item genieAnalytics-timestamp-filter';
             filterDiv.setAttribute('data-timestamp', timestampName);
             
             let displayText = '';
@@ -3730,8 +3914,8 @@ class GenieAnalytics {
             }
             
             filterDiv.innerHTML = 
-                '<div class="filter-content">' +
-                    '<span class="filter-metric">' + this.formatHeader(timestampName) + '</span>' +
+                '<div class="genieAnalytics-filter-content">' +
+                    '<span class="genieAnalytics-filter-metric">' + this.formatHeader(timestampName) + '</span>' +
                     '<span class="timestamp-type">' + filter.type + '</span>' +
                     '<span class="timestamp-period">' + (filter.period || filter.from + ' to ' + filter.to) + '</span>' +
                     '<span class="remove-btn" data-timestamp="' + timestampName + '">×</span>' +
@@ -3758,8 +3942,8 @@ class GenieAnalytics {
         if (operator === 'date_range') {
             // Date range inputs for timestamp dimensions - no operator dropdown needed
             inputs = 
-                '<input type="datetime-local" class="filter-input date-input" placeholder="From Date" data-index="' + index + '" data-field="value1" value="' + (filter.value1 || '') + '">' +
-                '<input type="datetime-local" class="filter-input date-input" placeholder="To Date" data-index="' + index + '" data-field="value2" value="' + (filter.value2 || '') + '">';
+                '<input type="datetime-local" class="genieAnalytics-filter-input genieAnalytics-date-input" placeholder="From Date" data-index="' + index + '" data-field="value1" value="' + (filter.value1 || '') + '">' +
+                '<input type="datetime-local" class="genieAnalytics-filter-input genieAnalytics-date-input" placeholder="To Date" data-index="' + index + '" data-field="value2" value="' + (filter.value2 || '') + '">';
         } else {
             const { min, max } = this.getMetricRange(filter.metric);
             //console.log('DEBUG: getMetricRange returned min:', min, 'max:', max, 'for metric:', filter.metric);
@@ -3769,23 +3953,23 @@ class GenieAnalytics {
                 const value2 = filter.value2 !== undefined ? filter.value2 : max;
                 //console.log('DEBUG: between operator - value1:', value1, 'value2:', value2);
                 inputs = 
-                    '<input type="number" class="filter-input" placeholder="Min (' + min + ')" data-index="' + index + '" data-field="value1" value="' + value1 + '">' +
-                    '<input type="number" class="filter-input" placeholder="Max (' + max + ')" data-index="' + index + '" data-field="value2" value="' + value2 + '">';
+                    '<input type="number" class="genieAnalytics-filter-input" placeholder="Min (' + min + ')" data-index="' + index + '" data-field="value1" value="' + value1 + '">' +
+                    '<input type="number" class="genieAnalytics-filter-input" placeholder="Max (' + max + ')" data-index="' + index + '" data-field="value2" value="' + value2 + '">';
             } else if (operator === 'less than' || operator === 'less than or equal') {
                 // For less than operators, use max value as default
                 const value1 = filter.value1 !== undefined ? filter.value1 : max;
                 //console.log('DEBUG: less than operator - value1:', value1);
-                inputs = '<input type="number" class="filter-input" placeholder="Max: ' + max + '" data-index="' + index + '" data-field="value1" value="' + value1 + '">';
+                inputs = '<input type="number" class="genieAnalytics-filter-input" placeholder="Max: ' + max + '" data-index="' + index + '" data-field="value1" value="' + value1 + '">';
             } else if (operator === 'greater than' || operator === 'greater than or equal') {
                 // For greater than operators, use min value as default
                 const value1 = filter.value1 !== undefined ? filter.value1 : min;
                 //console.log('DEBUG: greater than operator - value1:', value1);
-                inputs = '<input type="number" class="filter-input" placeholder="Min: ' + min + '" data-index="' + index + '" data-field="value1" value="' + value1 + '">';
+                inputs = '<input type="number" class="genieAnalytics-filter-input" placeholder="Min: ' + min + '" data-index="' + index + '" data-field="value1" value="' + value1 + '">';
             } else {
                 // For equal/not equal, use min value as default
                 const value1 = filter.value1 !== undefined ? filter.value1 : min;
                 //console.log('DEBUG: equal operator - value1:', value1);
-                inputs = '<input type="number" class="filter-input" placeholder="Value (min: ' + min + ')" data-index="' + index + '" data-field="value1" value="' + value1 + '">';
+                inputs = '<input type="number" class="genieAnalytics-filter-input" placeholder="Value (min: ' + min + ')" data-index="' + index + '" data-field="value1" value="' + value1 + '">';
             }
         }
         
@@ -3870,7 +4054,7 @@ class GenieAnalytics {
         const aggregationLabels = selectedAggregations.map(agg => this.getAggregationLabel(agg)).join(', ');
         
         // Update the aggregation label display
-        const metricItem = document.querySelector('.metric-item:has(.remove-btn[data-item="' + metricName + '"])');
+        const metricItem = this.container ? this.container.querySelector('.genieAnalytics-metric-item:has(.genieAnalytics-remove-btn[data-item="' + metricName + '"])') : null;
         if (metricItem) {
             const aggregationLabel = metricItem.querySelector('.aggregation-label');
             if (aggregationLabel) {
@@ -4202,7 +4386,7 @@ class GenieAnalytics {
         // Reset container heights before creating new chart
         const resetLensChartCanvasId = this.ids ? this.ids.lensChartCanvas : this.getInstanceId('lensChartCanvas');
         const resetLensChartCanvas = chartContainer.querySelector('#' + resetLensChartCanvasId);
-        const resetLensDisplay = this.container ? this.container.querySelector('.lens-display') : null;
+        const resetLensDisplay = this.container ? this.container.querySelector('.genieAnalytics-lens-display') : null;
         
         if (resetLensChartCanvas) {
             resetLensChartCanvas.style.height = '';
@@ -4223,15 +4407,15 @@ class GenieAnalytics {
         }
         
         if (this.selectedDimensions.length === 0 && this.selectedMetrics.length === 0) {
-            chartContainer.innerHTML = '<div class="chart-placeholder"><p>Build your lens by dragging dimensions and metrics</p></div>';
+            chartContainer.innerHTML = '<div class="genieAnalytics-chart-placeholder"><p>Build your lens by dragging dimensions and metrics</p></div>';
             // Show all raw data rows when no categories are selected
             this.renderAllDataTable();
             return;
         }
         
         if (this.selectedMetrics.length === 0) {
-            chartContainer.innerHTML = '<div class="chart-placeholder"><p>Add at least one metric to create a chart</p></div>';
-            tableContainer.innerHTML = '<div class="table-placeholder"><p>Add at least one metric to create a table</p></div>';
+            chartContainer.innerHTML = '<div class="genieAnalytics-chart-placeholder"><p>Add at least one metric to create a chart</p></div>';
+            tableContainer.innerHTML = '<div class="genieAnalytics-table-placeholder"><p>Add at least one metric to create a table</p></div>';
             return;
         }
         
@@ -4246,14 +4430,14 @@ class GenieAnalytics {
         const waitForDropZoneAnimations = () => {
             return new Promise((resolve) => {
                 // Check if any drop zones are transitioning
-                const dropZones = this.container ? this.container.querySelectorAll('.drop-zone') : [];
+                const dropZones = this.container ? this.container.querySelectorAll('.genieAnalytics-drop-zone') : [];
                 let maxTransitionDuration = 0;
                 
                 dropZones.forEach(zone => {
                     const computedStyle = window.getComputedStyle(zone);
                     // Check both the zone and its drop-area for transitions
                     const zoneTransition = parseFloat(computedStyle.transitionDuration) || 0;
-                    const dropArea = zone.querySelector('.drop-area');
+                    const dropArea = zone.querySelector('.genieAnalytics-drop-area');
                     let dropAreaTransition = 0;
                     if (dropArea) {
                         const dropAreaStyle = window.getComputedStyle(dropArea);
@@ -4391,7 +4575,7 @@ class GenieAnalytics {
         const tableContainer = this.getElementById('lensTable');
         
         if (Object.keys(data.data).length === 0) {
-            tableContainer.innerHTML = '<div class="table-placeholder"><p>No data to display</p></div>';
+            tableContainer.innerHTML = '<div class="genieAnalytics-table-placeholder"><p>No data to display</p></div>';
             return;
         }
         
@@ -4477,12 +4661,12 @@ class GenieAnalytics {
         const tableContainer = this.getElementById('lensTable');
         
         if (!this.filteredData || this.filteredData.length === 0) {
-            tableContainer.innerHTML = '<div class="table-placeholder"><p>No data to display</p></div>';
+            tableContainer.innerHTML = '<div class="genieAnalytics-table-placeholder"><p>No data to display</p></div>';
             return;
         }
 
         // Dynamically set table container width to match lens-display width
-        const lensDisplay = document.querySelector('.lens-display');
+        const lensDisplay = this.container ? this.container.querySelector('.genieAnalytics-lens-display') : null;
         if (lensDisplay) {
             const lensDisplayWidth = lensDisplay.getBoundingClientRect().width;
             tableContainer.style.width = lensDisplayWidth + 'px';
@@ -5391,7 +5575,7 @@ class GenieAnalytics {
             '</div>';
         
         // Insert after the lens builder
-        const lensBuilder = document.querySelector('.lens-builder');
+        const lensBuilder = this.container ? this.container.querySelector('.genieAnalytics-lens-builder') : null;
         lensBuilder.parentNode.insertBefore(filterContainer, lensBuilder.nextSibling);
         
         // Add event listeners for filter type change
@@ -5617,7 +5801,7 @@ class GenieAnalytics {
                         
                         // Get the target height and width: use full container dimensions since padding was removed
                         const chartContainer = containerNode.closest('#lensChart') || 
-                                             containerNode.closest('.chart-container');
+                                             containerNode.closest('.genieAnalytics-chart-container');
                         let targetHeight = 0;
                         let targetWidth = 0;
                         
@@ -5635,7 +5819,7 @@ class GenieAnalytics {
                         const lensChartCanvasId = self.ids ? self.ids.lensChartCanvas : self.getInstanceId('lensChartCanvas');
                         const lensChartCanvas = document.getElementById(lensChartCanvasId) || 
                                                containerNode.closest('#' + lensChartCanvasId);
-                        const lensDisplay = containerNode.closest('.lens-display');
+                        const lensDisplay = containerNode.closest('.genieAnalytics-lens-display');
                         
                         if (lensChartCanvas) {
                             // Set width to 100% to use full container width
@@ -5684,8 +5868,8 @@ class GenieAnalytics {
                         
                         if (lensDisplay) {
                             // Calculate min-height based on lens-canvas height minus drop zone (200px) and header (20px)
-                            const lensCanvas = containerNode.closest('.lens-canvas') || 
-                                             document.querySelector('.lens-canvas');
+                            const lensCanvas = containerNode.closest('.genieAnalytics-lens-canvas') || 
+                                             this.container ? this.container.querySelector('.genieAnalytics-lens-canvas') : null;
                             let calculatedMinHeight = totalHeight;
                             
                             if (lensCanvas) {
@@ -6038,7 +6222,7 @@ class GenieAnalytics {
                             
                             // Get the target height and width: use full container dimensions since padding was removed
                             const targetChartContainer = containerNode.closest('#lensChart') || 
-                                                 containerNode.closest('.chart-container');
+                                                 containerNode.closest('.genieAnalytics-chart-container');
                             let targetHeight = 0;
                             let targetWidth = 0;
                             
@@ -6062,7 +6246,7 @@ class GenieAnalytics {
                             const lensChartCanvasId = self.ids ? self.ids.lensChartCanvas : self.getInstanceId('lensChartCanvas');
                             const lensChartCanvas = document.getElementById(lensChartCanvasId) || 
                                                    containerNode.closest('#' + lensChartCanvasId);
-                            const lensDisplay = containerNode.closest('.lens-display');
+                            const lensDisplay = containerNode.closest('.genieAnalytics-lens-display');
                             
                             // Check if chart is expanded - check multiple sources to be robust
                             const lensChart = self.getElementById('lensChart');
@@ -6693,7 +6877,7 @@ class GenieAnalytics {
                         
                         // Get the target height and width: use full container dimensions since padding was removed
                         const chartContainer = containerNode.closest('#lensChart') || 
-                                             containerNode.closest('.chart-container');
+                                             containerNode.closest('.genieAnalytics-chart-container');
                         let targetHeight = 0;
                         let targetWidth = 0;
                         
@@ -6711,7 +6895,7 @@ class GenieAnalytics {
                         const lensChartCanvasId = self.ids ? self.ids.lensChartCanvas : self.getInstanceId('lensChartCanvas');
                         const lensChartCanvas = document.getElementById(lensChartCanvasId) || 
                                                containerNode.closest('#' + lensChartCanvasId);
-                        const lensDisplay = containerNode.closest('.lens-display');
+                        const lensDisplay = containerNode.closest('.genieAnalytics-lens-display');
                         
                         if (lensChartCanvas) {
                             // Set width to 100% to use full container width
@@ -6760,8 +6944,8 @@ class GenieAnalytics {
                         
                         if (lensDisplay) {
                             // Calculate min-height based on lens-canvas height minus drop zone (200px) and header (20px)
-                            const lensCanvas = containerNode.closest('.lens-canvas') || 
-                                             document.querySelector('.lens-canvas');
+                            const lensCanvas = containerNode.closest('.genieAnalytics-lens-canvas') || 
+                                             this.container ? this.container.querySelector('.genieAnalytics-lens-canvas') : null;
                             let calculatedMinHeight = totalHeight;
                             
                             if (lensCanvas) {
@@ -8095,7 +8279,7 @@ class GenieAnalytics {
         let chartsHTML = '<div class="charts-grid">';
         chartMetrics.forEach(metric => {
             const chartId = 'chart-' + metric.replace(/[^a-zA-Z0-9]/g, '');
-            chartsHTML += '<div class="chart-container">';
+            chartsHTML += '<div class="genieAnalytics-chart-container">';
             chartsHTML += '<h3>' + this.formatHeader(metric) + '</h3>';
             chartsHTML += '<canvas id="' + chartId + '" width="400" height="200"></canvas>';
             chartsHTML += '</div>';
@@ -8106,7 +8290,7 @@ class GenieAnalytics {
         chartsHTML += '<canvas id="chart-overview" width="800" height="300"></canvas>';
         chartsHTML += '</div>';
         
-        chartsHTML += '<div class="chart-container">';
+        chartsHTML += '<div class="genieAnalytics-chart-container">';
         chartsHTML += '<h3>Dimension Distribution</h3>';
         chartsHTML += '<canvas id="chart-dimension-dist" width="400" height="200"></canvas>';
         chartsHTML += '</div>';
@@ -8796,22 +8980,41 @@ class GenieAnalytics {
     }
 
     setupCollapsibleCategories() {
-        const categoryHeaders = this.container ? this.container.querySelectorAll('.category-header') : [];
+        // Use correct class name to match HTML - scope to container for multiple instances
+        const categoryHeaders = this.container ? this.container.querySelectorAll('.genieAnalytics-category-header') : [];
         
         categoryHeaders.forEach(header => {
             header.addEventListener('click', (event) => {
                 // Don't toggle if clicking on buttons inside the header
-                if (event.target.classList.contains('add-derived-metric-btn') || 
-                    event.target.classList.contains('save-derived-metric-btn') ||
-                    event.target.closest('.derived-metrics-controls')) {
+                // Scope check to container to support multiple instances
+                if (event.target.classList.contains('genieAnalytics-add-derived-metric-btn') || 
+                    event.target.classList.contains('genieAnalytics-save-derived-metric-btn') ||
+                    event.target.closest('.genieAnalytics-derived-metrics-controls')) {
                     return;
                 }
                 
                 const targetId = header.getAttribute('data-target');
                 const targetElement = this.container ? this.container.querySelector('#' + targetId) : null;
-                const collapseIcon = header.querySelector('.collapse-icon');
+                // Use correct class name to match HTML
+                const collapseIcon = header.querySelector('.genieAnalytics-collapse-icon');
                 
-                if (targetElement.style.display === 'none') {
+                // Check if elements exist
+                if (!targetElement || !collapseIcon) {
+                    console.warn('setupCollapsibleCategories: targetElement or collapseIcon not found', {
+                        targetId: targetId,
+                        targetElement: targetElement,
+                        collapseIcon: collapseIcon
+                    });
+                    return;
+                }
+                
+                // Check if currently collapsed by checking inline style or computed style
+                // Also check if header has 'collapsed' class as a fallback
+                const isCurrentlyCollapsed = targetElement.style.display === 'none' || 
+                                           header.classList.contains('collapsed') ||
+                                           window.getComputedStyle(targetElement).display === 'none';
+                
+                if (isCurrentlyCollapsed) {
                     // Expand
                     targetElement.style.display = 'flex';
                     collapseIcon.textContent = '▼';
@@ -8840,7 +9043,7 @@ class GenieAnalytics {
         // Store the event handler function so we can remove it later if needed
         this.dropZoneClickHandler = (e) => {
             // Check if click is on drop zone header (including button or icon)
-            const header = e.target.closest('.drop-zone-header');
+            const header = e.target.closest('.genieAnalytics-drop-zone-header');
             if (header) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -8869,7 +9072,7 @@ class GenieAnalytics {
     }
     
     toggleDropZones() {
-        const allDropZones = document.querySelectorAll('.drop-zone');
+        const allDropZones = this.container ? this.container.querySelectorAll('.genieAnalytics-drop-zone') : [];
         
         // Check if any drop zone is currently collapsed
         const anyCollapsed = Array.from(allDropZones).some(zone => zone.classList.contains('collapsed'));
@@ -8878,7 +9081,7 @@ class GenieAnalytics {
             // If any zone is collapsed, expand all zones
             allDropZones.forEach(zone => {
                 zone.classList.remove('collapsed');
-                const icon = zone.querySelector('.drop-zone-collapse-btn i');
+                const icon = zone.querySelector('.genieAnalytics-drop-zone-collapse-btn i');
                 if (icon) {
                     icon.className = 'fa fa-chevron-down';
                 }
@@ -8901,7 +9104,7 @@ class GenieAnalytics {
             // If no zones are collapsed, collapse all zones
             allDropZones.forEach(zone => {
                 zone.classList.add('collapsed');
-                const icon = zone.querySelector('.drop-zone-collapse-btn i');
+                const icon = zone.querySelector('.genieAnalytics-drop-zone-collapse-btn i');
                 if (icon) {
                     icon.className = 'fa fa-chevron-up';
                 }
@@ -8927,7 +9130,8 @@ class GenieAnalytics {
         // Floating controls are now sticky positioned relative to lens-display
         // No need to manually update position - CSS handles it
         // This method is kept for compatibility but does nothing now
-        const floatingControls = document.querySelector('.floating-chart-controls');
+        // Scope query to container to support multiple instances
+        const floatingControls = this.container ? this.container.querySelector('.genieAnalytics-floating-chart-controls') : null;
         if (floatingControls) {
             // Ensure it's visible and positioned correctly
             // The sticky positioning in CSS will handle the rest
@@ -9067,12 +9271,12 @@ class GenieAnalytics {
 
     updateFieldItemIcons() {
         // Update all field items to show correct icon based on selection state
-        const fieldItems = document.querySelectorAll('.field-item');
+        const fieldItems = this.container ? this.container.querySelectorAll('.genieAnalytics-field-item') : [];
         
         fieldItems.forEach(item => {
             const fieldName = item.getAttribute('data-field');
             const fieldType = item.getAttribute('data-type');
-            const clickHint = item.querySelector('.click-hint');
+            const clickHint = item.querySelector('.genieAnalytics-click-hint');
             
             if (clickHint) {
                 let isSelected = false;
@@ -9131,8 +9335,9 @@ class GenieAnalytics {
             barBtn.classList.remove('active');
             
             // Add table-view class and hide floating controls
-            const lensDisplay = document.querySelector('.lens-display');
-            const floatingControls = document.querySelector('.floating-chart-controls');
+            const lensDisplay = this.container ? this.container.querySelector('.genieAnalytics-lens-display') : null;
+            // Scope query to container to support multiple instances
+            const floatingControls = this.container ? this.container.querySelector('.genieAnalytics-floating-chart-controls') : null;
             if (lensDisplay) {
                 lensDisplay.classList.add('table-view');
                 console.log('Added table-view class to lens-display');
@@ -9149,7 +9354,7 @@ class GenieAnalytics {
                 floatingControls.style.display = 'none';
                 console.log('Hidden floating controls');
             } else {
-                console.log('floating-chart-controls element not found');
+                console.log('genieAnalytics-floating-chart-controls element not found');
             }
             
             // Re-render to ensure table content is up to date
@@ -9160,8 +9365,9 @@ class GenieAnalytics {
             tableBtn.classList.remove('active');
             
             // Remove table-view class and show floating controls
-            const lensDisplay = document.querySelector('.lens-display');
-            const floatingControls = document.querySelector('.floating-chart-controls');
+            const lensDisplay = this.container ? this.container.querySelector('.genieAnalytics-lens-display') : null;
+            // Scope query to container to support multiple instances
+            const floatingControls = this.container ? this.container.querySelector('.genieAnalytics-floating-chart-controls') : null;
             if (lensDisplay) {
                 lensDisplay.classList.remove('table-view');
                 console.log('Removed table-view class from lens-display');
@@ -9175,7 +9381,7 @@ class GenieAnalytics {
                 floatingControls.style.display = 'flex';
                 console.log('Shown floating controls');
             } else {
-                console.log('floating-chart-controls element not found');
+                console.log('genieAnalytics-floating-chart-controls element not found');
             }
             
             // Set the appropriate chart type button as active
@@ -9280,15 +9486,13 @@ class GenieAnalytics {
         }
         
         // Clear metric filter inputs
-        const filterInputs = this.getElementById(this.containerId)?.querySelectorAll('.filter-input') || 
-                             document.querySelectorAll('.filter-input');
+        const filterInputs = this.container ? this.container.querySelectorAll('.genieAnalytics-filter-input') : [];
         filterInputs.forEach(input => {
             input.value = '';
         });
         
         // Clear metric filter operators
-        const filterOperators = this.getElementById(this.containerId)?.querySelectorAll('.filter-operator') || 
-                                document.querySelectorAll('.filter-operator');
+        const filterOperators = this.container ? this.container.querySelectorAll('.genieAnalytics-filter-operator') : [];
         filterOperators.forEach(select => {
             if (select.options.length > 0) {
             select.selectedIndex = 0;
@@ -9399,11 +9603,11 @@ class GenieAnalytics {
         this.selectedFilters.forEach((filter, index) => {
             //console.log('DEBUG: Processing metric filter', index, filter);
             // Find metric filters by looking for elements with filter-operator and data-index
-            const filterDiv = document.querySelector('.filter-item .filter-operator[data-index="' + index + '"]').closest('.filter-item');
+            const filterDiv = this.container ? this.container.querySelector('.genieAnalytics-filter-item .genieAnalytics-filter-operator[data-index="' + index + '"]')?.closest('.genieAnalytics-filter-item') : null;
             //console.log('DEBUG: Found filter div for index', index, ':', filterDiv);
             if (filterDiv) {
-                const input = filterDiv.querySelector('.filter-input');
-                const operator = filterDiv.querySelector('.filter-operator');
+                const input = filterDiv.querySelector('.genieAnalytics-filter-input');
+                const operator = filterDiv.querySelector('.genieAnalytics-filter-operator');
                 //console.log('DEBUG: Found input and operator:', input, operator);
                 if (input) {
                     const value = filter.value1 || filter.value || '';
@@ -9725,6 +9929,8 @@ class GenieAnalytics {
         });
         
         // Rebuild availability maps from current data
+        // Note: We don't call analyzeDataStructure() here because it might reset metrics incorrectly
+        // Instead, rebuildAvailabilityMaps() will check data columns directly
         this.rebuildAvailabilityMaps();
         
         this.metricAggregations = JSON.parse(JSON.stringify(lens.metricAggregations || {}));
@@ -10832,7 +11038,7 @@ class GenieAnalytics {
             container.offsetHeight;
 
             // Force layout recalculation
-            const lensBuilder = document.querySelector('.lens-builder');
+            const lensBuilder = this.container ? this.container.querySelector('.genieAnalytics-lens-builder') : null;
             if (lensBuilder) {
                 lensBuilder.offsetHeight;
             }
@@ -10848,9 +11054,9 @@ class GenieAnalytics {
 
     handlePanelCollapse() {
         // When collapsing, expand containers to use full available space
-        const lensDisplay = document.querySelector('.lens-display');
-        const lensCanvas = document.querySelector('.lens-canvas');
-        const chartContainerDiv = document.querySelector('.chart-container');
+        const lensDisplay = this.container ? this.container.querySelector('.genieAnalytics-lens-display') : null;
+        const lensCanvas = this.container ? this.container.querySelector('.genieAnalytics-lens-canvas') : null;
+        const chartContainerDiv = this.container ? this.container.querySelector('.genieAnalytics-chart-container') : null;
         
         if (lensDisplay) {
             lensDisplay.style.maxWidth = 'none';
@@ -10880,9 +11086,9 @@ class GenieAnalytics {
 
     handlePanelExpand() {
         // When expanding, reset containers to use normal constraints
-        const lensDisplay = document.querySelector('.lens-display');
-        const lensCanvas = document.querySelector('.lens-canvas');
-        const chartContainerDiv = document.querySelector('.chart-container');
+        const lensDisplay = this.container ? this.container.querySelector('.genieAnalytics-lens-display') : null;
+        const lensCanvas = this.container ? this.container.querySelector('.genieAnalytics-lens-canvas') : null;
+        const chartContainerDiv = this.container ? this.container.querySelector('.genieAnalytics-chart-container') : null;
         
         if (lensDisplay) {
             lensDisplay.style.maxWidth = '';
@@ -12239,8 +12445,12 @@ class GenieAnalytics {
 
 }
 
-        // Add CSS styles
-        const style = document.createElement('style');
+        // Add CSS styles (only once, check if already exists)
+        const styleId = 'genieAnalytics-component-styles';
+        let style = document.getElementById(styleId);
+        if (!style) {
+            style = document.createElement('style');
+            style.id = styleId;
         style.textContent = `
             .genieAnalytics-analytics-container {
                 background: #ffffff;
@@ -12254,7 +12464,8 @@ class GenieAnalytics {
                 box-sizing: border-box;
             }
             
-            .genieAnalytics-search-input {
+            /* Scope search input to container to prevent collisions */
+            .genieAnalytics-analytics-container .genieAnalytics-search-input {
                 width: 200px;
                 max-width: 200px;
                 height: 30px;
@@ -12267,23 +12478,24 @@ class GenieAnalytics {
                 transition: border-color 0.2s ease;
             }
             
-            .genieAnalytics-search-input:focus {
+            .genieAnalytics-analytics-container .genieAnalytics-search-input:focus {
                 outline: none;
                 border-color: #007bff;
                 box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
             }
             
-            .genieAnalytics-search-input.genieAnalytics-search-pending {
+            .genieAnalytics-analytics-container .genieAnalytics-search-input.genieAnalytics-search-pending {
                 border-color: #ffc107;
                 background-color: #fff3cd;
             }
             
-            .genieAnalytics-search-input.genieAnalytics-search-applied {
+            .genieAnalytics-analytics-container .genieAnalytics-search-input.genieAnalytics-search-applied {
                 border-color: #28a745;
                 background-color: #d4edda;
             }
     
-    .genieAnalytics-header {
+    /* Scope all styles to genieAnalytics-analytics-container to prevent collisions between multiple instances */
+    .genieAnalytics-analytics-container .genieAnalytics-header {
         position: relative;
         background: transparent;
         color: #333;
@@ -12297,7 +12509,7 @@ class GenieAnalytics {
     }
     
     
-    .genieAnalytics-controls {
+    .genieAnalytics-analytics-container .genieAnalytics-controls {
         width: 100%;
         display: flex;
         justify-content: flex-start;
@@ -12305,13 +12517,13 @@ class GenieAnalytics {
         box-sizing: border-box;
     }
     
-    .view-controls {
+    .genieAnalytics-analytics-container .genieAnalytics-view-controls {
         display: flex;
         gap: 8px;
         align-items: center;
     }
     
-    .genieAnalytics-btn {
+    .genieAnalytics-analytics-container .genieAnalytics-btn {
         width: 30px;
         height: 30px;
         padding: 0;
@@ -12327,18 +12539,18 @@ class GenieAnalytics {
         justify-content: center;
     }
     
-    .genieAnalytics-btn:hover {
+    .genieAnalytics-analytics-container .genieAnalytics-btn:hover {
         background: #f8f9fa;
         border-color: #0070d2;
     }
     
-    .genieAnalytics-btn.active {
+    .genieAnalytics-analytics-container .genieAnalytics-btn.active {
         background: #46a5e3;
         border-color: #46a5e3;
         color: white;
     }
 
-    .lens-select {
+    .genieAnalytics-analytics-container .genieAnalytics-lens-select {
         height: 30px;
         padding: 4px 8px;
         border: 1px solid #ddd;
@@ -12352,11 +12564,11 @@ class GenieAnalytics {
         box-sizing: border-box;
     }
 
-    .lens-select:hover {
+    .genieAnalytics-analytics-container .genieAnalytics-lens-select:hover {
         border-color: #007bff;
     }
 
-    .lens-select:focus {
+    .genieAnalytics-analytics-container .genieAnalytics-lens-select:focus {
         outline: none;
         border-color: #007bff;
         box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
@@ -12490,7 +12702,8 @@ class GenieAnalytics {
         margin-top: 4px;
     }
 
-    .lens-preview {
+    /* Scope lens-preview to container to prevent collisions */
+    .genieAnalytics-analytics-container .lens-preview {
         background: #f8f9fa;
         border: 1px solid #e9ecef;
         border-radius: 4px;
@@ -12498,14 +12711,14 @@ class GenieAnalytics {
         margin-top: 16px;
     }
 
-    .lens-preview h4 {
+    .genieAnalytics-analytics-container .lens-preview h4 {
         margin: 0 0 12px 0;
         font-size: 14px;
         font-weight: 600;
         color: #333;
     }
 
-    .lens-preview-item {
+    .genieAnalytics-analytics-container .lens-preview-item {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -12514,16 +12727,16 @@ class GenieAnalytics {
         font-size: 13px;
     }
 
-    .lens-preview-item:last-child {
+    .genieAnalytics-analytics-container .lens-preview-item:last-child {
         border-bottom: none;
     }
 
-    .lens-preview-label {
+    .genieAnalytics-analytics-container .lens-preview-label {
         font-weight: 500;
         color: #555;
     }
 
-    .lens-preview-value {
+    .genieAnalytics-analytics-container .lens-preview-value {
         color: #0070d2;
         font-weight: 500;
     }
@@ -12582,7 +12795,7 @@ class GenieAnalytics {
         position: relative; /* Enable absolute positioning for floating controls */
     }
     
-    .lens-builder {
+    .genieAnalytics-analytics-container .genieAnalytics-lens-builder {
         display: flex;
         gap: 5px;
         height: 600px;
@@ -12592,22 +12805,22 @@ class GenieAnalytics {
     }
     
     /* Reduce gap when panel is collapsed */
-    .field-palette.collapsed ~ .lens-area {
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed ~ .lens-area {
         margin-left: 0;
     }
     
-    .lens-builder:has(.field-palette.collapsed) {
+    .genieAnalytics-analytics-container .genieAnalytics-lens-builder:has(.genieAnalytics-field-palette.collapsed) {
         gap: 5px;
     }
     
     /* Ensure lens-builder expands when panel is collapsed */
-    .lens-builder:has(.field-palette.collapsed) > *:not(.field-palette) {
+    .genieAnalytics-analytics-container .genieAnalytics-lens-builder:has(.genieAnalytics-field-palette.collapsed) > *:not(.genieAnalytics-field-palette) {
         flex: 1 !important;
         width: 100% !important;
         max-width: none !important;
     }
     
-    .field-palette {
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette {
         width: 200px;
         min-width: 200px;
         max-width: 200px;
@@ -12620,14 +12833,14 @@ class GenieAnalytics {
         box-sizing: border-box;
     }
     
-    .field-palette.collapsed {
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed {
         width: 32px;
         min-width: 32px;
         max-width: 32px;
         padding: 6px 1px;
     }
     
-    .palette-header {
+    .genieAnalytics-analytics-container .genieAnalytics-palette-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -12639,17 +12852,17 @@ class GenieAnalytics {
         transition: background-color 0.2s ease;
     }
     
-    .palette-header:hover {
+    .genieAnalytics-analytics-container .genieAnalytics-palette-header:hover {
         background-color: #f0f0f0;
     }
     
-    .palette-title {
+    .genieAnalytics-analytics-container .genieAnalytics-palette-title {
         font-weight: 600;
         color: #333;
         font-size: 14px;
     }
     
-    .collapse-toggle {
+    .genieAnalytics-analytics-container .genieAnalytics-collapse-toggle {
         background: #f8f9fa;
         border: 1px solid #dee2e6;
         cursor: pointer;
@@ -12666,56 +12879,56 @@ class GenieAnalytics {
         font-weight: bold;
     }
     
-    .collapse-toggle:hover {
+    .genieAnalytics-analytics-container .genieAnalytics-collapse-toggle:hover {
         background: #e9ecef;
         color: #212529;
         border-color: #adb5bd;
     }
     
-    .field-palette.collapsed .palette-title,
-    .field-palette.collapsed .category-section {
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed .genieAnalytics-palette-title,
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed .genieAnalytics-category-section {
         display: none;
     }
     
-    .field-palette.collapsed .palette-header {
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed .genieAnalytics-palette-header {
         justify-content: center;
         margin-bottom: 0;
         padding-bottom: 0;
         border-bottom: none;
     }
     
-    .field-palette.collapsed .collapse-toggle {
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed .genieAnalytics-collapse-toggle {
         padding: 2px 4px;
         margin: 0;
     }
     
     /* Reduce padding in main content when panel is collapsed */
-    .field-palette.collapsed ~ .lens-area {
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed ~ .lens-area {
         padding: 4px;
     }
     
-    .field-palette.collapsed ~ .lens-area .lens-chart-container {
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed ~ .lens-area .lens-chart-container {
         padding: 4px;
     }
     
-    .field-palette.collapsed ~ .lens-area #lensChartCanvas {
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed ~ .lens-area #lensChartCanvas {
         padding: 4px;
     }
     
     /* Maximize chart space when panel is collapsed */
-    .field-palette.collapsed ~ .lens-area {
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed ~ .lens-area {
         flex: 1;
         min-width: 0;
     }
     
-    .field-palette.collapsed ~ .lens-area .lens-chart-container {
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed ~ .lens-area .lens-chart-container {
         margin: 0;
         border-radius: 4px;
     }
     
     /* Force chart container to expand when panel is collapsed */
-    .field-palette.collapsed ~ .lens-area #lensChart,
-    .field-palette.collapsed ~ .lens-area #lensChartCanvas {
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed ~ .lens-area #lensChart,
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed ~ .lens-area #lensChartCanvas {
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
@@ -12723,7 +12936,7 @@ class GenieAnalytics {
     }
     
     /* Additional aggressive expansion for lensChart */
-    .field-palette.collapsed ~ .lens-area #lensChart {
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed ~ .lens-area #lensChart {
         flex: 1 !important;
         min-width: 0 !important;
         max-width: none !important;
@@ -12735,7 +12948,7 @@ class GenieAnalytics {
         margin-right: 20px !important;
     }
     
-    .field-palette.collapsed ~ .lens-area .lens-display {
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed ~ .lens-area .lens-display {
         flex: 1 !important;
         width: 100% !important;
         max-width: none !important;
@@ -12743,26 +12956,26 @@ class GenieAnalytics {
     }
     
     /* More conservative expansion for chart-related containers only */
-    .field-palette.collapsed ~ .lens-area {
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed ~ .lens-area {
         flex: 1 !important;
         min-width: 0 !important;
         box-sizing: border-box !important;
         overflow: hidden !important;
     }
     
-    .field-palette.collapsed ~ .lens-area .lens-chart-container,
-    .field-palette.collapsed ~ .lens-area .lens-display {
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed ~ .lens-area .lens-chart-container,
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette.collapsed ~ .lens-area .lens-display {
         flex: 1 !important;
         min-width: 0 !important;
         box-sizing: border-box !important;
         overflow: hidden !important;
     }
     
-    .category-section {
+    .genieAnalytics-analytics-container .genieAnalytics-category-section {
         margin-bottom: 8px;
     }
     
-    .category-header {
+    .genieAnalytics-analytics-container .genieAnalytics-category-header {
         margin: 0 0 8px 0;
         color: #3e3e3c;
         font-size: 14px;
@@ -12775,27 +12988,27 @@ class GenieAnalytics {
         transition: color 0.2s ease;
     }
     
-    .category-header:hover {
+    .genieAnalytics-analytics-container .genieAnalytics-category-header:hover {
         color: #0176d3;
     }
     
-    .category-header.collapsed {
+    .genieAnalytics-analytics-container .genieAnalytics-category-header.collapsed {
         color: #706e6b;
     }
     
-    .collapse-icon {
+    .genieAnalytics-analytics-container .genieAnalytics-collapse-icon {
         margin-right: 6px;
         font-size: 12px;
         transition: transform 0.2s ease;
     }
     
-    .field-list {
+    .genieAnalytics-analytics-container .genieAnalytics-field-list {
         display: flex;
         flex-direction: column;
         gap: 4px;
     }
     
-    .field-item {
+    .genieAnalytics-analytics-container .genieAnalytics-field-item {
         padding: 4px 6px;
         background: white;
         border: 1px solid #dddbda;
@@ -12807,18 +13020,18 @@ class GenieAnalytics {
         user-select: none;
     }
     
-    .field-item:hover {
+    .genieAnalytics-analytics-container .genieAnalytics-field-item:hover {
         background: #f8f9fa;
         border-color: #0070d2;
         transform: translateY(-1px);
         box-shadow: 0 2px 4px rgba(0, 112, 210, 0.1);
     }
     
-    .field-item:active {
+    .genieAnalytics-analytics-container .genieAnalytics-field-item:active {
         cursor: grabbing;
     }
     
-    .click-hint {
+    .genieAnalytics-analytics-container .genieAnalytics-click-hint {
         color: #0070d2;
         font-weight: bold;
         font-size: 14px;
@@ -12826,29 +13039,30 @@ class GenieAnalytics {
         opacity: 0.7;
     }
     
-    .field-item:hover .click-hint {
+    .genieAnalytics-analytics-container .genieAnalytics-field-item:hover .genieAnalytics-click-hint {
         opacity: 1;
     }
     
-    .field-item.selected {
+    /* Scope field-item.selected to container to prevent collisions */
+    .genieAnalytics-analytics-container .genieAnalytics-field-item.selected {
         background-color: #e8f4fd;
         border-color: #0070d2;
     }
     
-    .field-item.selected .click-hint {
+    .genieAnalytics-analytics-container .genieAnalytics-field-item.selected .genieAnalytics-click-hint {
         color: #0070d2;
         font-weight: bold;
     }
     
-    .click-hint.remove-state {
+    .genieAnalytics-analytics-container .genieAnalytics-click-hint.remove-state {
         color: #c23934;
     }
     
-    .field-item.selected .click-hint.remove-state {
+    .genieAnalytics-analytics-container .genieAnalytics-field-item.selected .genieAnalytics-click-hint.remove-state {
         color: #c23934;
     }
     
-    .lens-canvas {
+    .genieAnalytics-analytics-container .genieAnalytics-lens-canvas {
         flex: 1;
         display: flex;
         flex-direction: column;
@@ -12856,12 +13070,12 @@ class GenieAnalytics {
         position: relative;
     }
     
-    .lens-display {
+    .genieAnalytics-analytics-container .genieAnalytics-lens-display {
         position: relative;
         z-index: 1;
     }
     
-    .drop-zones {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zones {
         display: flex;
         gap: 6px;
         align-items: stretch;
@@ -12871,7 +13085,7 @@ class GenieAnalytics {
         z-index: 100;
     }
     
-    .drop-zone {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone {
         flex: 1;
         background: #f8f9fa;
         border-radius: 6px;
@@ -12880,10 +13094,10 @@ class GenieAnalytics {
         max-height: 180px;
         display: flex;
         flex-direction: column;
-        overflow-y: auto;
+        overflow: hidden; /* Remove scroll from zone - scroll should be on drop-area */
     }
     
-    .drop-zone-header {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -12894,17 +13108,17 @@ class GenieAnalytics {
         transition: background-color 0.2s ease;
     }
     
-    .drop-zone-header:hover {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone-header:hover {
         background-color: #f0f0f0;
     }
     
-    .drop-zone-title-section {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone-title-section {
         display: flex;
         align-items: center;
         gap: 6px;
     }
 
-    .missing-items-indicator {
+    .genieAnalytics-analytics-container .genieAnalytics-missing-items-indicator {
         background-color: #ff8c00;
         color: white;
         font-size: 10px;
@@ -12917,34 +13131,34 @@ class GenieAnalytics {
         margin-left: 4px;
     }
     
-    .drop-zone.collapsed .missing-items-indicator {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone.collapsed .genieAnalytics-missing-items-indicator {
         /* Display is controlled by JavaScript based on missing count */
     }
     
-    .drop-zone h4 {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone h4 {
         margin: 0;
-        color: #3e3e3c;
-        font-size: 12px;
-        font-weight: 600;
+        color: #3e3e3c !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
     }
     
-    .drop-zone-count {
-        background: #0070d2;
-        color: white;
-        font-size: 10px;
-        font-weight: 600;
-        padding: 2px 6px;
-        border-radius: 10px;
-        min-width: 16px;
-        text-align: center;
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone-count {
+        background: #0070d2 !important;
+        color: white !important;
+        font-size: 10px !important;
+        font-weight: 600 !important;
+        padding: 2px 6px !important;
+        border-radius: 10px !important;
+        min-width: 16px !important;
+        text-align: center !important;
         display: none; /* Hidden by default, shown when collapsed */
     }
     
-    .drop-zone.collapsed .drop-zone-count {
-        display: inline-block;
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone.collapsed .genieAnalytics-drop-zone-count {
+        display: inline-block !important;
     }
     
-    .drop-zone-collapse-btn {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone-collapse-btn {
         background: none;
         border: none;
         color: #706e6b;
@@ -12955,22 +13169,22 @@ class GenieAnalytics {
         transition: all 0.2s ease;
     }
     
-    .drop-zone-collapse-btn:hover {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone-collapse-btn:hover {
         background: #e5e5e5;
         color: #3e3e3c;
     }
     
-    .drop-zone.collapsed .drop-zone-collapse-btn {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone.collapsed .genieAnalytics-drop-zone-collapse-btn {
         transform: rotate(180deg);
     }
     
-    .drop-zone.collapsed {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone.collapsed {
         min-height: 30px;
         max-height: 30px;
         overflow: hidden;
     }
     
-    .drop-zone.collapsed .drop-area {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone.collapsed .genieAnalytics-drop-area {
         opacity: 0;
         height: 0;
         min-height: 0;
@@ -12978,12 +13192,13 @@ class GenieAnalytics {
         transition: all 0.3s ease;
     }
     
-    .drop-zone .drop-area {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone .genieAnalytics-drop-area {
         transition: all 0.3s ease;
     }
     
-    .drop-area {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-area {
         min-height: 45px;
+        max-height: 150px; /* Set max-height to enable scrolling */
         border: 2px dashed #dddbda;
         border-radius: 4px;
         padding: 3px;
@@ -12993,20 +13208,23 @@ class GenieAnalytics {
         align-items: flex-start;
         transition: all 0.2s ease;
         flex: 1;
+        box-sizing: border-box; /* Ensure padding is included in width calculation */
+        overflow-y: auto; /* Add scroll to drop-area instead of drop-zone */
+        overflow-x: hidden; /* Prevent horizontal scroll */
     }
     
-    .drop-area.drag-over {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-area.drag-over {
         border-color: #0070d2;
         background: rgba(0, 112, 210, 0.1);
     }
     
-    .drop-hint {
-        color: #706e6b;
-        font-style: italic;
-        font-size: 12px;
+    .genieAnalytics-analytics-container .genieAnalytics-drop-hint {
+        color: #706e6b !important;
+        font-style: italic !important;
+        font-size: 12px !important;
     }
     
-    .selected-item {
+    .genieAnalytics-analytics-container .genieAnalytics-selected-item {
         background: #46a5e3;
         color: white;
         padding: 4px 8px;
@@ -13017,38 +13235,90 @@ class GenieAnalytics {
         gap: 4px;
         margin: 1px;
         min-height: 22px;
+        height: auto; /* Allow height to adjust to content */
+        box-sizing: border-box;
+        flex-shrink: 0; /* Prevent items from shrinking */
+        flex-grow: 0; /* Prevent items from growing */
+        line-height: 1.4; /* Ensure proper line height for text */
+    }
+    
+    /* Ensure text content in selected items is white */
+    .genieAnalytics-analytics-container .genieAnalytics-selected-item,
+    .genieAnalytics-analytics-container .genieAnalytics-selected-item .metric-name,
+    .genieAnalytics-analytics-container .genieAnalytics-selected-item .aggregation-label {
+        color: white;
+    }
+    
+    /* Remove button should be white and visible */
+    .genieAnalytics-analytics-container .genieAnalytics-selected-item .genieAnalytics-remove-btn {
+        color: white;
+        background: transparent;
+        border: none;
+    }
+    
+    /* Ensure dropdown buttons have proper styling */
+    .genieAnalytics-analytics-container .genieAnalytics-selected-item .aggregation-dropdown-toggle {
+        color: #333;
+        background: white;
     }
     
     
-    /* Specific styling for Group By items */
-    #dimensionsArea .selected-item {
+    /* Specific styling for Group By items - use class selector instead of ID */
+    .genieAnalytics-analytics-container .genieAnalytics-drop-area-dimensions .genieAnalytics-selected-item {
         padding: 6px 8px;
         min-height: 24px;
+        height: auto; /* Allow height to adjust to content */
     }
     
-    /* Specific styling for Values items */
-    #metricsArea .selected-item {
+    /* Specific styling for Values items - use class selector instead of ID */
+    .genieAnalytics-analytics-container .genieAnalytics-drop-area-metrics .genieAnalytics-selected-item {
         padding: 4px 8px;
         min-height: 22px;
+        height: auto; /* Allow height to adjust to content */
+    }
+    
+    /* Ensure metric items with dropdowns have proper height */
+    .genieAnalytics-analytics-container .genieAnalytics-drop-area-metrics .genieAnalytics-selected-item .metric-item {
+        min-height: 22px;
+        height: auto;
+    }
+    
+    /* Ensure drop zone header text is NOT white - must come after other rules */
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone-header {
+        color: #3e3e3c !important;
+    }
+    
+    /* Ensure h4 in drop zone header is dark */
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone-header h4 {
+        color: #3e3e3c !important;
+    }
+    
+    /* Override for count and missing indicator only - must come after header rules */
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone-count {
+        color: white !important;
+    }
+    
+    .genieAnalytics-analytics-container .genieAnalytics-missing-items-indicator {
+        color: white !important;
     }
     
     /* Filter item styling */
-    .filter-item {
+    .genieAnalytics-analytics-container .genieAnalytics-filter-item {
         background: #f8f9fa !important;
         color: #333 !important;
-        border: 1px solid #d3d3d3;
-        padding: 4px 6px;
-        min-height: 24px;
+        border: 1px solid #d3d3d3 !important;
+        padding: 4px 6px !important;
+        min-height: 24px !important;
     }
     
-    .filter-content {
+    .genieAnalytics-analytics-container .genieAnalytics-filter-content {
         display: flex;
         align-items: center;
         gap: 6px;
         width: 100%;
     }
     
-    .filter-metric {
+    .genieAnalytics-analytics-container .genieAnalytics-filter-metric {
         font-weight: 500;
         color: #0070d2;
         width: auto;
@@ -13057,7 +13327,7 @@ class GenieAnalytics {
     }
     
     
-    .filter-operator {
+    .genieAnalytics-analytics-container .genieAnalytics-filter-operator {
         padding: 2px 4px;
         font-size: 12px;
         font-weight: bold;
@@ -13069,7 +13339,7 @@ class GenieAnalytics {
         text-align: center;
     }
     
-    .filter-input {
+    .genieAnalytics-analytics-container .genieAnalytics-filter-input {
         padding: 2px 4px;
         font-size: 10px;
         width: 70px;
@@ -13078,12 +13348,12 @@ class GenieAnalytics {
         text-align: center;
     }
     
-    .filter-input::placeholder {
+    .genieAnalytics-analytics-container .genieAnalytics-filter-input::placeholder {
         font-size: 9px;
         color: #999;
     }
     
-    .date-input {
+    .genieAnalytics-analytics-container .genieAnalytics-date-input {
         width: 146px !important;
         font-size: 8px;
         height: 20px;
@@ -13091,44 +13361,46 @@ class GenieAnalytics {
     }
     
     /* Custom scrollbar styling */
-    .drop-zones::-webkit-scrollbar,
-    .drop-zone::-webkit-scrollbar,
-    .lens-display::-webkit-scrollbar {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zones::-webkit-scrollbar,
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone::-webkit-scrollbar,
+    .genieAnalytics-analytics-container .genieAnalytics-lens-display::-webkit-scrollbar {
         width: 6px;
     }
     
-    .drop-zones::-webkit-scrollbar-track,
-    .drop-zone::-webkit-scrollbar-track,
-    .lens-display::-webkit-scrollbar-track {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zones::-webkit-scrollbar-track,
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone::-webkit-scrollbar-track,
+    .genieAnalytics-analytics-container .genieAnalytics-lens-display::-webkit-scrollbar-track {
         background: #f1f1f1;
         border-radius: 3px;
     }
     
-    .drop-zones::-webkit-scrollbar-thumb,
-    .drop-zone::-webkit-scrollbar-thumb,
-    .lens-display::-webkit-scrollbar-thumb {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zones::-webkit-scrollbar-thumb,
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone::-webkit-scrollbar-thumb,
+    .genieAnalytics-analytics-container .genieAnalytics-lens-display::-webkit-scrollbar-thumb {
         background: #c1c1c1;
         border-radius: 3px;
     }
     
-    .drop-zones::-webkit-scrollbar-thumb:hover,
-    .drop-zone::-webkit-scrollbar-thumb:hover,
-    .lens-display::-webkit-scrollbar-thumb:hover {
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zones::-webkit-scrollbar-thumb:hover,
+    .genieAnalytics-analytics-container .genieAnalytics-drop-zone::-webkit-scrollbar-thumb:hover,
+    .genieAnalytics-analytics-container .genieAnalytics-lens-display::-webkit-scrollbar-thumb:hover {
         background: #a8a8a8;
     }
     
-    .remove-btn {
+    .genieAnalytics-analytics-container .genieAnalytics-remove-btn {
         cursor: pointer;
         font-weight: bold;
         font-size: 12px;
         line-height: 1;
     }
     
-    .remove-btn:hover {
+    /* Scope remove-btn hover to container - also support filter/dimension/timestamp remove buttons */
+    .genieAnalytics-analytics-container .genieAnalytics-remove-btn:hover,
+    .genieAnalytics-analytics-container .remove-btn:hover {
         color: #ff6b6b;
     }
     
-    .chart-container {
+    .genieAnalytics-analytics-container .genieAnalytics-chart-container {
         flex: 1;
         background: white;
         border-radius: 6px;
@@ -13142,18 +13414,18 @@ class GenieAnalytics {
         z-index: 1;
     }
     
-    .chart-placeholder {
+    .genieAnalytics-analytics-container .genieAnalytics-chart-placeholder {
         text-align: center;
         color: #706e6b;
         font-size: 12px;
     }
     
-    .chart-placeholder p {
+    .genieAnalytics-analytics-container .genieAnalytics-chart-placeholder p {
         margin: 0;
         font-size: 12px;
     }
     
-    .table-wrapper {
+    .genieAnalytics-analytics-container .genieAnalytics-table-wrapper {
         overflow: auto;
         border-radius: 3px;
         border: 1px solid #dddbda;
@@ -13163,14 +13435,15 @@ class GenieAnalytics {
         overflow-y: auto;
     }
     
-    .genieAnalytics-table {
+    /* Scope genieAnalytics-table to container to prevent collisions */
+    .genieAnalytics-analytics-container .genieAnalytics-table {
         width: auto;
         min-width: 100%;
         border-collapse: collapse;
         background: white;
     }
     
-    .genieAnalytics-table th {
+    .genieAnalytics-analytics-container .genieAnalytics-table th {
         background: #f8f9fa;
         padding: 8px 10px;
         text-align: left;
@@ -13183,7 +13456,7 @@ class GenieAnalytics {
         white-space: nowrap;
     }
     
-    .genieAnalytics-table td {
+    .genieAnalytics-analytics-container .genieAnalytics-table td {
         padding: 8px 10px;
         border-bottom: 1px solid #dddbda;
         font-size: 11px;
@@ -13191,36 +13464,38 @@ class GenieAnalytics {
         white-space: nowrap;
     }
     
-    .genieAnalytics-table tbody tr:hover {
+    .genieAnalytics-analytics-container .genieAnalytics-table tbody tr:hover {
         background: #f8f9fa;
     }
     
-    .genieAnalytics-table tbody tr:nth-child(even) {
+    .genieAnalytics-analytics-container .genieAnalytics-table tbody tr:nth-child(even) {
         background: #fafbfc;
     }
     
     
-    .charts-grid {
+    /* Scope charts-grid to container to prevent collisions */
+    .genieAnalytics-analytics-container .charts-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
         gap: 20px;
     }
     
-    .chart-container {
+    .genieAnalytics-analytics-container .genieAnalytics-chart-container {
         background: white;
         border-radius: 8px;
         padding: 0;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
     
-    .chart-container h3 {
+    /* Scope chart-container to container to prevent collisions */
+    .genieAnalytics-analytics-container .chart-container h3 {
         margin: 0 0 15px 0;
         color: #3e3e3c;
         font-size: 16px;
         font-weight: 600;
     }
     
-    .chart-container {
+    .genieAnalytics-analytics-container .genieAnalytics-chart-container {
         display: flex;
         justify-content: center;
         align-items: center;
@@ -13230,7 +13505,7 @@ class GenieAnalytics {
         z-index: 1;
     }
     
-    .chart-container canvas {
+    .genieAnalytics-analytics-container .chart-container canvas {
         max-width: 100%;
         max-height: 100%;
         display: block;
@@ -13238,16 +13513,16 @@ class GenieAnalytics {
     }
     
     
-    .chart-container.expanded {
+    .genieAnalytics-analytics-container .chart-container.expanded {
         overflow-x: auto;
         overflow-y: hidden;
     }
     
-    .chart-container.expanded #lensChartCanvas {
+    .genieAnalytics-analytics-container .chart-container.expanded #lensChartCanvas {
         min-width: 100%;
     }
 
-    .lens-display {
+    .genieAnalytics-analytics-container .genieAnalytics-lens-display {
         flex: 1;
         background: white;
         border-radius: 6px;
@@ -13262,18 +13537,18 @@ class GenieAnalytics {
         position: relative; /* Enable sticky positioning for child elements */
     }
     
-    /* Horizontal scrolling for expanded charts */
-    .lens-display[style*="overflow-x: auto"] {
+    /* Horizontal scrolling for expanded charts - scoped to container */
+    .genieAnalytics-analytics-container .genieAnalytics-lens-display[style*="overflow-x: auto"] {
         overflow-x: auto !important;
         overflow-y: hidden !important;
     }
     
-    /* Only apply max-width when panel is NOT collapsed */
-    .field-palette:not(.collapsed) ~ .lens-area .lens-display {
+    /* Only apply max-width when panel is NOT collapsed - scoped to container */
+    .genieAnalytics-analytics-container .genieAnalytics-field-palette:not(.collapsed) ~ .genieAnalytics-lens-area .genieAnalytics-lens-display {
         max-width: calc(100vw - 250px);
     }
 
-    .table-container {
+    .genieAnalytics-analytics-container .genieAnalytics-table-container {
         flex: 1;
         width: 100%;
         max-width: 100%;
@@ -13284,20 +13559,20 @@ class GenieAnalytics {
         min-width: 0;
     }
 
-    .chart-placeholder, .table-placeholder {
+    .genieAnalytics-analytics-container .genieAnalytics-chart-placeholder, .genieAnalytics-analytics-container .genieAnalytics-table-placeholder {
         text-align: center;
         color: #666;
         font-size: 16px;
     }
 
-    .table-container {
+    .genieAnalytics-analytics-container .genieAnalytics-table-container {
         height: 500px;
         overflow: hidden;
         display: flex;
         flex-direction: column;
     }
 
-    .table-wrapper {
+    .genieAnalytics-analytics-container .genieAnalytics-table-wrapper {
         flex: 1;
         width: 100%;
         max-width: 100%;
@@ -13374,7 +13649,7 @@ class GenieAnalytics {
     }
 
     /* Focus only on table wrapper and children to prevent lens-canvas expansion */
-    .table-wrapper {
+    .genieAnalytics-analytics-container .genieAnalytics-table-wrapper {
         width: 100% !important;
         max-width: 100% !important;
         overflow-x: auto !important;
@@ -13401,7 +13676,8 @@ class GenieAnalytics {
     }
 
 
-    .table-more-rows-message {
+    /* Scope table-related styles to container to prevent collisions */
+    .genieAnalytics-analytics-container .table-more-rows-message {
         background: #f8f9fa;
         border: 1px solid #dddbda;
         border-top: none;
@@ -13411,7 +13687,7 @@ class GenieAnalytics {
         font-size: 12px;
     }
 
-    .table-more-rows-message p {
+    .genieAnalytics-analytics-container .table-more-rows-message p {
         margin: 0;
         display: flex;
         align-items: center;
@@ -13419,11 +13695,11 @@ class GenieAnalytics {
         gap: 6px;
     }
 
-    .table-more-rows-message i {
+    .genieAnalytics-analytics-container .table-more-rows-message i {
         color: #0070d2;
     }
 
-    .ignore-header {
+    .genieAnalytics-analytics-container .ignore-header {
         width: 60px;
         min-width: 60px;
         max-width: 60px;
@@ -13436,7 +13712,7 @@ class GenieAnalytics {
         font-size: 12px;
     }
 
-    .ignore-cell {
+    .genieAnalytics-analytics-container .ignore-cell {
         width: 60px;
         min-width: 60px;
         max-width: 60px;
@@ -13445,42 +13721,44 @@ class GenieAnalytics {
         border-bottom: 1px solid #dee2e6;
     }
 
-    .ignore-checkbox {
+    .genieAnalytics-analytics-container .ignore-checkbox {
         width: 16px;
         height: 16px;
         cursor: pointer;
     }
 
-    .ignore-checkbox:hover {
+    .genieAnalytics-analytics-container .ignore-checkbox:hover {
         transform: scale(1.1);
     }
 
-    .sortable-header {
+    .genieAnalytics-analytics-container .sortable-header {
         cursor: pointer;
         user-select: none;
         position: relative;
     }
 
-    .sortable-header:hover {
+    .genieAnalytics-analytics-container .sortable-header:hover {
         background: #e9ecef !important;
     }
 
-    .sort-icon {
+    .genieAnalytics-analytics-container .sort-icon {
         margin-left: 5px;
         font-size: 10px;
         color: #6c757d;
     }
 
-    .sortable-header:hover .sort-icon {
+    .genieAnalytics-analytics-container .sortable-header:hover .sort-icon {
         color: #495057;
     }
 
-    .genieAnalytics-btn.active {
+    /* genieAnalytics-btn.active is already scoped above, but ensure it's here too */
+    .genieAnalytics-analytics-container .genieAnalytics-btn.active {
         background: #46a5e3;
         color: white;
     }
     
-    .floating-chart-controls {
+    /* Scope floating chart controls to container */
+    .genieAnalytics-analytics-container .genieAnalytics-floating-chart-controls {
         position: sticky;
         top: 0; /* Stick to top of lens-display */
         left: 0; /* Stick to left of lens-display */
@@ -13497,23 +13775,23 @@ class GenieAnalytics {
         backdrop-filter: blur(4px); /* Blur effect for better visibility */
     }
     
-    .floating-chart-controls .genieAnalytics-btn {
+    .genieAnalytics-floating-chart-controls .genieAnalytics-btn {
         border: none; /* Remove borders from buttons */
         width: 20px; /* Further reduce button width */
         height: 20px; /* Further reduce button height */
         padding: 0;
     }
     
-    .floating-chart-controls .genieAnalytics-btn i {
+    .genieAnalytics-floating-chart-controls .genieAnalytics-btn i {
         font-size: 12px; /* Reduce icon size */
     }
     
-    .floating-chart-controls .width-multiplier-container {
+    .genieAnalytics-floating-chart-controls .genieAnalytics-width-multiplier-container {
         padding: 0 !important; /* Remove padding from multiplier container */
         margin: 0 !important; /* Remove margin from multiplier container */
     }
     
-    .floating-chart-controls .width-multiplier-select {
+    .genieAnalytics-floating-chart-controls .genieAnalytics-width-multiplier-select {
         border: none !important; /* Remove borders from select dropdown */
         width: 40px !important; /* Reduce dropdown width */
         height: 24px !important; /* Reduce dropdown height */
@@ -13523,24 +13801,37 @@ class GenieAnalytics {
         border-radius: 0 !important; /* Remove border radius */
     }
     
-    /* Hide floating chart controls in table view */
-    .lens-display.table-view .floating-chart-controls {
+    /* Hide floating chart controls in table view - scoped to container */
+    .genieAnalytics-analytics-container .genieAnalytics-lens-display.table-view .genieAnalytics-floating-chart-controls {
         display: none !important;
     }
 
-    .metric-item {
+    /* Scope metric and filter styles to container to prevent collisions */
+    .genieAnalytics-analytics-container .metric-item {
         display: flex;
         align-items: center;
         gap: 4px;
         width: 100%;
+        min-height: 22px; /* Ensure consistent height */
+        box-sizing: border-box;
     }
 
-    .metric-name {
+    .genieAnalytics-analytics-container .metric-name {
         flex: 1;
         font-weight: 500;
+        line-height: 1.4; /* Ensure proper line height */
+        min-height: 18px; /* Ensure minimum height for text */
+    }
+    
+    /* Scope aggregation-label to container to prevent collisions */
+    .genieAnalytics-analytics-container .aggregation-label {
+        font-size: 10px;
+        opacity: 0.9;
+        margin-left: 4px;
+        color: white; /* Ensure it's visible on blue background */
     }
 
-    .aggregation-select {
+    .genieAnalytics-analytics-container .aggregation-select {
         padding: 2px 4px;
         border: 1px solid #dddbda;
         border-radius: 3px;
@@ -13550,13 +13841,13 @@ class GenieAnalytics {
         margin: 0 2px;
     }
 
-    .aggregation-select:focus {
+    .genieAnalytics-analytics-container .aggregation-select:focus {
         outline: none;
         border-color: #0070d2;
         box-shadow: 0 0 0 1px #0070d2;
     }
 
-    .date-time-filter {
+    .genieAnalytics-analytics-container .date-time-filter {
         background: #f8f9fa;
         border: 1px solid #dddbda;
         border-radius: 6px;
@@ -13564,20 +13855,20 @@ class GenieAnalytics {
         margin: 10px 0;
     }
 
-    .filter-header {
+    .genieAnalytics-analytics-container .filter-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 15px;
     }
 
-    .filter-header h4 {
+    .genieAnalytics-analytics-container .filter-header h4 {
         margin: 0;
         color: #333;
         font-size: 16px;
     }
 
-    .close-filter {
+    .genieAnalytics-analytics-container .close-filter {
         background: none;
         border: none;
         font-size: 20px;
@@ -13591,53 +13882,54 @@ class GenieAnalytics {
         justify-content: center;
     }
 
-    .close-filter:hover {
+    .genieAnalytics-analytics-container .close-filter:hover {
         color: #333;
     }
 
-    .filter-options {
+    .genieAnalytics-analytics-container .filter-options {
         display: flex;
         flex-direction: column;
         gap: 15px;
     }
 
-    .filter-type {
+    .genieAnalytics-analytics-container .filter-type {
         display: flex;
         gap: 20px;
     }
 
-    .filter-type label {
+    .genieAnalytics-analytics-container .filter-type label {
         display: flex;
         align-items: center;
         gap: 5px;
         cursor: pointer;
     }
 
-    .relative-options, .absolute-options {
+    .genieAnalytics-analytics-container .relative-options, 
+    .genieAnalytics-analytics-container .absolute-options {
         display: flex;
         gap: 15px;
         align-items: center;
     }
 
-    .relative-options select {
+    .genieAnalytics-analytics-container .relative-options select {
         padding: 8px 12px;
         border: 1px solid #dddbda;
         border-radius: 4px;
         background: white;
     }
 
-    .date-range {
+    .genieAnalytics-analytics-container .date-range {
         display: flex;
         align-items: center;
         gap: 8px;
     }
 
-    .date-range label {
+    .genieAnalytics-analytics-container .date-range label {
         font-weight: 500;
         min-width: 40px;
     }
 
-    .date-range input[type="datetime-local"] {
+    .genieAnalytics-analytics-container .date-range input[type="datetime-local"] {
         width: 146px;
         height: 20px;
         padding: 1px 4px;
@@ -13647,12 +13939,13 @@ class GenieAnalytics {
         font-size: 8px;
     }
 
-    .filter-actions {
+    .genieAnalytics-analytics-container .filter-actions {
         display: flex;
         gap: 10px;
     }
 
-    .apply-filter, .clear-filter {
+    .genieAnalytics-analytics-container .apply-filter, 
+    .genieAnalytics-analytics-container .clear-filter {
         padding: 8px 16px;
         border: 1px solid #dddbda;
         border-radius: 4px;
@@ -13662,25 +13955,26 @@ class GenieAnalytics {
         transition: all 0.2s ease;
     }
 
-    .apply-filter {
+    .genieAnalytics-analytics-container .apply-filter {
         background: #0070d2;
         color: white;
         border-color: #0070d2;
     }
 
-    .apply-filter:hover {
+    .genieAnalytics-analytics-container .apply-filter:hover {
         background: #005fb2;
     }
 
-    .clear-filter:hover {
+    .genieAnalytics-analytics-container .clear-filter:hover {
         background: #f8f9fa;
     }
     
-    .chart-wide {
+    .genieAnalytics-analytics-container .chart-wide {
         grid-column: 1 / -1;
     }
     
-    .loading-state, .error-state {
+    .genieAnalytics-analytics-container .loading-state, 
+    .genieAnalytics-analytics-container .error-state {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -13689,7 +13983,7 @@ class GenieAnalytics {
         text-align: center;
     }
     
-    .spinner {
+    .genieAnalytics-analytics-container .spinner {
         width: 40px;
         height: 40px;
         border: 4px solid #f3f2f2;
@@ -13704,56 +13998,57 @@ class GenieAnalytics {
         100% { transform: rotate(360deg); }
     }
     
-    .loading-state p {
+    .genieAnalytics-analytics-container .loading-state p {
         color: #3e3e3c;
         font-size: 16px;
         margin: 0;
     }
     
-    .error-state {
+    .genieAnalytics-analytics-container .error-state {
         color: #c23934;
     }
     
-    .error-icon {
+    .genieAnalytics-analytics-container .error-icon {
         font-size: 48px;
         margin-bottom: 20px;
     }
     
-    .error-state h3 {
+    .genieAnalytics-analytics-container .error-state h3 {
         color: #c23934;
         margin: 0 0 10px 0;
         font-size: 20px;
     }
     
-    .error-state p {
+    .genieAnalytics-analytics-container .error-state p {
         color: #3e3e3c;
         margin: 0 0 20px 0;
         font-size: 14px;
     }
     
+    /* Scope media query styles to container to prevent collisions */
     @media (max-width: 768px) {
-        .genieAnalytics-header {
+        .genieAnalytics-analytics-container .genieAnalytics-header {
             flex-direction: column;
             align-items: flex-start;
             gap: 15px;
         }
         
-        .genieAnalytics-controls {
+        .genieAnalytics-analytics-container .genieAnalytics-controls {
             width: 100%;
             justify-content: space-between;
         }
         
-        .filter-section {
+        .genieAnalytics-analytics-container .filter-section {
             flex-wrap: wrap;
         }
         
-        .charts-grid {
+        .genieAnalytics-analytics-container .charts-grid {
             grid-template-columns: 1fr;
         }
     }
 
     /* Rows filter styles */
-    .rows-filter {
+    .genieAnalytics-analytics-container .genieAnalytics-rows-filter {
         background: #f8f9fa !important;
         color: #333 !important;
         border: 1px solid #d3d3d3;
@@ -13761,21 +14056,21 @@ class GenieAnalytics {
         min-height: 24px;
     }
 
-    .rows-filter .filter-content {
+    .genieAnalytics-analytics-container .genieAnalytics-rows-filter .genieAnalytics-filter-content {
         display: flex;
         align-items: center;
         gap: 0px;
     }
 
 
-    .filter-count {
+    .genieAnalytics-analytics-container .genieAnalytics-filter-count {
         font-size: 12px;
         color: #856404;
         font-style: italic;
         margin-left: 1px;
     }
 
-    .table-icon {
+    .genieAnalytics-analytics-container .genieAnalytics-table-icon {
         cursor: pointer;
         font-size: 14px;
         padding: 1px 2px;
@@ -13784,34 +14079,34 @@ class GenieAnalytics {
         margin-left: 2px;
     }
 
-    .table-icon i {
+    .genieAnalytics-analytics-container .genieAnalytics-table-icon i {
         color: #495057;
     }
 
-    .table-icon:hover {
+    .genieAnalytics-analytics-container .genieAnalytics-table-icon:hover {
         background-color: #e9ecef;
     }
 
-    /* Rows popup styles */
-    .rows-popup-overlay {
+    /* Scope rows popup styles to container to prevent collisions */
+    .genieAnalytics-analytics-container .rows-popup-overlay {
         z-index: 10000;
     }
 
-    .rows-popup-content {
+    .genieAnalytics-analytics-container .rows-popup-content {
         max-width: 90vw;
         max-height: 90vh;
         width: 90vw;
         height: 90vh;
     }
 
-    .rows-popup-table-container {
+    .genieAnalytics-analytics-container .rows-popup-table-container {
         height: calc(100% - 120px);
         overflow: visible;
         display: flex;
         flex-direction: column;
     }
 
-    .rows-popup-table-wrapper {
+    .genieAnalytics-analytics-container .rows-popup-table-wrapper {
         flex: 1;
         overflow-y: auto;
         overflow-x: auto;
@@ -13820,35 +14115,35 @@ class GenieAnalytics {
         max-height: 100%;
     }
 
-    .rows-popup-table {
+    .genieAnalytics-analytics-container .rows-popup-table {
         width: 100%;
         margin: 0;
     }
 
-    .ignored-row {
+    .genieAnalytics-analytics-container .ignored-row {
         background-color: #f8f9fa;
         opacity: 0.6;
     }
 
-    .ignored-row td {
+    .genieAnalytics-analytics-container .ignored-row td {
         text-decoration: line-through;
         color: #6c757d;
     }
 
-    /* Dimension filter styles */
-    .dimension-filter .filter-content {
+    /* Dimension filter styles - scoped to container */
+    .genieAnalytics-analytics-container .genieAnalytics-dimension-filter .genieAnalytics-filter-content {
         display: flex;
         align-items: center;
         gap: 8px;
     }
 
-    .dimension-dropdown-container {
+    .genieAnalytics-analytics-container .dimension-dropdown-container {
         position: relative;
         display: inline-block;
         z-index: auto;
     }
 
-    .dimension-dropdown-toggle {
+    .genieAnalytics-analytics-container .dimension-dropdown-toggle {
         display: flex;
         align-items: center;
         gap: 4px;
@@ -13861,13 +14156,16 @@ class GenieAnalytics {
         cursor: pointer;
         min-width: 80px;
         max-width: 150px;
+        height: 20px; /* Fixed height for consistency (same as aggregation) */
+        box-sizing: border-box;
+        line-height: 1.2; /* Ensure proper line height */
     }
 
-    .dimension-dropdown-toggle:hover {
+    .genieAnalytics-analytics-container .dimension-dropdown-toggle:hover {
         border-color: #0070d2;
     }
 
-    .dropdown-text {
+    .genieAnalytics-analytics-container .dropdown-text {
         flex: 1;
         text-align: left;
         overflow: hidden;
@@ -13875,77 +14173,98 @@ class GenieAnalytics {
         white-space: nowrap;
     }
 
-    .dropdown-arrow {
+    .genieAnalytics-analytics-container .dropdown-arrow {
         font-size: 10px;
         color: #666;
         transition: transform 0.2s;
     }
 
-    .dimension-dropdown-menu {
-        position: fixed;
-        background: white;
-        border: 1px solid #dddbda;
-        border-radius: 3px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        z-index: 10000;
-        max-height: 200px;
-        overflow-y: auto;
-        min-width: 150px;
+    .genieAnalytics-analytics-container .dimension-dropdown-menu,
+    /* Also apply styles when dropdown is moved to body (for multiple instances) */
+    .dimension-dropdown-menu[data-instance-id] {
+        position: fixed !important; /* Ensure fixed positioning works */
+        background: white !important;
+        border: 1px solid #dddbda !important;
+        border-radius: 3px !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+        z-index: 10000 !important; /* Ensure dropdown appears above other elements */
+        max-height: 200px !important;
+        overflow-y: auto !important;
+        min-width: 150px !important;
+        box-sizing: border-box !important;
+        padding: 4px 0 !important; /* Override any parent padding */
+        margin: 0 !important; /* Override any parent margin */
+        font-size: 12px !important; /* Ensure consistent font size */
+        line-height: 1.2 !important; /* Ensure consistent line height */
     }
 
-    .dropdown-item {
-        padding: 0;
-        margin: 0;
-        line-height: 1;
+    .genieAnalytics-analytics-container .dropdown-item,
+    /* Also apply when dropdown is in body */
+    .dimension-dropdown-menu[data-instance-id] .dropdown-item {
+        padding: 0 !important;
+        margin: 0 !important;
+        line-height: 1.2 !important;
+        min-height: 18px !important;
+        box-sizing: border-box !important;
     }
 
-    .dimension-checkbox-label {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 11px;
-        cursor: pointer;
-        padding: 0px 4px;
-        margin: 0;
-        line-height: 1.2;
-        transition: background-color 0.2s;
-        width: 100%;
-        height: auto;
-        min-height: 18px;
+    .genieAnalytics-analytics-container .dimension-checkbox-label,
+    /* Also apply when dropdown is in body */
+    .dimension-dropdown-menu[data-instance-id] .dimension-checkbox-label {
+        display: flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+        font-size: 12px !important;
+        cursor: pointer !important;
+        padding: 0px 6px !important;
+        margin: 0 !important;
+        line-height: 1.2 !important;
+        transition: background-color 0.2s !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 18px !important;
     }
 
-    .dimension-checkbox-label:hover {
-        background-color: #f8f9fa;
+    .genieAnalytics-analytics-container .dimension-checkbox-label:hover,
+    /* Also apply when dropdown is in body */
+    .dimension-dropdown-menu[data-instance-id] .dimension-checkbox-label:hover {
+        background-color: #f3f2f2 !important; /* Match aggregation hover color */
     }
 
-    .dimension-checkbox {
-        margin: 0;
-        padding: 0;
-        cursor: pointer;
-        height: 14px;
-        width: 14px;
+    .genieAnalytics-analytics-container .dimension-checkbox,
+    /* Also apply when dropdown is in body */
+    .dimension-dropdown-menu[data-instance-id] .dimension-checkbox {
+        margin: 0 !important;
+        padding: 0 !important;
+        cursor: pointer !important;
+        height: 14px !important;
+        width: 14px !important;
     }
 
 
-    .checkbox-text {
-        font-size: 11px;
-        color: #333;
-        white-space: nowrap;
+    .genieAnalytics-analytics-container .checkbox-text,
+    /* Also apply when dropdown is in body */
+    .dimension-dropdown-menu[data-instance-id] .checkbox-text {
+        font-size: 12px !important; /* Match aggregation font size */
+        color: #333 !important;
+        white-space: nowrap !important;
     }
 
-    .all-checkbox + .checkbox-text {
+    .genieAnalytics-analytics-container .all-checkbox + .checkbox-text {
         font-weight: 500;
         color: #0070d2;
     }
 
-    /* Aggregation dropdown styles */
-    .aggregation-dropdown-container {
+    /* Aggregation dropdown styles - scoped to container */
+    .genieAnalytics-analytics-container .aggregation-dropdown-container {
         position: relative;
         display: inline-block;
         z-index: auto;
+        height: auto; /* Allow height to adjust */
+        min-height: 20px; /* Ensure minimum height */
     }
 
-    .aggregation-dropdown-toggle {
+    .genieAnalytics-analytics-container .aggregation-dropdown-toggle {
         display: flex;
         align-items: center;
         gap: 4px;
@@ -13958,13 +14277,18 @@ class GenieAnalytics {
         cursor: pointer;
         min-width: 80px;
         max-width: 150px;
+        height: 20px; /* Fixed height for consistency */
+        box-sizing: border-box;
+        line-height: 1.2; /* Ensure proper line height */
     }
 
-    .aggregation-dropdown-toggle:hover {
+    .genieAnalytics-analytics-container .aggregation-dropdown-toggle:hover {
         background: #f3f2f2;
     }
 
-    .dropdown-text {
+    /* Note: dropdown-text and dropdown-arrow are already scoped above for dimension dropdown */
+    /* But we need to ensure they work for aggregation dropdown too */
+    .genieAnalytics-analytics-container .aggregation-dropdown-toggle .dropdown-text {
         flex: 1;
         text-align: left;
         overflow: hidden;
@@ -13972,59 +14296,75 @@ class GenieAnalytics {
         white-space: nowrap;
     }
 
-    .dropdown-arrow {
+    .genieAnalytics-analytics-container .aggregation-dropdown-toggle .dropdown-arrow {
         font-size: 10px;
         color: #666;
     }
 
-    .aggregation-dropdown-menu {
-        position: fixed;
-        background: white;
-        border: 1px solid #dddbda;
-        border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        z-index: 10000;
-        min-width: 150px;
-        max-height: 200px;
-        overflow-y: auto;
+    .genieAnalytics-analytics-container .aggregation-dropdown-menu,
+    /* Also apply styles when dropdown is moved to body (for multiple instances) */
+    .aggregation-dropdown-menu[data-instance-id] {
+        position: fixed !important; /* Ensure fixed positioning works */
+        background: white !important;
+        border: 1px solid #dddbda !important;
+        border-radius: 4px !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+        z-index: 10000 !important; /* Ensure dropdown appears above other elements */
+        min-width: 150px !important;
+        max-height: 200px !important;
+        overflow-y: auto !important;
+        box-sizing: border-box !important;
+        padding: 4px 0 !important; /* Override any parent padding */
+        margin: 0 !important; /* Override any parent margin */
+        font-size: 12px !important; /* Ensure consistent font size */
+        line-height: 1.2 !important; /* Ensure consistent line height */
     }
 
-    .aggregation-dropdown-menu .dropdown-item {
-        padding: 0;
-        margin: 0;
-        line-height: 1;
+    .genieAnalytics-analytics-container .aggregation-dropdown-menu .dropdown-item,
+    .genieAnalytics-analytics-container .aggregation-dropdown-menu .genieAnalytics-dropdown-item,
+    /* Also apply when dropdown is in body */
+    .aggregation-dropdown-menu[data-instance-id] .dropdown-item,
+    .aggregation-dropdown-menu[data-instance-id] .genieAnalytics-dropdown-item {
+        padding: 0 !important;
+        margin: 0 !important;
+        line-height: 1.2 !important;
+        min-height: 18px !important;
+        box-sizing: border-box !important;
     }
 
-    .aggregation-checkbox-label {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        padding: 0px 6px;
-        margin: 0;
-        line-height: 1.2;
-        cursor: pointer;
-        font-size: 12px;
-        color: #333;
-        height: auto;
-        min-height: 18px;
+    .genieAnalytics-analytics-container .aggregation-checkbox-label,
+    /* Also apply when dropdown is in body */
+    .aggregation-dropdown-menu[data-instance-id] .aggregation-checkbox-label {
+        display: flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+        padding: 0px 6px !important;
+        margin: 0 !important;
+        line-height: 1.2 !important;
+        cursor: pointer !important;
+        font-size: 12px !important;
+        color: #333 !important;
+        height: auto !important;
+        min-height: 18px !important;
     }
 
-    .aggregation-checkbox-label:hover {
+    .genieAnalytics-analytics-container .aggregation-checkbox-label:hover {
         background: #f3f2f2;
     }
 
-    .aggregation-checkbox {
+    .genieAnalytics-analytics-container .aggregation-checkbox {
         margin: 0;
         padding: 0;
         height: 14px;
         width: 14px;
     }
 
-    .aggregation-checkbox-label .checkbox-text {
+    .genieAnalytics-analytics-container .aggregation-checkbox-label .checkbox-text {
         flex: 1;
     }
 
-    .chart-tooltip {
+    /* Chart tooltip - scoped to container (tooltips are fixed position but should be scoped) */
+    .genieAnalytics-analytics-container .chart-tooltip {
         position: fixed;
         background: rgba(0, 0, 0, 0.9);
         color: white;
@@ -14042,12 +14382,12 @@ class GenieAnalytics {
         backdrop-filter: blur(4px);
     }
 
-    .chart-tooltip strong {
+    .genieAnalytics-analytics-container .chart-tooltip strong {
         color: #ffffff;
         font-weight: 600;
     }
 
-    .chart-tooltip::before {
+    .genieAnalytics-analytics-container .chart-tooltip::before {
         content: '';
         position: absolute;
         top: 50%;
@@ -14057,13 +14397,15 @@ class GenieAnalytics {
         border-right-color: rgba(0, 0, 0, 0.9);
     }
 
-    .derived-metrics-controls {
+    /* Derived metrics controls are already scoped with genieAnalytics- prefix */
+    .genieAnalytics-analytics-container .genieAnalytics-derived-metrics-controls {
         display: flex;
         gap: 2px;
         margin-left: 6px;
     }
 
-    .add-derived-metric-btn, .save-derived-metric-btn {
+    .genieAnalytics-analytics-container .genieAnalytics-add-derived-metric-btn, 
+    .genieAnalytics-analytics-container .genieAnalytics-save-derived-metric-btn {
         background: transparent;
         border: 1px solid #ddd;
         border-radius: 3px;
@@ -14080,18 +14422,20 @@ class GenieAnalytics {
         justify-content: center;
     }
 
-    .add-derived-metric-btn:hover, .save-derived-metric-btn:hover {
+    .genieAnalytics-analytics-container .genieAnalytics-add-derived-metric-btn:hover, 
+    .genieAnalytics-analytics-container .genieAnalytics-save-derived-metric-btn:hover {
         background: #f0f0f0;
         border-color: #999;
         color: #333;
     }
 
-    .expression-part-container {
+    /* Expression part styles - scoped to container */
+    .genieAnalytics-analytics-container .expression-part-container {
         display: inline-block;
         margin: 1px;
     }
 
-    .expression-part {
+    .genieAnalytics-analytics-container .expression-part {
         display: inline-block;
         padding: 2px 6px;
         background: white;
@@ -14101,32 +14445,33 @@ class GenieAnalytics {
         font-size: 12px;
     }
 
-    .expression-part.operator {
+    .genieAnalytics-analytics-container .expression-part.operator {
         background: #e3f2fd;
         font-weight: bold;
         min-width: 24px;
         text-align: center;
     }
 
-    .expression-part-container .form-input {
+    .genieAnalytics-analytics-container .expression-part-container .form-input {
         font-size: 12px !important;
         padding: 2px 4px !important;
         min-width: 100px !important;
         height: 24px !important;
     }
 
-    /* Hide number input spinners */
-    .expression-part-container input[type="number"]::-webkit-outer-spin-button,
-    .expression-part-container input[type="number"]::-webkit-inner-spin-button {
+    /* Hide number input spinners - scoped to container */
+    .genieAnalytics-analytics-container .expression-part-container input[type="number"]::-webkit-outer-spin-button,
+    .genieAnalytics-analytics-container .expression-part-container input[type="number"]::-webkit-inner-spin-button {
         -webkit-appearance: none;
         margin: 0;
     }
 
-    .expression-part-container input[type="number"] {
+    .genieAnalytics-analytics-container .expression-part-container input[type="number"] {
         -moz-appearance: textfield;
     }
 `;
 document.head.appendChild(style);
+        }
 
 // Global functions for expression builder (called from onclick handlers in HTML)
 window.genieAnalyticsShowExpressionBuilder = function() {

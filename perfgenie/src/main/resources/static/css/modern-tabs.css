@@ -1,0 +1,448 @@
+/*
+ * Modern Tabs Component - Reusable CSS
+ * Copyright (c) 2022, Salesforce.com, Inc.
+ * All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
+ * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+ */
+
+/* Override any jQuery UI styles */
+.modern-tabs-container.ui-tabs,
+.modern-tabs-container.ui-widget,
+.modern-tabs-container.ui-widget-content {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+.modern-tabs-container .ui-tabs-nav,
+.modern-tabs-container ul.ui-tabs-nav {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* Override styles that hide tabs - ensure height is preserved */
+.modern-tabs-container ul li a,
+.modern-tabs-container ul li.modern-tabs-nav-item a,
+.modern-tabs-container .modern-tabs-nav li a,
+.modern-tabs-container .modern-tabs-nav-item a {
+    height: auto !important;
+    min-height: auto !important;
+    line-height: normal !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    display: block !important;
+}
+
+.modern-tabs-container .ui-tabs-nav li,
+.modern-tabs-container ul li.modern-tabs-nav-item {
+    height: auto !important;
+    min-height: auto !important;
+}
+
+.modern-tabs-container .ui-tabs-nav li a {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    height: auto !important;
+}
+
+/* Ensure tab buttons maintain proper height and padding even with overrides */
+/* These rules must be highly specific to override rules in tabsnew.ftl that use #canary-tabs */
+.modern-tabs-container .modern-tabs-nav-button,
+.modern-tabs-container ul li.modern-tabs-nav-item .modern-tabs-nav-button,
+.modern-tabs-container .modern-tabs-nav-item .modern-tabs-nav-button,
+.modern-tabs-container ul li a.modern-tabs-nav-button,
+.modern-tabs-container .modern-tabs-nav li a.modern-tabs-nav-button,
+.modern-tabs-container ul li.modern-tabs-nav-item a.modern-tabs-nav-button {
+    height: auto !important;
+    min-height: 30px !important;
+    line-height: 1.3 !important;
+    /* Override any padding-top/bottom: 0 rules that might affect height */
+    /* Use explicit padding to ensure proper button height */
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+}
+
+/* Additional high-specificity rules for common container IDs (like #canary-tabs) */
+#canary-tabs.modern-tabs-container .modern-tabs-nav-button,
+#canary-tabs.modern-tabs-container ul li.modern-tabs-nav-item .modern-tabs-nav-button,
+#canary-tabs.modern-tabs-container ul li a.modern-tabs-nav-button,
+#canary-tabs.modern-tabs-container .modern-tabs-nav li a.modern-tabs-nav-button,
+#canary-tabs.modern-tabs-container ul li.modern-tabs-nav-item a.modern-tabs-nav-button {
+    height: auto !important;
+    min-height: 30px !important;
+    line-height: 1.3 !important;
+    /* Override padding-top/bottom: 0 rules from tabsnew.ftl */
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+}
+
+/* Modern Flex-based Tab Container - Glass Room Effect */
+.modern-tabs-container {
+    display: none !important; /* Hidden by default */
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Show tabs container when it has the visible class */
+.modern-tabs-container.visible {
+    display: flex !important;
+}
+
+/* Show specific tabs containers that should always be visible */
+#tabs.modern-tabs-container,
+#canary-tabs.modern-tabs-container {
+    display: flex !important;
+    /* Glass Room Effect - Enhanced transparency with embossing */
+    background: rgba(255, 255, 255, 0.05) !important;
+    background-image: 
+        linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 50%, rgba(255, 255, 255, 0.12) 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
+    /* Strong glass room effect with heavy backdrop blur */
+    backdrop-filter: blur(30px) saturate(200%) brightness(1.1);
+    -webkit-backdrop-filter: blur(30px) saturate(200%) brightness(1.1);
+    /* Visible glass edges - more pronounced */
+    border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
+    border-radius: 12px !important;
+    /* Enhanced embossed shadows with glass room depth */
+    box-shadow: 
+        /* Outer glow - glass room effect */
+        0 8px 32px rgba(0, 0, 0, 0.15),
+        0 4px 16px rgba(255, 255, 255, 0.1),
+        /* Embossed inset highlights */
+        inset 0 2px 4px rgba(255, 255, 255, 0.5),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.1),
+        /* Glass reflection effect */
+        inset 0 0 30px rgba(255, 255, 255, 0.1),
+        /* Depth shadow */
+        0 2px 8px rgba(0, 0, 0, 0.08) !important;
+    padding: 16px !important;
+    box-sizing: border-box;
+    /* Dominating text - ensure text is prominent */
+    color: #1a1a1a !important;
+    font-weight: 600 !important;
+}
+
+/* Ensure text inside is dominating and visible */
+.modern-tabs-container * {
+    color: inherit;
+}
+
+/* Make tab button text more prominent */
+.modern-tabs-container .modern-tabs-nav-button {
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Show tabs container when visible class is added */
+.modern-tabs-container.visible {
+    display: flex !important;
+}
+
+/* Feature Card Selection - Modern Button Look */
+.modern-tabs-nav {
+    display: flex !important;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 0 0 12px 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+    background: #fafbfc !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Individual Feature Button */
+.modern-tabs-nav-item {
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+    background: transparent !important;
+    border: none !important;
+    float: none !important;
+}
+
+.modern-tabs-nav-button {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    /* Use explicit padding values to ensure proper height */
+    /* Vertical padding: 4px top + 4px bottom = 8px total vertical padding */
+    /* With font-size 13.5px and line-height 1.3, this gives us ~17.5px text height + 8px padding = ~25.5px */
+    /* min-height 30px ensures minimum button height */
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    /* Default state: Same glassmorphism as active tabs (will be overridden by active class) */
+    /* Glassmorphism background with blue tint */
+    background: rgba(90, 159, 212, 0.35) !important;
+    background-image: 
+        linear-gradient(135deg, rgba(90, 159, 212, 0.4) 0%, rgba(127, 192, 232, 0.3) 50%, rgba(90, 159, 212, 0.4) 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+    /* Glassy effect with backdrop blur */
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    /* Visible edges - matching active tabs */
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    border-radius: 8px !important;
+    /* Shadow matching active tabs style */
+    box-shadow: 
+        0 4px 16px rgba(90, 159, 212, 0.4),
+        0 2px 8px rgba(90, 159, 212, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+    color: #ffffff !important;
+    font-weight: 500 !important;
+    text-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.3),
+        0 0 8px rgba(90, 159, 212, 0.5),
+        0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none !important;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    float: none !important;
+    margin: 0 !important;
+    height: auto !important;
+    min-height: 30px !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+    font-size: 13.5px !important;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+
+/* Inactive tabs: Apply grayscale filter and reduced opacity (matching modern-button:disabled style) */
+.modern-tabs-nav-button:not(.active) {
+    opacity: 0.6 !important;
+    filter: grayscale(100%) !important;
+    -webkit-filter: grayscale(100%) !important;
+    /* Text styling matching inactive modern-button */
+    font-weight: 500 !important;
+    /* Reduce text-shadow glow to prevent blurriness (matching inactive button appearance) */
+    text-shadow: 
+        0 1px 2px rgba(0, 0, 0, 0.3),
+        0 0 4px rgba(128, 128, 128, 0.3),
+        0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Hide card sections for button look */
+.modern-tabs-nav-button .card-header,
+.modern-tabs-nav-button .card-footer,
+.modern-tabs-nav-button .card-description,
+.modern-tabs-nav-button .card-action {
+    display: none !important;
+}
+
+/* Show only title as button text */
+.modern-tabs-nav-button .card-title {
+    font-size: 13.5px !important;
+    font-weight: 600;
+    color: inherit;
+    margin: 0;
+    line-height: 1.3;
+    display: block;
+    position: relative;
+    z-index: 1;
+}
+
+/* Hover State - Enhanced glassmorphism for inactive tabs */
+.modern-tabs-nav-button:hover:not(.active) {
+    /* Keep grayscale filter but slightly increase opacity on hover */
+    opacity: 0.7 !important;
+    filter: grayscale(100%) !important;
+    -webkit-filter: grayscale(100%) !important;
+    /* Text styling matching inactive modern-button (font-weight 500) */
+    font-weight: 500 !important;
+    /* Enhanced glassmorphism background (still with blue base, but grayscale filter applied) */
+    background: rgba(90, 159, 212, 0.45) !important;
+    background-image: 
+        linear-gradient(135deg, rgba(90, 159, 212, 0.5) 0%, rgba(127, 192, 232, 0.4) 50%, rgba(90, 159, 212, 0.5) 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%) !important;
+    /* Glassy effect with backdrop blur */
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    /* Enhanced border */
+    border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+    border-radius: 8px !important;
+    /* Enhanced shadow */
+    box-shadow: 
+        0 6px 20px rgba(90, 159, 212, 0.5),
+        0 3px 10px rgba(90, 159, 212, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+    /* Text styling matching inactive modern-button - reduced shadow to prevent blurriness */
+    color: #ffffff !important;
+    text-shadow: 
+        0 1px 2px rgba(0, 0, 0, 0.3),
+        0 0 4px rgba(128, 128, 128, 0.3),
+        0 1px 2px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(-1px);
+}
+
+/* Active State - iPhone 16 Glassmorphism Style */
+.modern-tabs-nav-button.active {
+    /* Remove grayscale filter and restore full opacity for active tab */
+    opacity: 1 !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+    /* Glassmorphism background with blue tint */
+    background: rgba(90, 159, 212, 0.35) !important;
+    background-image: 
+        linear-gradient(135deg, rgba(90, 159, 212, 0.4) 0%, rgba(127, 192, 232, 0.3) 50%, rgba(90, 159, 212, 0.4) 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+    /* Glassy effect with backdrop blur */
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    /* Visible edges - matching submit button (no double line) */
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    border-radius: 8px !important;
+    /* Shadow matching submit button - no double line effect */
+    box-shadow: 
+        0 4px 16px rgba(90, 159, 212, 0.4),
+        0 2px 8px rgba(90, 159, 212, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+    /* Dominating text - bright white with strong shadow */
+    color: #ffffff !important;
+    font-weight: 500 !important;
+    text-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.3),
+        0 0 8px rgba(90, 159, 212, 0.5),
+        0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(-1px);
+}
+
+/* Active State Hover - Enhanced glassmorphism */
+.modern-tabs-nav-button.active:hover {
+    /* Enhanced glassmorphism background with blue tint */
+    background: rgba(90, 159, 212, 0.45) !important;
+    background-image: 
+        linear-gradient(135deg, rgba(90, 159, 212, 0.5) 0%, rgba(127, 192, 232, 0.4) 50%, rgba(90, 159, 212, 0.5) 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%) !important;
+    /* Glassy effect with backdrop blur */
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    /* Enhanced border */
+    border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+    border-radius: 8px !important;
+    /* Enhanced shadow */
+    box-shadow: 
+        0 6px 20px rgba(90, 159, 212, 0.5),
+        0 3px 10px rgba(90, 159, 212, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+    /* Dominating text - bright white with strong shadow */
+    color: #ffffff !important;
+    font-weight: 500 !important;
+    text-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.3),
+        0 0 8px rgba(90, 159, 212, 0.5),
+        0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(-1px);
+}
+
+.modern-tabs-nav-button.active .card-title {
+    color: #ffffff !important;
+    font-weight: 500 !important;
+    text-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.3),
+        0 0 8px rgba(90, 159, 212, 0.5),
+        0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Ensure text is visible on active state */
+.modern-tabs-nav-button.active,
+.modern-tabs-nav-button.active * {
+    color: #ffffff !important;
+    font-weight: 500 !important;
+}
+
+/* Active hover text styling (same as active, but ensures consistency) */
+.modern-tabs-nav-button.active:hover .card-title {
+    color: #ffffff !important;
+    font-weight: 500 !important;
+    text-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.3),
+        0 0 8px rgba(90, 159, 212, 0.5),
+        0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.modern-tabs-nav-button.active:hover,
+.modern-tabs-nav-button.active:hover * {
+    color: #ffffff !important;
+    font-weight: 500 !important;
+}
+
+/* Override any inline styles or other CSS - iPhone 16 Glassmorphism */
+.modern-tabs-nav-button.active[style] {
+    background: rgba(90, 159, 212, 0.35) !important;
+    background-image: 
+        linear-gradient(135deg, rgba(90, 159, 212, 0.4) 0%, rgba(127, 192, 232, 0.3) 50%, rgba(90, 159, 212, 0.4) 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    border-radius: 8px !important;
+    box-shadow: 
+        0 4px 16px rgba(90, 159, 212, 0.4),
+        0 2px 8px rgba(90, 159, 212, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+    color: #ffffff !important;
+    font-weight: 500 !important;
+    text-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.3),
+        0 0 8px rgba(90, 159, 212, 0.5),
+        0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Remove active badge for button look */
+.modern-tabs-nav-button.active::before {
+    display: none;
+}
+
+/* Tab Content Container */
+.modern-tabs-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    position: relative;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Individual Tab Panel */
+.modern-tab-panel {
+    display: none;
+    width: 100%;
+    padding: 0;
+    animation: fadeIn 0.2s ease-in;
+}
+
+.modern-tab-panel.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+

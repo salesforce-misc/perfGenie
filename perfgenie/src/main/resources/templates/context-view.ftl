@@ -1,14 +1,29 @@
+<link rel="stylesheet" href="/css/modern-accordion.css">
+<script src="/js/modern-accordion.js"></script>
 <script type="text/javascript" class="init">
+    /**
+     * Initialize context data view accordion - uses shared modern accordion component
+     */
+    function initContextDataViewAccordion() {
+        // Use shared accordion component, start collapsed (false)
+        initModernAccordion('contextdataview-header', 'contextdataview-content', false);
+    }
+    
     $(function () {
-        $("#contextdataview").accordion({
-            collapsible: true,
-            heightStyle: "content"
-        });
+        // Initialize accordion - script is loaded via script tag
+        // Small delay to ensure DOM is fully ready
+        setTimeout(function() {
+            initContextDataViewAccordion();
+        }, 50);
     });
 </script>
-<div style="" id="contextdataview">
-    <h3 style="width:100%;padding-top: 2px !important;padding-bottom: 2px !important;">Context / Diagnostics data explorer</h3>
-    <div style="padding-left: 23px;padding-top: 10px;padding-bottom: 0px;" id="context-view-panel" class="col-lg-12">
+<div id="contextdataview" class="modern-accordion">
+    <div class="modern-accordion-header" id="contextdataview-header">
+        <i class="fa fa-chevron-down modern-accordion-icon"></i>
+        <span>Context / Diagnostics data explorer</span>
+    </div>
+    <div class="modern-accordion-content" id="contextdataview-content">
+        <div style="padding-left: 23px;padding-top: 10px;padding-bottom: 0px;" id="context-view-panel" class="col-lg-12">
 
         <span id="filter-view-status" style="" class="hide"></span>
         <div id="contextviewpanel" class="hide">
@@ -47,5 +62,6 @@
                 </div>
             </div>
         </div>
+    </div>
     </div>
 </div>

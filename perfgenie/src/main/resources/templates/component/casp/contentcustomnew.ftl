@@ -15,7 +15,7 @@
 
         <td style="padding: 10px;border: none;align-items:center;">
             <button onclick="processCanary()" id="submit-canary-input" style="alignment:center;height:30px"
-                    class="ui-button ui-widget ui-corner-all" disabled>Process
+                    class="modern-button modern-button-green ui-button ui-widget ui-corner-all" disabled>Process
             </button>
         </td>
     </tr>

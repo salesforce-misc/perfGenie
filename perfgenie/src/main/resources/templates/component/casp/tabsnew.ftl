@@ -52,343 +52,17 @@
         height: auto !important;
     }
     
-    /* Modern Flex-based Tab Container - Glass Room Effect */
-    .modern-tabs-container,
-    #canary-tabs.modern-tabs-container {
-        display: none !important; /* Hidden by default */
-        flex-direction: column;
-        width: 100%;
-        /* Glass Room Effect - Enhanced transparency with embossing */
-        background: rgba(255, 255, 255, 0.05) !important;
-        background-image: 
-            linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 50%, rgba(255, 255, 255, 0.12) 100%),
-            linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
-        /* Strong glass room effect with heavy backdrop blur */
-        backdrop-filter: blur(30px) saturate(200%) brightness(1.1);
-        -webkit-backdrop-filter: blur(30px) saturate(200%) brightness(1.1);
-        /* Visible glass edges - more pronounced */
-        border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
-        border-radius: 12px !important;
-        /* Enhanced embossed shadows with glass room depth */
-        box-shadow: 
-            /* Outer glow - glass room effect */
-            0 8px 32px rgba(0, 0, 0, 0.15),
-            0 4px 16px rgba(255, 255, 255, 0.1),
-            /* Embossed inset highlights */
-            inset 0 2px 4px rgba(255, 255, 255, 0.5),
-            inset 0 -2px 4px rgba(0, 0, 0, 0.1),
-            /* Glass reflection effect */
-            inset 0 0 30px rgba(255, 255, 255, 0.1),
-            /* Depth shadow */
-            0 2px 8px rgba(0, 0, 0, 0.08) !important;
-        padding: 16px !important;
-        box-sizing: border-box;
-        /* Dominating text - ensure text is prominent */
-        color: #1a1a1a !important;
-        font-weight: 600 !important;
-    }
-    
-    /* Ensure text inside is dominating and visible */
-    .modern-tabs-container *,
-    #canary-tabs.modern-tabs-container * {
-        color: inherit;
-    }
-    
-    /* Make tab button text more prominent */
-    .modern-tabs-container .modern-tabs-nav-button,
-    #canary-tabs.modern-tabs-container .modern-tabs-nav-button {
+    /* Make accordion header text prominent (when inside tabs container) - only for active state */
+    .modern-tabs-container .modern-accordion-header.active,
+    #canary-tabs.modern-tabs-container .modern-accordion-header.active,
+    .modern-tabs-container #canary-dataview-header.active,
+    #canary-tabs.modern-tabs-container #canary-dataview-header.active {
         font-weight: 700 !important;
         text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
     }
     
-    /* Make accordion header text prominent */
-    .modern-tabs-container .modern-accordion-header,
-    #canary-tabs.modern-tabs-container .modern-accordion-header,
-    .modern-tabs-container #canary-dataview-header,
-    #canary-tabs.modern-tabs-container #canary-dataview-header {
-        font-weight: 700 !important;
-        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
-    }
-    
-    /* Show tabs container when visible class is added */
-    .modern-tabs-container.visible,
-    #canary-tabs.modern-tabs-container.visible {
-        display: flex !important;
-    }
-    
-    /* Feature Card Selection - Modern Button Look */
-    .modern-tabs-nav,
-    #canary-tabs .modern-tabs-nav,
-    #canary-tabs ul.modern-tabs-nav {
-        display: flex !important;
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin: 0 0 12px 0 !important;
-        padding: 0 !important;
-        list-style: none !important;
-        background: #fafbfc !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-    
-    /* Individual Feature Button */
-    .modern-tabs-nav-item,
-    #canary-tabs .modern-tabs-nav-item,
-    #canary-tabs ul li.modern-tabs-nav-item {
-        margin: 0 !important;
-        padding: 0 !important;
-        list-style: none !important;
-        background: transparent !important;
-        border: none !important;
-        float: none !important;
-    }
-    
-    .modern-tabs-nav-button,
-    #canary-tabs .modern-tabs-nav-button,
-    #canary-tabs a.modern-tabs-nav-button,
-    #canary-tabs ul li a.modern-tabs-nav-button {
-        display: inline-flex !important;
-        align-items: center;
-        justify-content: center;
-        padding: 4px 14px !important;
-        background: #f1f5f9 !important;
-        border: none !important;
-        border-radius: 6px !important;
-        color: #475569 !important;
-        cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        text-decoration: none !important;
-        box-sizing: border-box;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
-        position: relative;
-        overflow: hidden;
-        float: none !important;
-        margin: 0 !important;
-        height: auto !important;
-        min-height: 30px !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-        font-size: 13.5px !important;
-        font-weight: 600;
-        letter-spacing: 0.01em;
-        white-space: nowrap;
-    }
-    
-    
-    /* Hide card sections for button look */
-    .modern-tabs-nav-button .card-header,
-    .modern-tabs-nav-button .card-footer,
-    .modern-tabs-nav-button .card-description,
-    .modern-tabs-nav-button .card-action {
-        display: none !important;
-    }
-    
-    /* Show only title as button text */
-    .modern-tabs-nav-button .card-title {
-        font-size: 13.5px !important;
-        font-weight: 600;
-        color: inherit;
-        margin: 0;
-        line-height: 1.3;
-        display: block;
-        position: relative;
-        z-index: 1;
-    }
-    
-    /* Hover State */
-    .modern-tabs-nav-button:hover,
-    #canary-tabs .modern-tabs-nav-button:hover,
-    #canary-tabs a.modern-tabs-nav-button:hover {
-        background: #e2e8f0 !important;
-        border: none !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-        color: #1e293b !important;
-        transform: translateY(-1px);
-    }
-    
-    /* Active State - iPhone 16 Glassmorphism Style (default, like submit button default) */
-    .modern-tabs-nav-button.active,
-    #canary-tabs .modern-tabs-nav-button.active,
-    #canary-tabs a.modern-tabs-nav-button.active,
-    #canary-tabs ul li a.modern-tabs-nav-button.active,
-    a.modern-tabs-nav-button.active {
-        /* Glassmorphism background with blue tint */
-        background: rgba(90, 159, 212, 0.25) !important;
-        background-image: 
-            linear-gradient(135deg, rgba(90, 159, 212, 0.3) 0%, rgba(127, 192, 232, 0.2) 50%, rgba(90, 159, 212, 0.3) 100%),
-            linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
-        /* Glassy effect with backdrop blur */
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        /* Visible edges - matching submit button (no double line) */
-        border: 1px solid rgba(255, 255, 255, 0.5) !important;
-        border-radius: 8px !important;
-        /* Shadow matching submit button - no double line effect */
-        box-shadow: 
-            0 4px 16px rgba(90, 159, 212, 0.4),
-            0 2px 8px rgba(90, 159, 212, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.6),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
-        /* Dominating text - bright white with strong shadow */
-        color: #ffffff !important;
-        font-weight: 700 !important;
-        text-shadow: 
-            0 1px 3px rgba(0, 0, 0, 0.3),
-            0 0 8px rgba(90, 159, 212, 0.5),
-            0 2px 4px rgba(0, 0, 0, 0.2) !important;
-        transform: translateY(-1px);
-    }
-    
-    /* Active State Hover - Enhanced glassmorphism (like submit button hover) */
-    .modern-tabs-nav-button.active:hover,
-    #canary-tabs .modern-tabs-nav-button.active:hover,
-    #canary-tabs a.modern-tabs-nav-button.active:hover,
-    #canary-tabs ul li a.modern-tabs-nav-button.active:hover,
-    a.modern-tabs-nav-button.active:hover {
-        /* Enhanced glassmorphism background with blue tint */
-        background: rgba(90, 159, 212, 0.35) !important;
-        background-image: 
-            linear-gradient(135deg, rgba(90, 159, 212, 0.4) 0%, rgba(127, 192, 232, 0.3) 50%, rgba(90, 159, 212, 0.4) 100%),
-            linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%) !important;
-        /* Glassy effect with backdrop blur */
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        /* Enhanced border */
-        border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
-        border-radius: 8px !important;
-        /* Enhanced shadow */
-        box-shadow: 
-            0 6px 20px rgba(90, 159, 212, 0.5),
-            0 3px 10px rgba(90, 159, 212, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.7),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
-        /* Dominating text - bright white with strong shadow */
-        color: #ffffff !important;
-        font-weight: 700 !important;
-        text-shadow: 
-            0 1px 3px rgba(0, 0, 0, 0.3),
-            0 0 8px rgba(90, 159, 212, 0.5),
-            0 2px 4px rgba(0, 0, 0, 0.2) !important;
-        transform: translateY(-1px);
-    }
-    
-    .modern-tabs-nav-button.active .card-title,
-    #canary-tabs .modern-tabs-nav-button.active .card-title,
-    #canary-tabs a.modern-tabs-nav-button.active .card-title {
-        color: #ffffff !important;
-        font-weight: 700 !important;
-        text-shadow: 
-            0 1px 3px rgba(0, 0, 0, 0.3),
-            0 0 8px rgba(90, 159, 212, 0.5),
-            0 2px 4px rgba(0, 0, 0, 0.2) !important;
-    }
-    
-    /* Ensure text is visible on active state */
-    .modern-tabs-nav-button.active,
-    .modern-tabs-nav-button.active *,
-    #canary-tabs .modern-tabs-nav-button.active,
-    #canary-tabs .modern-tabs-nav-button.active *,
-    a.modern-tabs-nav-button.active,
-    a.modern-tabs-nav-button.active * {
-        color: #ffffff !important;
-        font-weight: 700 !important;
-    }
-    
-    /* Active hover text styling (same as active, but ensures consistency) */
-    .modern-tabs-nav-button.active:hover .card-title,
-    #canary-tabs .modern-tabs-nav-button.active:hover .card-title,
-    #canary-tabs a.modern-tabs-nav-button.active:hover .card-title {
-        color: #ffffff !important;
-        font-weight: 700 !important;
-        text-shadow: 
-            0 1px 3px rgba(0, 0, 0, 0.3),
-            0 0 8px rgba(90, 159, 212, 0.5),
-            0 2px 4px rgba(0, 0, 0, 0.2) !important;
-    }
-    
-    .modern-tabs-nav-button.active:hover,
-    .modern-tabs-nav-button.active:hover *,
-    #canary-tabs .modern-tabs-nav-button.active:hover,
-    #canary-tabs .modern-tabs-nav-button.active:hover *,
-    a.modern-tabs-nav-button.active:hover,
-    a.modern-tabs-nav-button.active:hover * {
-        color: #ffffff !important;
-        font-weight: 700 !important;
-    }
-    
-    /* Override any inline styles or other CSS - iPhone 16 Glassmorphism (matching submit button) */
-    .modern-tabs-nav-button.active[style],
-    #canary-tabs .modern-tabs-nav-button.active[style] {
-        background: rgba(90, 159, 212, 0.25) !important;
-        background-image: 
-            linear-gradient(135deg, rgba(90, 159, 212, 0.3) 0%, rgba(127, 192, 232, 0.2) 50%, rgba(90, 159, 212, 0.3) 100%),
-            linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
-        backdrop-filter: blur(20px) saturate(180%) !important;
-        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-        border: 1px solid rgba(255, 255, 255, 0.5) !important;
-        border-radius: 8px !important;
-        box-shadow: 
-            0 4px 16px rgba(90, 159, 212, 0.4),
-            0 2px 8px rgba(90, 159, 212, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.6),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
-        color: #ffffff !important;
-        font-weight: 700 !important;
-        text-shadow: 
-            0 1px 3px rgba(0, 0, 0, 0.3),
-            0 0 8px rgba(90, 159, 212, 0.5),
-            0 2px 4px rgba(0, 0, 0, 0.2) !important;
-    }
-    
-    /* Remove active badge for button look */
-    .modern-tabs-nav-button.active::before {
-        display: none;
-    }
-    
-    /* Tab Content Container */
-    .modern-tabs-content {
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-        position: relative;
-        padding: 0;
-        box-sizing: border-box;
-    }
-    
-    /* Individual Tab Panel */
-    .modern-tab-panel {
-        display: none;
-        width: 100%;
-        padding: 0;
-        animation: fadeIn 0.2s ease-in;
-    }
-    
-    .modern-tab-panel.active {
-        display: block;
-    }
-    
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
-        }
-    }
-    
-    /* Modern Accordion Styles */
-    .modern-accordion {
-        display: none !important; /* Hidden by default */
-        flex-direction: column;
-        width: 100%;
-        border: none;
-        border-radius: 0 !important;
-        background: #ffffff;
-        margin-bottom: 16px;
-        overflow: hidden;
-    }
+    /* Accordion visibility rules - specific to tabsnew.ftl */
+    /* All other accordion styles are in modern-accordion.css */
     
     /* Show accordion when visible class is added - higher specificity to override default */
     #canary-dataview.visible,
@@ -402,145 +76,9 @@
         display: flex !important;
     }
     
-    .modern-accordion-header,
-    #canary-dataview-header {
-        display: flex !important;
-        align-items: center;
-        justify-content: flex-start;
-        gap: 8px;
-        padding: 4px 14px !important;
-        /* Glassmorphism effect - matching inactive tabs */
-        background: #f1f5f9 !important;
-        border: none !important;
-        border-radius: 6px !important;
-        cursor: pointer;
-        user-select: none;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-        font-weight: 600;
-        color: #475569 !important;
-        height: auto !important;
-        min-height: 30px !important;
-        box-sizing: border-box !important;
-        line-height: 1.3 !important;
-        font-size: 13.5px !important;
-        letter-spacing: 0.01em;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
-    }
-    
-    /* Override inline styles on inner span */
-    #canary-dataview-header span,
-    .modern-accordion-header span {
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-        line-height: 1.3 !important;
-        font-size: 13.5px !important;
-        font-weight: 600;
-    }
-    
-    .modern-accordion-header:hover,
-    #canary-dataview-header:hover {
-        /* Matching tab hover state */
-        background: #e2e8f0 !important;
-        border: none !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-        color: #1e293b !important;
-        transform: translateY(-1px);
-    }
-    
-    .modern-accordion-header.active,
-    .modern-accordion-header.active:hover,
-    #canary-dataview-header.active,
-    #canary-dataview-header.active:hover {
-        /* Glassmorphism effect - matching active tabs */
-        background: rgba(90, 159, 212, 0.25) !important;
-        background-image: 
-            linear-gradient(135deg, rgba(90, 159, 212, 0.3) 0%, rgba(127, 192, 232, 0.2) 50%, rgba(90, 159, 212, 0.3) 100%),
-            linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
-        /* Glassy effect with backdrop blur */
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        /* Visible edges - matching active tabs */
-        border: 1px solid rgba(255, 255, 255, 0.5) !important;
-        border-radius: 8px !important;
-        /* Shadow in between tabs and reduced (moderate for accordion) */
-        box-shadow: 
-            0 3px 12px rgba(90, 159, 212, 0.3),
-            0 1.5px 6px rgba(90, 159, 212, 0.22),
-            inset 0 1px 0 rgba(255, 255, 255, 0.55),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.09) !important;
-        /* Dominating text - bright white with strong shadow */
-        color: #ffffff !important;
-        font-weight: 700 !important;
-        text-shadow: 
-            0 1px 3px rgba(0, 0, 0, 0.3),
-            0 0 8px rgba(90, 159, 212, 0.5),
-            0 2px 4px rgba(0, 0, 0, 0.2) !important;
-        transform: translateY(-1px);
-    }
-    
-    .modern-accordion-header.active *,
-    #canary-dataview-header.active * {
-        color: #ffffff !important;
-        font-weight: 700 !important;
-    }
-    
-    .modern-accordion-header.active .modern-accordion-icon,
-    #canary-dataview-header.active .modern-accordion-icon {
-        color: #ffffff !important;
-        font-size: 10px;
-    }
-    
-    /* Ensure span text matches active tab text styling (exclude icon) */
-    .modern-accordion-header.active span:not(.modern-accordion-icon),
-    #canary-dataview-header.active span:not(.modern-accordion-icon) {
-        font-weight: 700 !important;
-        text-shadow: 
-            0 1px 3px rgba(0, 0, 0, 0.3),
-            0 0 8px rgba(90, 159, 212, 0.5),
-            0 2px 4px rgba(0, 0, 0, 0.2) !important;
-    }
-    
-    .modern-accordion-icon {
-        transition: transform 0.2s ease;
-        color: #6b7280;
-        font-size: 10px;
-        order: -1;
-        flex-shrink: 0;
-        width: 12px;
-        text-align: center;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .modern-accordion-header.active .modern-accordion-icon {
-        transform: rotate(180deg);
-    }
-    
-    .modern-accordion-content {
-        height: 0;
-        overflow: hidden;
-        padding: 0 16px;
-        background: #ffffff;
-        transition: height 0.35s ease-in-out,
-                    padding-top 0.35s ease-in-out,
-                    padding-bottom 0.35s ease-in-out;
-    }
-    
+    /* File-specific content padding override */
     #canary-dataview-content {
         padding: 0 8px;
-    }
-    
-    .modern-accordion-content.active {
-        /* Height will be set dynamically by JavaScript */
-        padding-top: 16px;
-        padding-bottom: 16px;
-    }
-    
-    #canary-dataview-content.active {
-        padding-top: 8px;
-        padding-bottom: 8px;
     }
     
     /* Left Navigation Sidebar */
@@ -857,14 +395,8 @@
         /* Glassy effect with backdrop blur - stronger blur for transparency */
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
-        /* Embossed effect with inset shadows - smoother bottom edge */
-        box-shadow: 
-            inset 0 1px 2px rgba(255, 255, 255, 0.8),
-            inset 0 -1px 2px rgba(0, 0, 0, 0.05),
-            0 1px 3px rgba(0, 0, 0, 0.08),
-            0 0 0 1px rgba(90, 159, 212, 0.15),
-            inset 0 0 20px rgba(90, 159, 212, 0.03),
-            0 2px 6px rgba(0, 0, 0, 0.02);
+        /* Box shadow removed */
+        box-shadow: none !important;
         /* Subtle border with gradient effect - smoother bottom edge */
         border: none !important;
         /* Text styling - clean, professional look */
@@ -900,11 +432,7 @@
         background-image: 
             linear-gradient(135deg, rgba(235, 245, 255, 0.98) 0%, rgba(220, 235, 250, 0.96) 50%, rgba(235, 245, 255, 0.98) 100%),
             linear-gradient(180deg, rgba(90, 159, 212, 0.12) 0%, rgba(127, 192, 232, 0.08) 100%);
-        box-shadow: 
-            inset 0 1px 3px rgba(255, 255, 255, 0.9),
-            inset 0 -1px 2px rgba(0, 0, 0, 0.06),
-            0 2px 4px rgba(0, 0, 0, 0.1),
-            0 0 0 1px rgba(90, 159, 212, 0.2);
+        box-shadow: none !important;
     }
     
     /* Optional: Add a subtle animated shine effect */
@@ -957,60 +485,12 @@
         border-color: #adb5bd;
     }
     
-    /* Process Button Styling - Green glassmorphism to differentiate from tabs */
-    .ui-button.ui-widget.ui-corner-all,
-    #submit-canary-data {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-        padding: 4px 14px !important;
-        /* Default state - green glassmorphism (to differentiate from blue tabs) */
-        background: rgba(34, 197, 94, 0.25) !important;
-        background-image: 
-            linear-gradient(135deg, rgba(34, 197, 94, 0.3) 0%, rgba(74, 222, 128, 0.2) 50%, rgba(34, 197, 94, 0.3) 100%),
-            linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.5) !important;
-        border-radius: 8px !important;
-        box-shadow: 
-            0 4px 16px rgba(34, 197, 94, 0.4),
-            0 2px 8px rgba(34, 197, 94, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.6),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
-        color: #ffffff !important;
-        font-size: 13.5px !important;
-        font-weight: 700 !important;
-        cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        height: 30px;
-        min-height: 30px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        box-sizing: border-box;
-        text-shadow: 
-            0 1px 3px rgba(0, 0, 0, 0.3),
-            0 0 8px rgba(34, 197, 94, 0.5),
-            0 2px 4px rgba(0, 0, 0, 0.2) !important;
-        letter-spacing: 0.01em;
-    }
+    /* Process Button Styling - Using modern-button component */
+    /* The modern-button component handles all styling via CSS classes */
+    /* Apply modern-button-green, modern-button-blue, etc. for different colors */
     
-    /* Hover state - enhanced green glassmorphism */
-    .ui-button.ui-widget.ui-corner-all:hover:not(:disabled),
-    #submit-canary-data:hover:not(:disabled) {
-        background: rgba(34, 197, 94, 0.35) !important;
-        background-image: 
-            linear-gradient(135deg, rgba(34, 197, 94, 0.4) 0%, rgba(74, 222, 128, 0.3) 50%, rgba(34, 197, 94, 0.4) 100%),
-            linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%) !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
-        box-shadow: 
-            0 6px 20px rgba(34, 197, 94, 0.5),
-            0 3px 10px rgba(34, 197, 94, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.7),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
-        transform: translateY(-1px);
-    }
-    
-    /* Disabled state - reduced opacity but keep green glassmorphism */
+    /* Disabled state for all modern buttons */
+    .modern-button:disabled,
     .ui-button.ui-widget.ui-corner-all:disabled,
     #submit-canary-data:disabled,
     #submit-perfswat-input:disabled,
@@ -1018,7 +498,6 @@
         opacity: 0.6 !important;
         cursor: not-allowed !important;
         pointer-events: none;
-        /* Grayscale filter for disabled state */
         filter: grayscale(100%) !important;
         -webkit-filter: grayscale(100%) !important;
     }
@@ -1043,6 +522,86 @@
     
     .main-content-wrapper.sidebar-collapsed {
         margin-left: 22px;
+    }
+    
+    /* Header styling when sidebar is collapsed - fixed at top with logo */
+    .main-content-wrapper.sidebar-collapsed .data-view-header-placeholder {
+        display: flex !important;
+        position: fixed;
+        top: 0;
+        left: 22px;
+        right: 0;
+        z-index: 999;
+        height: 44px;
+        align-items: center;
+        padding: 0;
+        margin: 0;
+        /* Match nav background color */
+        background: #2d5a8f !important;
+        background-image: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        /* White text */
+        color: #ffffff !important;
+    }
+    
+    /* Header styling when sidebar is expanded - normal display */
+    .main-content-wrapper:not(.sidebar-collapsed) .data-view-header-placeholder {
+        display: flex;
+        position: relative;
+        height: 44px;
+        width: 100%;
+        margin-bottom: 4px;
+    }
+    
+    /* Hide logo section when sidebar is expanded */
+    .main-content-wrapper:not(.sidebar-collapsed) .collapsed-header-logo {
+        display: none;
+    }
+    
+    /* Logo and title in collapsed header */
+    .main-content-wrapper.sidebar-collapsed .collapsed-header-logo {
+        display: flex;
+        align-items: center;
+        width: 200px;
+        height: 44px;
+        padding-left: 8px;
+        background: #2d5a8f !important;
+        flex-shrink: 0;
+    }
+    
+    .main-content-wrapper.sidebar-collapsed .collapsed-header-logo img {
+        height: 60%;
+        width: auto;
+        margin-right: 4px;
+    }
+    
+    .main-content-wrapper.sidebar-collapsed .collapsed-header-logo .collapsed-header-title {
+        font-family: 'Tangerine', cursive;
+        font-size: 32px;
+        color: white;
+        font-weight: bold;
+        margin-left: 4px;
+    }
+    
+    /* Page title on the right side */
+    .main-content-wrapper.sidebar-collapsed .data-view-header-placeholder > span {
+        flex: 1;
+        padding: 0 16px;
+        display: flex;
+        align-items: center;
+        height: 100%;
+        color: #ffffff !important;
+    }
+    
+    /* Add top padding to page content when sidebar is collapsed to account for fixed header + 2px space */
+    .main-content-wrapper.sidebar-collapsed .page-content {
+        padding-top: 46px; /* 44px header height + 2px space */
+    }
+    
+    /* Add space after collapsed header - target the element that comes after data-view-header-placeholder */
+    .main-content-wrapper.sidebar-collapsed .page-content.active .data-view-header-placeholder + * {
+        margin-top: 2px;
     }
     
     .page-content {
@@ -1136,10 +695,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.0.4/popper.js"></script>
 
 <link rel="stylesheet" href="/css/profiler.css">
+<link rel="stylesheet" href="/css/modern-accordion.css">
+<link rel="stylesheet" href="/css/modern-button.css">
+<link rel="stylesheet" href="/css/modern-tabs.css">
 <script src="/js/SFlameGraph.js"></script>
 <script src="/js/input.js"></script>
 <script src="/js/utils.js"></script>
 <link rel="stylesheet" href="/css/SFlameGraph.css">
+<script src="/js/modern-accordion.js"></script>
+<script src="/js/modern-tabs.js"></script>
 
 <link rel="stylesheet" type="text/css" href="/plugins/dataTables.jqueryui.min.css"/>
 <script type="text/javascript" src="/plugins/jquery.dataTables.min.js"></script>
@@ -1166,6 +730,12 @@
 * SPDX-License-Identifier: BSD-3-Clause
 * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
 */
+    
+    // Store reference to component function BEFORE any variable assignments that might shadow it
+    // This must be done before we create our local initModernTabs variable
+    var componentInitModernTabsFunction = (typeof window !== 'undefined' && typeof window.initModernTabs === 'function') 
+        ? window.initModernTabs 
+        : null;
     
     // Track if initialization has been done
     var tabsInitialized = false;
@@ -1195,7 +765,7 @@
         initModernTabs();
         
         // Initialize modern accordion
-        initModernAccordion();
+        initCanaryDataViewAccordion();
         
         // Initialize datetime pickers
         initDateTimePickers();
@@ -1302,285 +872,73 @@
     }
     
     /**
-     * Initialize modern flex-based tabs
+     * Initialize modern tabs using the reusable component
+     * Note: This wrapper function calls window.initModernTabs from modern-tabs.js
+     * We use a function expression (not declaration) to avoid hoisting issues
+     * and explicitly reference window.initModernTabs to get the component function
      */
-    function initModernTabs() {
-        const tabButtons = document.querySelectorAll('.modern-tabs-nav-button');
-        const tabPanels = document.querySelectorAll('.modern-tab-panel');
+    var initModernTabs = function() {
+        // Use the stored reference to the component function (captured before variable assignment)
+        var componentFunction = componentInitModernTabsFunction;
         
-        if (tabButtons.length === 0 || tabPanels.length === 0) {
-            console.warn('Tab buttons or panels not found');
-            return;
-        }
-        
-        // Check URL for canarytab parameter
-        const urlTabId = getUrlParameter('canarytab');
-        let tabToActivate = null;
-        
-        if (urlTabId) {
-            // Validate that the tab exists
-            const targetPanel = document.getElementById(urlTabId);
-            if (targetPanel) {
-                tabToActivate = urlTabId;
-            } else {
-                console.warn('Tab from URL parameter not found:', urlTabId);
-            }
-        }
-        
-        // Set first tab as active by default if none is active and no URL parameter
-        const hasActive = Array.from(tabButtons).some(btn => btn.classList.contains('active'));
-        if (!hasActive && tabButtons.length > 0 && tabPanels.length > 0) {
-            if (tabToActivate) {
-                // Activate tab from URL parameter
-                switchTab(tabToActivate);
-                // Trigger updateCanaryView for the tab from URL
+        if (componentFunction && typeof componentFunction === 'function') {
+            // Store tabs API for global access
+            // Component automatically checks URL hash (#tabid) on load and updates hash when switching tabs
+            // Works like jQuery UI tabs - no urlParam needed
+            window.canaryTabsAPI = componentFunction('#canary-tabs', {
+                onTabChange: function(tabId) {
+                    // Call updateCanaryView when tab changes
                 if (typeof updateCanaryView === 'function') {
-                    setTimeout(() => updateCanaryView(tabToActivate), 50);
-                }
-            } else {
-                // Default to first tab
-                const firstButton = tabButtons[0];
-                firstButton.classList.add('active');
-                // Force apply iPhone 16 glassmorphism style via inline style
-                firstButton.style.background = 'rgba(90, 159, 212, 0.25)';
-                firstButton.style.backgroundImage = 'linear-gradient(135deg, rgba(90, 159, 212, 0.3) 0%, rgba(127, 192, 232, 0.2) 50%, rgba(90, 159, 212, 0.3) 100%), linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%)';
-                firstButton.style.backdropFilter = 'blur(20px) saturate(180%)';
-                firstButton.style.webkitBackdropFilter = 'blur(20px) saturate(180%)';
-                firstButton.style.border = '1px solid rgba(255, 255, 255, 0.5)';
-                firstButton.style.borderRadius = '8px';
-                firstButton.style.boxShadow = '0 4px 16px rgba(90, 159, 212, 0.4), 0 2px 8px rgba(90, 159, 212, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(0, 0, 0, 0.1)';
-                firstButton.style.color = '#ffffff';
-                firstButton.style.fontWeight = '700';
-                firstButton.style.textShadow = '0 1px 3px rgba(0, 0, 0, 0.3), 0 0 8px rgba(90, 159, 212, 0.5), 0 2px 4px rgba(0, 0, 0, 0.2)';
-                tabPanels[0].classList.add('active');
-                // Trigger updateCanaryView for initial tab
-                const firstTabId = tabPanels[0].id;
-                if (firstTabId && typeof updateCanaryView === 'function') {
-                    setTimeout(() => updateCanaryView(firstTabId), 50);
-                }
-            }
-        } else if (tabToActivate && !hasActive) {
-            // URL parameter exists but no tab is active yet
-            switchTab(tabToActivate);
-            if (typeof updateCanaryView === 'function') {
-                setTimeout(() => updateCanaryView(tabToActivate), 50);
-            }
-        }
-        
-        // Add click handlers to tab buttons
-        tabButtons.forEach((button, index) => {
-            // Get target ID before cloning
-            const targetId = button.getAttribute('href')?.substring(1) || 
-                           button.getAttribute('data-tab-target') ||
-                           tabPanels[index]?.id;
-            
-            if (!targetId) {
-                console.warn('No target ID found for tab button at index', index);
-                return;
-            }
-            
-            // Remove any existing click listeners by cloning
-            const newButton = button.cloneNode(true);
-            button.parentNode.replaceChild(newButton, button);
-            
-            // Add click handler to the new button with stored targetId
-            newButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                // Use the stored targetId
-                const clickedTargetId = this.getAttribute('href')?.substring(1) || 
-                                      this.getAttribute('data-tab-target') ||
-                                      targetId;
-                
-                if (!clickedTargetId) {
-                    console.warn('No target ID found for tab button', this);
-                    return;
-                }
-                
-                // Switch to the selected tab
-                switchTab(clickedTargetId);
-                
-                // Call updateCanaryView (preserving original functionality)
-                if (clickedTargetId && typeof updateCanaryView === 'function') {
-                    setTimeout(() => updateCanaryView(clickedTargetId), 50);
-                }
-                
-                // Trigger activate event (similar to jQuery UI tabs activate)
-                const tabsContainer = document.getElementById('canary-tabs');
-                if (tabsContainer) {
-                    const event = new CustomEvent('tabActivate', {
-                        detail: {
-                            newTab: clickedTargetId,
-                            newPanel: document.getElementById(clickedTargetId)
-                        }
-                    });
-                    tabsContainer.dispatchEvent(event);
+                        setTimeout(() => updateCanaryView(tabId), 50);
+                    }
+                    // Re-initialize datetime pickers when tab becomes visible
+                    setTimeout(function() {
+                        initDateTimePickers();
+                    }, 200);
                 }
             });
-        });
-    }
+        } else {
+            console.error('[ModernTabs] Component function not found. Make sure modern-tabs.js is loaded before this script.');
+            console.log('[ModernTabs] Debug info:', {
+                windowInitModernTabs: typeof window !== 'undefined' ? typeof window.initModernTabs : 'window undefined',
+                windowType: typeof window
+            });
+        }
+    };
     
     /**
-     * Switch to a specific tab
+     * Switch to a specific tab (wrapper for component API)
      * @param {string} tabId - The ID of the tab panel to show
      */
     function switchTab(tabId) {
-        if (!tabId) {
-            console.warn('switchTab called without tabId');
-            return;
-        }
-        
-        const tabButtons = document.querySelectorAll('.modern-tabs-nav-button');
-        const tabPanels = document.querySelectorAll('.modern-tab-panel');
-        
-        // Remove active class from all buttons and panels
-        tabButtons.forEach(btn => {
-            if (btn) {
-                btn.classList.remove('active');
-                // Force remove any inline styles that might override
-                btn.style.backgroundColor = '';
-                btn.style.background = '';
-                btn.style.backgroundImage = '';
-                btn.style.color = '';
-                btn.style.boxShadow = '';
-            }
-        });
-        tabPanels.forEach(panel => {
-            if (panel) panel.classList.remove('active');
-        });
-        
-        // Find and activate the target tab button
-        let buttonFound = false;
-        tabButtons.forEach(button => {
-            if (!button) return;
-            const targetId = button.getAttribute('href')?.substring(1) || 
-                           button.getAttribute('data-tab-target');
-            if (targetId === tabId) {
-                button.classList.add('active');
-                // Force apply iPhone 16 glassmorphism style via inline style as backup
-                button.style.background = 'rgba(90, 159, 212, 0.25)';
-                button.style.backgroundImage = 'linear-gradient(135deg, rgba(90, 159, 212, 0.3) 0%, rgba(127, 192, 232, 0.2) 50%, rgba(90, 159, 212, 0.3) 100%), linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%)';
-                button.style.backdropFilter = 'blur(20px) saturate(180%)';
-                button.style.webkitBackdropFilter = 'blur(20px) saturate(180%)';
-                button.style.border = '1px solid rgba(255, 255, 255, 0.5)';
-                button.style.borderRadius = '8px';
-                button.style.boxShadow = '0 4px 16px rgba(90, 159, 212, 0.4), 0 2px 8px rgba(90, 159, 212, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(0, 0, 0, 0.1)';
-                button.style.color = '#ffffff';
-                button.style.fontWeight = '700';
-                button.style.textShadow = '0 1px 3px rgba(0, 0, 0, 0.3), 0 0 8px rgba(90, 159, 212, 0.5), 0 2px 4px rgba(0, 0, 0, 0.2)';
-                buttonFound = true;
-            }
-        });
-        
-        // Activate the target panel
-        const targetPanel = document.getElementById(tabId);
-        if (targetPanel) {
-            targetPanel.classList.add('active');
-            // Re-initialize datetime pickers when tab becomes visible (elements might be in included FTL files)
-            setTimeout(function() {
-                initDateTimePickers();
-            }, 200);
+        if (window.canaryTabsAPI && window.canaryTabsAPI.switchTab) {
+            window.canaryTabsAPI.switchTab(tabId);
         } else {
-            console.warn('Tab panel not found:', tabId);
-        }
-        
-        if (!buttonFound) {
-            console.warn('Tab button not found for:', tabId);
+            console.warn('[ModernTabs] Tabs API not initialized');
         }
     }
     
     /**
-     * Initialize modern accordion
+     * Initialize modern accordion - using shared component from modern-accordion.js
      */
-    function initModernAccordion() {
-        const accordionHeader = document.getElementById('canary-dataview-header');
-        const accordionContent = document.getElementById('canary-dataview-content');
-        
-        if (accordionHeader && accordionContent) {
-            // Remove existing listeners by cloning
-            const newHeader = accordionHeader.cloneNode(true);
-            accordionHeader.parentNode.replaceChild(newHeader, accordionHeader);
-            
-            // Start collapsed (active: false equivalent)
-            accordionContent.classList.remove('active');
-            newHeader.classList.remove('active');
-            // Ensure content starts with height 0 and is hidden
-            accordionContent.style.height = '0px';
-            accordionContent.style.overflow = 'hidden';
-            accordionContent.style.display = 'block';
-            
-            // Add click handler
-            newHeader.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const isActive = accordionContent.classList.contains('active');
-                
-                if (isActive) {
-                    // Collapsing - smooth slide up (jQuery UI style)
-                    const startHeight = accordionContent.scrollHeight;
-                    accordionContent.style.height = startHeight + 'px';
-                    accordionContent.style.overflow = 'hidden';
-                    
-                    // Force reflow
-                    accordionContent.offsetHeight;
-                    
-                    // Remove active class and animate to 0
-                    accordionContent.classList.remove('active');
-                    newHeader.classList.remove('active');
-                    accordionContent.style.height = '0px';
-                    
-                    // Clean up after animation
-                    setTimeout(function() {
-                        if (!accordionContent.classList.contains('active')) {
-                            accordionContent.style.height = '';
-                            accordionContent.style.overflow = '';
-                        }
-                    }, 350);
-                    
-                    // Remove inline styles when closing - CSS will handle the default state
-                    newHeader.style.removeProperty('background');
-                    newHeader.style.removeProperty('background-image');
-                    newHeader.style.removeProperty('background-color');
-                    newHeader.style.removeProperty('color');
-                    newHeader.style.removeProperty('border');
-                    newHeader.style.removeProperty('border-radius');
-                    newHeader.style.removeProperty('box-shadow');
-                    newHeader.style.removeProperty('backdrop-filter');
-                    newHeader.style.removeProperty('-webkit-backdrop-filter');
-                    newHeader.style.removeProperty('text-shadow');
-                    newHeader.style.removeProperty('font-weight');
-                    newHeader.style.removeProperty('transform');
+    function initCanaryDataViewAccordion() {
+        // Use the shared modern accordion component directly
+        // Start collapsed (startExpanded: false)
+        if (typeof initModernAccordion === 'function') {
+            // Wait a bit to ensure DOM is ready
+            setTimeout(function() {
+                initModernAccordion('canary-dataview-header', 'canary-dataview-content', false);
+            }, 50);
+        } else {
+            console.warn('Modern accordion component not loaded, retrying...');
+            // Retry after a short delay in case script hasn't loaded yet
+            setTimeout(function() {
+                if (typeof initModernAccordion === 'function') {
+                    initModernAccordion('canary-dataview-header', 'canary-dataview-content', false);
                 } else {
-                    // Expanding - smooth slide down (jQuery UI style)
-                    accordionContent.style.display = 'block';
-                    accordionContent.style.overflow = 'hidden';
-                    accordionContent.style.height = '0px';
-                    accordionContent.classList.add('active');
-                    newHeader.classList.add('active');
-                    
-                    // Force reflow to ensure active class is applied
-                    accordionContent.offsetHeight;
-                    
-                    // Measure height with active class applied (padding included)
-                    const targetHeight = accordionContent.scrollHeight;
-                    
-                    // Animate smoothly to measured height
-                    accordionContent.style.height = targetHeight + 'px';
-                    
-                    // Clean up after animation completes
-                    setTimeout(function() {
-                        if (accordionContent.classList.contains('active')) {
-                            accordionContent.style.height = 'auto';
-                            accordionContent.style.overflow = '';
-                        }
-                    }, 350);
-                    
-                    // CSS will handle the glassmorphism styles via .active class
-                    // No need to set inline styles - let CSS take precedence
+                    console.error('Modern accordion component failed to load');
                 }
-            });
+            }, 200);
         }
     }
     
@@ -1963,29 +1321,27 @@
             }
         }
         
+        // Note: URL hash is automatically updated by the modern tabs component (like jQuery UI tabs)
+        // No need to manually call updateUrl for canarytab parameter
         if(id == "zing"){
-            updateUrl("canarytab","zing");
             if (typeof showCanaryTable === 'function') {
             if(typeof canaryContextArray !== 'undefined' && canaryContextArray != null){
             showCanaryTable(canaryContextArray,"canaryview",2);
             }
             }
         }else if(id == "zingcustom"){
-            updateUrl("canarytab","zingcustom");
             if (typeof showCanaryTable === 'function') {
             if(typeof canaryContextArray !== 'undefined' && canaryContextArray != null){
             showCanaryTable(canaryContextArray,"canarycustomview",3);
             }
             }
         }else if(id == "perfswat"){
-            updateUrl("canarytab","perfswat");
             if (typeof showCanaryTable === 'function') {
             if(typeof canaryContextArray !== 'undefined' && canaryContextArray != null){
             showCanaryTable(canaryContextArray,"canaryperfswatview",1);
             }
             }
         }else if(id == "perfswatcustom"){
-            updateUrl("canarytab","perfswatcustom");
             if (typeof showCanaryTable === 'function') {
             if(typeof canaryContextArray !== 'undefined' && canaryContextArray != null){
             showCanaryTable(canaryContextArray,"canaryperfswatcustomview",4);
@@ -1998,6 +1354,10 @@
      * Public API: Get currently active tab ID (for compatibility with existing code)
      */
     function getActiveTabId() {
+        if (window.canaryTabsAPI && window.canaryTabsAPI.getActiveTabId) {
+            return window.canaryTabsAPI.getActiveTabId();
+        }
+        // Fallback
         const activePanel = document.querySelector('.modern-tab-panel.active');
         return activePanel ? activePanel.id : null;
     }
@@ -2490,7 +1850,13 @@ function getCanaryHeader(start, end, source){
 <div class="main-content-wrapper" id="mainContentWrapper">
 <!-- Canaries Page Content -->
 <div id="canaries-page" class="page-content active">
-<div class="data-view-header-placeholder" style="height: 44px; width: 100%;">Canary hub (process and explore data)</div>
+<div class="data-view-header-placeholder" style="height: 44px; width: 100%;">
+    <div class="collapsed-header-logo">
+        <img src="/images/warden-white.svg" alt="Warden" />
+        <span class="collapsed-header-title">Perf Genie</span>
+    </div>
+    <span>Canary hub (process and explore data)</span>
+</div>
 
 <!-- Canary Data Input Form -->
 <div id="canary-data-form" style="padding: 12px 16px; background: #ffffff;">
@@ -2515,7 +1881,7 @@ function getCanaryHeader(start, end, source){
                 <input style="height:30px;text-align: center;" class="filterinput" id="canary-source-input" type="text" value="perf-genie-test45">
             </td>
             <td style="padding: 0 0 0 8px; border: none; align-items: center;">
-                <button onclick="submitCanaryData()" id="submit-canary-data" style="alignment:center;height:30px" class="ui-button ui-widget ui-corner-all" disabled>Submit</button>
+                <button onclick="submitCanaryData()" id="submit-canary-data" style="alignment:center;height:30px" class="modern-button modern-button-green ui-button ui-widget ui-corner-all" disabled>Submit</button>
             </td>
         </tr>
     </table>
@@ -2547,13 +1913,13 @@ function getCanaryHeader(start, end, source){
     </ul>
     
     <!-- Modern Accordion for Data Explorer -->
-    <div class="modern-accordion" id="canary-dataview">
-        <div class="modern-accordion-header" id="canary-dataview-header">
+    <div class="modern-accordion" id="canary-dataview" >
+        <div class="modern-accordion-header" id="canary-dataview-header" >
             <i class="fa fa-chevron-down modern-accordion-icon"></i>
             <span>Data explorer</span>
         </div>
-        <div class="modern-accordion-content" id="canary-dataview-content">
-            <div id="canary-dataviewcontent" style="padding-left: 4px; padding-bottom: 0px; padding-top: 0px;">tbd</div>
+        <div class="modern-accordion-content" id="canary-dataview-content" >
+            <div id="canary-dataviewcontent" style="padding-left: 4px; padding-bottom: 0px; padding-top: 4px;">tbd</div>
         </div>
     </div>
     
@@ -2576,7 +1942,13 @@ function getCanaryHeader(start, end, source){
 
 <!-- Profiler & Diagnostics Page Content -->
 <div id="profiler-page" class="page-content">
-    <div class="data-view-header-placeholder" style="height: 44px; width: 100%;">Explore profiles and diagnostics data</div>
+    <div class="data-view-header-placeholder" style="height: 44px; width: 100%;">
+        <div class="collapsed-header-logo">
+            <img src="/images/warden-white.svg" alt="Warden" />
+            <span class="collapsed-header-title">Perf Genie</span>
+        </div>
+        <span>Explore profiles and diagnostics data</span>
+    </div>
     <div style="padding: 0px;">
         <#include "../../input.ftl">
         <#include "../../filter-panel.ftl">
@@ -2587,7 +1959,13 @@ function getCanaryHeader(start, end, source){
 
 <!-- AI Dashboard Page Content -->
 <div id="aidashboard-page" class="page-content">
-    <div class="data-view-header-placeholder" style="height: 44px; width: 100%;">AI dashboard</div>
+    <div class="data-view-header-placeholder" style="height: 44px; width: 100%;">
+        <div class="collapsed-header-logo">
+            <img src="/images/warden-white.svg" alt="Warden" />
+            <span class="collapsed-header-title">Perf Genie</span>
+        </div>
+        <span>AI dashboard</span>
+    </div>
     <div style="padding: 0px;">
         <#include "geniedash.ftl">
     </div>

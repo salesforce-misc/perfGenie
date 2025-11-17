@@ -104,26 +104,14 @@
         box-sizing: border-box;
     }
 
-    /* Modern Submit Button - height preserved (70px) */
+    /* Submit Button - uses modern-button.css with custom height and darker green variant */
     #submit-input {
-        background: linear-gradient(to bottom, #5a9dd4, #60b3ea) !important;
-        color: #ffffff !important;
-        border: none !important;
-        border-radius: 4px;
-        font-weight: 600;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(63, 127, 196, 0.2);
-    }
-
-    #submit-input:hover {
-        background: linear-gradient(to bottom, #4a8dc4, #54a3da) !important;
-        box-shadow: 0 4px 8px rgba(63, 127, 196, 0.3);
-        transform: translateY(-1px);
-    }
-
-    #submit-input:active {
-        transform: translateY(0);
-        box-shadow: 0 1px 2px rgba(55, 115, 179, 0.2);
+        /* Use modern-button base styles - override only what's unique to this button */
+        height: 70px !important;
+        min-height: 70px !important;
+        /* Custom darker green color variant (to differentiate from default green) */
+        --button-color: 22, 163, 74;
+        --button-color-light: 34, 197, 94;
     }
 
     /* Modern Backup Icon - font-size preserved (20px) */
@@ -160,15 +148,92 @@
     @keyframes spin {
         to { transform: rotate(360deg); }
     }
+
+    /* Input Info - toast-style yellow warning with glassmorphism */
+    #input-info {
+        padding: 0 !important; /* No padding to minimize height */
+        color: #ffffff !important; /* White text for toast style */
+        /* Don't set display here - let inline style and jQuery control it */
+        /* Toast-style glassmorphism with darker yellow warning tint for better text visibility */
+        background: rgba(255, 183, 77, 0.35) !important; /* Darker yellow/orange warning tint */
+        background-image: 
+            linear-gradient(135deg, rgba(255, 183, 77, 0.45) 0%, rgba(255, 152, 0, 0.3) 50%, rgba(255, 183, 77, 0.45) 100%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+        /* Toast-style border */
+        border: 1px solid rgba(255, 255, 255, 0.4) !important;
+        border-radius: 8px !important; /* Toast-style rounded corners */
+        /* Toast-style shadows */
+        box-shadow: 
+            0 4px 16px rgba(255, 183, 77, 0.3),
+            0 2px 8px rgba(255, 183, 77, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.5),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+            0 8px 32px rgba(255, 152, 0, 0.18) !important;
+        /* Toast-style text shadow for white text on yellow background */
+        text-shadow: 
+            0 1px 3px rgba(0, 0, 0, 0.4),
+            0 0 8px rgba(255, 183, 77, 0.6),
+            0 2px 4px rgba(0, 0, 0, 0.3) !important;
+        font-weight: 500 !important;
+        font-size: 0.85em !important; /* Smaller font */
+        margin: 0 !important;
+        float: left !important;
+        line-height: 1.1 !important; /* Very tight line height */
+        /* Don't set display or transition - let jQuery slide animation handle it */
+    }
+    
+    /* Don't force display - let inline style and jQuery control it for slide animation */
+    /* The inline style="display:none" will handle initial hidden state */
+    /* jQuery's .toggle("slide") will override display during animation */
+
+    /* Ensure jQuery UI classes don't override our toast styling */
+    #input-info.ui-state-highlight,
+    #input-info.ui-widget-header {
+        background: rgba(255, 183, 77, 0.35) !important;
+        background-image: 
+            linear-gradient(135deg, rgba(255, 183, 77, 0.45) 0%, rgba(255, 152, 0, 0.3) 50%, rgba(255, 183, 77, 0.45) 100%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.4) !important;
+        color: #ffffff !important;
+        padding: 0 !important;
+    }
+    
+    /* No padding on inner content to minimize height */
+    #input-info-text {
+        padding: 0 !important;
+        display: inline-block !important;
+    }
+    
+    /* Icon styling - no padding */
+    #input-info .ui-icon {
+        display: inline-block;
+        margin-right: 4px;
+        vertical-align: middle;
+        padding: 0 !important;
+        margin: 0 4px 0 0 !important;
+    }
+
+    /* Add top padding to the form */
+    #compare-context-selector-form {
+        padding-top: 16px;
+    }
 </style>
+<link rel="stylesheet" href="/css/modern-accordion.css">
+<link rel="stylesheet" href="/css/modern-button.css">
+<script src="/js/modern-accordion.js"></script>
 
 
-<div  id="accordion">
-    <div style="border:0px;width:100%;padding-top: 0px !important;padding-bottom: 0px !important;">Data source selector&nbsp;&nbsp;&nbsp;<span onclick="onClickNoop(event);" style="padding-bottom:2px;padding-top:2px;cursor: default !important; width:75%; display: inline-block;">&nbsp;</span></div>
-    <div  style="padding-left:20px; padding-bottom: 0px; " class="col-lg-12">
-
-        <form  id="compare-context-selector-form" action="javascript:submitTo()" method="get"
-               content="application/x-www-form-urlencoded">
+<div id="accordion" class="modern-accordion">
+    <div class="modern-accordion-header" id="accordion-header">
+        <i class="fa fa-chevron-down modern-accordion-icon"></i>
+        <span>Data source selector</span>
+    </div>
+    <div class="modern-accordion-content" id="accordion-content">
+        <div style="padding-left:20px; padding-bottom: 0px; " class="col-lg-12">
+            <form  id="compare-context-selector-form" action="javascript:submitTo()" method="get"
+                   content="application/x-www-form-urlencoded">
             <span style="float:right;" class="spinner" id="spinner"></span>
 
         <div class="form-layout-wrapper">
@@ -256,7 +321,7 @@
             
             <!-- Submit button spans both rows -->
             <div class="submit-button-container" style="grid-column: 11; grid-row: 1 / 3;">
-                <button id="submit-input" style="alignment:center;height:70px" class="ui-button ui-widget ui-corner-all">Submit</button>
+                <button id="submit-input" style="alignment:center;height:70px" class="modern-button ui-button ui-widget ui-corner-all" disabled>Submit</button>
             </div>
             
             <!-- Backup icon - row 1 -->
@@ -273,19 +338,191 @@
                 <span class="ui-icon ui-icon-info"></span> <span id="input-info-text"></span>
             </div>
             <div id="dashboard-container"></div>
-        </form>
-        <div id="dashboard-container"></div>
+            </form>
+        </div>
     </div>
-
 </div>
 
 <script>
+
+    /**
+     * Validate required form fields (Row 1 only - Row 2 is optional)
+     * @returns {boolean} true if all Row 1 fields are filled, false otherwise
+     */
+    function validateInputForm() {
+        // Only validate Row 1 fields (Row 2 is optional)
+        const start1 = $("#startpicker1").val();
+        const end1 = $("#endpicker1").val();
+        const tenant1 = $("#tenant-input1").val();
+        const host1 = $("#host-input1").val();
+        const bases1 = $("#bases1").val();
+        
+        // Check if all Row 1 fields are filled
+        const isValid = start1 && start1.trim() !== '' && 
+                       end1 && end1.trim() !== '' && 
+                       tenant1 && tenant1.trim() !== '' && 
+                       host1 && host1.trim() !== '' && 
+                       bases1 && bases1.trim() !== '';
+        
+        const submitButton = document.getElementById('submit-input');
+        if (submitButton) {
+            submitButton.disabled = !isValid;
+        }
+        
+        return isValid;
+    }
+    
+    /**
+     * Initialize form validation - hooks into existing onChange listeners in input.js
+     * Uses debouncing to prevent multiple rapid validations
+     */
+    let validationTimeout = null;
+    function debouncedValidateInputForm() {
+        // Clear any pending validation
+        if (validationTimeout) {
+            clearTimeout(validationTimeout);
+        }
+        // Debounce validation to prevent multiple rapid calls
+        // Use a shorter delay (50ms) to ensure validation happens quickly
+        validationTimeout = setTimeout(function() {
+            validateInputForm();
+        }, 50);
+    }
+    
+    function initInputFormValidation() {
+        // Disable button initially
+        const submitButton = document.getElementById('submit-input');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+        
+        // Add validation as additional handler to existing change listeners
+        // Use debounced validation to prevent multiple rapid calls
+        // Only listen to 'change' events, not 'input' or 'blur' to avoid excessive triggers
+        
+        // Required Row 1 fields - add validation to existing change events only
+        // Use 'one' event listener with namespace to avoid duplicate handlers if initInputFormValidation is called multiple times
+        $("#startpicker1").off('change.validation').on('change.validation', debouncedValidateInputForm);
+        $("#endpicker1").off('change.validation').on('change.validation', debouncedValidateInputForm);
+        $("#tenant-input1").off('change.validation').on('change.validation', debouncedValidateInputForm);
+        $("#host-input1").off('change.validation').on('change.validation', debouncedValidateInputForm);
+        $("#bases1").off('change.validation').on('change.validation', debouncedValidateInputForm);
+        
+        // Also listen for datetimepicker dp.change events (input.js uses datetimepicker)
+        // But use debouncing to prevent multiple calls
+        $("#startpicker1").off('dp.change.validation').on('dp.change.validation', debouncedValidateInputForm);
+        $("#endpicker1").off('dp.change.validation').on('dp.change.validation', debouncedValidateInputForm);
+        
+        // Optional Row 2 fields - also add validation (doesn't affect validation but keeps consistency)
+        $("#startpicker2, #endpicker2, #tenant-input2, #host-input2, #bases2").on('change', debouncedValidateInputForm);
+        $("#startpicker2, #endpicker2").on('dp.change', debouncedValidateInputForm);
+        
+        // Initial validation
+        validateInputForm();
+    }
+
+    // Make validation function available globally so it can be called from input.js
+    window.validateInputForm = validateInputForm;
+    
+    // Track if initialization is complete to avoid triggering change events during page load
+    let initializationComplete = false;
+    
+    // Override jQuery's val() method to trigger change events when values are set programmatically
+    // This ensures onChange events fire for both user input and programmatic changes (like URL parameters)
+    // But only AFTER initialization is complete to avoid interfering with page load
+    // IMPORTANT: Only trigger change events for date pickers, not for dropdowns that are set during data loading
+    // This prevents loops while still allowing time range changes to trigger metadata calls
+    (function() {
+        const originalVal = $.fn.val;
+        
+        $.fn.val = function(value) {
+            if (arguments.length === 0) {
+                // Getting value - use original behavior
+                return originalVal.call(this);
+            } else {
+                // Setting value - check if value actually changed
+                const $this = $(this);
+                const oldValue = originalVal.call($this);
+                const result = originalVal.call(this, value);
+                const newValue = originalVal.call($this);
+                
+                // Only trigger change events after initialization is complete
+                // Only trigger for date pickers (startpicker1, endpicker1) - these trigger the data loading flow
+                // Do NOT trigger for dropdowns (tenant-input1, host-input1, bases1) that are set during data loading
+                // to prevent loops, but the existing code in input.js directly calls metadata functions
+                // so the flow should still work
+                if (initializationComplete && oldValue !== newValue) {
+                    const fieldId = $this.attr('id');
+                    // Only trigger change events for date pickers
+                    // Dropdowns are set by input.js during data loading and should not trigger change events
+                    const datePickerFields = ['startpicker1', 'endpicker1'];
+                    if (datePickerFields.indexOf(fieldId) !== -1) {
+                        // Use setTimeout to trigger change event asynchronously
+                        // This allows the existing change handlers in input.js to fire
+                        setTimeout(function() {
+                            $this.trigger('change');
+                        }, 0);
+                    }
+                }
+                
+                return result;
+            }
+        };
+    })();
+    
+    /**
+     * Initialize input accordion - uses shared modern accordion component
+     */
+    function initInputAccordion() {
+        // Use shared accordion component, start expanded (true)
+        initModernAccordion('accordion-header', 'accordion-content', true);
+    }
 
     $(document).ready(function () {
         if(dataSource == "gold"){
             $("#usegold").prop("checked", true);
             $("#backup-gold").hide();
         }
+        
+        // Initialize accordion - script is loaded via script tag
+        // Small delay to ensure DOM is fully ready
+        setTimeout(function() {
+            initInputAccordion();
+        }, 50);
+        
+        // Initialize form validation - onChange events will handle validation
+        // Wait a bit to ensure fields exist in DOM and initial values are set
+        setTimeout(function() {
+            initInputFormValidation();
+            
+            // Periodically validate during initialization to catch async field population
+            // This ensures validation runs when fields are populated from URL parameters
+            let validationAttempts = 0;
+            const maxAttempts = 20; // Check for up to 4 seconds (20 * 200ms)
+            const validationInterval = setInterval(function() {
+                validationAttempts++;
+                validateInputForm();
+                
+                // Stop checking once all required fields are filled or max attempts reached
+                const start1 = $("#startpicker1").val();
+                const end1 = $("#endpicker1").val();
+                const tenant1 = $("#tenant-input1").val();
+                const host1 = $("#host-input1").val();
+                const bases1 = $("#bases1").val();
+                
+                const allFieldsFilled = start1 && start1.trim() !== '' && 
+                    end1 && end1.trim() !== '' && 
+                    tenant1 && tenant1.trim() !== '' && 
+                    host1 && host1.trim() !== '' && 
+                    bases1 && bases1.trim() !== '';
+                
+                if (allFieldsFilled || validationAttempts >= maxAttempts) {
+                    clearInterval(validationInterval);
+                    // Mark initialization as complete
+                    initializationComplete = true;
+                }
+            }, 200);
+        }, 100);
     });
 
     function onClickNoop(event){

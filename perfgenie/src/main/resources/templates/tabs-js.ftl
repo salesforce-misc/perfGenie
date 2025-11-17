@@ -45,30 +45,45 @@
         applyFilter();
     }
 
+    function getTabIdFromHash() {
+        const hash = window.location.hash;
+        if (hash && hash.length > 1) {
+            return hash.substring(1);
+        }
+        return null;
+    }
+
     $(document).ready(() => {
+        // Initialize jQuery UI tabs
         $( "#tabs" ).tabs({
-            activate: function (event, ui) {
-                if(ui.newPanel.attr("id") == "cct"){
-                    updateTabUrl("#cct");
+            activate: function( event, ui ) {
+                const tabId = ui.newPanel.attr("id");
+                updateTabUrl("#" + tabId);
+                if(tabId == "cct"){
                     updateProfilerViewCCT(prevSelectedLevel,true);
-                }else if(ui.newPanel.attr("id") == "flame"){
-                    updateTabUrl("#flame");
+                }else if(tabId == "flame"){
                     updateProfilerViewFlame(prevSelectedLevel,true);
-                }else if(ui.newPanel.attr("id") == "samples"){
-                    updateTabUrl("#samples");
+                }else if(tabId == "samples"){
                     updateProfilerViewSample(prevSelectedLevel,true);
-                }else if(ui.newPanel.attr("id") == "tsview"){
-                    updateTabUrl("#tsview");
+                }else if(tabId == "tsview"){
                     updateProfilerViewTsview(prevSelectedLevel,true);
-                }else if(ui.newPanel.attr("id") == "river"){
-                    updateTabUrl("#river");
+                }else if(tabId == "river"){
                     updateProfilerViewRiver(prevSelectedLevel,true);
-                }else if(ui.newPanel.attr("id") == "surface"){
-                    updateTabUrl("#surface");
+                }else if(tabId == "surface"){
                     updateProfilerViewSurface(prevSelectedLevel,true);
                 }
             }
         });
+        
+        // Handle URL hash for initial tab activation
+       /* const hashTabId = getTabIdFromHash();
+        if (hashTabId) {
+            // Delay to ensure tabs are initialized
+            setTimeout(() => {
+                const tabsAPI = $( "#tabs" ).tabs();
+                tabsAPI.tabs("option", "active", $("#tabs a[href='#" + hashTabId + "']").parent().index());
+            }, 100);
+        }*/
 
         isCalltree = urlParams.get('isCalltree') || 'false';
         if(isCalltree == 'false'){isCalltree = false;}
@@ -831,22 +846,23 @@
 
     //create html tree recursively
     function updateProfilerView(level) {
-        if($("#tabs .ui-tabs-panel:visible").attr("id") == "flame"){
+        const activeTabId = $("#tabs .ui-tabs-panel:visible").attr("id");
+        if(activeTabId == "flame"){
             updateTabUrl("#flame");
             updateProfilerViewFlame(level);
-        }else if($("#tabs .ui-tabs-panel:visible").attr("id") == "cct"){
+        }else if(activeTabId == "cct"){
             updateTabUrl("#cct");
             updateProfilerViewCCT(level);
-        }else if($("#tabs .ui-tabs-panel:visible").attr("id") == "samples"){
+        }else if(activeTabId == "samples"){
             updateTabUrl("#samples");
             updateProfilerViewSample(level);
-        }else if($("#tabs .ui-tabs-panel:visible").attr("id") == "tsview"){
+        }else if(activeTabId == "tsview"){
             updateTabUrl("#tsview");
             updateProfilerViewTsview(level);
-        }else if($("#tabs .ui-tabs-panel:visible").attr("id") == "river"){
+        }else if(activeTabId == "river"){
             updateTabUrl("#river");
             updateProfilerViewRiver(level);
-        }else if($("#tabs .ui-tabs-panel:visible").attr("id") == "surface"){
+        }else if(activeTabId == "surface"){
             updateTabUrl("#surface");
             updateProfilerViewSurface(level);
         }

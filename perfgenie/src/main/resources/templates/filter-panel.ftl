@@ -241,19 +241,40 @@
         border-collapse: collapse;
     }
 
+    /* Filter Buttons - use modern-button.css with blue-teal variant and full width */
+    #filter-apply,
+    #filter-reset {
+        /* Use modern-button base styles - override only what's unique to these buttons */
+        width: 100% !important;
+    }
+
 </style>
+<link rel="stylesheet" href="/css/modern-accordion.css">
+<link rel="stylesheet" href="/css/modern-button.css">
+<script src="/js/modern-accordion.js"></script>
 <script type="text/javascript" class="init">
-    $(function () {
+    /*$(function () {
         $("#accordion").accordion({
             collapsible: true,
             heightStyle: "content"
         });
-    });
+    });*/
 
+    /**
+     * Initialize context filter accordion - uses shared modern accordion component
+     */
+    function initContextFilterAccordion() {
+        // Use shared accordion component, start collapsed (false)
+        initModernAccordion('contextfilter-header', 'contextfilter-content', false);
+    }
+    
+    // Initialize accordion when document is ready
     $(function () {
-        $("#contextfilter").accordion({
-            collapsible: true
-        });
+        // Initialize accordion - script is loaded via script tag
+        // Small delay to ensure DOM is fully ready
+        setTimeout(function() {
+            initContextFilterAccordion();
+        }, 50);
     });
 
     let filterMap = {};
@@ -1287,6 +1308,62 @@
     function showContextFilter() {
         $("#contextpanel").removeClass("hide");
         $("#contextviewpanel").removeClass("hide");
+        
+        // Expand contextfilter accordion
+        const contextFilterHeader = document.getElementById('contextfilter-header');
+        const contextFilterContent = document.getElementById('contextfilter-content');
+        if (contextFilterHeader && contextFilterContent && !contextFilterContent.classList.contains('active')) {
+            contextFilterContent.style.display = 'block';
+            contextFilterContent.style.overflow = 'hidden';
+            contextFilterContent.style.height = '0px';
+            contextFilterContent.classList.add('active');
+            contextFilterHeader.classList.add('active');
+            
+            // Force reflow to ensure active class is applied
+            contextFilterContent.offsetHeight;
+            
+            // Measure height with active class applied (padding included)
+            const targetHeight = contextFilterContent.scrollHeight;
+            
+            // Animate smoothly to measured height
+            contextFilterContent.style.height = targetHeight + 'px';
+            
+            // Clean up after animation completes
+            setTimeout(function() {
+                if (contextFilterContent.classList.contains('active')) {
+                    contextFilterContent.style.height = 'auto';
+                    contextFilterContent.style.overflow = '';
+                }
+            }, 350);
+        }
+        
+        // Expand contextdataview accordion
+        const contextDataViewHeader = document.getElementById('contextdataview-header');
+        const contextDataViewContent = document.getElementById('contextdataview-content');
+        if (contextDataViewHeader && contextDataViewContent && !contextDataViewContent.classList.contains('active')) {
+            contextDataViewContent.style.display = 'block';
+            contextDataViewContent.style.overflow = 'hidden';
+            contextDataViewContent.style.height = '0px';
+            contextDataViewContent.classList.add('active');
+            contextDataViewHeader.classList.add('active');
+            
+            // Force reflow to ensure active class is applied
+            contextDataViewContent.offsetHeight;
+            
+            // Measure height with active class applied (padding included)
+            const targetHeight = contextDataViewContent.scrollHeight;
+            
+            // Animate smoothly to measured height
+            contextDataViewContent.style.height = targetHeight + 'px';
+            
+            // Clean up after animation completes
+            setTimeout(function() {
+                if (contextDataViewContent.classList.contains('active')) {
+                    contextDataViewContent.style.height = 'auto';
+                    contextDataViewContent.style.overflow = '';
+                }
+            }, 350);
+        }
     }
 
     function isinRequest(arr, start, end) {
@@ -6842,9 +6919,13 @@
 
 </script>
 
-<div style="" id="contextfilter">
-    <h3 style="width:100%;padding-top: 2px !important;padding-bottom: 2px !important;">Context filter</h3>
-    <div style="padding-left: 23px;padding-bottom: 0px;padding-top: 0px;" id="cct-panel" class="col-lg-12">
+<div id="contextfilter" class="modern-accordion">
+    <div class="modern-accordion-header" id="contextfilter-header">
+        <i class="fa fa-chevron-down modern-accordion-icon"></i>
+        <span>Context filter</span>
+    </div>
+    <div class="modern-accordion-content" id="contextfilter-content">
+        <div style="padding-left: 23px;padding-bottom: 0px;padding-top: 0px;" id="cct-panel" class="col-lg-12">
         <div id="contextpanel" class="hide">
             <div id="contexthints" style="padding: 0px !important;" class="col-lg-12">
                 <table style="padding:0px; border-spacing: 0px; border-collapse: separate;">
@@ -6876,12 +6957,12 @@
 
 
                 <div class="col-lg-2">
-                    <button style="cursor: pointer;" id="filter-apply" class="btn btn-block btn-info" type="submit">
+                    <button style="cursor: pointer;" id="filter-apply" class="modern-button modern-button-blue-teal btn btn-block btn-info" type="submit">
                         Apply Filter(s)
                     </button>
                 </div>
                 <div class="col-lg-2">
-                    <button style="cursor: pointer;" id="filter-reset" class="btn btn-block btn-info" type="submit">
+                    <button style="cursor: pointer;" id="filter-reset" class="modern-button modern-button-blue-teal btn btn-block btn-info" type="submit">
                         Reset Filter(s)
                     </button>
                 </div>
@@ -6889,5 +6970,6 @@
 
 
         </div>
+    </div>
     </div>
 </div>
