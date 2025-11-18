@@ -220,12 +220,7 @@ public class PerfGenieController {
         final String basekpodsValue = (basekpods != null && !basekpods.trim().isEmpty()) ? basekpods : "*";
         final String canarykpodsValue = (canarykpods != null && !canarykpods.trim().isEmpty()) ? canarykpods : "*";
         //creates duplicates
-        try {
-            Thread.sleep(20000);
-        }catch (Exception e){
-
-        }
-        return null; //service.processSideBySideCanaryTask(start,end,cell,host,basekpodsValue,canarykpodsValue);
+        return service.processSideBySideCanaryTask(start,end,cell,host,basekpodsValue,canarykpodsValue);
     }
 
     @GetMapping(path = {"/v1/refreshcanary","/v1/refreshcanary/{host}","/component/casp/v1/refreshcanary","/component/casp/v1/refreshcanary/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -249,13 +244,9 @@ public class PerfGenieController {
             @RequestParam(required = false, name = "end2") final long end2,
             @RequestParam(required = false, name = "cell2") final String cell2
     ) throws IOException {
-        try {
-            Thread.sleep(20000);
-        }catch (Exception e){
 
-        }
         //creates duplicates
-        return null;//service.processWeekOverWeekCanaryTask(start1,end1,cell1,start2,end2,cell2,host);
+        return service.processWeekOverWeekCanaryTask(start1,end1,cell1,start2,end2,cell2,host);
     }
 
     @GetMapping(path = {"/v1/canarybackup","/component/casp/v1/canarybackup"}, produces = MediaType.APPLICATION_JSON_VALUE)
