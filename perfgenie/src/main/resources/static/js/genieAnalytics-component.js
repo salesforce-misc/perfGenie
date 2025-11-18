@@ -3076,8 +3076,17 @@ class GenieAnalytics {
                     return true;
                 }
                 
+                // Handle null/undefined values - exclude if not in selected values
+                if (value === null || value === undefined || value === '') {
+                    return false;
+                }
+                
+                // Normalize both values to strings for comparison to handle type mismatches
+                const normalizedValue = String(value);
+                const normalizedSelectedValues = dimensionFilter.selectedValues.map(v => String(v));
+                
                 // Check if the row's value is in the selected values
-                return dimensionFilter.selectedValues.includes(value);
+                return normalizedSelectedValues.includes(normalizedValue);
             });
             
             return dimensionFilterPass;
@@ -3213,7 +3222,7 @@ class GenieAnalytics {
                                     '<span class="dropdown-text">Aggregations</span>' +
                                     '<span class="dropdown-arrow">▼</span>' +
                                 '</button>' +
-                                '<div class="aggregation-dropdown-menu" data-metric="' + metricName + '" style="display: none;">' +
+                                '<div class="aggregation-dropdown-menu" data-metric="' + metricName + '" data-instance-id="' + this.instanceId + '" style="display: none;">' +
                                     '<div class="genieAnalytics-dropdown-item">' +
                                         '<label class="aggregation-checkbox-label">' +
                                             '<input type="checkbox" class="aggregation-checkbox" data-metric="' + metricName + '" value="sum"' + (selectedAggregations.includes('sum') ? ' checked' : '') + '>' +
@@ -3300,7 +3309,14 @@ class GenieAnalytics {
                     button.addEventListener('click', (e) => {
                         e.stopPropagation();
                         const metricName = e.target.closest('.aggregation-dropdown-toggle').dataset.metric;
-                        const menu = zone.querySelector('.aggregation-dropdown-menu[data-metric="' + metricName + '"]');
+                        // Find menu - it might be in zone or moved to body for z-index
+                        const menu = zone.querySelector('.aggregation-dropdown-menu[data-metric="' + metricName + '"]') ||
+                                    document.querySelector('.aggregation-dropdown-menu[data-metric="' + metricName + '"][data-instance-id="' + this.instanceId + '"]');
+                        
+                        if (!menu) {
+                            console.warn('Aggregation dropdown menu not found for metric:', metricName);
+                            return;
+                        }
                         
                         // Store original parent if not already stored
                         if (!menu.dataset.originalParent) {
@@ -3562,7 +3578,7 @@ class GenieAnalytics {
                             '<span class="dropdown-text">' + displayText + '</span>' +
                             '<span class="dropdown-arrow">▼</span>' +
                         '</button>' +
-                        '<div class="dimension-dropdown-menu" data-dimension="' + dimensionName + '" style="display: none;">' +
+                        '<div class="dimension-dropdown-menu" data-dimension="' + dimensionName + '" data-instance-id="' + this.instanceId + '" style="display: none;">' +
                             '<div class="dropdown-item">' +
                                 '<label class="dimension-checkbox-label">' +
                                     '<input type="checkbox" class="dimension-checkbox all-checkbox" data-dimension="' + dimensionName + '" value="all"' + (isAllSelected ? ' checked' : '') + '>' +
@@ -3840,24 +3856,45 @@ class GenieAnalytics {
         // Add the event listener
         zone.addEventListener('click', this.handleDimensionDropdownClick);
         
-        // Add event listeners for dimension checkboxes using event delegation
+        // Add event listeners for dimension checkboxes using document-level event delegation
+        // This is necessary because menus can be moved to document.body for z-index
         // Remove any existing event listeners to prevent duplicates
-        zone.removeEventListener('change', this.handleDimensionCheckboxChange);
+        if (this._dimensionCheckboxChangeHandler) {
+            document.removeEventListener('change', this._dimensionCheckboxChangeHandler);
+        }
         
-        this.handleDimensionCheckboxChange = (e) => {
+        this._dimensionCheckboxChangeHandler = (e) => {
+            // Only handle dimension checkboxes from this instance
             if (e.target.classList.contains('dimension-checkbox')) {
+                // Check if this checkbox belongs to this instance
+                const menu = e.target.closest('.dimension-dropdown-menu');
+                if (!menu) {
+                    return; // No menu found, ignore
+                }
+                
+                // Check if this menu belongs to this instance
+                // Menu should have data-instance-id from creation, or class when moved to body
+                const isInstanceMenu = 
+                    menu.dataset.instanceId === this.instanceId ||
+                    menu.classList.contains('genieAnalytics-instance-' + this.instanceId);
+                
+                if (!isInstanceMenu) {
+                    return; // Not from this instance, ignore
+                }
+                
                 e.stopPropagation();
                 const dimensionName = e.target.dataset.dimension;
                 const value = e.target.value;
                 const isChecked = e.target.checked;
                 const isAllCheckbox = e.target.classList.contains('all-checkbox');
                 
+                console.log('Dimension checkbox changed:', dimensionName, value, isChecked, isAllCheckbox);
+                
                 if (isAllCheckbox) {
                     if (isChecked) {
                         // Select "All" - clear all other selections
                         this.dimensionFilters[dimensionName].selectedValues = [];
                         // Uncheck all individual value checkboxes
-                        const menu = document.querySelector('.dimension-dropdown-menu[data-dimension="' + dimensionName + '"]');
                         if (menu) {
                             menu.querySelectorAll('.value-checkbox').forEach(checkbox => {
                                 checkbox.checked = false;
@@ -3869,13 +3906,16 @@ class GenieAnalytics {
                     }
                 } else {
                     // Handle individual value checkbox
+                    // Normalize value to string for consistent comparison
+                    const normalizedValue = String(value);
+                    
                     if (isChecked) {
                         // Add value to selection and uncheck "All"
-                        if (!this.dimensionFilters[dimensionName].selectedValues.includes(value)) {
-                            this.dimensionFilters[dimensionName].selectedValues.push(value);
+                        const normalizedSelected = this.dimensionFilters[dimensionName].selectedValues.map(v => String(v));
+                        if (!normalizedSelected.includes(normalizedValue)) {
+                            this.dimensionFilters[dimensionName].selectedValues.push(normalizedValue);
                         }
                         // Uncheck "All" checkbox
-                        const menu = document.querySelector('.dimension-dropdown-menu[data-dimension="' + dimensionName + '"]');
                         if (menu) {
                             const allCheckbox = menu.querySelector('.all-checkbox');
                             if (allCheckbox) {
@@ -3883,19 +3923,24 @@ class GenieAnalytics {
                             }
                         }
                     } else {
-                        // Remove value from selection
+                        // Remove value from selection - compare as strings
                         this.dimensionFilters[dimensionName].selectedValues = 
-                            this.dimensionFilters[dimensionName].selectedValues.filter(v => v !== value);
+                            this.dimensionFilters[dimensionName].selectedValues.filter(v => String(v) !== normalizedValue);
                     }
                 }
                 
+                console.log('Updated selectedValues for', dimensionName, ':', this.dimensionFilters[dimensionName].selectedValues);
+                
                 // Update the dropdown button text to reflect the new state
                 this.updateDimensionFilterDisplay(dimensionName);
+                
+                // Apply filters immediately when dimension filter selection changes
+                this.applyFilters();
             }
         };
         
-        // Add the event listener
-        zone.addEventListener('change', this.handleDimensionCheckboxChange);
+        // Add the event listener to document for proper event delegation
+        document.addEventListener('change', this._dimensionCheckboxChangeHandler);
         
         // Close dropdowns when clicking outside - scope to this instance
         // Remove any existing handler first to prevent duplicates
@@ -3932,7 +3977,10 @@ class GenieAnalytics {
                                 menu.classList.remove('genieAnalytics-instance-' + this.instanceId);
                             }
                         }
-                        // Apply filters when dropdown is closed
+                        // Update display and apply filters when dropdown is closed
+                        if (dimensionName) {
+                            this.updateDimensionFilterDisplay(dimensionName);
+                        }
                         this.applyFilters();
                     }
                 });
@@ -4053,13 +4101,21 @@ class GenieAnalytics {
         const selectedCount = dimensionFilter.selectedValues.length;
         const displayText = isAllSelected ? 'All' : (selectedCount === 1 ? dimensionFilter.selectedValues[0] : selectedCount + ' selected');
         
-        // Find the dropdown button and update its text
-        const dropdownButton = document.querySelector('.dimension-dropdown-toggle[data-dimension="' + dimensionName + '"]');
+        // Find the dropdown button and update its text - use filters zone like other code does
+        const zone = this.getElementById('filtersArea');
+        if (!zone) {
+            console.warn('updateDimensionFilterDisplay: filtersArea zone not found');
+            return;
+        }
+        
+        const dropdownButton = zone.querySelector('.dimension-dropdown-toggle[data-dimension="' + dimensionName + '"]');
         if (dropdownButton) {
             const textSpan = dropdownButton.querySelector('.dropdown-text');
             if (textSpan) {
                 textSpan.textContent = displayText;
             }
+        } else {
+            console.warn('updateDimensionFilterDisplay: Dropdown button not found for dimension:', dimensionName, 'in filters zone');
         }
     }
 
@@ -10297,8 +10353,17 @@ class GenieAnalytics {
                     return true;
                 }
                 
+                // Handle null/undefined values - exclude if not in selected values
+                if (value === null || value === undefined || value === '') {
+                    return false;
+                }
+                
+                // Normalize both values to strings for comparison to handle type mismatches
+                const normalizedValue = String(value);
+                const normalizedSelectedValues = dimensionFilter.selectedValues.map(v => String(v));
+                
                 // Check if the row's value is in the selected values
-                return dimensionFilter.selectedValues.includes(value);
+                return normalizedSelectedValues.includes(normalizedValue);
             });
             
             return dateTimeFilterPass && metricFilterPass && dimensionFilterPass;
