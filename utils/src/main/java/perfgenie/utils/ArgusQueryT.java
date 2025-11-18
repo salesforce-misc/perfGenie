@@ -274,6 +274,54 @@ public class ArgusQueryT {
         }
     }
 
+    public static ArrayList<String> getScopeList(long timestampStart, long timestampEnd, String cell) {
+        System.out.println(cell+ " getScope");
+
+        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
+            updateAccessToken();
+            lastUpdated = System.currentTimeMillis();
+        }
+        String query = ScopeQuery.replaceAll("START", String.valueOf(timestampStart));
+        query = query.replaceAll("END", String.valueOf(timestampEnd));
+        query = query.replaceAll("CELL", cell);
+
+        try {
+            System.out.println("getScope query " + query);
+            query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            System.out.println(cell+ " getScope1 " + e.getMessage());
+            return null;
+        }
+        String metricCommand = "curl -H \"Authorization: Bearer " + accessToken + "\" " + "https://monitoring-api.salesforce.com/argusws/metrics?expression=" + query;
+
+        String metric = "";
+        if (accessToken != null) {
+            metric = "{\"array\":" + executeCurlCommand(metricCommand) + "}";
+        } else {
+            try {
+                if (substrate == null) {
+                    metric = "{\"array\":" + Resources.toString(Resources.getResource("uptime.json"), StandardCharsets.UTF_8) + "}";
+                }
+            } catch (Exception e) {
+                metric = "{}";
+                System.out.println(cell + "getScope2 " + e.getMessage());
+            }
+        }
+        ArrayList<String> scopes = new ArrayList<>();
+        try {
+            JSONObject jsonObject = new JSONObject(metric);
+            JSONArray jsonArray = jsonObject.getJSONArray("array");
+            JSONObject object = jsonArray.getJSONObject(0);
+            String scope = object.getString("scope");
+            scopes.add(scope);
+        } catch (Exception e) {
+            System.out.println("getScope Exception " + e.getMessage() + ":" + metric);
+            System.out.println("getScope Exception " + query);
+            return null;
+        }
+        return scopes;
+    }
+
     public static Double getHeap(long timestampStart, long timestampEnd, String instance, String domain, String cell, List<String> pods) {
         System.out.println(cell+ " getHeap");
         if (pods.size() == 0) {

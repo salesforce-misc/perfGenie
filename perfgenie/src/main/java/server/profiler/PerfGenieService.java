@@ -1520,7 +1520,7 @@ public class PerfGenieService implements IPerfGenieService {
         try {
             long end = Instant.now().toEpochMilli() + 60 * 60 * 1000;
             List<String> lenses = new ArrayList<>();
-            for (int j = 5; j <= 10; j += 5) {
+            for (int j = 5; j <= 15; j += 5) {
                 long start = end - 5 * 24 * 60 * 60 * 1000L;
                 List<String> lenses1 = eventStore.getCanaryLenses(config.getTenant(), start, end, queryMap, dimMap, true);
                 if(lenses1 != null){
@@ -1966,7 +1966,7 @@ public class PerfGenieService implements IPerfGenieService {
     }
 
 
-    public synchronized String processSideBySideCanaryTask(long timestampStart, long timestampEnd, String cell,String host) throws IOException{
+    public synchronized String processSideBySideCanaryTask(long timestampStart, long timestampEnd, String cell,String host, String basekpods, String canarykpods) throws IOException{
         String substrate = System.getenv("SUBSTRATE");
         if (substrate != null || config.getStorageType().equals("grpc")) {
             if(host == null) {
@@ -1978,8 +1978,11 @@ public class PerfGenieService implements IPerfGenieService {
         List<List<Object>> res = new ArrayList<>();
         String dateString1 = Utils.convertEpochToUTCString(timestampStart);
         String dateString2 = Utils.convertEpochToUTCString(timestampEnd);
-        CanaryResponse response = SideBySide.processSideBySideCanaryTask(timestampStart, timestampEnd, cell, 3);
-        System.out.println(dateString1 + ":" + dateString2 + ":" + cell + "--->" + Utils.toJson(response));
+        // Default to "*" if not provided
+        final String basekpodsValue = (basekpods != null && !basekpods.trim().isEmpty()) ? basekpods : "*";
+        final String canarykpodsValue = (canarykpods != null && !canarykpods.trim().isEmpty()) ? canarykpods : "*";
+        CanaryResponse response = SideBySide.processSideBySideCanaryTask(timestampStart, timestampEnd, cell, 3, basekpodsValue, canarykpodsValue);
+        System.out.println(dateString1 + ":" + dateString2 + ":" + cell + ":basekpods=" + basekpodsValue + ":canarykpods=" + canarykpodsValue + "--->" + Utils.toJson(response));
         List<Object> record = response.getRecord();
         if (record.size() > 0) {
             addCanaryEventNew(record, System.currentTimeMillis(), cell, host, response.getHeader());
@@ -2167,7 +2170,7 @@ public class PerfGenieService implements IPerfGenieService {
                                             //type 3
                                             if ((int) ArgusQueryT.pc.getConfig().get(cell).get("type") == 2) {
                                                 System.out.println("5 canary service.processSideBySideCanaryTask");
-                                                service.processSideBySideCanaryTask(tmp1, tmp2, cell, host);// this will save record with a new timestamp
+                                                service.processSideBySideCanaryTask(tmp1, tmp2, cell, host, "*", "*");// this will save record with a new timestamp
                                             } else {
                                                 System.out.println("Ignore cell " + cell + ", request type not matched, type " + (int) ArgusQueryT.pc.getConfig().get(cell).get("type"));
                                             }

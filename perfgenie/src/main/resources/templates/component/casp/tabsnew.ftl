@@ -1432,6 +1432,8 @@
         var now = new Date();
         var thirtyDaysAgo = new Date(now);
         thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 30);
+        var oneDayFromNow = new Date(now);
+        oneDayFromNow.setUTCDate(oneDayFromNow.getUTCDate() + 1);
         
         // Format dates as Y-m-d H:i:s in UTC (datetimepicker format)
         function formatDateUTC(date) {
@@ -1445,7 +1447,7 @@
         }
         
         var defaultStart = formatDateUTC(thirtyDaysAgo);
-        var defaultEnd = formatDateUTC(now);
+        var defaultEnd = formatDateUTC(oneDayFromNow);
         
         // Just try to initialize - if plugin isn't loaded, it will fail gracefully
         try {
@@ -2056,7 +2058,7 @@
                     canaryContextArray = result.entry.records.canary[1];
                     canaryContextHeader = result.entry.header.canary;
                     canaryCommentCounts = result.counts;
-                    updateCanaryView($(".modern-tabs-nav-button.active").attr("data-tab-target"));
+                    updateCanaryView($("#canary-tabs .modern-tabs-nav-button.active").attr("data-tab-target"));
                     //showCanaryTable(canaryContextArray);
                 }
                 ProgressBar.stop({ explode: true,celebrate: true, });
@@ -2180,7 +2182,7 @@ function getCanaryHeader(start, end, source){
                 <input style="height:30px;text-align: center;" class="filterinput" id="canary-source-input" type="text" value="perf-genie-test45">
             </td>
             <td style="padding: 0 0 0 8px; border: none; align-items: center;">
-                <button onclick="submitCanaryData()" id="submit-canary-data" class="modern-button modern-button-green" disabled>Submit</button>
+                <button onclick="submitCanaryData()" id="submit-canary-data" class="modern-button modern-button-green" disabled>Fetch Canary Data</button>
             </td>
         </tr>
     </table>

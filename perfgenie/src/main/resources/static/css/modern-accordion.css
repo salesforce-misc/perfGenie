@@ -46,7 +46,18 @@
         inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
     color: #ffffff !important;
     font-weight: 700 !important;
+    /* Thin edge border followed by shadow */
     text-shadow: 
+        /* Thin outer edge border - 8 directions at 0.5px */
+        -0.5px -0.5px 0 rgba(90, 159, 212, 0.95),
+        0.5px -0.5px 0 rgba(90, 159, 212, 0.95),
+        -0.5px 0.5px 0 rgba(90, 159, 212, 0.95),
+        0.5px 0.5px 0 rgba(90, 159, 212, 0.95),
+        -0.5px 0 0 rgba(90, 159, 212, 0.95),
+        0.5px 0 0 rgba(90, 159, 212, 0.95),
+        0 -0.5px 0 rgba(90, 159, 212, 0.95),
+        0 0.5px 0 rgba(90, 159, 212, 0.95),
+        /* Shadow after the border */
         0 1px 3px rgba(0, 0, 0, 0.3),
         0 0 8px rgba(90, 159, 212, 0.5),
         0 2px 4px rgba(0, 0, 0, 0.2) !important;
@@ -79,8 +90,18 @@
     font-weight: 700 !important;
     /* Explicitly set white text color (matching inactive button) */
     color: #ffffff !important;
-    /* Keep same text-shadow as base (grayscale filter will affect the colored glow) */
+    /* Thin edge border followed by shadow (inactive accordion) */
     text-shadow: 
+        /* Thin outer edge border - 8 directions at 0.5px */
+        -0.5px -0.5px 0 rgba(90, 159, 212, 0.95),
+        0.5px -0.5px 0 rgba(90, 159, 212, 0.95),
+        -0.5px 0.5px 0 rgba(90, 159, 212, 0.95),
+        0.5px 0.5px 0 rgba(90, 159, 212, 0.95),
+        -0.5px 0 0 rgba(90, 159, 212, 0.95),
+        0.5px 0 0 rgba(90, 159, 212, 0.95),
+        0 -0.5px 0 rgba(90, 159, 212, 0.95),
+        0 0.5px 0 rgba(90, 159, 212, 0.95),
+        /* Shadow after the border */
         0 1px 3px rgba(0, 0, 0, 0.3),
         0 0 8px rgba(90, 159, 212, 0.5),
         0 2px 4px rgba(0, 0, 0, 0.2) !important;
@@ -138,8 +159,18 @@
         inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
     /* Explicitly set white text color (matching inactive button) */
     color: #ffffff !important;
-    /* Keep same text-shadow as base (grayscale filter will affect the colored glow) */
+    /* Thin edge border followed by shadow (inactive hover) */
     text-shadow: 
+        /* Thin outer edge border - 8 directions at 0.5px */
+        -0.5px -0.5px 0 rgba(90, 159, 212, 0.95),
+        0.5px -0.5px 0 rgba(90, 159, 212, 0.95),
+        -0.5px 0.5px 0 rgba(90, 159, 212, 0.95),
+        0.5px 0.5px 0 rgba(90, 159, 212, 0.95),
+        -0.5px 0 0 rgba(90, 159, 212, 0.95),
+        0.5px 0 0 rgba(90, 159, 212, 0.95),
+        0 -0.5px 0 rgba(90, 159, 212, 0.95),
+        0 0.5px 0 rgba(90, 159, 212, 0.95),
+        /* Shadow after the border */
         0 1px 3px rgba(0, 0, 0, 0.3),
         0 0 8px rgba(90, 159, 212, 0.5),
         0 2px 4px rgba(0, 0, 0, 0.2) !important;
@@ -185,7 +216,18 @@
     /* Dominating text - bright white with strong shadow */
     color: #ffffff !important;
     font-weight: 700 !important;
+    /* Thin edge border followed by shadow */
     text-shadow: 
+        /* Thin outer edge border - 8 directions at 0.5px */
+        -0.5px -0.5px 0 rgba(90, 159, 212, 0.95),
+        0.5px -0.5px 0 rgba(90, 159, 212, 0.95),
+        -0.5px 0.5px 0 rgba(90, 159, 212, 0.95),
+        0.5px 0.5px 0 rgba(90, 159, 212, 0.95),
+        -0.5px 0 0 rgba(90, 159, 212, 0.95),
+        0.5px 0 0 rgba(90, 159, 212, 0.95),
+        0 -0.5px 0 rgba(90, 159, 212, 0.95),
+        0 0.5px 0 rgba(90, 159, 212, 0.95),
+        /* Shadow after the border */
         0 1px 3px rgba(0, 0, 0, 0.3),
         0 0 8px rgba(90, 159, 212, 0.5),
         0 2px 4px rgba(0, 0, 0, 0.2) !important;
@@ -218,7 +260,18 @@
     /* Dominating text - bright white with strong shadow */
     color: #ffffff !important;
     font-weight: 700 !important;
+    /* Thin edge border followed by shadow */
     text-shadow: 
+        /* Thin outer edge border - 8 directions at 0.5px */
+        -0.5px -0.5px 0 rgba(90, 159, 212, 0.95),
+        0.5px -0.5px 0 rgba(90, 159, 212, 0.95),
+        -0.5px 0.5px 0 rgba(90, 159, 212, 0.95),
+        0.5px 0.5px 0 rgba(90, 159, 212, 0.95),
+        -0.5px 0 0 rgba(90, 159, 212, 0.95),
+        0.5px 0 0 rgba(90, 159, 212, 0.95),
+        0 -0.5px 0 rgba(90, 159, 212, 0.95),
+        0 0.5px 0 rgba(90, 159, 212, 0.95),
+        /* Shadow after the border */
         0 1px 3px rgba(0, 0, 0, 0.3),
         0 0 8px rgba(90, 159, 212, 0.5),
         0 2px 4px rgba(0, 0, 0, 0.2) !important;
@@ -250,7 +303,18 @@
 #contextfilter-header.active span:not(.modern-accordion-icon),
 #contextdataview-header.active span:not(.modern-accordion-icon) {
     font-weight: 700 !important;
+    /* Thin edge border followed by shadow */
     text-shadow: 
+        /* Thin outer edge border - 8 directions at 0.5px */
+        -0.5px -0.5px 0 rgba(90, 159, 212, 0.95),
+        0.5px -0.5px 0 rgba(90, 159, 212, 0.95),
+        -0.5px 0.5px 0 rgba(90, 159, 212, 0.95),
+        0.5px 0.5px 0 rgba(90, 159, 212, 0.95),
+        -0.5px 0 0 rgba(90, 159, 212, 0.95),
+        0.5px 0 0 rgba(90, 159, 212, 0.95),
+        0 -0.5px 0 rgba(90, 159, 212, 0.95),
+        0 0.5px 0 rgba(90, 159, 212, 0.95),
+        /* Shadow after the border */
         0 1px 3px rgba(0, 0, 0, 0.3),
         0 0 8px rgba(90, 159, 212, 0.5),
         0 2px 4px rgba(0, 0, 0, 0.2) !important;

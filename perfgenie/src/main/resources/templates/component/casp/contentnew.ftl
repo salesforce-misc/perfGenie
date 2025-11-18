@@ -96,7 +96,7 @@
 
             URL = "v1/canaryview/pidstats/" + dataHost + "/?cell="+cell+"&start=" + startEpoch + "&end=" + endEpoch+ "&instance=" + instance;
             //showSpinner("spinnerswat");
-            let currentSpinner = "spinner"+$(".modern-tabs-nav-button.active").attr("data-tab-target");
+            let currentSpinner = "spinner"+$("#canary-tabs .modern-tabs-nav-button.active").attr("data-tab-target");
                     //showSpinner(currentSpinner);
             ProgressBar.start({container: currentSpinner, position: 'top',showIcon: true, iconStartPosition: 'top', icon: '🏄', splash:true }); // Rocket emoji});
             $.ajax({
@@ -273,7 +273,7 @@
     function  getTimeSeriesDataAndLoad(cell,startEpoch,endEpoch){
         URL = "v1/canaryview/timeseries/" + dataHost + "/?cell="+cell+"&start=" + startEpoch + "&end=" + endEpoch;
         //showSpinner("spinnerswat");
-        let currentSpinner = "spinner"+$(".modern-tabs-nav-button.active").attr("data-tab-target");
+        let currentSpinner = "spinner"+$("#canary-tabs .modern-tabs-nav-button.active").attr("data-tab-target");
                 //showSpinner(currentSpinner);
         ProgressBar.start({container: currentSpinner, position: 'top',showIcon: true, iconStartPosition: 'top', icon: '🏄', splash:true }); // Rocket emoji});
         $.ajax({
@@ -424,7 +424,7 @@
             let color = "black";
             let count = "";
             let key = canaryContextArray[i].record[timeStampIndex] + canaryContextArray[i].record[cellIndex];
-            if (canaryCommentCounts[key] != undefined) {
+            if (canaryCommentCounts != undefined && canaryCommentCounts[key] != undefined) {
                 let arr = canaryCommentCounts[key].split(":");
                 count = arr[0]
                 color = arr[1];

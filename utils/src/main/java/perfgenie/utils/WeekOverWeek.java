@@ -543,7 +543,7 @@ public class WeekOverWeek {
                 List<String> metricList = new ArrayList(Arrays.asList("rCpuT", "jCpuT", "cCpuT","cCpuTPeak", "cCpuR", "sfPt", "5xx", "4xx"));
 
                 record.add("timestamp:timestamp");
-                if (type == 3) {
+                if (type == 4) {
                     record.add(System.currentTimeMillis());//add time stamp of when it ran
                 } else {
                     //record.add(timestampEnd1);//epoch

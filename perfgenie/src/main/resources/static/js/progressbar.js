@@ -151,7 +151,7 @@
                 transform: translateY(-50%) translateX(-50%);
                 font-size: 16px;
                 line-height: 1;
-                z-index: 10000; /* Higher than progress bar (9999) */
+                z-index: 99999; /* Very high z-index to appear on top of all page content */
                 pointer-events: none;
                 transition: left 0.4s ease, top 0.4s ease;
                 white-space: nowrap;
@@ -554,7 +554,7 @@
                 document.body.appendChild(instance.progressIconElement);
                 // Change icon back to fixed positioning when on body
                 instance.progressIconElement.style.position = 'fixed';
-                instance.progressIconElement.style.zIndex = '10000';
+                instance.progressIconElement.style.zIndex = '99999';
             }
             return;
         }
@@ -596,7 +596,7 @@
                 containerElement.appendChild(instance.progressIconElement);
                 // Change icon to absolute positioning when inside container
                 instance.progressIconElement.style.position = 'absolute';
-                instance.progressIconElement.style.zIndex = '10';
+                instance.progressIconElement.style.zIndex = '99999'; /* Very high z-index to appear on top of all page content */
             }
         }
     }
