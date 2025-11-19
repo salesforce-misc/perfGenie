@@ -1686,7 +1686,9 @@
                                             
                                             // Directly call renderStatsTable with the stored currentDataArray
                                             // This will recreate the spacer div with the correct height
-                                            this.renderStatsTable(panel, panel._currentDataArray, statsContent, panelStats, previousDataArray, isTransposed, finalPreviousDuration);
+                                            // Use current panel.stats (user selections) instead of original panelStats (config)
+                                            const currentStats = Array.isArray(panel.stats) ? panel.stats : panelStats;
+                                            this.renderStatsTable(panel, panel._currentDataArray, statsContent, currentStats, previousDataArray, isTransposed, finalPreviousDuration);
                                         }, 250);
                                     } else {
                                         // Stats tab not visible, just fix headers if they exist
@@ -2270,6 +2272,17 @@
                 
                 // Stats table specific
                 if (panel.statsTable !== undefined) convertedPanel.statsTable = panel.statsTable;
+                
+                // Statistics - add default ["avg"] if no stats are provided
+                if (panel.stats !== undefined) {
+                    convertedPanel.stats = panel.stats;
+                } else if (panel.options?.stats !== undefined) {
+                    convertedPanel.options = convertedPanel.options || {};
+                    convertedPanel.options.stats = panel.options.stats;
+                } else {
+                    // No stats provided, add default ["avg"]
+                    convertedPanel.stats = ["avg"];
+                }
                 
                 // Aggregation
                 if (panel.aggregation !== undefined) convertedPanel.aggregation = panel.aggregation;
@@ -4519,7 +4532,9 @@
                         const compareDropdown = container.closest('.genie-dashboard-panel')?.querySelector('.genie-dashboard-compare-dropdown');
                         const previousDuration = compareDropdown && compareDropdown.value !== 'none' ? compareDropdown.value : null;
                         const isTransposed = panel.statsTable?.transpose || panel.options?.statsTable?.transpose || panel.transpose || false;
-                        this.renderStatsTable(panel, currentDataArray, statsContent, panelStats, previousDataArray, isTransposed, previousDuration);
+                        // Use current panel.stats (user selections) instead of original panelStats (config)
+                        const currentStats = Array.isArray(panel.stats) ? panel.stats : panelStats;
+                        this.renderStatsTable(panel, currentDataArray, statsContent, currentStats, previousDataArray, isTransposed, previousDuration);
                     }
                 });
                 
@@ -4548,6 +4563,7 @@
                 statisticsIconButton.type = 'button';
                 statisticsIconButton.className = 'genie-dashboard-tab';
                 statisticsIconButton.setAttribute('data-icon', 'statistics');
+                statisticsIconButton.setAttribute('data-panel-id', panel.id);
                 
                 // Update button display based on current statistics
                 const updateStatisticsButtonDisplay = () => {
@@ -4576,6 +4592,7 @@
                 // Create dropdown menu with checkboxes
                 const statisticsMenu = document.createElement('div');
                 statisticsMenu.className = 'genie-dashboard-statistics-menu';
+                statisticsMenu.setAttribute('data-panel-id', panel.id);
                 // Use higher z-index to appear above unit-note (z-index: 10) and other panel elements
                 // Also ensure it's positioned relative to the container, not the panel
                 statisticsMenu.style.cssText = 'display: none; position: fixed; background: white; border: 1px solid #d1d5db; border-radius: 4px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); z-index: 10000; min-width: 140px; padding: 4px; max-height: 300px; overflow-y: auto;';
@@ -4599,7 +4616,8 @@
                     });
                     
                     const checkbox = menuItem.querySelector('input[type="checkbox"]');
-                    checkbox.addEventListener('change', async (e) => {
+                    // Store reference to change handler so we can temporarily remove it when updating checkbox states
+                    const changeHandler = async (e) => {
                         e.stopPropagation();
                         
                         // Update current stats array
@@ -4644,10 +4662,15 @@
                             // Stats tab is active - re-render stats table
                             if (showTabs) {
                                 const isTransposed = panel.statsTable?.transpose || panel.options?.statsTable?.transpose || panel.transpose || false;
-                                this.renderStatsTable(panel, currentDataArray, statsContent, selectedStats.length > 0 ? selectedStats : panelStats, previousDataArray, isTransposed, currentCompareValue);
+                                // Use current panel.stats (user selections) instead of falling back to panelStats (config)
+                                const statsToUse = selectedStats.length > 0 ? selectedStats : (Array.isArray(panel.stats) ? panel.stats : panelStats);
+                                this.renderStatsTable(panel, currentDataArray, statsContent, statsToUse, previousDataArray, isTransposed, currentCompareValue);
                             }
                         }
-                    });
+                    };
+                    checkbox.addEventListener('change', changeHandler);
+                    // Store reference for temporary removal when updating checkbox states
+                    checkbox._changeHandler = changeHandler;
                     
                     statisticsMenu.appendChild(menuItem);
                 });
@@ -4655,28 +4678,197 @@
                 // Toggle menu on button click
                 statisticsIconButton.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const isVisible = statisticsMenu.style.display === 'block' || statisticsMenu.style.display === 'flex';
+                    e.preventDefault();
+                    
+                    // Get the clicked button and its panel ID
+                    const clickedButton = e.currentTarget;
+                    const currentPanelId = clickedButton.getAttribute('data-panel-id');
+                    
+                    if (!currentPanelId) {
+                        console.error(`[Statistics] Button has no panel ID`);
+                        return;
+                    }
+                    
+                    // ALWAYS find the menu by panel ID to ensure we get the correct one
+                    // Don't rely on closure variables or stored references which might be wrong
+                    let menu = document.querySelector(`.genie-dashboard-statistics-menu[data-panel-id="${currentPanelId}"]`);
+                    
+                    // Fallback: try stored reference if search failed
+                    if (!menu) {
+                        menu = clickedButton._statisticsMenu;
+                    }
+                    
+                    // Last resort: use closure variable (but verify it matches)
+                    if (!menu) {
+                        menu = statisticsMenu;
+                        const menuPanelId = menu?.getAttribute('data-panel-id');
+                        if (menuPanelId !== currentPanelId) {
+                            console.error(`[Statistics] Closure menu doesn't match panel ${currentPanelId}, menu panel: ${menuPanelId}`);
+                            menu = null;
+                        }
+                    }
+                    
+                    if (!menu) {
+                        console.error(`[Statistics] Could not find menu for panel ${currentPanelId}`);
+                        return;
+                    }
+                    
+                    // Store reference for next time
+                    clickedButton._statisticsMenu = menu;
+                    
+                    // CRITICAL: Update checkbox states to reflect current panel.stats before showing menu
+                    // This ensures the menu shows the current selections, not the original config
+                    // Temporarily remove change listeners to prevent triggering renders when updating checkbox states
+                    const currentPanelStats = Array.isArray(panel.stats) ? panel.stats : [];
+                    statsOptions.forEach(stat => {
+                        const checkbox = menu.querySelector(`.statistics-checkbox-${panel.id}[value="${stat}"]`);
+                        if (checkbox) {
+                            // Store the change handler temporarily
+                            const changeHandler = checkbox._changeHandler;
+                            if (changeHandler) {
+                                checkbox.removeEventListener('change', changeHandler);
+                            }
+                            // Update checkbox state
+                            checkbox.checked = currentPanelStats.includes(stat);
+                            // Restore change handler
+                            if (changeHandler) {
+                                checkbox.addEventListener('change', changeHandler);
+                            }
+                        }
+                    });
+                    
+                    // Hide all other statistics menus first to avoid conflicts
+                    document.querySelectorAll('.genie-dashboard-statistics-menu').forEach(otherMenu => {
+                        if (otherMenu !== menu) {
+                            otherMenu.style.setProperty('display', 'none', 'important');
+                            otherMenu.style.setProperty('visibility', 'hidden', 'important');
+                        }
+                    });
+                    
+                    const computed = window.getComputedStyle(menu);
+                    const isVisible = computed.display === 'block' || computed.display === 'flex';
+                    
                     if (isVisible) {
-                        statisticsMenu.style.display = 'none';
+                        menu.style.setProperty('display', 'none', 'important');
+                        menu.style.setProperty('visibility', 'hidden', 'important');
                     } else {
-                        // Calculate position relative to button using fixed positioning
-                        const buttonRect = statisticsIconButton.getBoundingClientRect();
-                        const menuTop = buttonRect.bottom + window.scrollY + 4; // 4px margin
-                        const menuLeft = buttonRect.left + window.scrollX;
+                        // CRITICAL: Calculate position relative to the CLICKED button (e.currentTarget)
+                        // This ensures the menu appears next to the button that was actually clicked
+                        const buttonRect = clickedButton.getBoundingClientRect();
+                        const viewportHeight = window.innerHeight;
+                        const viewportWidth = window.innerWidth;
                         
-                        statisticsMenu.style.top = menuTop + 'px';
-                        statisticsMenu.style.left = menuLeft + 'px';
-                        statisticsMenu.style.display = 'block';
+                        // Start with position below the button
+                        let menuTop = buttonRect.bottom + 4; // 4px margin, use viewport coordinates
+                        let menuLeft = buttonRect.left; // Use viewport coordinates
+                        
+                        // Estimate menu dimensions (actual size may vary)
+                        const estimatedMenuHeight = 200; // More realistic estimate than 300
+                        const menuWidth = 140; // min-width
+                        
+                        console.log(`[Statistics] Positioning menu for panel ${currentPanelId}:`, {
+                            buttonTop: buttonRect.top,
+                            buttonBottom: buttonRect.bottom,
+                            buttonLeft: buttonRect.left,
+                            buttonRight: buttonRect.right,
+                            viewportHeight: viewportHeight,
+                            viewportWidth: viewportWidth,
+                            initialCalculatedTop: menuTop,
+                            initialCalculatedLeft: menuLeft
+                        });
+                        
+                        // Check if menu would go off bottom of viewport
+                        // Calculate actual space available below the button
+                        const spaceBelow = viewportHeight - menuTop;
+                        const wouldGoOffBottom = spaceBelow < estimatedMenuHeight;
+                        
+                        console.log(`[Statistics] Viewport check: viewportHeight=${viewportHeight}, menuTop=${menuTop}, spaceBelow=${spaceBelow}, estimatedMenuHeight=${estimatedMenuHeight}, wouldGoOffBottom=${wouldGoOffBottom}`);
+                        
+                        if (wouldGoOffBottom) {
+                            // Menu would go off bottom, try showing above button
+                            const aboveTop = buttonRect.top - estimatedMenuHeight - 4;
+                            const spaceAbove = buttonRect.top;
+                            
+                            console.log(`[Statistics] Menu would go off bottom (only ${spaceBelow}px space), checking above: aboveTop=${aboveTop}, spaceAbove=${spaceAbove}`);
+                            
+                            if (aboveTop >= 0 && spaceAbove >= estimatedMenuHeight) {
+                                // There's room above, show there
+                                menuTop = aboveTop;
+                                console.log(`[Statistics] Showing above button: top=${menuTop}px`);
+                            } else {
+                                // Not enough room above either, just show below and let it scroll
+                                // Or adjust to fit within viewport (but don't move it way up)
+                                if (spaceBelow < 50) {
+                                    // Very little space, adjust to fit
+                                    menuTop = Math.max(buttonRect.bottom + 4, viewportHeight - estimatedMenuHeight - 4);
+                                    console.log(`[Statistics] Very little space (${spaceBelow}px), adjusting to fit viewport: top=${menuTop}px`);
+                                } else {
+                                    // Some space, show below button
+                                    console.log(`[Statistics] Showing below button despite limited space: top=${menuTop}px, space below: ${spaceBelow}px`);
+                                }
+                            }
+                        } else {
+                            console.log(`[Statistics] Enough space below (${spaceBelow}px), showing below button: top=${menuTop}px`);
+                        }
+                        
+                        // Ensure menu doesn't go off left/right edges
+                        if (menuLeft + menuWidth > viewportWidth) {
+                            menuLeft = viewportWidth - menuWidth - 4; // Keep 4px from right edge
+                            console.log(`[Statistics] Menu would go off right, adjusting left: left=${menuLeft}px`);
+                        }
+                        if (menuLeft < 0) {
+                            menuLeft = 4; // At least 4px from left edge
+                            console.log(`[Statistics] Menu would go off left, adjusting left: left=${menuLeft}px`);
+                        }
+                        
+                        console.log(`[Statistics] Final menu position: top=${menuTop}px, left=${menuLeft}px`);
+                        
+                        // Set all styles using setProperty with important flag to override any CSS
+                        menu.style.setProperty('display', 'block', 'important');
+                        menu.style.setProperty('visibility', 'visible', 'important');
+                        menu.style.setProperty('opacity', '1', 'important');
+                        menu.style.setProperty('pointer-events', 'auto', 'important');
+                        menu.style.setProperty('z-index', '10000', 'important');
+                        menu.style.setProperty('top', menuTop + 'px', 'important');
+                        menu.style.setProperty('left', menuLeft + 'px', 'important');
+                        menu.style.setProperty('position', 'fixed', 'important');
+                        
+                        // Force a reflow to ensure styles are applied
+                        menu.offsetHeight;
+                        
+                        // Verify the menu position after setting
+                        const finalRect = menu.getBoundingClientRect();
+                        console.log(`[Statistics] Menu final position after render: top=${finalRect.top}px, left=${finalRect.left}px, button was at: top=${buttonRect.top}px, left=${buttonRect.left}px`);
+                        
+                        // Double-check: if the menu is way off, log a warning
+                        const verticalDiff = Math.abs(finalRect.top - buttonRect.bottom);
+                        const horizontalDiff = Math.abs(finalRect.left - buttonRect.left);
+                        if (verticalDiff > 50 || horizontalDiff > 50) {
+                            console.warn(`[Statistics] Menu position seems wrong! Vertical diff: ${verticalDiff}px, Horizontal diff: ${horizontalDiff}px`);
+                        }
                     }
                 });
                 
+                // Store menu reference on button for easy access
+                statisticsIconButton._statisticsMenu = statisticsMenu;
+                
                 // Close menu when clicking outside
                 const closeMenuHandler = (e) => {
-                    if (!statisticsContainer.contains(e.target) && !statisticsMenu.contains(e.target)) {
-                        statisticsMenu.style.display = 'none';
+                    // Don't close if clicking on any statistics button
+                    if (e.target.closest('[data-icon="statistics"]')) {
+                        return;
                     }
+                    // Close all statistics menus when clicking outside
+                    document.querySelectorAll('.genie-dashboard-statistics-menu').forEach(menu => {
+                        const computed = window.getComputedStyle(menu);
+                        if (computed.display === 'block' || computed.display === 'flex') {
+                            menu.style.setProperty('display', 'none', 'important');
+                            menu.style.setProperty('visibility', 'hidden', 'important');
+                        }
+                    });
                 };
-                document.addEventListener('click', closeMenuHandler);
+                // Use capture phase to ensure this runs before other click handlers
+                document.addEventListener('click', closeMenuHandler, true);
                 
                 statisticsContainer.appendChild(statisticsIconButton);
                 // Append menu to body for fixed positioning to work correctly and avoid truncation
@@ -5199,6 +5391,8 @@
         // Helper function to update compare dropdown options based on active tab
         const updateCompareDropdownOptions = (tabName) => {
             if (!compareDropdown) return;
+            // Track if we rendered to prevent double rendering
+            let hasRendered = false;
             
             // Get the appropriate previous options based on active tab
             let optionsStr = null;
@@ -5286,7 +5480,10 @@
                     // Re-render stats table without previous data if on stats tab
                     if (tabName === 'stats') {
                         const isTransposed = panel.statsTable?.transpose || panel.options?.statsTable?.transpose || panel.transpose || false;
-                        this.renderStatsTable(panel, currentDataArray, statsContent, panelStats, null, isTransposed, null);
+                        // Use current panel.stats (user selections) instead of original panelStats (config)
+                        const currentStats = Array.isArray(panel.stats) ? panel.stats : panelStats;
+                        this.renderStatsTable(panel, currentDataArray, statsContent, currentStats, null, isTransposed, null);
+                        hasRendered = true;
                     }
                 } else if (valueChanged && newValue !== 'none') {
                     // Value changed to a non-none option - need to fetch new data
@@ -5347,8 +5544,11 @@
                                 // Re-render stats table with existing previous data
                                 // renderStatsTable will filter previous data by zoom range if zoom is active
                                 const isTransposed = panel.statsTable?.transpose || panel.options?.statsTable?.transpose || panel.transpose || false;
-                                console.log(`[TabSwitch] Rendering stats table with previousDataArray:`, dataToUse ? `${dataToUse.length} targets` : 'null', 'duration:', durationToUse);
-                                this.renderStatsTable(panel, currentDataArray, statsContent, panelStats, dataToUse, isTransposed, durationToUse);
+                                // Use current panel.stats (user selections) instead of original panelStats (config)
+                                const currentStats = Array.isArray(panel.stats) ? panel.stats : panelStats;
+                                console.log(`[TabSwitch] Rendering stats table with previousDataArray:`, dataToUse ? `${dataToUse.length} targets` : 'null', 'duration:', durationToUse, 'stats:', currentStats);
+                                this.renderStatsTable(panel, currentDataArray, statsContent, currentStats, dataToUse, isTransposed, durationToUse);
+                                hasRendered = true;
                             }
                         }
                     } else {
@@ -5358,11 +5558,17 @@
                             renderChartWithData(currentDataArray, null, null);
                         } else if (tabName === 'stats') {
                             const isTransposed = panel.statsTable?.transpose || panel.options?.statsTable?.transpose || panel.transpose || false;
-                            this.renderStatsTable(panel, currentDataArray, statsContent, panelStats, null, isTransposed, null);
+                            // Use current panel.stats (user selections) instead of original panelStats (config)
+                            const currentStats = Array.isArray(panel.stats) ? panel.stats : panelStats;
+                            this.renderStatsTable(panel, currentDataArray, statsContent, currentStats, null, isTransposed, null);
+                            hasRendered = true;
                         }
                     }
                 }
             }
+            
+            // Return whether we rendered to prevent double rendering
+            return hasRendered;
         };
         
         // Tab switching function (only if tabs are enabled)
@@ -5434,8 +5640,9 @@
             }
             
             // Update compare dropdown options based on active tab (after tab is visible)
+            let updateCompareRendered = false;
             if (compareDropdown && (timeSeriesPreviousOptions || statsTablePreviousOptions)) {
-                updateCompareDropdownOptions(tabName);
+                updateCompareRendered = updateCompareDropdownOptions(tabName);
             }
             
             // Enable/disable percent icon - only available for stats tab (keep visible to avoid flicker)
@@ -5489,8 +5696,10 @@
                             const currentDropdownValue = compareDropdown ? compareDropdown.value : null;
                             const finalPreviousDuration = currentDropdownValue && currentDropdownValue !== 'none' ? currentDropdownValue : null;
                             const isTransposed = panel.statsTable?.transpose || panel.options?.statsTable?.transpose || panel.transpose || false;
+                            // Use current panel.stats (user selections) instead of original panelStats (config)
+                            const currentStats = Array.isArray(panel.stats) ? panel.stats : panelStats;
                             setTimeout(() => {
-                                this.renderStatsTable(panel, currentDataArray, statsContent, panelStats, previousDataArray, isTransposed, finalPreviousDuration);
+                                this.renderStatsTable(panel, currentDataArray, statsContent, currentStats, previousDataArray, isTransposed, finalPreviousDuration);
                             }, 0);
                         }
                     } else {
@@ -5649,7 +5858,8 @@
                     }
                 }
                 const isFetchingPreviousData = hasCompareSelected && (!fallbackPreviousData || fallbackPreviousData.length === 0);
-                if (!isFetchingPreviousData) {
+                // Only render if updateCompareDropdownOptions didn't already render
+                if (!isFetchingPreviousData && !updateCompareRendered) {
                     // Render stats table - re-render to ensure it uses the current dropdown value and aggregation state
                     // Use setTimeout to ensure dropdown has been updated by updateCompareDropdownOptions
                     setTimeout(() => {
@@ -5661,8 +5871,11 @@
                         // 1. Current dropdown value is used
                         // 2. Current aggregation state is applied
                         // 3. Previous data is properly handled (if already available)
-                        console.log(`[TabSwitch Fallback] Rendering stats table with previousDataArray:`, fallbackPreviousData ? `${fallbackPreviousData.length} targets` : 'null', 'duration:', finalPreviousDuration);
-                        this.renderStatsTable(panel, currentDataArray, statsContent, panelStats, fallbackPreviousData, isTransposed, finalPreviousDuration);
+                        // Use current panel.stats (user selections) instead of original panelStats (config)
+                        const currentStats = Array.isArray(panel.stats) ? panel.stats : panelStats;
+                        console.log(`[TabSwitch] Switching to stats tab - using stats:`, currentStats, 'panel.stats:', panel.stats, 'panelStats (config):', panelStats);
+                        console.log(`[TabSwitch Fallback] Rendering stats table with previousDataArray:`, fallbackPreviousData ? `${fallbackPreviousData.length} targets` : 'null', 'duration:', finalPreviousDuration, 'stats:', currentStats);
+                        this.renderStatsTable(panel, currentDataArray, statsContent, currentStats, fallbackPreviousData, isTransposed, finalPreviousDuration);
                     }, 50); // Small delay to ensure updateCompareDropdownOptions has completed
                 }
             }
