@@ -752,6 +752,15 @@ class GenieAnalytics {
         this.selectedFilters = []; // Store active filters
         this.sortedGroups = null; // Store sorted group order for table rendering
         this.columnTypes = {}; // Store detected column types for sorting
+        
+        // Configuration options
+        // Enable metric name search: allows filtering columns/series by searching metric names
+        // Can be configured via data attribute: data-enable-metric-name-search="true|false"
+        // Default: false (disabled by default)
+        const enableMetricNameSearchAttr = this.container.getAttribute('data-enable-metric-name-search');
+        this.enableMetricNameSearch = enableMetricNameSearchAttr !== null 
+            ? enableMetricNameSearchAttr === 'true' || enableMetricNameSearchAttr === '1'
+            : false; // Default to disabled
         this.filterOperators = [
             { value: 'between', label: '≤ x ≤' },
             { value: 'less than', label: '<' },
@@ -845,6 +854,36 @@ class GenieAnalytics {
     getElementById(baseId) {
         const instanceId = this.ids && this.ids[baseId] ? this.ids[baseId] : this.getInstanceId(baseId);
         return this.container ? this.container.querySelector('#' + instanceId) : null;
+    }
+
+    /**
+     * Enable or disable metric name search feature
+     * @param {boolean} enable - true to enable, false to disable
+     */
+    setMetricNameSearchEnabled(enable) {
+        this.enableMetricNameSearch = enable === true;
+        // Update search input placeholder to reflect the change
+        const searchInput = this.getElementById('genieAnalyticsSearchInput');
+        if (searchInput) {
+            searchInput.placeholder = this.enableMetricNameSearch 
+                ? 'Search... (Enter) - Supports metric names' 
+                : 'Search... (Enter)';
+            searchInput.title = this.enableMetricNameSearch
+                ? 'Search across all data and metric names - Press Enter to apply'
+                : 'Search across all data - Press Enter to apply';
+        }
+        // Re-apply filters to reflect the change
+        if (this.currentFilters.search) {
+            this.applyFilters();
+        }
+    }
+
+    /**
+     * Get whether metric name search is enabled
+     * @returns {boolean} true if enabled, false otherwise
+     */
+    isMetricNameSearchEnabled() {
+        return this.enableMetricNameSearch === true;
     }
 
     /**
@@ -2133,7 +2172,7 @@ class GenieAnalytics {
                             '<div class="genieAnalytics-header">' +
                                 '<div class="genieAnalytics-controls">' +
                                     '<div class="genieAnalytics-view-controls">' +
-                                        '<input type="text" id="' + ids.genieAnalyticsSearchInput + '" class="genieAnalytics-search-input" placeholder="Search... (Enter)" title="Search across all data - Press Enter to apply" style="font-size: 14px !important;">' +
+                                        '<input type="text" id="' + ids.genieAnalyticsSearchInput + '" class="genieAnalytics-search-input" placeholder="' + (this.enableMetricNameSearch ? 'Search... (Enter) - Supports metric names' : 'Search... (Enter)') + '" title="' + (this.enableMetricNameSearch ? 'Search across all data and metric names - Press Enter to apply' : 'Search across all data - Press Enter to apply') + '" style="font-size: 14px !important;">' +
                                         '<select id="' + ids.loadLensSelect + '" class="genieAnalytics-lens-select" title="Load Saved Lens" style="font-size: 14px !important;">' +
                                             '<option value="">Load Lens...</option>' +
                                         '</select>' +
@@ -4176,7 +4215,8 @@ class GenieAnalytics {
     calculateOptimalCanvasSize(chartData) {
         // Step 1: Get chart data
         const labels = chartData.labels || [];
-        const metrics = this.selectedMetrics || [];
+        // Use filtered metrics if search filtered by metric name
+        const metrics = this.getMetricsForRendering() || [];
         const groups = labels;
 
         if (labels.length === 0) {
@@ -4594,8 +4634,9 @@ class GenieAnalytics {
         const fieldPalette = this.getElementById('fieldPalette');
         const isCollapsed = fieldPalette && fieldPalette.classList.contains('collapsed');
         
-        // Calculate legend space needed (C3.js legend on right side)
-        const totalLegendItems = this.selectedDimensions.length * this.selectedMetrics.length;
+        // Calculate legend space needed (C3.js legend on right side) - use filtered metrics if search filtered by metric name
+        const metricsToUse = this.getMetricsForRendering();
+        const totalLegendItems = this.selectedDimensions.length * metricsToUse.length;
         const legendSpace = Math.max(120, totalLegendItems * 15); // Reserve space for legend
         
         // Check if this is a time series chart
@@ -4711,6 +4752,9 @@ class GenieAnalytics {
         // Create table HTML
         let tableHTML = '<div class="table-wrapper"><table class="genieAnalytics-table">';
         
+        // Get metrics to use (filtered by search if applicable)
+        const metricsToUse = this.getMetricsForRendering();
+        
         // Create header
         tableHTML += '<thead><tr>';
         this.selectedDimensions.forEach(dimension => {
@@ -4718,7 +4762,7 @@ class GenieAnalytics {
             tableHTML += '<th class="sortable-header" data-column="' + dimension + '" data-type="dimension">' + 
                        this.formatHeader(dimension) + sortIcon + '</th>';
         });
-        this.selectedMetrics.forEach(metricName => {
+        metricsToUse.forEach(metricName => {
             const selectedAggregations = this.getMetricAggregations(metricName);
             selectedAggregations.forEach(aggregationType => {
                 const aggregationLabel = this.getAggregationLabel(aggregationType);
@@ -4747,8 +4791,8 @@ class GenieAnalytics {
                 tableHTML += '<td>All Data</td>';
             }
             
-            // Add metric values
-            this.selectedMetrics.forEach(metricName => {
+            // Add metric values - use filtered metrics if search filtered by metric name
+            metricsToUse.forEach(metricName => {
                 const selectedAggregations = this.getMetricAggregations(metricName);
                 selectedAggregations.forEach(aggregationType => {
                     const key = metricName + '_' + aggregationType;
@@ -5430,6 +5474,14 @@ class GenieAnalytics {
         console.log('Sorted groups:', this.sortedGroups);
     }
 
+    /**
+     * Get metrics to use for rendering - returns filtered metrics if search filtered by metric name,
+     * otherwise returns selectedMetrics
+     */
+    getMetricsForRendering() {
+        return this._filteredMetricsForRendering || this.selectedMetrics;
+    }
+
     generateChartData() {
         const data = {};
         
@@ -5438,6 +5490,9 @@ class GenieAnalytics {
             const rowId = this.generateRowId(row, index);
             return !this.ignoredRows.has(rowId);
         });
+        
+        // Get metrics to use (filtered by search if applicable)
+        const metricsToUse = this.getMetricsForRendering();
         
         activeData.forEach(row => {
             // Create grouping key based on selected dimensions
@@ -5452,8 +5507,8 @@ class GenieAnalytics {
                 data[groupKey] = {};
             }
             
-            // Aggregate metrics
-            this.selectedMetrics.forEach(metricName => {
+            // Aggregate metrics - use filtered metrics if search filtered by metric name
+            metricsToUse.forEach(metricName => {
                 if (!data[groupKey][metricName]) {
                     data[groupKey][metricName] = [];
                 }
@@ -5464,11 +5519,11 @@ class GenieAnalytics {
             });
         });
         
-        // Calculate aggregations for each metric
+        // Calculate aggregations for each metric - use filtered metrics if search filtered by metric name
         const processedData = {};
         Object.keys(data).forEach(group => {
             processedData[group] = {};
-            this.selectedMetrics.forEach(metricName => {
+            metricsToUse.forEach(metricName => {
                 const values = data[group][metricName];
                 const selectedAggregations = this.getMetricAggregations(metricName);
                 
@@ -5617,13 +5672,14 @@ class GenieAnalytics {
     }
 
     getYAxisTitle() {
-        if (this.selectedMetrics.length === 0) {
+        const metricsToUse = this.getMetricsForRendering();
+        if (metricsToUse.length === 0) {
             return 'Value';
         }
         
-        // Collect all aggregations from all metrics
+        // Collect all aggregations from all metrics - use filtered metrics if search filtered by metric name
         const allAggregations = [];
-        this.selectedMetrics.forEach(metricName => {
+        metricsToUse.forEach(metricName => {
             const selectedAggregations = this.getMetricAggregations(metricName);
             allAggregations.push(...selectedAggregations);
         });
@@ -5802,7 +5858,8 @@ class GenieAnalytics {
     // C3.js-based chart functions
     createC3LineChart(data, chartHeight) {
         let groups = Object.keys(data);
-        const metrics = this.selectedMetrics;
+        // Use filtered metrics if search filtered by metric name
+        const metrics = this.getMetricsForRendering();
         
         if (groups.length === 0 || metrics.length === 0) {
             return;
@@ -6145,7 +6202,8 @@ class GenieAnalytics {
 
     createC3BarChart(data, chartHeight) {
         let groups = Object.keys(data);
-        const metrics = this.selectedMetrics;
+        // Use filtered metrics if search filtered by metric name
+        const metrics = this.getMetricsForRendering();
         
         if (groups.length === 0 || metrics.length === 0) {
             return;
@@ -6818,9 +6876,10 @@ class GenieAnalytics {
             console.log('Created x column with', xValues.length - 1, 'timestamps');
         }
         
-        // Generate y columns for each group+metric+aggregation combination
+        // Generate y columns for each group+metric+aggregation combination - use filtered metrics if search filtered by metric name
+        const metricsToUse = this.getMetricsForRendering();
         groupCombinations.forEach(group => {
-            this.selectedMetrics.forEach(metricName => {
+            metricsToUse.forEach(metricName => {
                 const selectedAggregations = this.getMetricAggregations(metricName);
                 selectedAggregations.forEach(aggregationType => {
                     const key = metricName + '_' + aggregationType;
@@ -7560,8 +7619,9 @@ class GenieAnalytics {
                 timeSeriesData[timestamp][groupKey] = {};
             }
             
-            // Aggregate metrics for this timestamp and group combination
-            this.selectedMetrics.forEach(metricName => {
+            // Aggregate metrics for this timestamp and group combination - use filtered metrics if search filtered by metric name
+            const metricsToUse = this.getMetricsForRendering();
+            metricsToUse.forEach(metricName => {
                 if (!timeSeriesData[timestamp][groupKey][metricName]) {
                     timeSeriesData[timestamp][groupKey][metricName] = [];
                 }
@@ -7572,13 +7632,14 @@ class GenieAnalytics {
             });
         });
         
-        // Calculate aggregations for each metric in each group combination
+        // Calculate aggregations for each metric in each group combination - use filtered metrics if search filtered by metric name
+        const metricsToUseForAggregation = this.getMetricsForRendering();
         const processedData = {};
         Object.keys(timeSeriesData).forEach(timestamp => {
             processedData[timestamp] = {};
             Object.keys(timeSeriesData[timestamp]).forEach(groupKey => {
                 processedData[timestamp][groupKey] = {};
-                this.selectedMetrics.forEach(metricName => {
+                metricsToUseForAggregation.forEach(metricName => {
                     const values = timeSeriesData[timestamp][groupKey][metricName];
                     if (values && values.length > 0) {
                         const selectedAggregations = this.getMetricAggregations(metricName);
@@ -7621,9 +7682,10 @@ class GenieAnalytics {
         const colors = {};
         let colorIndex = 0;
         
-        // Generate unique colors for each group+metric+aggregation combination
+        // Generate unique colors for each group+metric+aggregation combination - use filtered metrics if search filtered by metric name
+        const metricsToUse = this.getMetricsForRendering();
         groups.forEach((group) => {
-            this.selectedMetrics.forEach((metricName) => {
+            metricsToUse.forEach((metricName) => {
                 const selectedAggregations = this.getMetricAggregations(metricName);
                 selectedAggregations.forEach(aggregationType => {
                     const key = metricName + '_' + aggregationType;
@@ -7645,10 +7707,11 @@ class GenieAnalytics {
         const metricColumnWidth = 300; // Increased from 200 to 300
         const legendPadding = 20;
         
-        // Group legend items by metric
+        // Group legend items by metric - use filtered metrics if search filtered by metric name
+        const metricsToUse = this.getMetricsForRendering();
         const metricGroups = {};
         groupCombinations.forEach((group) => {
-            this.selectedMetrics.forEach((metricName) => {
+            metricsToUse.forEach((metricName) => {
                 if (!metricGroups[metricName]) {
                     metricGroups[metricName] = [];
                 }
@@ -7950,10 +8013,13 @@ class GenieAnalytics {
         const timestamps = Object.keys(data);
         const allValues = [];
         
+        // Get metrics to use (filtered by search if applicable) - use filtered metrics if search filtered by metric name
+        const metricsToUse = this.getMetricsForRendering();
+        
         // Collect all values for scaling across all group combinations and metrics
         timestamps.forEach(timestamp => {
             groupCombinations.forEach(group => {
-        this.selectedMetrics.forEach(metricName => {
+        metricsToUse.forEach(metricName => {
             const selectedAggregations = this.getMetricAggregations(metricName);
             selectedAggregations.forEach(aggregationType => {
                         const key = metricName + '_' + aggregationType;
@@ -7972,7 +8038,7 @@ class GenieAnalytics {
         
             // Draw lines for each group combination and metric+aggregation
             groupCombinations.forEach(group => {
-        this.selectedMetrics.forEach(metricName => {
+        metricsToUse.forEach(metricName => {
             const selectedAggregations = this.getMetricAggregations(metricName);
             selectedAggregations.forEach(aggregationType => {
                         const key = metricName + '_' + aggregationType;
@@ -10228,13 +10294,56 @@ class GenieAnalytics {
         //console.log('DEBUG: applyFilters() called with search term:', this.currentFilters.search);
         //console.log('DEBUG: Original data length:', this.parsedData.length);
         
+        // Filter metrics by name if search term matches metric names
+        // This allows filtering columns in tables and series in timeseries charts
+        // Only enabled if this.enableMetricNameSearch is true
+        let filteredMetricsForRendering = null;
+        let searchMatchesMetricNames = false;
+        if (this.currentFilters.search && this.enableMetricNameSearch) {
+            const searchTerm = this.currentFilters.search.toLowerCase();
+            // Check if search term matches any selected metric name (including derived metrics)
+            // We check selectedMetrics first, then also check all available metrics
+            const allMetrics = [...this.metrics, ...Object.keys(this.expressions || {})];
+            const matchingMetrics = allMetrics.filter(metricName => 
+                metricName.toLowerCase().includes(searchTerm)
+            );
+            
+            // Also check if any selected metrics match
+            const matchingSelectedMetrics = this.selectedMetrics.filter(metricName => 
+                metricName.toLowerCase().includes(searchTerm)
+            );
+            
+            // If search term matches any metric names (selected or available), filter selectedMetrics
+            if (matchingMetrics.length > 0 || matchingSelectedMetrics.length > 0) {
+                searchMatchesMetricNames = true;
+                // Filter selectedMetrics to only include matching metrics
+                // Use matchingSelectedMetrics if available, otherwise use intersection of selectedMetrics and matchingMetrics
+                if (matchingSelectedMetrics.length > 0) {
+                    filteredMetricsForRendering = matchingSelectedMetrics;
+                } else {
+                    filteredMetricsForRendering = this.selectedMetrics.filter(metricName => 
+                        matchingMetrics.includes(metricName)
+                    );
+                }
+                console.log('[Search] Filtering metrics by name. Search term:', searchTerm, 
+                    'Matching metrics:', matchingMetrics, 
+                    'Matching selected metrics:', matchingSelectedMetrics,
+                    'Filtered selectedMetrics:', filteredMetricsForRendering);
+            }
+        }
+        
+        // Store filtered metrics for use in rendering
+        this._filteredMetricsForRendering = filteredMetricsForRendering;
+        
         this.filteredData = this.parsedData.filter(row => {
             // Use detected dimensions for filtering
             const primaryDimensions = this.dimensions.slice(0, 2);
             
             if (this.currentFilters.cell && primaryDimensions[0] && row[primaryDimensions[0]] !== this.currentFilters.cell) return false;
             if (this.currentFilters.instance && primaryDimensions[1] && row[primaryDimensions[1]] !== this.currentFilters.instance) return false;
-            if (this.currentFilters.search) {
+            // Only filter rows by search term if it doesn't match metric names
+            // If it matches metric names, we only filter metrics for rendering, not rows
+            if (this.currentFilters.search && !searchMatchesMetricNames) {
                 const searchTerm = this.currentFilters.search.toLowerCase();
                 const searchableText = Object.values(row).join(' ').toLowerCase();
                 const matches = searchableText.includes(searchTerm);
