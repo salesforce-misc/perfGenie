@@ -84,6 +84,9 @@
                <version>2.7.4</version>
                 <configuration>
                     <mainClass>server.PerfGenieApplication</mainClass>
+                    <!--<mainClass>server.PerfGenieService</mainClass>-->
+                    <!--<mainClass>perfgenie.utils.SideBySide</mainClass>-->
+                    <!--<mainClass>perfgenie.utils.ArgusQueryT</mainClass>-->
                 </configuration>
                 <executions>
                     <execution>
