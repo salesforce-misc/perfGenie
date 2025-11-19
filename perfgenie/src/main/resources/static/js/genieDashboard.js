@@ -1124,6 +1124,7 @@
             intervalLabel.className = 'genie-toolbar-label';
             intervalLabel.setAttribute('for', 'genie-toolbar-interval');
             intervalLabel.textContent = 'Span:';
+            intervalLabel.style.cssText = 'font-size: 12px; color: #6b7280; height: 30px; display: flex; align-items: center;';
             
             const intervalInput = document.createElement('input');
             intervalInput.type = 'text';
@@ -1131,41 +1132,411 @@
             intervalInput.className = 'genie-toolbar-input';
             intervalInput.value = this.inputConfig['$interval'] || '1m';
             intervalInput.placeholder = 'e.g., 1m, 5m, 1h';
-            intervalInput.style.width = '80px';
+            intervalInput.style.cssText = 'width: 50px; height: 30px; font-size: 12px; padding: 4px 8px;';
             
             intervalGroup.appendChild(intervalLabel);
             intervalGroup.appendChild(intervalInput);
+            
+            // Aggregation button with dropdown menu (inside Span group)
+            if (showAggregation) {
+                // Create container for aggregation button and dropdown menu
+                const aggContainer = document.createElement('div');
+                aggContainer.style.cssText = 'position: relative; display: inline-block; margin-left: 2px;';
+                
+                // Aggregation button
+                const aggButton = document.createElement('button');
+                aggButton.type = 'button';
+                aggButton.className = 'genie-dashboard-tab';
+                aggButton.id = this.getInstanceId('toolbar-agg-button');
+                aggButton.setAttribute('aria-label', 'Aggregation');
+                aggButton.style.cssText = 'display: flex; align-items: center; padding: 4px 8px; font-size: 13px; color: #6b7280; background: transparent; border: 1px solid #d1d5db; border-radius: 4px; cursor: pointer; font-weight: 500; min-width: 50px; height: 30px;';
+                
+                // Update button display based on selected aggregation
+                const updateAggButtonDisplay = () => {
+                    const currentAggValue = this.inputConfig['$agg'] || '';
+                    const aggOptions = {
+                        '': '-- Select --',
+                        'sum': 'Sum',
+                        'avg': 'Avg',
+                        'max': 'Max',
+                        'min': 'Min'
+                    };
+                    aggButton.textContent = aggOptions[currentAggValue] || '-- Select --';
+                    
+                    // Keep button in default state (no highlighting after selection)
+                    aggButton.style.background = 'transparent';
+                    aggButton.style.color = '#6b7280';
+                    aggButton.style.borderColor = '#d1d5db';
+                };
+                
+                updateAggButtonDisplay();
+                aggContainer.appendChild(aggButton);
+                
+                // Create dropdown menu with options
+                const aggMenu = document.createElement('div');
+                aggMenu.className = 'genie-dashboard-agg-menu';
+                aggMenu.id = this.getInstanceId('agg-menu');
+                aggMenu.style.cssText = 'display: none; position: fixed; background: white; border: 1px solid #d1d5db; border-radius: 4px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); z-index: 10000; min-width: 140px; padding: 4px; max-height: 300px; overflow-y: auto;';
+                document.body.appendChild(aggMenu);
+                
+                // Function to populate aggregation menu
+                const populateAggMenu = () => {
+                    aggMenu.innerHTML = '';
+                    const aggOptions = [
+                        { value: '', label: '-- Select --' },
+                        { value: 'sum', label: 'Sum' },
+                        { value: 'avg', label: 'Avg' },
+                        { value: 'max', label: 'Max' },
+                        { value: 'min', label: 'Min' }
+                    ];
+                    
+                    const currentAggValue = this.inputConfig['$agg'] || '';
+                    
+                    aggOptions.forEach(option => {
+                        const menuItem = document.createElement('div');
+                        menuItem.className = 'genie-dashboard-agg-menu-item';
+                        menuItem.style.cssText = `padding: 2px 8px; cursor: pointer; display: flex; align-items: center; font-size: 13px; color: ${option.value === currentAggValue ? '#3b82f6' : '#1f2937'}; margin: 0; font-weight: ${option.value === currentAggValue ? '500' : '400'};`;
+                        menuItem.textContent = option.label;
+                        
+                        // Highlight selected item
+                        if (option.value === currentAggValue) {
+                            menuItem.style.background = 'rgba(59, 130, 246, 0.1)';
+                        }
+                        
+                        // Hover effect
+                        menuItem.addEventListener('mouseenter', () => {
+                            menuItem.style.background = '#f3f4f6';
+                        });
+                        menuItem.addEventListener('mouseleave', () => {
+                            menuItem.style.background = option.value === currentAggValue ? 'rgba(59, 130, 246, 0.1)' : 'transparent';
+                        });
+                        
+                        // Click handler
+                        menuItem.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            // Update inputConfig
+                            if (this.inputConfig) {
+                                this.inputConfig['$agg'] = option.value || '';
+                            }
+                            // Update button display
+                            updateAggButtonDisplay();
+                            // Close menu
+                            aggMenu.style.display = 'none';
+                            // Trigger change event for any listeners
+                            const changeEvent = new Event('change', { bubbles: true });
+                            aggButton.dispatchEvent(changeEvent);
+                        });
+                        
+                        aggMenu.appendChild(menuItem);
+                    });
+                };
+                
+                // Initial population
+                populateAggMenu();
+                
+                // Toggle menu on button click
+                aggButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isVisible = aggMenu.style.display === 'block' || aggMenu.style.display === 'flex';
+                    if (isVisible) {
+                        aggMenu.style.display = 'none';
+                    } else {
+                        // Repopulate menu before showing
+                        populateAggMenu();
+                        // Calculate position relative to button using fixed positioning
+                        const buttonRect = aggButton.getBoundingClientRect();
+                        const menuTop = buttonRect.bottom + window.scrollY + 4; // 4px margin
+                        const menuLeft = buttonRect.left + window.scrollX;
+                        
+                        aggMenu.style.top = menuTop + 'px';
+                        aggMenu.style.left = menuLeft + 'px';
+                        aggMenu.style.display = 'block';
+                    }
+                });
+                
+                // Close menu when clicking outside
+                const closeMenuHandler = (e) => {
+                    if (!aggContainer.contains(e.target) && !aggMenu.contains(e.target)) {
+                        aggMenu.style.display = 'none';
+                    }
+                };
+                document.addEventListener('click', closeMenuHandler);
+                
+                // Store references for later use
+                this.aggButton = aggButton;
+                this.aggMenu = aggMenu;
+                this.updateAggButtonDisplay = updateAggButtonDisplay;
+                this.populateAggMenu = populateAggMenu;
+                
+                intervalGroup.appendChild(aggContainer);
+            }
+            
             toolbar.appendChild(intervalGroup);
+        } else if (showAggregation) {
+            // If interval is not shown but aggregation is, create standalone aggregation
+            // Create container for aggregation button and dropdown menu
+            const aggContainer = document.createElement('div');
+            aggContainer.style.cssText = 'position: relative; display: inline-block;';
+            
+            // Aggregation button
+            const aggButton = document.createElement('button');
+            aggButton.type = 'button';
+            aggButton.className = 'genie-dashboard-tab';
+            aggButton.id = this.getInstanceId('toolbar-agg-button');
+            aggButton.setAttribute('aria-label', 'Aggregation');
+            aggButton.style.cssText = 'display: flex; align-items: center; padding: 4px 8px; font-size: 13px; color: #6b7280; background: transparent; border: 1px solid #d1d5db; border-radius: 4px; cursor: pointer; font-weight: 500; min-width: 50px; height: 30px;';
+            
+            // Update button display based on selected aggregation
+            const updateAggButtonDisplay = () => {
+                const currentAggValue = this.inputConfig['$agg'] || '';
+                const aggOptions = {
+                    '': '-- Select --',
+                    'sum': 'Sum',
+                    'avg': 'Avg',
+                    'max': 'Max',
+                    'min': 'Min'
+                };
+                aggButton.textContent = aggOptions[currentAggValue] || '-- Select --';
+                
+                // Keep button in default state (no highlighting after selection)
+                aggButton.style.background = 'transparent';
+                aggButton.style.color = '#6b7280';
+                aggButton.style.borderColor = '#d1d5db';
+            };
+            
+            updateAggButtonDisplay();
+            aggContainer.appendChild(aggButton);
+            
+            // Create dropdown menu with options
+            const aggMenu = document.createElement('div');
+            aggMenu.className = 'genie-dashboard-agg-menu';
+            aggMenu.id = this.getInstanceId('agg-menu');
+            aggMenu.style.cssText = 'display: none; position: fixed; background: white; border: 1px solid #d1d5db; border-radius: 4px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); z-index: 10000; min-width: 140px; padding: 4px; max-height: 300px; overflow-y: auto;';
+            document.body.appendChild(aggMenu);
+            
+            // Function to populate aggregation menu
+            const populateAggMenu = () => {
+                aggMenu.innerHTML = '';
+                const aggOptions = [
+                    { value: '', label: '-- Select --' },
+                    { value: 'sum', label: 'Sum' },
+                    { value: 'avg', label: 'Avg' },
+                    { value: 'max', label: 'Max' },
+                    { value: 'min', label: 'Min' }
+                ];
+                
+                const currentAggValue = this.inputConfig['$agg'] || '';
+                
+                aggOptions.forEach(option => {
+                    const menuItem = document.createElement('div');
+                    menuItem.className = 'genie-dashboard-agg-menu-item';
+                    menuItem.style.cssText = `padding: 2px 8px; cursor: pointer; display: flex; align-items: center; font-size: 13px; color: ${option.value === currentAggValue ? '#3b82f6' : '#1f2937'}; margin: 0; font-weight: ${option.value === currentAggValue ? '500' : '400'};`;
+                    menuItem.textContent = option.label;
+                    
+                    // Highlight selected item
+                    if (option.value === currentAggValue) {
+                        menuItem.style.background = 'rgba(59, 130, 246, 0.1)';
+                    }
+                    
+                    // Hover effect
+                    menuItem.addEventListener('mouseenter', () => {
+                        menuItem.style.background = '#f3f4f6';
+                    });
+                    menuItem.addEventListener('mouseleave', () => {
+                        menuItem.style.background = option.value === currentAggValue ? 'rgba(59, 130, 246, 0.1)' : 'transparent';
+                    });
+                    
+                    // Click handler
+                    menuItem.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Update inputConfig
+                        if (this.inputConfig) {
+                            this.inputConfig['$agg'] = option.value || '';
+                        }
+                        // Update button display
+                        updateAggButtonDisplay();
+                        // Close menu
+                        aggMenu.style.display = 'none';
+                        // Trigger change event for any listeners
+                        const changeEvent = new Event('change', { bubbles: true });
+                        aggButton.dispatchEvent(changeEvent);
+                    });
+                    
+                    aggMenu.appendChild(menuItem);
+                });
+            };
+            
+            // Initial population
+            populateAggMenu();
+            
+            // Toggle menu on button click
+            aggButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isVisible = aggMenu.style.display === 'block' || aggMenu.style.display === 'flex';
+                if (isVisible) {
+                    aggMenu.style.display = 'none';
+                } else {
+                    // Repopulate menu before showing
+                    populateAggMenu();
+                    // Calculate position relative to button using fixed positioning
+                    const buttonRect = aggButton.getBoundingClientRect();
+                    const menuTop = buttonRect.bottom + window.scrollY + 4; // 4px margin
+                    const menuLeft = buttonRect.left + window.scrollX;
+                    
+                    aggMenu.style.top = menuTop + 'px';
+                    aggMenu.style.left = menuLeft + 'px';
+                    aggMenu.style.display = 'block';
+                }
+            });
+            
+            // Close menu when clicking outside
+            const closeMenuHandler = (e) => {
+                if (!aggContainer.contains(e.target) && !aggMenu.contains(e.target)) {
+                    aggMenu.style.display = 'none';
+                }
+            };
+            document.addEventListener('click', closeMenuHandler);
+            
+            // Store references for later use
+            this.aggButton = aggButton;
+            this.aggMenu = aggMenu;
+            this.updateAggButtonDisplay = updateAggButtonDisplay;
+            this.populateAggMenu = populateAggMenu;
+            
+            toolbar.appendChild(aggContainer);
         }
         
-        // Aggregation dropdown
-        if (showAggregation) {
-            const aggGroup = document.createElement('div');
-            aggGroup.className = 'genie-toolbar-group';
+        // Experts button with dropdown menu (always shown if edit is enabled)
+        if (showEdit) {
+            // Create container for experts button and dropdown menu
+            const expertsContainer = document.createElement('div');
+            expertsContainer.style.cssText = 'position: relative; display: inline-block;';
             
-            const aggLabel = document.createElement('label');
-            aggLabel.className = 'genie-toolbar-label';
-            aggLabel.setAttribute('for', this.getInstanceId('toolbar-agg'));
-            aggLabel.textContent = 'Aggregation:';
+            // Experts button
+            const expertsButton = document.createElement('button');
+            expertsButton.type = 'button';
+            expertsButton.className = 'modern-button modern-button-blue';
+            expertsButton.id = this.getInstanceId('experts-button');
+            expertsButton.textContent = 'Load Expert';
+            expertsButton.setAttribute('aria-label', 'Load Expert');
             
-            const aggSelect = document.createElement('select');
-            aggSelect.id = this.getInstanceId('toolbar-agg');
-            aggSelect.className = 'genie-toolbar-select';
-            const currentAggValue = this.inputConfig['$agg'] || '';
-            aggSelect.innerHTML = `
-                <option value="" ${!currentAggValue ? 'selected' : ''}>-- Select --</option>
-                <option value="sum" ${currentAggValue === 'sum' ? 'selected' : ''}>Sum</option>
-                <option value="avg" ${currentAggValue === 'avg' ? 'selected' : ''}>Avg</option>
-                <option value="max" ${currentAggValue === 'max' ? 'selected' : ''}>Max</option>
-                <option value="min" ${currentAggValue === 'min' ? 'selected' : ''}>Min</option>
-            `;
+            // Update button display based on loaded experts
+            const updateExpertsButtonDisplay = () => {
+                const loadedCount = this.loadedExpertViews ? this.loadedExpertViews.size : 0;
+                if (loadedCount > 0) {
+                    expertsButton.textContent = `Load Expert (${loadedCount})`;
+                } else {
+                    expertsButton.textContent = 'Load Expert';
+                }
+                // Modern button styling is handled by CSS classes, no need to change styles
+            };
             
-            aggGroup.appendChild(aggLabel);
-            aggGroup.appendChild(aggSelect);
-            toolbar.appendChild(aggGroup);
+            updateExpertsButtonDisplay();
+            expertsContainer.appendChild(expertsButton);
+            
+            // Create dropdown menu with checkboxes
+            const expertsMenu = document.createElement('div');
+            expertsMenu.className = 'genie-dashboard-experts-menu';
+            expertsMenu.id = this.getInstanceId('experts-menu');
+            expertsMenu.style.cssText = 'display: none; position: fixed; background: white; border: 1px solid #d1d5db; border-radius: 4px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); z-index: 10000; min-width: 180px; padding: 4px; max-height: 300px; overflow-y: auto;';
+            document.body.appendChild(expertsMenu);
+            
+            // Function to populate experts menu
+            const populateExpertsMenu = () => {
+                expertsMenu.innerHTML = '';
+                const expertNames = Object.keys(this.expertViews).sort();
+                
+                if (expertNames.length === 0) {
+                    const emptyItem = document.createElement('div');
+                    emptyItem.style.cssText = 'padding: 8px; font-size: 12px; color: #9ca3af; text-align: center;';
+                    emptyItem.textContent = 'No experts available';
+                    expertsMenu.appendChild(emptyItem);
+                    return;
+                }
+                
+                expertNames.forEach(expertName => {
+                    const menuItem = document.createElement('label');
+                    menuItem.className = 'genie-dashboard-experts-menu-item';
+                    menuItem.style.cssText = 'padding: 2px 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #1f2937; margin: 0;';
+                    const isChecked = this.loadedExpertViews && this.loadedExpertViews.has(expertName);
+                    menuItem.innerHTML = `
+                        <input type="checkbox" value="${expertName}" ${isChecked ? 'checked' : ''} style="margin-right: 4px; width: 14px; height: 14px; cursor: pointer;" class="expert-checkbox-${this.instanceId}">
+                        <span style="font-size: 12px;">${expertName}</span>
+                    `;
+                    
+                    // Hover effect
+                    menuItem.addEventListener('mouseenter', () => {
+                        menuItem.style.background = '#f3f4f6';
+                    });
+                    menuItem.addEventListener('mouseleave', () => {
+                        menuItem.style.background = 'transparent';
+                    });
+                    
+                    const checkbox = menuItem.querySelector('input[type="checkbox"]');
+                    checkbox.addEventListener('change', async (e) => {
+                        e.stopPropagation();
+                        // Trigger expert selection change handler
+                        await this.handleExpertSelectionChange();
+                        // Update button display
+                        updateExpertsButtonDisplay();
+                    });
+                    
+                    expertsMenu.appendChild(menuItem);
+                });
+            };
+            
+            // Initial population
+            populateExpertsMenu();
+            
+            // Toggle menu on button click
+            expertsButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isVisible = expertsMenu.style.display === 'block' || expertsMenu.style.display === 'flex';
+                if (isVisible) {
+                    expertsMenu.style.display = 'none';
+                } else {
+                    // Repopulate menu before showing
+                    populateExpertsMenu();
+                    // Calculate position relative to button using fixed positioning
+                    const buttonRect = expertsButton.getBoundingClientRect();
+                    const menuTop = buttonRect.bottom + window.scrollY + 4; // 4px margin
+                    const menuLeft = buttonRect.left + window.scrollX;
+                    
+                    expertsMenu.style.top = menuTop + 'px';
+                    expertsMenu.style.left = menuLeft + 'px';
+                    expertsMenu.style.display = 'block';
+                }
+            });
+            
+            // Close menu when clicking outside
+            const closeMenuHandler = (e) => {
+                if (!expertsContainer.contains(e.target) && !expertsMenu.contains(e.target)) {
+                    expertsMenu.style.display = 'none';
+                }
+            };
+            document.addEventListener('click', closeMenuHandler);
+            
+            // Store references for later use
+            this.expertsButton = expertsButton;
+            this.expertsMenu = expertsMenu;
+            this.updateExpertsButtonDisplay = updateExpertsButtonDisplay;
+            this.populateExpertsMenu = populateExpertsMenu;
+            
+            toolbar.appendChild(expertsContainer);
         }
         
-        // Refresh button
+        // Add Expert button (always shown if edit is enabled)
+        if (showEdit) {
+            const uploadButton = document.createElement('button');
+            uploadButton.type = 'button'; // Prevent form submission
+            uploadButton.className = 'modern-button modern-button-blue';
+            uploadButton.id = this.getInstanceId('toolbar-upload');
+            uploadButton.title = 'Add Expert';
+            uploadButton.textContent = 'Add Expert';
+            toolbar.appendChild(uploadButton);
+        }
+        
+        // Refresh button (moved to rightmost)
         if (showRefresh) {
             const refreshButton = document.createElement('button');
             refreshButton.type = 'button'; // Prevent form submission
@@ -1176,7 +1547,7 @@
             toolbar.appendChild(refreshButton);
         }
         
-        // Edit button
+        // Edit button (moved to rightmost)
         if (showEdit) {
             const editButton = document.createElement('button');
             editButton.type = 'button'; // Prevent form submission
@@ -1185,56 +1556,6 @@
             editButton.title = 'Edit dashboard JSON';
             editButton.innerHTML = '<span>✏️</span>';
             toolbar.appendChild(editButton);
-        }
-        
-        // Experts label and multiselect dropdown (always shown if edit is enabled)
-        if (showEdit) {
-            const expertsLabel = document.createElement('label');
-            expertsLabel.textContent = 'Experts:';
-            expertsLabel.style.cssText = 'margin-right: 8px; font-size: 14px; color: #374151; white-space: nowrap;';
-            toolbar.appendChild(expertsLabel);
-            
-            const expertsSelect = document.createElement('select');
-            expertsSelect.id = this.getInstanceId('experts-select');
-            expertsSelect.multiple = true;
-            expertsSelect.style.cssText = `
-                min-width: 200px;
-                padding: 4px 8px;
-                border: 1px solid #d1d5db;
-                border-radius: 4px;
-                font-size: 14px;
-                background: white;
-            `;
-            toolbar.appendChild(expertsSelect);
-            
-            // Initialize multiselect if bootstrap-multiselect is available
-            if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
-                jQuery(expertsSelect).multiselect({
-                    buttonWidth: '200px',
-                    numberDisplayed: 1,
-                    onChange: (option, checked) => {
-                        // Start async handler - it will wait internally for UI to render
-                        this.handleExpertSelectionChange();
-                    }
-                });
-            } else {
-                // Fallback: use native change event
-                expertsSelect.addEventListener('change', () => {
-                    // Start async handler - it will wait internally for UI to render
-                    this.handleExpertSelectionChange();
-                });
-            }
-        }
-        
-        // Upload button (always shown if edit is enabled)
-        if (showEdit) {
-            const uploadButton = document.createElement('button');
-            uploadButton.type = 'button'; // Prevent form submission
-            uploadButton.className = 'genie-toolbar-icon-button';
-            uploadButton.id = this.getInstanceId('toolbar-upload');
-            uploadButton.title = 'add an expert dashboard view';
-            uploadButton.innerHTML = '<span style="font-size: 18px; font-weight: bold;">+</span>';
-            toolbar.appendChild(uploadButton);
         }
         
         // Insert toolbar at the beginning of container (after collapse bar)
@@ -1559,16 +1880,13 @@
             });
         }
         
-        // Aggregation dropdown change handler - sync to panel settings if open
-        const aggSelect = document.getElementById(this.getInstanceId('toolbar-agg'));
-        if (aggSelect) {
-            aggSelect.addEventListener('change', () => {
-                // Update inputConfig
-                if (this.inputConfig) {
-                    this.inputConfig['$agg'] = aggSelect.value || '';
-                }
-                
+        // Aggregation button change handler - sync to panel settings if open
+        const aggButton = this.aggButton || document.getElementById(this.getInstanceId('toolbar-agg-button'));
+        if (aggButton) {
+            aggButton.addEventListener('change', () => {
+                // inputConfig is already updated in the menu click handler
                 // Sync to any open panel settings
+                const currentAggValue = this.inputConfig ? (this.inputConfig['$agg'] || '') : '';
                 const openSettingsPanels = document.querySelectorAll(`[id^="${this.instanceId}-panel-settings-"]`);
                 openSettingsPanels.forEach(settingsPanel => {
                     const panelIdMatch = settingsPanel.id.match(new RegExp(`${this.instanceId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-panel-settings-(\\d+)`));
@@ -1576,7 +1894,7 @@
                         const panelId = panelIdMatch[1];
                         const spanTypeSelect = document.getElementById(`${this.instanceId}-agg-span-type-${panelId}`);
                         if (spanTypeSelect) {
-                            spanTypeSelect.value = aggSelect.value || '';
+                            spanTypeSelect.value = currentAggValue;
                         }
                     }
                 });
@@ -1591,14 +1909,11 @@
                 
                 // Update inputJson from toolbar
                 const intervalInput = document.getElementById(this.getInstanceId('toolbar-interval'));
-                const aggSelect = document.getElementById(this.getInstanceId('toolbar-agg'));
                 
                 if (intervalInput && intervalInput.value) {
                     this.inputConfig['$interval'] = intervalInput.value.trim();
                 }
-                if (aggSelect && aggSelect.value) {
-                    this.inputConfig['$agg'] = aggSelect.value;
-                }
+                // Aggregation is already in inputConfig from button click handler
                 
                 // Preserve currently loaded expert views before refresh
                 const loadedExpertNames = Array.from(this.loadedExpertViews);
@@ -2383,65 +2698,14 @@
      * Update experts dropdown with current expert views
      */
     updateExpertsDropdown() {
-        const expertsSelect = document.getElementById(this.getInstanceId('experts-select'));
-        if (!expertsSelect) return;
-        
-        // Get currently selected values - prefer loadedExpertViews over dropdown state
-        const selectedValues = [];
-        let isMultiselectInitialized = false;
-        
-        // Use loadedExpertViews as the source of truth for selected experts
-        if (this.loadedExpertViews && this.loadedExpertViews.size > 0) {
-            selectedValues.push(...Array.from(this.loadedExpertViews));
-        } else {
-            // Fallback to dropdown state if loadedExpertViews is empty
-            if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
-                const $select = jQuery(expertsSelect);
-                if ($select.data('multiselect')) {
-                    isMultiselectInitialized = true;
-                    selectedValues.push(...($select.val() || []));
-                }
-            } else {
-                Array.from(expertsSelect.selectedOptions).forEach(option => {
-                    selectedValues.push(option.value);
-                });
-            }
+        // Update the experts menu if it exists
+        if (this.populateExpertsMenu) {
+            this.populateExpertsMenu();
         }
         
-        // Destroy multiselect if initialized before clearing options
-        if (isMultiselectInitialized) {
-            const $select = jQuery(expertsSelect);
-            $select.multiselect('destroy');
-        }
-        
-        // Clear and repopulate
-        expertsSelect.innerHTML = '';
-        Object.keys(this.expertViews).sort().forEach(expertName => {
-            const option = document.createElement('option');
-            option.value = expertName;
-            option.textContent = expertName;
-            if (selectedValues.includes(expertName)) {
-                option.selected = true;
-            }
-            expertsSelect.appendChild(option);
-        });
-        
-        // Reinitialize multiselect if jQuery and multiselect plugin are available
-        // Always reinitialize since dropdown may be recreated after refresh
-        if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
-            const $select = jQuery(expertsSelect);
-            // Destroy existing instance if any
-            if ($select.data('multiselect')) {
-                $select.multiselect('destroy');
-            }
-            // Initialize multiselect
-            $select.multiselect({
-                buttonWidth: '200px',
-                numberDisplayed: 1,
-                onChange: (option, checked) => {
-                    this.handleExpertSelectionChange();
-                }
-            });
+        // Update the button display if it exists
+        if (this.updateExpertsButtonDisplay) {
+            this.updateExpertsButtonDisplay();
         }
     }
     
@@ -2514,27 +2778,21 @@
     }
     
     /**
-     * Handle expert selection change in multiselect dropdown
+     * Handle expert selection change in dropdown menu
      */
     async handleExpertSelectionChange() {
-        const expertsSelect = document.getElementById(this.getInstanceId('experts-select'));
-        if (!expertsSelect) return;
+        const expertsMenu = this.expertsMenu || document.getElementById(this.getInstanceId('experts-menu'));
+        if (!expertsMenu) return;
         
         // Wait a bit to allow checkbox and UI to render first
         await new Promise(resolve => setTimeout(resolve, 50));
         
-        // Get selected expert names
-        let selectedExperts = [];
-        if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
-            const $select = jQuery(expertsSelect);
-            if ($select.data('multiselect')) {
-                selectedExperts = $select.val() || [];
-            }
-        } else {
-            Array.from(expertsSelect.selectedOptions).forEach(option => {
-                selectedExperts.push(option.value);
-            });
-        }
+        // Get selected expert names from checkboxes
+        const selectedExperts = [];
+        const checkboxes = expertsMenu.querySelectorAll(`.expert-checkbox-${this.instanceId}:checked`);
+        checkboxes.forEach(checkbox => {
+            selectedExperts.push(checkbox.value);
+        });
         
         // Determine which experts to add and which to remove
         const expertsToAdd = selectedExperts.filter(name => !this.loadedExpertViews.has(name));
@@ -2573,6 +2831,11 @@
             
             // Hide progress message when done
             this.hideExpertProgressMessage();
+            
+            // Update button display after operations complete
+            if (this.updateExpertsButtonDisplay) {
+                this.updateExpertsButtonDisplay();
+            }
         }
     }
     
@@ -2942,7 +3205,7 @@
                 content.style.setProperty('visibility', 'visible', 'important');
             }
             
-            collapseButton.innerHTML = '▼';
+            collapseButton.innerHTML = '<i class="fa fa-chevron-right" style="font-size: 10px; font-weight: 300;"></i>';
             collapseButton.title = 'Collapse panel';
             panel._isCollapsed = false;
             
@@ -3006,7 +3269,7 @@
             // Force height to auto to minimize space
             panelDiv.style.height = 'auto';
             panelDiv.style.minHeight = '0';
-            collapseButton.innerHTML = '▶';
+            collapseButton.innerHTML = '<i class="fa fa-chevron-down" style="font-size: 10px; font-weight: 300;"></i>';
             collapseButton.title = 'Expand panel';
             panel._isCollapsed = true;
         }
@@ -3200,7 +3463,7 @@
         const collapseButton = document.createElement('button');
         collapseButton.type = 'button';
         collapseButton.className = 'genie-dashboard-panel-collapse-btn';
-        collapseButton.innerHTML = '▼';
+        collapseButton.innerHTML = '<i class="fa fa-chevron-right" style="font-size: 10px; font-weight: 300;"></i>';
         collapseButton.title = 'Collapse panel';
         collapseButton.style.cssText = `
             background: none;
@@ -4320,7 +4583,7 @@
                 statsOptions.forEach(stat => {
                     const menuItem = document.createElement('label');
                     menuItem.className = 'genie-dashboard-statistics-menu-item';
-                    menuItem.style.cssText = 'padding: 6px 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #1f2937; margin: 0;';
+                    menuItem.style.cssText = 'padding: 2px 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #1f2937; margin: 0;';
                     const isChecked = currentStats.includes(stat);
                     menuItem.innerHTML = `
                         <input type="checkbox" value="${stat}" ${isChecked ? 'checked' : ''} style="margin-right: 4px; width: 14px; height: 14px; cursor: pointer;" class="statistics-checkbox-${panel.id}">
@@ -13817,21 +14080,18 @@
             const aggSpanType = document.getElementById(`${this.instanceId}-agg-span-type-${panel.id}`).value;
             
             // Sync span type to toolbar aggregation dropdown
-            const toolbarAggSelect = document.getElementById(this.getInstanceId('toolbar-agg'));
-            if (toolbarAggSelect) {
+            // Update aggregation button display
+            if (this.inputConfig) {
                 if (aggSpanType) {
-                    toolbarAggSelect.value = aggSpanType;
-                    // Update inputConfig to reflect the change
-                    if (this.inputConfig) {
-                        this.inputConfig['$agg'] = aggSpanType;
-                    }
+                    this.inputConfig['$agg'] = aggSpanType;
                 } else {
-                    // If cleared, set to empty string (will show first option which should be default)
-                    toolbarAggSelect.value = '';
-                    if (this.inputConfig) {
-                        this.inputConfig['$agg'] = '';
-                    }
+                    // Clear aggregation
+                    this.inputConfig['$agg'] = '';
                 }
+            }
+            // Update button display if it exists
+            if (this.updateAggButtonDisplay) {
+                this.updateAggButtonDisplay();
             }
             
             if (aggTag) {
