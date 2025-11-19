@@ -52,6 +52,11 @@
         this.charts = {};
         this.dataCache = {};
         
+        // Expert views cache - stores expert name -> dashboard config mapping
+        this.expertViews = {};
+        // Track which expert views are currently loaded
+        this.loadedExpertViews = new Set();
+        
         // Initialize styles
         this.injectStyles();
         
@@ -152,6 +157,57 @@
                 /* Don't set height here - let grid allocate it */
             }
             
+            /* Collapsed panel styles */
+            .genie-dashboard-container .genie-dashboard-panel.genie-panel-collapsed {
+                min-height: 0 !important;
+                height: auto !important;
+                max-height: fit-content !important;
+            }
+            
+            /* Ensure expanded panels can grow to full grid height */
+            .genie-dashboard-container .genie-dashboard-panel:not(.genie-panel-collapsed) {
+                /* Let CSS grid determine height based on grid-row */
+                /* Don't force height: 100% as it can constrain content */
+            }
+            
+            .genie-dashboard-container .genie-dashboard-panel.genie-panel-collapsed .genie-dashboard-panel-content {
+                display: none !important;
+                height: 0 !important;
+                min-height: 0 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                visibility: hidden !important;
+            }
+            
+            .genie-dashboard-container .genie-dashboard-panel.genie-panel-collapsed .genie-dashboard-panel-header {
+                border-bottom: none;
+            }
+            
+            /* Hide unit note when panel is collapsed */
+            .genie-dashboard-container .genie-dashboard-panel.genie-panel-collapsed .genie-dashboard-unit-note {
+                display: none !important;
+            }
+            
+            .genie-dashboard-container .genie-dashboard-panel-collapse-btn {
+                background: none;
+                border: none;
+                cursor: pointer;
+                font-size: 12px;
+                color: #6b7280;
+                padding: 4px 8px;
+                margin-left: auto;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: transform 0.2s ease, color 0.2s ease;
+            }
+            
+            .genie-dashboard-container .genie-dashboard-panel-collapse-btn:hover {
+                color: #374151;
+                background: #f3f4f6;
+                border-radius: 4px;
+            }
+            
             .genie-dashboard-container .genie-dashboard-panel-header {
                 padding: 6px 8px 6px 18px;
                 border-bottom: 1px solid #e5e7eb;
@@ -190,6 +246,12 @@
                 display: flex;
                 flex-direction: column;
                 min-height: 0;
+            }
+            
+            /* Ensure content is visible when panel is not collapsed - only override collapsed styles */
+            .genie-dashboard-container .genie-dashboard-panel:not(.genie-panel-collapsed) .genie-dashboard-panel-content {
+                /* Only set visibility to override collapsed state */
+                visibility: visible !important;
             }
             
             /* Remove padding for stat panel content to maximize space */
@@ -1125,14 +1187,53 @@
             toolbar.appendChild(editButton);
         }
         
+        // Experts label and multiselect dropdown (always shown if edit is enabled)
+        if (showEdit) {
+            const expertsLabel = document.createElement('label');
+            expertsLabel.textContent = 'Experts:';
+            expertsLabel.style.cssText = 'margin-right: 8px; font-size: 14px; color: #374151; white-space: nowrap;';
+            toolbar.appendChild(expertsLabel);
+            
+            const expertsSelect = document.createElement('select');
+            expertsSelect.id = this.getInstanceId('experts-select');
+            expertsSelect.multiple = true;
+            expertsSelect.style.cssText = `
+                min-width: 200px;
+                padding: 4px 8px;
+                border: 1px solid #d1d5db;
+                border-radius: 4px;
+                font-size: 14px;
+                background: white;
+            `;
+            toolbar.appendChild(expertsSelect);
+            
+            // Initialize multiselect if bootstrap-multiselect is available
+            if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
+                jQuery(expertsSelect).multiselect({
+                    buttonWidth: '200px',
+                    numberDisplayed: 1,
+                    onChange: (option, checked) => {
+                        // Start async handler - it will wait internally for UI to render
+                        this.handleExpertSelectionChange();
+                    }
+                });
+            } else {
+                // Fallback: use native change event
+                expertsSelect.addEventListener('change', () => {
+                    // Start async handler - it will wait internally for UI to render
+                    this.handleExpertSelectionChange();
+                });
+            }
+        }
+        
         // Upload button (always shown if edit is enabled)
         if (showEdit) {
             const uploadButton = document.createElement('button');
             uploadButton.type = 'button'; // Prevent form submission
             uploadButton.className = 'genie-toolbar-icon-button';
             uploadButton.id = this.getInstanceId('toolbar-upload');
-            uploadButton.title = 'Upload dashboard config';
-            uploadButton.innerHTML = '<span>📤</span>';
+            uploadButton.title = 'add an expert dashboard view';
+            uploadButton.innerHTML = '<span style="font-size: 18px; font-weight: bold;">+</span>';
             toolbar.appendChild(uploadButton);
         }
         
@@ -1484,7 +1585,10 @@
         
         // Refresh button
         if (refreshButton) {
-            refreshButton.addEventListener('click', () => {
+            refreshButton.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
                 // Update inputJson from toolbar
                 const intervalInput = document.getElementById(this.getInstanceId('toolbar-interval'));
                 const aggSelect = document.getElementById(this.getInstanceId('toolbar-agg'));
@@ -1496,16 +1600,36 @@
                     this.inputConfig['$agg'] = aggSelect.value;
                 }
                 
+                // Preserve currently loaded expert views before refresh
+                const loadedExpertNames = Array.from(this.loadedExpertViews);
+                
                 // Refresh dashboard
                 refreshButton.disabled = true;
                 refreshButton.innerHTML = '<span>⏳</span>';
                 refreshButton.title = 'Refreshing...';
                 
-                this.render(this.dashboardConfig, this.inputConfig).finally(() => {
+                try {
+                    await this.render(this.dashboardConfig, this.inputConfig);
+                    
+                    // Re-append expert views that were loaded before refresh
+                    if (loadedExpertNames.length > 0) {
+                        // Re-append each expert view in order
+                        for (let i = 0; i < loadedExpertNames.length; i++) {
+                            const expertName = loadedExpertNames[i];
+                            if (this.expertViews[expertName]) {
+                                await this.appendExpertView(expertName);
+                            }
+                        }
+                        
+                        // Update experts dropdown to reflect current state (after re-appending)
+                        // This ensures the dropdown shows the experts as selected
+                        this.updateExpertsDropdown();
+                    }
+                } finally {
                     refreshButton.disabled = false;
                     refreshButton.innerHTML = '<span>🔄</span>';
                     refreshButton.title = 'Refresh dashboard';
-                });
+                }
             });
         }
         
@@ -1914,9 +2038,36 @@
             padding-bottom: 12px;
             border-bottom: 1px solid #e5e7eb;
         `;
+        
+        // Create title container with title and expert name input
+        const titleContainer = document.createElement('div');
+        titleContainer.style.cssText = 'display: flex; align-items: center; gap: 16px; flex: 1;';
+        
         const modalTitle = document.createElement('h3');
-        modalTitle.textContent = 'Upload Dashboard Config';
+        modalTitle.textContent = 'Upload expert dashboard view config';
         modalTitle.style.cssText = 'margin: 0; font-size: 18px; font-weight: 600; color: #374151;';
+        
+        // Create expert name input field
+        const expertNameLabel = document.createElement('label');
+        expertNameLabel.textContent = 'Expert name:';
+        expertNameLabel.style.cssText = 'font-size: 14px; color: #374151; white-space: nowrap;';
+        
+        const expertNameInput = document.createElement('input');
+        expertNameInput.type = 'text';
+        expertNameInput.id = this.getInstanceId('expert-name-input');
+        expertNameInput.placeholder = 'Enter expert name';
+        expertNameInput.style.cssText = `
+            padding: 6px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 200px;
+        `;
+        
+        titleContainer.appendChild(modalTitle);
+        titleContainer.appendChild(expertNameLabel);
+        titleContainer.appendChild(expertNameInput);
+        
         const closeButton = document.createElement('button');
         closeButton.innerHTML = '✕';
         closeButton.style.cssText = `
@@ -1935,7 +2086,7 @@
         closeButton.addEventListener('click', () => {
             modalOverlay.style.display = 'none';
         });
-        modalHeader.appendChild(modalTitle);
+        modalHeader.appendChild(titleContainer);
         modalHeader.appendChild(closeButton);
         
         // Create tab container
@@ -2122,7 +2273,7 @@
         });
         
         const submitBtn = document.createElement('button');
-        submitBtn.textContent = 'Submit & Refresh';
+        submitBtn.textContent = 'Add Expert view';
         submitBtn.style.cssText = `
             padding: 8px 16px;
             background: #3b82f6;
@@ -2135,6 +2286,22 @@
         `;
         submitBtn.addEventListener('click', () => {
             try {
+                // Get expert name
+                const expertNameInput = document.getElementById(this.getInstanceId('expert-name-input'));
+                const expertName = expertNameInput ? expertNameInput.value.trim() : '';
+                
+                if (!expertName) {
+                    alert('Please enter an expert name');
+                    return;
+                }
+                
+                // Check if expert name already exists
+                if (this.expertViews[expertName]) {
+                    if (!confirm(`Expert "${expertName}" already exists. Do you want to overwrite it?`)) {
+                        return;
+                    }
+                }
+                
                 // Get the converted config (use converted textarea if it has content, otherwise convert from paste)
                 let configToUse;
                 const convertedText = convertedTextarea.value.trim();
@@ -2158,18 +2325,26 @@
                     return;
                 }
                 
+                // Cache the expert view
+                this.expertViews[expertName] = {
+                    config: configToUse,
+                    inputConfig: JSON.parse(JSON.stringify(this.inputConfig)) // Deep copy
+                };
+                
+                // Add to dropdown
+                this.updateExpertsDropdown();
+                
                 // Close modal
                 modalOverlay.style.display = 'none';
                 
-                // Disable submit button during refresh
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Refreshing...';
+                // Clear expert name input
+                if (expertNameInput) {
+                    expertNameInput.value = '';
+                }
                 
-                // Render dashboard with new config
-                this.render(configToUse, this.inputConfig).finally(() => {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Submit & Refresh';
-                });
+                // Clear textareas
+                pasteTextarea.value = '';
+                convertedTextarea.value = '';
                 
             } catch (error) {
                 alert(`Invalid JSON: ${error.message}`);
@@ -2202,6 +2377,696 @@
         this.uploadModalOverlay = modalOverlay;
         this.uploadModalPasteTextarea = pasteTextarea;
         this.uploadModalConvertedTextarea = convertedTextarea;
+    }
+    
+    /**
+     * Update experts dropdown with current expert views
+     */
+    updateExpertsDropdown() {
+        const expertsSelect = document.getElementById(this.getInstanceId('experts-select'));
+        if (!expertsSelect) return;
+        
+        // Get currently selected values - prefer loadedExpertViews over dropdown state
+        const selectedValues = [];
+        let isMultiselectInitialized = false;
+        
+        // Use loadedExpertViews as the source of truth for selected experts
+        if (this.loadedExpertViews && this.loadedExpertViews.size > 0) {
+            selectedValues.push(...Array.from(this.loadedExpertViews));
+        } else {
+            // Fallback to dropdown state if loadedExpertViews is empty
+            if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
+                const $select = jQuery(expertsSelect);
+                if ($select.data('multiselect')) {
+                    isMultiselectInitialized = true;
+                    selectedValues.push(...($select.val() || []));
+                }
+            } else {
+                Array.from(expertsSelect.selectedOptions).forEach(option => {
+                    selectedValues.push(option.value);
+                });
+            }
+        }
+        
+        // Destroy multiselect if initialized before clearing options
+        if (isMultiselectInitialized) {
+            const $select = jQuery(expertsSelect);
+            $select.multiselect('destroy');
+        }
+        
+        // Clear and repopulate
+        expertsSelect.innerHTML = '';
+        Object.keys(this.expertViews).sort().forEach(expertName => {
+            const option = document.createElement('option');
+            option.value = expertName;
+            option.textContent = expertName;
+            if (selectedValues.includes(expertName)) {
+                option.selected = true;
+            }
+            expertsSelect.appendChild(option);
+        });
+        
+        // Reinitialize multiselect if jQuery and multiselect plugin are available
+        // Always reinitialize since dropdown may be recreated after refresh
+        if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
+            const $select = jQuery(expertsSelect);
+            // Destroy existing instance if any
+            if ($select.data('multiselect')) {
+                $select.multiselect('destroy');
+            }
+            // Initialize multiselect
+            $select.multiselect({
+                buttonWidth: '200px',
+                numberDisplayed: 1,
+                onChange: (option, checked) => {
+                    this.handleExpertSelectionChange();
+                }
+            });
+        }
+    }
+    
+    /**
+     * Show progress message for expert view loading
+     */
+    showExpertProgressMessage(message) {
+        // Remove existing progress message if any
+        this.hideExpertProgressMessage();
+        
+        // Try to find toolbar - use correct class name
+        const toolbar = this.container.querySelector('.genie-dashboard-toolbar');
+        if (!toolbar) {
+            console.warn('Toolbar not found, cannot show progress message');
+            return;
+        }
+        
+        const progressDiv = document.createElement('div');
+        progressDiv.id = this.getInstanceId('expert-progress-message');
+        progressDiv.style.cssText = `
+            margin-left: 16px;
+            padding: 6px 12px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #1e40af;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        `;
+        
+        const spinner = document.createElement('span');
+        spinner.innerHTML = '⟳';
+        spinner.style.cssText = `
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        `;
+        
+        const messageText = document.createElement('span');
+        messageText.textContent = message;
+        
+        progressDiv.appendChild(spinner);
+        progressDiv.appendChild(messageText);
+        toolbar.appendChild(progressDiv);
+        
+        // Ensure spinner animation CSS exists
+        if (!document.getElementById(this.getInstanceId('expert-spinner-style'))) {
+            const style = document.createElement('style');
+            style.id = this.getInstanceId('expert-spinner-style');
+            style.textContent = `
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+    
+    /**
+     * Hide progress message for expert view loading
+     */
+    hideExpertProgressMessage() {
+        const progressDiv = document.getElementById(this.getInstanceId('expert-progress-message'));
+        if (progressDiv) {
+            progressDiv.remove();
+        }
+    }
+    
+    /**
+     * Handle expert selection change in multiselect dropdown
+     */
+    async handleExpertSelectionChange() {
+        const expertsSelect = document.getElementById(this.getInstanceId('experts-select'));
+        if (!expertsSelect) return;
+        
+        // Wait a bit to allow checkbox and UI to render first
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // Get selected expert names
+        let selectedExperts = [];
+        if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
+            const $select = jQuery(expertsSelect);
+            if ($select.data('multiselect')) {
+                selectedExperts = $select.val() || [];
+            }
+        } else {
+            Array.from(expertsSelect.selectedOptions).forEach(option => {
+                selectedExperts.push(option.value);
+            });
+        }
+        
+        // Determine which experts to add and which to remove
+        const expertsToAdd = selectedExperts.filter(name => !this.loadedExpertViews.has(name));
+        const expertsToRemove = Array.from(this.loadedExpertViews).filter(name => !selectedExperts.includes(name));
+        
+        // Show progress message if there are operations to perform
+        if (expertsToAdd.length > 0 || expertsToRemove.length > 0) {
+            // Wait a bit more to ensure progress message is rendered
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            if (expertsToRemove.length > 0) {
+                this.showExpertProgressMessage(`Removing ${expertsToRemove.length} expert view${expertsToRemove.length > 1 ? 's' : ''}...`);
+                // Allow progress message to render
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            // Remove deselected expert views first
+            for (const expertName of expertsToRemove) {
+                await this.removeExpertView(expertName);
+            }
+            
+            // Add newly selected expert views in order (append to existing)
+            if (expertsToAdd.length > 0) {
+                this.showExpertProgressMessage(`Loading ${expertsToAdd.length} expert view${expertsToAdd.length > 1 ? 's' : ''}...`);
+                // Allow progress message to render
+                await new Promise(resolve => setTimeout(resolve, 50));
+                
+                for (let i = 0; i < expertsToAdd.length; i++) {
+                    const expertName = expertsToAdd[i];
+                    this.showExpertProgressMessage(`Loading expert view "${expertName}" (${i + 1}/${expertsToAdd.length})...`);
+                    // Allow progress message update to render
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    await this.appendExpertView(expertName);
+                }
+            }
+            
+            // Hide progress message when done
+            this.hideExpertProgressMessage();
+        }
+    }
+    
+    /**
+     * Get maximum bottom Y position of all existing panels
+     */
+    getMaxBottomY() {
+        let maxBottom = 0;
+        this.panels.forEach(panel => {
+            const gridPos = panel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+            const bottom = gridPos.y + gridPos.h;
+            if (bottom > maxBottom) {
+                maxBottom = bottom;
+            }
+        });
+        return maxBottom;
+    }
+    
+    /**
+     * Append expert view panels to existing dashboard
+     */
+    async appendExpertView(expertName) {
+        if (!this.expertViews[expertName]) {
+            console.warn(`Expert view "${expertName}" not found in cache`);
+            return;
+        }
+        
+        const expertData = this.expertViews[expertName];
+        const expertConfig = expertData.config;
+        const expertInputConfig = expertData.inputConfig;
+        
+        // Get grid container
+        let grid = this.dashboardGrid;
+        if (!grid) {
+            grid = document.getElementById(this.getInstanceId('grid'));
+            if (!grid) {
+                console.warn('Grid container not found');
+                return;
+            }
+        }
+        
+        // Flatten panels from expert config
+        const expertPanels = this.flattenPanels(expertConfig.panels || []);
+        
+        // Calculate Y offset to place expert panels below existing panels
+        const yOffset = this.getMaxBottomY();
+        
+        // Find the minimum Y position in expert panels to calculate relative offset
+        let minExpertY = Infinity;
+        expertPanels.forEach(panel => {
+            const gridPos = panel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+            if (gridPos.y < minExpertY) {
+                minExpertY = gridPos.y;
+            }
+        });
+        if (minExpertY === Infinity) {
+            minExpertY = 0;
+        }
+        
+        // Adjust Y positions of expert panels to place them below existing panels
+        expertPanels.forEach(panel => {
+            const gridPos = panel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+            // Adjust Y position: subtract minExpertY to normalize, then add yOffset
+            gridPos.y = gridPos.y - minExpertY + yOffset;
+            // Mark panel with expert name for tracking
+            panel._expertName = expertName;
+        });
+        
+        // Calculate starting index for new panels
+        const startIndex = this.panels.length;
+        
+        // Add expert panels to main panels array
+        this.panels.push(...expertPanels);
+        
+        // Render expert panels
+        const renderPromises = expertPanels.map((panel, index) => 
+            this.renderPanel(panel, startIndex + index, grid)
+        );
+        
+        await Promise.all(renderPromises);
+        
+        // Mark as loaded
+        this.loadedExpertViews.add(expertName);
+    }
+    
+    /**
+     * Remove expert view panels from dashboard
+     */
+    async removeExpertView(expertName) {
+        if (!this.loadedExpertViews.has(expertName)) {
+            return; // Already removed
+        }
+        
+        if (!this.expertViews[expertName]) {
+            console.warn(`Expert view "${expertName}" not found in cache`);
+            this.loadedExpertViews.delete(expertName);
+            return;
+        }
+        
+        const expertData = this.expertViews[expertName];
+        const expertConfig = expertData.config;
+        const expertPanels = this.flattenPanels(expertConfig.panels || []);
+        
+        // Find panel elements that belong to this expert using data attribute
+        const grid = this.dashboardGrid || document.getElementById(this.getInstanceId('grid'));
+        if (!grid) return;
+        
+        const expertPanelElements = grid.querySelectorAll(`[data-expert-name="${expertName}"]`);
+        const panelsToRemove = [];
+        
+        // Collect panel indices to remove from array
+        expertPanelElements.forEach(panelElement => {
+            const panelId = panelElement.id;
+            // Extract index from panel ID (format: {instanceId}-panel-{index})
+            // Try to match the full ID format first
+            const expectedIdPrefix = this.getInstanceId('panel-');
+            if (panelId.startsWith(expectedIdPrefix)) {
+                const indexStr = panelId.substring(expectedIdPrefix.length);
+                const index = parseInt(indexStr, 10);
+                if (!isNaN(index)) {
+                    panelsToRemove.push(index);
+                }
+            }
+            
+            // Remove from DOM
+            panelElement.remove();
+            
+            // Destroy chart if exists
+            if (this.charts[panelId]) {
+                const chart = this.charts[panelId];
+                if (chart && typeof chart.destroy === 'function') {
+                    chart.destroy();
+                }
+                delete this.charts[panelId];
+            }
+        });
+        
+        // Remove from panels array (in reverse order to maintain indices)
+        panelsToRemove.sort((a, b) => b - a).forEach(index => {
+            this.panels.splice(index, 1);
+        });
+        
+        // Re-index remaining panels and recalculate Y positions
+        this.reindexPanels();
+        this.recalculateYPositions();
+        
+        // Mark as not loaded
+        this.loadedExpertViews.delete(expertName);
+    }
+    
+    /**
+     * Re-index panels after removal
+     */
+    reindexPanels() {
+        const grid = this.dashboardGrid || document.getElementById(this.getInstanceId('grid'));
+        if (!grid) return;
+        
+        // Update panel IDs and data attributes
+        this.panels.forEach((panel, newIndex) => {
+            const oldId = this.getInstanceId(`panel-${panel._originalIndex !== undefined ? panel._originalIndex : newIndex}`);
+            const newId = this.getInstanceId(`panel-${newIndex}`);
+            
+            const panelElement = document.getElementById(oldId);
+            if (panelElement && oldId !== newId) {
+                panelElement.id = newId;
+                // Update any references
+                if (this.charts[oldId]) {
+                    this.charts[newId] = this.charts[oldId];
+                    delete this.charts[oldId];
+                }
+            }
+            
+            panel._originalIndex = newIndex;
+        });
+    }
+    
+    /**
+     * Recalculate Y positions of all panels to fill gaps after removal
+     */
+    recalculateYPositions() {
+        if (this.panels.length === 0) return;
+        
+        // Group panels by their original Y position (before any adjustments)
+        // We need to maintain relative positions within each expert view
+        // For simplicity, we'll recalculate based on current positions
+        
+        // Sort panels by current Y position
+        const sortedPanels = [...this.panels].sort((a, b) => {
+            const gridPosA = a.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+            const gridPosB = b.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+            return gridPosA.y - gridPosB.y;
+        });
+        
+        // Group panels by expert name to maintain relative positions within expert views
+        const expertGroups = {};
+        const basePanels = [];
+        
+        sortedPanels.forEach(panel => {
+            if (panel._expertName) {
+                if (!expertGroups[panel._expertName]) {
+                    expertGroups[panel._expertName] = [];
+                }
+                expertGroups[panel._expertName].push(panel);
+            } else {
+                basePanels.push(panel);
+            }
+        });
+        
+        // Recalculate Y positions starting from 0
+        let currentY = 0;
+        
+        // First, place base panels (non-expert panels)
+        if (basePanels.length > 0) {
+            // Find max bottom of base panels
+            let maxBaseBottom = 0;
+            basePanels.forEach(panel => {
+                const gridPos = panel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+                const bottom = gridPos.y + gridPos.h;
+                if (bottom > maxBaseBottom) {
+                    maxBaseBottom = bottom;
+                }
+            });
+            
+            // Normalize base panels to start at 0
+            const minBaseY = Math.min(...basePanels.map(p => (p.gridPos || { y: 0 }).y));
+            basePanels.forEach(panel => {
+                const gridPos = panel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+                gridPos.y = gridPos.y - minBaseY;
+            });
+            
+            currentY = maxBaseBottom - minBaseY;
+        }
+        
+        // Then place expert panels in order
+        Object.keys(expertGroups).sort().forEach(expertName => {
+            const expertPanels = expertGroups[expertName];
+            
+            // Find min Y and max bottom of this expert's panels
+            let minExpertY = Infinity;
+            let maxExpertBottom = 0;
+            expertPanels.forEach(panel => {
+                const gridPos = panel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+                if (gridPos.y < minExpertY) {
+                    minExpertY = gridPos.y;
+                }
+                const bottom = gridPos.y + gridPos.h;
+                if (bottom > maxExpertBottom) {
+                    maxExpertBottom = bottom;
+                }
+            });
+            
+            if (minExpertY === Infinity) {
+                minExpertY = 0;
+            }
+            
+            // Adjust Y positions of this expert's panels
+            expertPanels.forEach(panel => {
+                const gridPos = panel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+                gridPos.y = gridPos.y - minExpertY + currentY;
+            });
+            
+            // Update currentY for next expert
+            currentY = currentY + (maxExpertBottom - minExpertY);
+        });
+        
+        // Update DOM elements with new grid positions
+        this.panels.forEach((panel, index) => {
+            const panelElement = document.getElementById(this.getInstanceId(`panel-${index}`));
+            if (panelElement) {
+                const gridPos = panel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+                panelElement.style.gridColumn = `${gridPos.x + 1} / ${gridPos.x + gridPos.w + 1}`;
+                panelElement.style.gridRow = `${gridPos.y + 1} / ${gridPos.y + gridPos.h + 1}`;
+            }
+        });
+    }
+    
+    /**
+     * Toggle panel collapse/expand state
+     */
+    togglePanelCollapse(panelDiv, panelIndex) {
+        const panel = this.panels[panelIndex];
+        if (!panel) return;
+        
+        const content = panel._contentElement || panelDiv.querySelector('.genie-dashboard-panel-content');
+        const collapseButton = panel._collapseButton || panelDiv.querySelector('.genie-dashboard-panel-collapse-btn');
+        
+        if (!content || !collapseButton) return;
+        
+        // Get current grid position
+        const gridPos = panel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+        
+        // Get the state BEFORE toggle
+        const wasCollapsed = panelDiv.classList.contains('genie-panel-collapsed') || panel._isCollapsed;
+        
+        if (wasCollapsed) {
+            // Expand - restore original dimensions
+            // First remove the collapsed class
+            panelDiv.classList.remove('genie-panel-collapsed');
+            
+            // Restore original grid row if we have it stored
+            if (panel._originalDimensions && panel._originalDimensions.gridRow) {
+                panelDiv.style.gridRow = panel._originalDimensions.gridRow;
+                panelDiv.style.setProperty('grid-row', panel._originalDimensions.gridRow, 'important');
+            } else {
+                // Fallback to calculated grid row
+                const gridRowValue = `${gridPos.y + 1} / ${gridPos.y + gridPos.h + 1}`;
+                panelDiv.style.gridRow = gridRowValue;
+                panelDiv.style.setProperty('grid-row', gridRowValue, 'important');
+            }
+            
+            // Restore original panel dimensions
+            if (panel._originalDimensions) {
+                if (panel._originalDimensions.height && panel._originalDimensions.height !== 'auto') {
+                    panelDiv.style.height = panel._originalDimensions.height;
+                } else {
+                    panelDiv.style.removeProperty('height');
+                }
+                if (panel._originalDimensions.minHeight) {
+                    panelDiv.style.minHeight = panel._originalDimensions.minHeight;
+                } else {
+                    panelDiv.style.removeProperty('min-height');
+                }
+                if (panel._originalDimensions.maxHeight && panel._originalDimensions.maxHeight !== 'none') {
+                    panelDiv.style.maxHeight = panel._originalDimensions.maxHeight;
+                } else {
+                    panelDiv.style.removeProperty('max-height');
+                }
+            } else {
+                // Fallback: remove constraints
+                panelDiv.style.removeProperty('height');
+                panelDiv.style.removeProperty('min-height');
+                panelDiv.style.removeProperty('max-height');
+            }
+            panelDiv.style.removeProperty('align-self');
+            
+            // Restore content dimensions
+            if (panel._originalContentDimensions) {
+                content.style.setProperty('display', 'flex', 'important');
+                if (panel._originalContentDimensions.height && panel._originalContentDimensions.height !== '0px') {
+                    content.style.height = panel._originalContentDimensions.height;
+                } else {
+                    content.style.removeProperty('height');
+                }
+                if (panel._originalContentDimensions.minHeight) {
+                    content.style.minHeight = panel._originalContentDimensions.minHeight;
+                } else {
+                    content.style.removeProperty('min-height');
+                }
+                if (panel._originalContentDimensions.padding) {
+                    content.style.padding = panel._originalContentDimensions.padding;
+                } else {
+                    content.style.removeProperty('padding');
+                }
+                if (panel._originalContentDimensions.margin) {
+                    content.style.margin = panel._originalContentDimensions.margin;
+                } else {
+                    content.style.removeProperty('margin');
+                }
+                content.style.setProperty('visibility', 'visible', 'important');
+            } else {
+                // Fallback
+                content.style.setProperty('display', 'flex', 'important');
+                content.style.removeProperty('height');
+                content.style.removeProperty('min-height');
+                content.style.removeProperty('padding');
+                content.style.removeProperty('margin');
+                content.style.setProperty('visibility', 'visible', 'important');
+            }
+            
+            collapseButton.innerHTML = '▼';
+            collapseButton.title = 'Collapse panel';
+            panel._isCollapsed = false;
+            
+            // Force a reflow to ensure the grid recalculates
+            void panelDiv.offsetHeight;
+            
+            // Resize charts after expansion - wait for layout to settle
+            const grid = this.dashboardGrid || document.getElementById(this.getInstanceId('grid'));
+            if (grid) {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        // Resize charts in this panel after expansion
+                        const panelId = this.getInstanceId(`panel-${panelIndex}`);
+                        const chart = this.charts[panelId];
+                        if (chart && typeof chart.resize === 'function') {
+                            chart.resize();
+                        }
+                        
+                        // Also check for any charts within the panel content
+                        const chartCanvases = content.querySelectorAll('canvas');
+                        chartCanvases.forEach(canvas => {
+                            // Try to find the chart instance associated with this canvas
+                            Object.keys(this.charts).forEach(chartId => {
+                                const chartInstance = this.charts[chartId];
+                                if (chartInstance && chartInstance.canvas === canvas) {
+                                    if (typeof chartInstance.resize === 'function') {
+                                        chartInstance.resize();
+                                    }
+                                }
+                            });
+                        });
+                    });
+                });
+            }
+        } else {
+            // Collapse - reduce grid row span to just header height (1 row)
+            // Store the original computed dimensions before collapsing
+            if (panel._originalDimensions === undefined) {
+                const computedStyle = window.getComputedStyle(panelDiv);
+                panel._originalDimensions = {
+                    height: computedStyle.height,
+                    gridRow: panelDiv.style.gridRow || window.getComputedStyle(panelDiv).gridRow,
+                    minHeight: computedStyle.minHeight,
+                    maxHeight: computedStyle.maxHeight
+                };
+                // Also store content dimensions
+                const contentComputed = window.getComputedStyle(content);
+                panel._originalContentDimensions = {
+                    height: contentComputed.height,
+                    minHeight: contentComputed.minHeight,
+                    maxHeight: contentComputed.maxHeight,
+                    padding: contentComputed.padding,
+                    margin: contentComputed.margin
+                };
+            }
+            
+            panelDiv.classList.add('genie-panel-collapsed');
+            content.style.display = 'none';
+            // Set grid row to span only 1 row (just the header)
+            panelDiv.style.gridRow = `${gridPos.y + 1} / ${gridPos.y + 2}`;
+            // Force height to auto to minimize space
+            panelDiv.style.height = 'auto';
+            panelDiv.style.minHeight = '0';
+            collapseButton.innerHTML = '▶';
+            collapseButton.title = 'Expand panel';
+            panel._isCollapsed = true;
+        }
+        
+        // Recalculate Y positions of panels below this one to fill the gap
+        // Pass the state BEFORE the toggle
+        this.recalculateYPositionsAfterCollapse(panelIndex, wasCollapsed);
+    }
+    
+    /**
+     * Recalculate Y positions of panels after collapse/expand to fill gaps
+     */
+    recalculateYPositionsAfterCollapse(changedPanelIndex, wasCollapsed) {
+        const changedPanel = this.panels[changedPanelIndex];
+        if (!changedPanel) return;
+        
+        const gridPos = changedPanel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+        const isNowCollapsed = changedPanel._isCollapsed;
+        
+        // Calculate the height difference
+        let heightDiff = 0;
+        if (wasCollapsed && !isNowCollapsed) {
+            // Expanding: panels below need to move down
+            heightDiff = gridPos.h - 1; // Original height minus 1 row (header)
+        } else if (!wasCollapsed && isNowCollapsed) {
+            // Collapsing: panels below need to move up
+            heightDiff = -(gridPos.h - 1); // Negative: move up
+        } else {
+            return; // No change
+        }
+        
+        // Calculate the bottom position BEFORE the change
+        // When collapsing: was at gridPos.y + gridPos.h (full height), now will be at gridPos.y + 1
+        // When expanding: was at gridPos.y + 1 (just header), now will be at gridPos.y + gridPos.h
+        const oldBottom = wasCollapsed ? (gridPos.y + 1) : (gridPos.y + gridPos.h);
+        
+        // Find all panels below this one (using the OLD bottom position)
+        const panelsToAdjust = [];
+        this.panels.forEach((panel, index) => {
+            if (index === changedPanelIndex) return; // Skip the changed panel
+            
+            const pGridPos = panel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+            
+            // Panel is below if its Y position is at or below the OLD bottom of the changed panel
+            if (pGridPos.y >= oldBottom) {
+                panelsToAdjust.push({ panel, index, gridPos: pGridPos });
+            }
+        });
+        
+        // Adjust Y positions
+        panelsToAdjust.forEach(({ panel, index, gridPos: pGridPos }) => {
+            pGridPos.y += heightDiff;
+            
+            // Update DOM element grid position
+            const panelElement = document.getElementById(this.getInstanceId(`panel-${index}`));
+            if (panelElement) {
+                const panelHeight = panel._isCollapsed ? 1 : pGridPos.h;
+                panelElement.style.gridRow = `${pGridPos.y + 1} / ${pGridPos.y + panelHeight + 1}`;
+            }
+        });
     }
     
     /**
@@ -2273,6 +3138,14 @@
         const panelType = panel.type || 'timeseries';
         panelDiv.setAttribute('data-panel-type', panelType);
         
+        // Set panel ID for tracking
+        panelDiv.id = this.getInstanceId(`panel-${index}`);
+        
+        // Add data attribute for expert name if this panel belongs to an expert
+        if (panel._expertName) {
+            panelDiv.setAttribute('data-expert-name', panel._expertName);
+        }
+        
         // Create panel header
         const header = document.createElement('div');
         header.className = 'genie-dashboard-panel-header';
@@ -2323,12 +3196,42 @@
             titleDiv.appendChild(performanceText);
         }
         
+        // Create collapse/expand button
+        const collapseButton = document.createElement('button');
+        collapseButton.type = 'button';
+        collapseButton.className = 'genie-dashboard-panel-collapse-btn';
+        collapseButton.innerHTML = '▼';
+        collapseButton.title = 'Collapse panel';
+        collapseButton.style.cssText = `
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            color: #6b7280;
+            padding: 4px 8px;
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+        `;
+        collapseButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.togglePanelCollapse(panelDiv, index);
+        });
+        
+        // Store collapse button reference
+        panel._collapseButton = collapseButton;
+        
+        // Add button before title, then title div
+        header.appendChild(collapseButton);
         header.appendChild(titleDiv);
         panelDiv.appendChild(header);
         
         // Create panel content
         const content = document.createElement('div');
         content.className = 'genie-dashboard-panel-content';
+        content.id = this.getInstanceId(`panel-content-${index}`);
         
         // Ensure panel-content container allows content to expand
         content.style.overflow = 'visible';
@@ -2337,6 +3240,9 @@
         // Show loading state
         content.innerHTML = '<div class="genie-dashboard-panel-loading">Loading...</div>';
         panelDiv.appendChild(content);
+        
+        // Store content reference
+        panel._contentElement = content;
         
         gridContainer.appendChild(panelDiv);
         
@@ -10339,8 +11245,8 @@
                     existingNote.remove();
                 }
                 
-                // Only create and show note if stats view is active
-                if (isStatsViewActive) {
+                // Only create and show note if stats view is active and panel is not collapsed
+                if (isStatsViewActive && !panelElement.classList.contains('genie-panel-collapsed')) {
                     const unitNote = document.createElement('div');
                     unitNote.className = 'genie-dashboard-unit-note';
                     unitNote.style.cssText = 'position: absolute; bottom: 0; left: 0; right: 0; padding: 8px 12px; font-size: 12px; color: #6b7280; font-style: italic; background: rgba(255, 255, 255, 0.95); border-top: 1px solid #e5e7eb; z-index: 10; pointer-events: none;';
