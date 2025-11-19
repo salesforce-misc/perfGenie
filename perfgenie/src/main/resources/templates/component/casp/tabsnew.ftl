@@ -1692,8 +1692,19 @@
                 collapseArrow.classList.remove('fa-chevron-right');
                 collapseArrow.classList.add('fa-chevron-left');
             }
+        } else {
+            // If no sidebar parameter, default to collapsed state
+            sidebar.classList.remove('expanded');
+            sidebar.classList.add('collapsed');
+            if (mainContent) {
+                mainContent.classList.add('sidebar-collapsed');
+            }
+            // Update arrow to point right (expand)
+            if (collapseArrow) {
+                collapseArrow.classList.remove('fa-chevron-left');
+                collapseArrow.classList.add('fa-chevron-right');
+            }
         }
-        // If no sidebar parameter, keep default state (expanded by default)
     }
     
     /**
@@ -2109,13 +2120,13 @@ function getCanaryHeader(start, end, source){
 <#include "wave-js.ftl">
 
 <!-- Left Navigation Sidebar -->
-<div class="left-nav-sidebar expanded" id="leftNavSidebar">
+<div class="left-nav-sidebar collapsed" id="leftNavSidebar">
     <div class="left-nav-toggle" id="leftNavToggle" title="Perf Genie">
         <img src="/images/warden-white.svg" alt="Toggle" class="left-nav-toggle-icon" />
         <span class="left-nav-toggle-title">Perf Genie</span>
     </div>
     <!-- Collapse/Expand Arrow - Middle Right Aligned -->
-    <i class="fa fa-chevron-left left-nav-collapse-arrow" id="leftNavCollapseArrow" title="Collapse/Expand Navigation"></i>
+    <i class="fa fa-chevron-right left-nav-collapse-arrow" id="leftNavCollapseArrow" title="Collapse/Expand Navigation"></i>
     <div class="left-nav-menu">
         <a href="#" class="left-nav-item active" data-page="profiler" id="nav-profiler" title="Profiler & Diagnostics">
             <i class="fa fa-diamond left-nav-icon" aria-hidden="true"></i>
@@ -2133,7 +2144,7 @@ function getCanaryHeader(start, end, source){
 </div>
 
 <!-- Main Content Wrapper -->
-<div class="main-content-wrapper" id="mainContentWrapper">
+<div class="main-content-wrapper sidebar-collapsed" id="mainContentWrapper">
 <!-- Profiler & Diagnostics Page Content -->
 <div id="profiler-page" class="page-content active">
     <div class="data-view-header-placeholder" style="height: 44px; width: 100%;">
