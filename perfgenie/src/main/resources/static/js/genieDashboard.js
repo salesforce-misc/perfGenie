@@ -732,6 +732,54 @@
                 height: 24px;
                 background: #e5e7eb;
             }
+            .genie-dashboard-container .genie-toolbar-genie-checkbox-container {
+                margin-left: auto;
+                display: flex;
+                align-items: center;
+            }
+            .genie-dashboard-container .genie-toolbar-genie-checkbox {
+                width: 40px;
+                height: 40px;
+                appearance: none;
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                cursor: pointer;
+                border: none;
+                border-radius: 8px;
+                background-image: url('/images/rabbit.png');
+                background-size: contain;
+                background-position: center;
+                background-repeat: no-repeat;
+                background-color: transparent;
+                transition: all 0.2s;
+                padding: 0;
+                margin: 0;
+                position: relative;
+            }
+            .genie-dashboard-container .genie-toolbar-genie-checkbox:hover {
+                opacity: 0.8;
+            }
+            .genie-dashboard-container .genie-toolbar-genie-checkbox:checked::after {
+                content: '✓';
+                position: absolute;
+                left: -2px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 14px;
+                height: 14px;
+                background-color: #3b82f6;
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                font-weight: bold;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            }
+            .genie-dashboard-container .genie-toolbar-genie-checkbox:active {
+                transform: scale(0.95);
+            }
             .genie-dashboard-container .genie-time-range-display {
                 font-size: 12px;
                 color: #6b7280;
@@ -1557,6 +1605,20 @@
             editButton.innerHTML = '<span>✏️</span>';
             toolbar.appendChild(editButton);
         }
+        
+        // Genie icon checkbox (at the right end)
+        const genieCheckboxContainer = document.createElement('div');
+        genieCheckboxContainer.className = 'genie-toolbar-genie-checkbox-container';
+        genieCheckboxContainer.style.cssText = 'margin-left: auto; display: flex; align-items: center;';
+        
+        const genieCheckbox = document.createElement('input');
+        genieCheckbox.type = 'checkbox';
+        genieCheckbox.id = this.getInstanceId('toolbar-genie-checkbox');
+        genieCheckbox.className = 'genie-toolbar-genie-checkbox';
+        genieCheckbox.title = 'Genie';
+        
+        genieCheckboxContainer.appendChild(genieCheckbox);
+        toolbar.appendChild(genieCheckboxContainer);
         
         // Insert toolbar at the beginning of container (after collapse bar)
         this.container.appendChild(toolbar);
