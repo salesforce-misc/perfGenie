@@ -43,8 +43,18 @@
             panelSpacing: 5,
             responsive: true,
             theme: 'light',
+            chat: {
+                enabled: false, // Enable chat feature
+                apiBaseUrl: '/api/claude', // Base URL for Claude API
+                position: 'bottom-right' // Chat window position
+            },
             ...options
         };
+        
+        // Merge chat options if provided
+        if (options.chat) {
+            this.options.chat = { ...this.options.chat, ...options.chat };
+        }
         
         this.dashboardConfig = null;
         this.inputConfig = null;
@@ -56,6 +66,9 @@
         this.expertViews = {};
         // Track which expert views are currently loaded
         this.loadedExpertViews = new Set();
+        
+        // Chat conversation history
+        this.chatHistory = [];
         
         // Initialize styles
         this.injectStyles();
@@ -655,6 +668,301 @@
                 }
             }
             
+            /* Chat window styles */
+            .genie-chat-container {
+                position: fixed;
+                bottom: 0;
+                right: 0;
+                z-index: 10000;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            }
+            
+            .genie-chat-toggle-button {
+                position: absolute;
+                bottom: 10px;
+                right: 10px;
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                /* Glassmorphism blue matching navigation theme */
+                background: rgba(90, 159, 212, 0.4) !important;
+                background-image: 
+                    linear-gradient(135deg, rgba(90, 159, 212, 0.45) 0%, rgba(127, 192, 232, 0.35) 50%, rgba(90, 159, 212, 0.45) 100%),
+                    linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%) !important;
+                backdrop-filter: blur(15px) saturate(180%);
+                -webkit-backdrop-filter: blur(15px) saturate(180%);
+                border: 1px solid rgba(255, 255, 255, 0.4) !important;
+                box-shadow: 
+                    0 4px 12px rgba(90, 159, 212, 0.4),
+                    0 2px 6px rgba(90, 159, 212, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+                color: white;
+                font-size: 18px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10001;
+            }
+            
+            .genie-chat-toggle-button:hover {
+                background: rgba(90, 159, 212, 0.5) !important;
+                transform: scale(1.05);
+                box-shadow: 
+                    0 6px 16px rgba(90, 159, 212, 0.5),
+                    0 3px 8px rgba(90, 159, 212, 0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+            }
+            
+            .genie-chat-toggle-button:hover {
+                background: #2563eb;
+                transform: scale(1.05);
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+            }
+            
+            .genie-chat-window {
+                position: absolute;
+                bottom: 0;
+                right: 0;
+                width: 400px;
+                height: 600px;
+                background: white;
+                border-radius: 12px 12px 0 0;
+                box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+                display: none;
+                flex-direction: column;
+                overflow: hidden;
+            }
+            
+            .genie-chat-window-open {
+                display: flex !important;
+            }
+            
+            .genie-chat-header {
+                /* Glassmorphism background matching navigation panel */
+                background: rgba(90, 159, 212, 0.35) !important;
+                background-image: 
+                    linear-gradient(135deg, rgba(90, 159, 212, 0.4) 0%, rgba(127, 192, 232, 0.3) 50%, rgba(90, 159, 212, 0.4) 100%),
+                    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+                backdrop-filter: blur(20px) saturate(180%);
+                -webkit-backdrop-filter: blur(20px) saturate(180%);
+                border: 1px solid rgba(255, 255, 255, 0.5) !important;
+                box-shadow: 
+                    0 4px 16px rgba(90, 159, 212, 0.4),
+                    0 2px 8px rgba(90, 159, 212, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+                    inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+                color: #ffffff !important;
+                padding: 8px 12px;
+                min-height: 36px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-radius: 12px 12px 0 0;
+                font-weight: 700 !important;
+                font-size: 14px;
+                text-shadow: 
+                    -0.5px -0.5px 0 rgba(90, 159, 212, 0.95),
+                    0.5px -0.5px 0 rgba(90, 159, 212, 0.95),
+                    -0.5px 0.5px 0 rgba(90, 159, 212, 0.95),
+                    0.5px 0.5px 0 rgba(90, 159, 212, 0.95),
+                    -0.5px 0 0 rgba(90, 159, 212, 0.95),
+                    0.5px 0 0 rgba(90, 159, 212, 0.95),
+                    0 -0.5px 0 rgba(90, 159, 212, 0.95),
+                    0 0.5px 0 rgba(90, 159, 212, 0.95),
+                    0 1px 3px rgba(0, 0, 0, 0.3),
+                    0 0 8px rgba(90, 159, 212, 0.5),
+                    0 2px 4px rgba(0, 0, 0, 0.2) !important;
+            }
+            
+            .genie-chat-container.genie-chat-open .genie-chat-toggle-button {
+                display: none !important;
+            }
+            
+            .genie-chat-title {
+                font-weight: 600;
+                font-size: 14px;
+            }
+            
+            .genie-chat-close-button {
+                background: rgba(255, 255, 255, 0.15);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                color: white;
+                font-size: 20px;
+                cursor: pointer;
+                width: 28px;
+                height: 28px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 6px;
+                transition: all 0.2s;
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+            }
+            
+            .genie-chat-close-button:hover {
+                background: rgba(255, 255, 255, 0.25);
+                border-color: rgba(255, 255, 255, 0.5);
+                transform: scale(1.05);
+            }
+            
+            .genie-chat-messages {
+                flex: 1;
+                overflow-y: auto;
+                padding: 10px 12px;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+            }
+            
+            .genie-chat-message {
+                margin-bottom: 8px;
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .genie-chat-message-user {
+                align-items: flex-end;
+            }
+            
+            .genie-chat-message-assistant {
+                align-items: flex-start;
+            }
+            
+            .genie-chat-message-content {
+                width: 100%;
+                max-width: 100%;
+                padding: 8px 12px;
+                border-radius: 8px;
+                word-wrap: break-word;
+                white-space: pre-wrap;
+                line-height: 1.6;
+                font-size: 13px;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            }
+            
+            .genie-chat-message-user .genie-chat-message-content {
+                /* Glassmorphism blue matching navigation theme */
+                background: rgba(90, 159, 212, 0.4) !important;
+                background-image: 
+                    linear-gradient(135deg, rgba(90, 159, 212, 0.45) 0%, rgba(127, 192, 232, 0.35) 50%, rgba(90, 159, 212, 0.45) 100%),
+                    linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%) !important;
+                backdrop-filter: blur(15px) saturate(180%);
+                -webkit-backdrop-filter: blur(15px) saturate(180%);
+                border: 1px solid rgba(255, 255, 255, 0.4) !important;
+                box-shadow: 
+                    0 2px 8px rgba(90, 159, 212, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+                color: #ffffff !important;
+                border-bottom-right-radius: 4px;
+                font-weight: 500;
+            }
+            
+            .genie-chat-message-assistant .genie-chat-message-content {
+                background: rgba(255, 255, 255, 0.9);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                color: #1f2937;
+                border: 1px solid rgba(90, 159, 212, 0.2);
+                border-bottom-left-radius: 4px;
+                box-shadow: 0 1px 3px rgba(90, 159, 212, 0.1);
+            }
+            
+            .genie-chat-input-container {
+                padding: 8px 10px;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                border-top: 1px solid rgba(90, 159, 212, 0.2);
+                display: flex;
+                gap: 6px;
+                align-items: flex-end;
+            }
+            
+            .genie-chat-input {
+                flex: 1;
+                border: 1px solid rgba(90, 159, 212, 0.3);
+                border-radius: 6px;
+                padding: 6px 10px;
+                font-size: 13px;
+                font-family: inherit;
+                resize: none;
+                max-height: 80px;
+                min-height: 32px;
+                background: rgba(255, 255, 255, 0.9);
+                backdrop-filter: blur(5px);
+                -webkit-backdrop-filter: blur(5px);
+            }
+            
+            .genie-chat-input:focus {
+                outline: none;
+                border-color: rgba(90, 159, 212, 0.6);
+                box-shadow: 0 0 0 3px rgba(90, 159, 212, 0.15);
+            }
+            
+            .genie-chat-input:disabled {
+                background: #f3f4f6;
+                cursor: not-allowed;
+            }
+            
+            .genie-chat-send-button {
+                /* Glassmorphism blue matching navigation theme */
+                background: rgba(90, 159, 212, 0.4) !important;
+                background-image: 
+                    linear-gradient(135deg, rgba(90, 159, 212, 0.45) 0%, rgba(127, 192, 232, 0.35) 50%, rgba(90, 159, 212, 0.45) 100%),
+                    linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%) !important;
+                backdrop-filter: blur(15px) saturate(180%);
+                -webkit-backdrop-filter: blur(15px) saturate(180%);
+                border: 1px solid rgba(255, 255, 255, 0.4) !important;
+                box-shadow: 
+                    0 2px 8px rgba(90, 159, 212, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+                color: #ffffff !important;
+                border-radius: 6px;
+                padding: 6px 14px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+                height: 32px;
+                text-shadow: 
+                    -0.5px -0.5px 0 rgba(90, 159, 212, 0.8),
+                    0.5px -0.5px 0 rgba(90, 159, 212, 0.8),
+                    -0.5px 0.5px 0 rgba(90, 159, 212, 0.8),
+                    0.5px 0.5px 0 rgba(90, 159, 212, 0.8),
+                    0 1px 2px rgba(0, 0, 0, 0.2) !important;
+            }
+            
+            .genie-chat-send-button:hover:not(:disabled) {
+                background: rgba(90, 159, 212, 0.5) !important;
+                transform: translateY(-1px);
+                box-shadow: 
+                    0 4px 12px rgba(90, 159, 212, 0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+            }
+            
+            .genie-chat-send-button:disabled {
+                background: rgba(156, 163, 175, 0.4) !important;
+                background-image: none !important;
+                border-color: rgba(156, 163, 175, 0.3) !important;
+                color: rgba(255, 255, 255, 0.6) !important;
+                cursor: not-allowed;
+                text-shadow: none !important;
+            }
+            
+            @media (max-width: 768px) {
+                .genie-chat-window {
+                    width: 100vw;
+                    height: calc(100vh - 60px);
+                    bottom: 0;
+                    right: 0;
+                    border-radius: 12px 12px 0 0;
+                }
+            }
+            
             /* Toolbar styles */
             .genie-dashboard-container .genie-dashboard-toolbar {
                 background: #f8f9fa;
@@ -998,6 +1306,11 @@
             // Render toolbar only if enabled
             if (isToolbarEnabled) {
                 this.renderToolbar(toolbarConfig);
+            }
+            
+            // Render chat window if enabled
+            if (this.options.chat && this.options.chat.enabled) {
+                this.renderChatWindow();
             }
             
             // Extract panels (flatten nested panels recursively)
@@ -16596,6 +16909,556 @@
                 throw new Error('Download failed: ' + fallbackError.message);
             }
         }
+    }
+    /**
+     * Get panel metadata for all panels
+     * @returns {Array} Array of panel metadata objects
+     */
+    getPanelMetadata() {
+        return this.panels.map((panel, index) => {
+            // Panel ID might be a number, string, or undefined - normalize it
+            const panelId = panel.id !== undefined && panel.id !== null 
+                ? String(panel.id) 
+                : `panel-${index}`;
+            
+            const metadata = {
+                id: panelId,
+                title: panel.title || `Panel ${panelId}`,
+                description: panel.description || '',
+                type: panel.type || 'unknown',
+                seriesNames: []
+            };
+            
+            // Get series names from various sources
+            if (panel._chartSeriesNames && Array.isArray(panel._chartSeriesNames)) {
+                metadata.seriesNames = [...panel._chartSeriesNames];
+            } else if (panel._currentSeriesNames && Array.isArray(panel._currentSeriesNames)) {
+                metadata.seriesNames = [...panel._currentSeriesNames];
+            } else if (this.charts[panel.id] && this.charts[panel.id].data && this.charts[panel.id].data.datasets) {
+                // Extract from chart datasets
+                metadata.seriesNames = this.charts[panel.id].data.datasets.map(ds => ds.label || 'Unknown').filter(Boolean);
+            }
+            
+            return metadata;
+        });
+    }
+    
+    /**
+     * Get timeseries data for specific panel IDs
+     * @param {Array<string>} panelIds - Array of panel IDs to get data for
+     * @returns {Object} Object mapping panel ID to timeseries data
+     */
+    getPanelTimeseriesData(panelIds) {
+        const panelData = {};
+        
+        // Debug: Log available panel IDs
+        console.log('[Chat] Requested panel IDs:', panelIds);
+        console.log('[Chat] Available panels:', this.panels.map(p => ({ id: p.id, idType: typeof p.id, title: p.title })));
+        
+        panelIds.forEach(panelId => {
+            // Try to find panel by exact match (string or number)
+            let panel = this.panels.find(p => {
+                // Compare as strings and numbers
+                return String(p.id) === String(panelId) || 
+                       p.id === panelId || 
+                       (typeof p.id === 'number' && p.id === Number(panelId)) ||
+                       (typeof panelId === 'number' && p.id === panelId);
+            });
+            
+            // If not found, try to find by index (if panelId is a number)
+            if (!panel && !isNaN(panelId)) {
+                const index = parseInt(panelId) - 1; // Panel IDs might be 1-indexed
+                if (index >= 0 && index < this.panels.length) {
+                    panel = this.panels[index];
+                }
+            }
+            
+            if (!panel) {
+                console.warn('[Chat] Panel not found for ID:', panelId, 'Available IDs:', this.panels.map(p => p.id));
+                panelData[panelId] = { error: 'Panel not found', availableIds: this.panels.map(p => String(p.id)) };
+                return;
+            }
+            
+            console.log('[Chat] Panel found:', { id: panel.id, title: panel.title, type: panel.type });
+            
+            const data = {
+                panelId: String(panel.id), // Normalize to string
+                title: panel.title || `Panel ${panel.id}`,
+                description: panel.description || '',
+                type: panel.type || 'unknown',
+                seriesData: {}
+            };
+            
+            let hasSeriesData = false;
+            
+            // PRIORITY: Use _chartSeriesData first - this is the processed data used in statistics table
+            if (panel._chartSeriesData) {
+                console.log('[Chat] Using _chartSeriesData for panel', panel.id, 'Series:', Object.keys(panel._chartSeriesData));
+                // Convert to a more Claude-friendly format
+                Object.keys(panel._chartSeriesData).forEach(seriesName => {
+                    const seriesPoints = panel._chartSeriesData[seriesName];
+                    if (seriesPoints && Array.isArray(seriesPoints) && seriesPoints.length > 0) {
+                        // _chartSeriesData format: [{time: timestamp, value: number}, ...]
+                        data.seriesData[seriesName] = seriesPoints.map(point => {
+                            // Handle both {time, value} and {x, y} formats
+                            const timestamp = point.time !== undefined ? point.time : (point.x !== undefined ? point.x : null);
+                            const value = point.value !== undefined ? point.value : (point.y !== undefined ? point.y : null);
+                            
+                            if (timestamp !== null && value !== null) {
+                                return {
+                                    timestamp: new Date(timestamp).toISOString(),
+                                    value: value
+                                };
+                            }
+                            return null;
+                        }).filter(p => p !== null);
+                        
+                        if (data.seriesData[seriesName].length > 0) {
+                            hasSeriesData = true;
+                            console.log('[Chat] Extracted', data.seriesData[seriesName].length, 'data points for series', seriesName);
+                        }
+                    } else {
+                        console.warn('[Chat] Series', seriesName, 'has no valid data points:', seriesPoints);
+                    }
+                });
+            } else {
+                console.warn('[Chat] Panel', panel.id, 'does not have _chartSeriesData. This is the processed data used in statistics table.');
+                console.warn('[Chat] Available data sources:', {
+                    hasChartSeriesData: !!panel._chartSeriesData,
+                    hasChart: !!this.charts[panel.id],
+                    hasChartData: !!(this.charts[panel.id] && this.charts[panel.id].data),
+                    chartSeriesNames: panel._chartSeriesNames,
+                    currentSeriesNames: panel._currentSeriesNames,
+                    panelKeys: Object.keys(panel).filter(k => k.includes('Series') || k.includes('series') || k.includes('Data') || k.includes('data'))
+                });
+                
+                // Fallback to chart data only if _chartSeriesData is not available
+                if (this.charts[panel.id] && this.charts[panel.id].data) {
+                    console.log('[Chat] Falling back to chart data for panel', panel.id, '(this may not match statistics table)');
+                    // Extract from chart data
+                    const chart = this.charts[panel.id];
+                    if (chart.data.datasets) {
+                        console.log('[Chat] Chart has', chart.data.datasets.length, 'datasets');
+                        chart.data.datasets.forEach(dataset => {
+                            const seriesName = dataset.label || 'Unknown';
+                            const seriesPoints = (dataset.data || []).map(point => ({
+                                timestamp: point.x ? new Date(point.x).toISOString() : null,
+                                value: point.y !== undefined ? point.y : null
+                            })).filter(p => p.timestamp && p.value !== null);
+                            
+                            if (seriesPoints.length > 0) {
+                                data.seriesData[seriesName] = seriesPoints;
+                                hasSeriesData = true;
+                            }
+                        });
+                    }
+                }
+            }
+            
+            if (!hasSeriesData) {
+                console.warn('[Chat] Panel', panel.id, 'was found but has no series data. seriesData object is empty.');
+            } else {
+                console.log('[Chat] Successfully extracted series data for panel', panel.id, 'Series count:', Object.keys(data.seriesData).length);
+            }
+            
+            panelData[panelId] = data;
+        });
+        
+        return panelData;
+    }
+    
+    /**
+     * Render chat window in bottom right corner
+     */
+    renderChatWindow() {
+        // Create chat container
+        const chatContainer = document.createElement('div');
+        chatContainer.className = 'genie-chat-container';
+        chatContainer.id = this.getInstanceId('chat-container');
+        
+        // Create chat toggle button (floating button)
+        const chatToggleButton = document.createElement('button');
+        chatToggleButton.className = 'genie-chat-toggle-button';
+        chatToggleButton.id = this.getInstanceId('chat-toggle-button');
+        chatToggleButton.innerHTML = '💬';
+        chatToggleButton.title = 'Open Chat';
+        chatToggleButton.addEventListener('click', () => {
+            const isOpen = chatWindow.classList.contains('genie-chat-window-open');
+            if (isOpen) {
+                chatWindow.classList.remove('genie-chat-window-open');
+                chatContainer.classList.remove('genie-chat-open');
+                chatToggleButton.style.display = 'flex'; // Show icon
+            } else {
+                chatWindow.classList.add('genie-chat-window-open');
+                chatContainer.classList.add('genie-chat-open');
+                chatToggleButton.style.display = 'none'; // Hide icon when open
+                chatInput.focus();
+            }
+        });
+        
+        // Create chat window
+        const chatWindow = document.createElement('div');
+        chatWindow.className = 'genie-chat-window';
+        chatWindow.id = this.getInstanceId('chat-window');
+        
+        // Chat header
+        const chatHeader = document.createElement('div');
+        chatHeader.className = 'genie-chat-header';
+        chatHeader.innerHTML = `
+            <span class="genie-chat-title">Dashboard Assistant</span>
+            <button class="genie-chat-close-button" id="${this.getInstanceId('chat-close-button')}">×</button>
+        `;
+        
+        // Chat messages container
+        const chatMessages = document.createElement('div');
+        chatMessages.className = 'genie-chat-messages';
+        chatMessages.id = this.getInstanceId('chat-messages');
+        
+        // Chat input container
+        const chatInputContainer = document.createElement('div');
+        chatInputContainer.className = 'genie-chat-input-container';
+        
+        const chatInput = document.createElement('textarea');
+        chatInput.className = 'genie-chat-input';
+        chatInput.id = this.getInstanceId('chat-input');
+        chatInput.placeholder = 'Ask about your dashboard...';
+        chatInput.rows = 2;
+        
+        const chatSendButton = document.createElement('button');
+        chatSendButton.className = 'genie-chat-send-button';
+        chatSendButton.id = this.getInstanceId('chat-send-button');
+        chatSendButton.innerHTML = 'Send';
+        chatSendButton.disabled = false;
+        
+        // Close button handler
+        chatHeader.querySelector(`#${this.getInstanceId('chat-close-button')}`).addEventListener('click', () => {
+            chatWindow.classList.remove('genie-chat-window-open');
+            chatContainer.classList.remove('genie-chat-open');
+            chatToggleButton.style.display = 'flex'; // Show icon when closed
+        });
+        
+        // Send message handler
+        const sendMessage = async () => {
+            const userMessage = chatInput.value.trim();
+            if (!userMessage || chatSendButton.disabled) return;
+            
+            // Disable input while processing
+            chatSendButton.disabled = true;
+            chatInput.disabled = true;
+            
+            // Add user message to UI
+            this.addChatMessage('user', userMessage);
+            chatInput.value = '';
+            
+            // Show thinking indicator
+            const thinkingId = this.addChatMessage('assistant', 'Thinking...', true);
+            
+            try {
+                await this.processChatMessage(userMessage, thinkingId);
+            } catch (error) {
+                console.error('Chat error:', error);
+                this.updateChatMessage(thinkingId, 'assistant', 'Sorry, I encountered an error: ' + error.message);
+            } finally {
+                chatSendButton.disabled = false;
+                chatInput.disabled = false;
+                chatInput.focus();
+            }
+        };
+        
+        chatSendButton.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        chatInputContainer.appendChild(chatInput);
+        chatInputContainer.appendChild(chatSendButton);
+        
+        chatWindow.appendChild(chatHeader);
+        chatWindow.appendChild(chatMessages);
+        chatWindow.appendChild(chatInputContainer);
+        
+        // Add chat window first, then toggle button (for CSS sibling selector)
+        chatContainer.appendChild(chatWindow);
+        chatContainer.appendChild(chatToggleButton);
+        
+        // Append to body (not container) so it's always visible
+        document.body.appendChild(chatContainer);
+        
+        // Store references
+        this.chatContainer = chatContainer;
+        this.chatMessages = chatMessages;
+        this.chatInput = chatInput;
+    }
+    
+    /**
+     * Add a message to the chat window
+     * @param {string} role - 'user' or 'assistant'
+     * @param {string} content - Message content
+     * @param {boolean} isThinking - If true, message can be updated
+     * @returns {string} Message ID for updating
+     */
+    addChatMessage(role, content, isThinking = false) {
+        const messageId = `chat-msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `genie-chat-message genie-chat-message-${role}`;
+        messageDiv.id = messageId;
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'genie-chat-message-content';
+        contentDiv.textContent = content;
+        
+        messageDiv.appendChild(contentDiv);
+        this.chatMessages.appendChild(messageDiv);
+        
+        // Scroll to bottom
+        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+        
+        return messageId;
+    }
+    
+    /**
+     * Update an existing chat message
+     * @param {string} messageId - ID of message to update
+     * @param {string} role - 'user' or 'assistant'
+     * @param {string} content - New message content
+     */
+    updateChatMessage(messageId, role, content) {
+        const messageDiv = document.getElementById(messageId);
+        if (messageDiv) {
+            const contentDiv = messageDiv.querySelector('.genie-chat-message-content');
+            if (contentDiv) {
+                contentDiv.textContent = content;
+            }
+        }
+        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+    }
+    
+    /**
+     * Process a chat message through Claude API
+     * @param {string} userMessage - User's message
+     * @param {string} thinkingId - ID of thinking message to update
+     */
+    async processChatMessage(userMessage, thinkingId) {
+        // Step 1: Send metadata and get panel IDs
+        const panelMetadata = this.getPanelMetadata();
+        const metadataMessage = `You are a dashboard analyzer. This is a TWO-STEP process:
+
+STEP 1 (THIS MESSAGE): Identify panel IDs needed - respond with ONLY comma-separated panel IDs (e.g., "panel1,panel2" or "none")
+STEP 2 (NEXT MESSAGE): You will receive the actual timeseries data from those panels, then analyze and answer
+
+Dashboard has ${panelMetadata.length} panels:\n\n` +
+            panelMetadata.map(p => 
+                `Panel ID: ${p.id}\n` +
+                `Title: ${p.title}\n` +
+                `Description: ${p.description || 'No description'}\n` +
+                `Type: ${p.type}\n` +
+                `Series: ${p.seriesNames.join(', ') || 'No series'}\n`
+            ).join('\n---\n\n') +
+            `\nUser question: "${userMessage}"\n\n` +
+            `CRITICAL: For this message, respond with ONLY comma-separated panel IDs. Do NOT ask for data, do NOT explain, do NOT provide analysis yet.
+- If panels are needed: respond with exactly: id1,id2,id3 (use actual panel IDs from the list above)
+- If no panels are needed: respond with exactly: none
+
+Correct format examples:
+- panel1,panel2
+- panel3
+- none
+
+Incorrect (do NOT do this):
+- "I need panel 3 data..."
+- "Please send data from panel 3"
+- "Panel 3 (Pidstats) would help..."
+
+Your response (ONLY panel IDs, nothing else):`;
+        
+        // Send first message to Claude
+        const firstResponse = await this.sendChatMessage(metadataMessage, this.chatHistory);
+        
+        // Parse panel IDs from response
+        const responseText = this.extractTextFromClaudeResponse(firstResponse) || '';
+        let panelIds = [];
+        
+        // Clean the response text - remove any markdown, quotes, or extra whitespace
+        let cleanText = responseText.trim()
+            .replace(/^["']|["']$/g, '') // Remove surrounding quotes
+            .replace(/^```[\w]*\n?|\n?```$/g, '') // Remove code blocks
+            .replace(/^panel\s*ids?[:\s]+/i, '') // Remove "Panel IDs:" prefix
+            .trim();
+        
+        // If Claude responded with a message asking for data, try to extract panel IDs from it
+        // Look for patterns like "Panel 3", "panel3", "Pidstats", etc.
+        if (cleanText.toLowerCase().includes('panel') || cleanText.toLowerCase().includes('need') || cleanText.toLowerCase().includes('data')) {
+            // Try to extract panel IDs mentioned in the text
+            // Look for "Panel X", "panelX", or panel IDs directly
+            const panelMentions = cleanText.match(/(?:panel\s*)?(\d+|[a-zA-Z0-9_-]+)/gi) || [];
+            const allPossibleIds = [];
+            
+            // Extract potential IDs
+            panelMentions.forEach(mention => {
+                const idMatch = mention.match(/(\d+|[a-zA-Z0-9_-]+)$/i);
+                if (idMatch) {
+                    allPossibleIds.push(idMatch[1]);
+                }
+            });
+            
+            // Also try to find panel IDs by matching against panel titles/descriptions
+            this.panels.forEach(panel => {
+                const panelTitleLower = (panel.title || '').toLowerCase();
+                const panelDescLower = (panel.description || '').toLowerCase();
+                const responseLower = cleanText.toLowerCase();
+                
+                // If the response mentions the panel title or description, include the panel ID
+                if (panelTitleLower && responseLower.includes(panelTitleLower)) {
+                    allPossibleIds.push(panel.id);
+                } else if (panelDescLower && responseLower.includes(panelDescLower)) {
+                    allPossibleIds.push(panel.id);
+                }
+            });
+            
+            // Filter to only valid panel IDs
+            panelIds = [...new Set(allPossibleIds)].filter(id => 
+                id && this.panels.some(p => p.id === id || p.id.toString() === id.toString())
+            );
+        }
+        
+        // If still no IDs found, try standard parsing
+        if (panelIds.length === 0) {
+            if (cleanText.toLowerCase() === 'none' || cleanText === '') {
+                panelIds = [];
+            } else {
+                // Split by comma and clean each ID
+                panelIds = cleanText
+                    .split(',')
+                    .map(id => id.trim())
+                    .filter(id => {
+                        // Only include IDs that actually exist in our panels
+                        return id && this.panels.some(p => p.id === id || p.id.toString() === id.toString());
+                    });
+                
+                // If no valid IDs found, try to extract any valid panel IDs from the text
+                if (panelIds.length === 0) {
+                    const allPossibleIds = cleanText.match(/\b([a-zA-Z0-9_-]+)\b/g) || [];
+                    panelIds = [...new Set(allPossibleIds)].filter(id => {
+                        // Check if this ID matches any panel ID (as string or number)
+                        return this.panels.some(p => 
+                            String(p.id) === String(id) || 
+                            p.id === id || 
+                            (typeof p.id === 'number' && p.id === Number(id)) ||
+                            (typeof id === 'number' && p.id === id)
+                        );
+                    });
+                }
+            }
+        }
+        
+        // Normalize panel IDs to strings for consistency
+        panelIds = panelIds.map(id => String(id));
+        
+        // Log for debugging
+        console.log('[Chat] Extracted panel IDs:', panelIds);
+        console.log('[Chat] Available panel IDs:', this.panels.map(p => ({ id: p.id, idType: typeof p.id, title: p.title })));
+        
+        if (panelIds.length === 0 && cleanText.toLowerCase() !== 'none') {
+            console.warn('[Chat] Could not extract panel IDs from response:', cleanText);
+            console.warn('[Chat] Available panel IDs:', this.panels.map(p => p.id));
+        }
+        
+        // Add first exchange to history
+        this.chatHistory.push({ role: 'user', content: metadataMessage });
+        this.chatHistory.push({ role: 'assistant', content: responseText });
+        
+        // Update thinking message
+        if (panelIds.length === 0) {
+            this.updateChatMessage(thinkingId, 'assistant', 'No specific panels needed. Processing your question...');
+        } else {
+            this.updateChatMessage(thinkingId, 'assistant', `Analyzing panels: ${panelIds.join(', ')}...`);
+        }
+        
+        // Step 2: Get panel data and send to Claude
+        let dataMessage = userMessage;
+        
+        if (panelIds.length > 0) {
+            const panelData = this.getPanelTimeseriesData(panelIds);
+            dataMessage = `User question: "${userMessage}"\n\n` +
+                `Here is the timeseries data from the requested panels:\n\n` +
+                JSON.stringify(panelData, null, 2) +
+                `\n\nIMPORTANT: Provide a SHORT and CRISP answer. Be concise and direct. Focus on key findings only. Avoid lengthy explanations or unnecessary details. Maximum 2-3 sentences unless the question specifically requires more detail.`;
+        } else {
+            // Even when no panels are needed, request concise response
+            dataMessage = `User question: "${userMessage}"\n\n` +
+                `IMPORTANT: Provide a SHORT and CRISP answer. Be concise and direct. Maximum 2-3 sentences unless the question specifically requires more detail.`;
+        }
+        
+        // Send second message with panel data
+        const finalResponse = await this.sendChatMessage(dataMessage, this.chatHistory);
+        const finalText = this.extractTextFromClaudeResponse(finalResponse) || 'No response received.';
+        
+        // Add to history
+        this.chatHistory.push({ role: 'user', content: dataMessage });
+        this.chatHistory.push({ role: 'assistant', content: finalText });
+        
+        // Update thinking message with final response
+        this.updateChatMessage(thinkingId, 'assistant', finalText);
+    }
+    
+    /**
+     * Send a message to Claude API
+     * @param {string} message - Message to send
+     * @param {Array} history - Conversation history
+     * @returns {Promise<Object>} Claude response
+     */
+    async sendChatMessage(message, history = []) {
+        const apiBaseUrl = this.options.chat.apiBaseUrl || '/api/claude';
+        
+        // Convert history to Claude format
+        const historyFormatted = history.map(msg => ({
+            role: msg.role,
+            content: msg.content
+        }));
+        
+        const response = await fetch(`${apiBaseUrl}/message/with-history`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: message,
+                history: historyFormatted
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
+        
+        return await response.json();
+    }
+    
+    /**
+     * Extract text content from Claude API response
+     * @param {Object} response - Claude API response object
+     * @returns {string} Extracted text content
+     */
+    extractTextFromClaudeResponse(response) {
+        if (!response) return '';
+        
+        // Handle ClaudeResponse format: { content: [{ type: "text", text: "..." }] }
+        if (response.content && Array.isArray(response.content)) {
+            const textBlocks = response.content
+                .filter(block => block.type === 'text' && block.text)
+                .map(block => block.text);
+            return textBlocks.join('\n');
+        }
+        
+        // Fallback: try to get text directly
+        if (response.text) return response.text;
+        if (typeof response === 'string') return response;
+        
+        return '';
     }
     } // End of class GenieDashboard
 

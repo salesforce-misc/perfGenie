@@ -4,7 +4,12 @@
 <div id="dashboard-container1"></div>
 
 <script>
-const dashboard1 = new GenieDashboard('dashboard-container1');
+const dashboard1 = new GenieDashboard('dashboard-container1',{
+                                                                chat: {
+                                                                    enabled: true,
+                                                                    apiBaseUrl: '/api/claude'
+                                                                }
+                                                            });
 $(document).ready(() => {
         // 4. Initialize and render the dashboard
 

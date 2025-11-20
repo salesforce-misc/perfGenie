@@ -13,7 +13,7 @@ import org.testng.annotations.Test;
 import com.salesforce.cantor.Cantor;
 import com.salesforce.cantor.h2.CantorOnH2;
 import perfgenie.utils.*;
-import server.PerfGenieService;
+import server.profiler.PerfGenieService;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
