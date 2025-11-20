@@ -209,6 +209,7 @@
         // Initialize GenieAnalytics component only if not already initialized
         if (!window.genieAnalytics) {
             window.genieAnalytics = new GenieAnalytics('canary-dataviewcontent');
+            genieAnalytics.setMetricNameSearchEnabled(true);
             // Initialize collapse functionality for categories panel
             window.genieAnalytics.initializeCollapsePanel();
         }

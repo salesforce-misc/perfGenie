@@ -4,9 +4,10 @@
 <div id="dashboard-container1"></div>
 
 <script>
+const dashboard1 = new GenieDashboard('dashboard-container1');
 $(document).ready(() => {
         // 4. Initialize and render the dashboard
-        const dashboard1 = new GenieDashboard('dashboard-container1');
+
 
         //////
         // Override fetchData method to return mock data
@@ -1533,8 +1534,8 @@ $(document).ready(() => {
         argus: '/v1/geniequery/?query=QEURY',
         genie: '/v1/geniequery/?query=QEURY',
         // Variables to replace in queries (all $ keys will be replaced)
-        '$start': 1762548460436,  // 1 hour ago
-        '$end': 1762552060436,
+        '$start': 1763514000000,  // 1 hour ago
+        '$end': 1763517600000,
         '$cell': 'usa12',
         '$substrate': 'aws',
         '$fi': 'aws-prod0-uswest2',

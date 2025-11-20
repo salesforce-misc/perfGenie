@@ -40,7 +40,7 @@
         this.options = {
             chartLibrary: 'chartjs', // 'chartjs' or 'c3' or 'd3'
             gridColumns: 24, // Grafana standard
-            panelSpacing: 10,
+            panelSpacing: 5,
             responsive: true,
             theme: 'light',
             ...options
@@ -280,7 +280,7 @@
             }
             
             .genie-dashboard-container .genie-dashboard-tab {
-                padding: 6px 10px;
+                padding: 4px 8px;
                 cursor: pointer;
                 border: none;
                 background: transparent;
@@ -1184,9 +1184,9 @@
             
             intervalGroup.appendChild(intervalLabel);
             intervalGroup.appendChild(intervalInput);
-            
+        
             // Aggregation button with dropdown menu (inside Span group)
-            if (showAggregation) {
+        if (showAggregation) {
                 // Create container for aggregation button and dropdown menu
                 const aggContainer = document.createElement('div');
                 aggContainer.style.cssText = 'position: relative; display: inline-block; margin-left: 2px;';
@@ -1201,7 +1201,7 @@
                 
                 // Update button display based on selected aggregation
                 const updateAggButtonDisplay = () => {
-                    const currentAggValue = this.inputConfig['$agg'] || '';
+            const currentAggValue = this.inputConfig['$agg'] || '';
                     const aggOptions = {
                         '': '-- Select --',
                         'sum': 'Sum',
@@ -1606,10 +1606,28 @@
             toolbar.appendChild(editButton);
         }
         
-        // Genie icon checkbox (at the right end)
+        // Genie threshold input and checkbox (at the right end)
         const genieCheckboxContainer = document.createElement('div');
         genieCheckboxContainer.className = 'genie-toolbar-genie-checkbox-container';
-        genieCheckboxContainer.style.cssText = 'margin-left: auto; display: flex; align-items: center;';
+        genieCheckboxContainer.style.cssText = 'margin-left: auto; display: flex; align-items: center; gap: 8px;';
+        
+        // Threshold input
+        const thresholdLabel = document.createElement('label');
+        thresholdLabel.className = 'genie-toolbar-label';
+        thresholdLabel.textContent = 'Threshold:';
+        thresholdLabel.style.cssText = 'font-size: 12px; color: #6b7280; white-space: nowrap;';
+        thresholdLabel.setAttribute('for', this.getInstanceId('toolbar-genie-threshold'));
+        
+        const thresholdInput = document.createElement('input');
+        thresholdInput.type = 'number';
+        thresholdInput.id = this.getInstanceId('toolbar-genie-threshold');
+        thresholdInput.className = 'genie-toolbar-input';
+        thresholdInput.placeholder = '0';
+        thresholdInput.value = '0';
+        thresholdInput.min = '0';
+        thresholdInput.step = '0.1';
+        thresholdInput.title = 'Threshold for panel collapse (panels with max |change| below this will be collapsed)';
+        thresholdInput.style.cssText = 'width: 60px; height: 30px; font-size: 12px; padding: 4px 8px;';
         
         const genieCheckbox = document.createElement('input');
         genieCheckbox.type = 'checkbox';
@@ -1617,6 +1635,8 @@
         genieCheckbox.className = 'genie-toolbar-genie-checkbox';
         genieCheckbox.title = 'Genie';
         
+        genieCheckboxContainer.appendChild(thresholdLabel);
+        genieCheckboxContainer.appendChild(thresholdInput);
         genieCheckboxContainer.appendChild(genieCheckbox);
         toolbar.appendChild(genieCheckboxContainer);
         
@@ -2035,6 +2055,151 @@
                 timeRangeDisplay.textContent = formatTimeRangeDisplay(this.inputConfig['$start'], this.inputConfig['$end'], isCustomRangeSelected);
             }
         }
+        
+        // Genie checkbox handler
+        const genieCheckbox = document.getElementById(this.getInstanceId('toolbar-genie-checkbox'));
+        const thresholdInput = document.getElementById(this.getInstanceId('toolbar-genie-threshold'));
+        
+        // Threshold input change handler - update collapsed states if genie is checked
+        // Initialize pending operation tracking
+        this._pendingThresholdUpdate = null;
+        this._thresholdUpdateInProgress = false;
+        
+        if (thresholdInput) {
+            // Apply threshold when user leaves the input field (on blur)
+            const handleThresholdChange = () => {
+                if (genieCheckbox && genieCheckbox.checked) {
+                    const threshold = parseFloat(thresholdInput.value) || 0;
+                    
+                    // Cancel any pending threshold update
+                    if (this._pendingThresholdUpdate) {
+                        cancelAnimationFrame(this._pendingThresholdUpdate);
+                        this._pendingThresholdUpdate = null;
+                    }
+                    
+                    // Cancel any pending batch recalculation from previous threshold changes
+                    if (this._pendingBatchRecalculation) {
+                        cancelAnimationFrame(this._pendingBatchRecalculation);
+                        this._pendingBatchRecalculation = null;
+                    }
+                    
+                    // Apply threshold update immediately (no debounce needed since it's on blur)
+                    if (this._thresholdUpdateInProgress) {
+                        // If another update is in progress, queue this one
+                        setTimeout(() => handleThresholdChange(), 50);
+                        return;
+                    }
+                    
+                    this._thresholdUpdateInProgress = true;
+                    
+                    try {
+                        // Check if panels are already sorted (have _genieOriginalIndex set)
+                        const isAlreadySorted = this.panels.some(panel => panel._genieOriginalIndex !== undefined);
+                        
+                        if (isAlreadySorted) {
+                            // Panels are already sorted, just update collapsed states without re-sorting
+                            this.updateCollapsedStatesByThreshold(threshold);
+                        } else {
+                            // Panels not sorted yet, do full sort and reorder
+                            this.sortAndReorderPanelsByChange(threshold);
+                        }
+                    } finally {
+                        // Reset flag after a brief delay to allow DOM updates to complete
+                        setTimeout(() => {
+                            this._thresholdUpdateInProgress = false;
+                        }, 100);
+                    }
+                }
+            };
+            
+            // Apply threshold when user leaves the input field (blur event)
+            thresholdInput.addEventListener('blur', handleThresholdChange);
+            
+            // Also apply on Enter key press for better UX
+            thresholdInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === 'Return') {
+                    e.preventDefault();
+                    thresholdInput.blur(); // Trigger blur which will apply the threshold
+                }
+            });
+        }
+        
+        if (genieCheckbox) {
+            genieCheckbox.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    // Get threshold value
+                    const threshold = thresholdInput ? parseFloat(thresholdInput.value) || 0 : 0;
+                    
+                    // Store original state BEFORE any genie operations (only if not already stored)
+                    const grid = this.dashboardGrid || document.getElementById(this.getInstanceId('grid'));
+                    if (grid) {
+                        const allPanelDivs = Array.from(grid.querySelectorAll('.genie-dashboard-panel'));
+                        this.panels.forEach((panel, index) => {
+                            // Find corresponding DOM element
+                            let panelDiv = null;
+                            const expectedId = this.getInstanceId(`panel-${index}`);
+                            panelDiv = document.getElementById(expectedId);
+                            if (!panelDiv) {
+                                panelDiv = allPanelDivs.find(div => div._panelObject === panel);
+                            }
+                            
+                            if (panelDiv && panel) {
+                                // Store original index if not already stored
+                                if (panel._genieOriginalIndex === undefined) {
+                                    panel._genieOriginalIndex = index;
+                                }
+                                
+                                // Store original Y position if not already stored
+                                if (panel._genieOriginalY === undefined && panel.gridPos) {
+                                    panel._genieOriginalY = panel.gridPos.y;
+                                }
+                                
+                                // Store original collapsed state if not already stored
+                                if (panel._genieOriginalCollapsed === undefined) {
+                                    panel._genieOriginalCollapsed = panelDiv.classList.contains('genie-panel-collapsed') || panel._isCollapsed || false;
+                                }
+                                
+                                // Store original title if not already stored
+                                if (panel._genieOriginalTitle === undefined) {
+                                    panel._genieOriginalTitle = panel.title || '';
+                                }
+                            }
+                        });
+                    }
+                    
+                    // Reset calculation flag to allow recalculation
+                    this.panels.forEach(panel => {
+                        panel._genieChangeCalculated = false;
+                    });
+                    this.calculateGeniePercentageChange();
+                } else {
+                    // Clear change data and processed series data when unchecked
+                    this.panels.forEach(panel => {
+                        if (panel.change) {
+                            panel.change = {};
+                        }
+                        if (panel._currentSeriesData) {
+                            panel._currentSeriesData = {};
+                        }
+                        if (panel._previousSeriesData) {
+                            panel._previousSeriesData = {};
+                        }
+                        if (panel._currentSeriesNames) {
+                            panel._currentSeriesNames = [];
+                        }
+                        if (panel._previousSeriesNames) {
+                            panel._previousSeriesNames = [];
+                        }
+                        panel._genieChangeCalculated = false;
+                        // Note: We don't clear _chartSeriesData, _chartSeriesNames, _statsSeriesData, etc.
+                        // as these are intermediate data used for rendering and should persist
+                    });
+                    
+                    // Restore original panel order
+                    this.restoreOriginalPanelOrder();
+                }
+            });
+        }
     }
     
     /**
@@ -2287,6 +2452,9 @@
             panels: []
         };
         
+        // Generate timestamp prefix once per conversion to ensure uniqueness
+        const timestampPrefix = Date.now();
+        
         // Copy top-level properties if they exist
         if (externalConfig.title) converted.title = externalConfig.title;
         if (externalConfig.description) converted.description = externalConfig.description;
@@ -2311,8 +2479,23 @@
                 if (panel.type !== undefined) convertedPanel.type = panel.type;
                 if (panel.gridPos !== undefined) convertedPanel.gridPos = panel.gridPos;
                 
-                // Targets/queries
-                if (panel.targets !== undefined) convertedPanel.targets = panel.targets;
+                // Preserve graph panel options: bars and lines
+                if (panel.bars !== undefined) convertedPanel.bars = panel.bars;
+                if (panel.lines !== undefined) convertedPanel.lines = panel.lines;
+                
+                // Targets/queries - add timestamp prefix to refId to prevent collisions
+                if (panel.targets !== undefined) {
+                    convertedPanel.targets = panel.targets.map(target => {
+                        const convertedTarget = { ...target };
+                        if (target.refId !== undefined && target.refId !== null) {
+                            convertedTarget.refId = `${timestampPrefix}_${target.refId}`;
+                        } else {
+                            // If refId doesn't exist, create one with timestamp prefix
+                            convertedTarget.refId = `${timestampPrefix}_A`;
+                        }
+                        return convertedTarget;
+                    });
+                }
                 if (panel.datasource !== undefined) convertedPanel.datasource = panel.datasource;
                 
                 // Field config
@@ -2826,7 +3009,19 @@
         
         progressDiv.appendChild(spinner);
         progressDiv.appendChild(messageText);
-        toolbar.appendChild(progressDiv);
+        
+        // Insert loading message after edit button instead of at the end
+        const editButton = document.getElementById(this.getInstanceId('toolbar-edit'));
+        if (editButton && editButton.nextSibling) {
+            // Insert after edit button
+            toolbar.insertBefore(progressDiv, editButton.nextSibling);
+        } else if (editButton) {
+            // Edit button exists but has no next sibling, insert after it
+            editButton.insertAdjacentElement('afterend', progressDiv);
+        } else {
+            // No edit button found, append to toolbar as fallback
+            toolbar.appendChild(progressDiv);
+        }
         
         // Ensure spinner animation CSS exists
         if (!document.getElementById(this.getInstanceId('expert-spinner-style'))) {
@@ -3188,40 +3383,253 @@
     }
     
     /**
-     * Toggle panel collapse/expand state
+     * ============================================================================
+     * MODULAR HELPER FUNCTIONS FOR PANEL OPERATIONS
+     * ============================================================================
+     * These functions provide consistent, reusable operations for panel management
+     * to ensure collapse/expand works reliably in all scenarios.
      */
-    togglePanelCollapse(panelDiv, panelIndex) {
-        const panel = this.panels[panelIndex];
-        if (!panel) return;
+    
+    /**
+     * Find panel object and DOM element consistently
+     * @param {HTMLElement|number} panelDivOrIndex - Panel DOM element or panel index
+     * @returns {{panel: Object, panelDiv: HTMLElement, panelIndex: number}|null}
+     */
+    findPanelAndElement(panelDivOrIndex) {
+        let panel = null;
+        let panelDiv = null;
+        let panelIndex = -1;
         
-        const content = panel._contentElement || panelDiv.querySelector('.genie-dashboard-panel-content');
-        const collapseButton = panel._collapseButton || panelDiv.querySelector('.genie-dashboard-panel-collapse-btn');
-        
-        if (!content || !collapseButton) return;
-        
-        // Get current grid position
-        const gridPos = panel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
-        
-        // Get the state BEFORE toggle
-        const wasCollapsed = panelDiv.classList.contains('genie-panel-collapsed') || panel._isCollapsed;
-        
-        if (wasCollapsed) {
-            // Expand - restore original dimensions
-            // First remove the collapsed class
-            panelDiv.classList.remove('genie-panel-collapsed');
+        // If it's a number, treat as index
+        if (typeof panelDivOrIndex === 'number') {
+            panelIndex = panelDivOrIndex;
+            panel = this.panels[panelIndex];
+            if (panel) {
+                panelDiv = panel._panelDiv || document.getElementById(this.getInstanceId(`panel-${panelIndex}`));
+            }
+        } else if (panelDivOrIndex) {
+            // It's a DOM element
+            panelDiv = panelDivOrIndex;
             
-            // Restore original grid row if we have it stored
-            if (panel._originalDimensions && panel._originalDimensions.gridRow) {
-                panelDiv.style.gridRow = panel._originalDimensions.gridRow;
-                panelDiv.style.setProperty('grid-row', panel._originalDimensions.gridRow, 'important');
-            } else {
-                // Fallback to calculated grid row
-                const gridRowValue = `${gridPos.y + 1} / ${gridPos.y + gridPos.h + 1}`;
-                panelDiv.style.gridRow = gridRowValue;
-                panelDiv.style.setProperty('grid-row', gridRowValue, 'important');
+            // Try multiple methods to find panel object
+                panel = panelDiv._panelObject;
+            
+            if (!panel) {
+                // Try by stored reference in panel object
+                panel = this.panels.find(p => p._panelDiv === panelDiv);
             }
             
-            // Restore original panel dimensions
+            if (!panel) {
+                // Try by collapse button reference
+                panel = this.panels.find(p => p._collapseButton && p._collapseButton._panelDiv === panelDiv);
+            }
+            
+            if (!panel) {
+                // Try by ID matching
+                for (let i = 0; i < this.panels.length; i++) {
+                    const expectedId = this.getInstanceId(`panel-${i}`);
+                    const element = document.getElementById(expectedId);
+                    if (element === panelDiv) {
+                        panel = this.panels[i];
+                        panelIndex = i;
+                        break;
+                    }
+                }
+            }
+            
+            if (panel && panelIndex === -1) {
+                panelIndex = this.panels.indexOf(panel);
+            }
+        }
+        
+        // Ensure references are maintained
+        if (panel && panelDiv) {
+            panel._panelDiv = panelDiv;
+            panelDiv._panelObject = panel;
+            panelDiv._panelIndex = panelIndex;
+            if (panel._collapseButton) {
+                panel._collapseButton._panelDiv = panelDiv;
+                panel._collapseButton._panelIndex = panelIndex;
+                panel._collapseButton._panelObject = panel;
+            }
+        }
+        
+        return (panel && panelDiv) ? { panel, panelDiv, panelIndex } : null;
+    }
+    
+    /**
+     * Get panel position from DOM (most reliable source)
+     * @param {HTMLElement} panelDiv - Panel DOM element
+     * @returns {{y: number, height: number, gridRow: string}}
+     */
+    getPanelPositionFromDOM(panelDiv) {
+        const gridRow = panelDiv.style.gridRow || window.getComputedStyle(panelDiv).gridRow;
+        let y = 0;
+        let height = 8;
+        
+        if (gridRow && gridRow.includes('/')) {
+            const match = gridRow.match(/(\d+)\s*\/\s*(\d+)/);
+            if (match) {
+                y = parseInt(match[1]) - 1; // Convert to 0-based
+                const end = parseInt(match[2]);
+                height = end - parseInt(match[1]);
+            }
+        }
+        
+        return { y, height, gridRow: gridRow || '' };
+    }
+    
+    /**
+     * Set panel position in DOM and sync with panel object
+     * @param {Object} panel - Panel object
+     * @param {HTMLElement} panelDiv - Panel DOM element
+     * @param {number} y - Y position (0-based)
+     * @param {number} height - Panel height
+     * @param {boolean} skipDOMUpdate - If true, only update panel object, not DOM
+     */
+    setPanelPosition(panel, panelDiv, y, height, skipDOMUpdate = false) {
+        if (!skipDOMUpdate) {
+            const gridRowValue = `${y + 1} / ${y + 1 + height}`;
+            panelDiv.style.gridRow = gridRowValue;
+            panelDiv.style.setProperty('grid-row', gridRowValue, 'important');
+        }
+        
+        // Sync with panel object
+        if (panel && panel.gridPos) {
+            panel.gridPos.y = y;
+            if (!this.isPanelCollapsed(panelDiv, panel)) {
+                panel.gridPos.h = height;
+            }
+        }
+    }
+    
+    /**
+     * Get collapsed state from DOM (source of truth)
+     * @param {HTMLElement} panelDiv - Panel DOM element
+     * @param {Object} panel - Panel object (optional, for syncing)
+     * @returns {boolean}
+     */
+    isPanelCollapsed(panelDiv, panel = null) {
+        const isCollapsed = panelDiv.classList.contains('genie-panel-collapsed');
+        
+        // Sync panel object state with DOM
+        if (panel) {
+            panel._isCollapsed = isCollapsed;
+        }
+        
+        return isCollapsed;
+    }
+    
+    /**
+     * Set collapsed state in DOM and sync with panel object
+     * @param {HTMLElement} panelDiv - Panel DOM element
+     * @param {Object} panel - Panel object
+     * @param {boolean} collapsed - Whether panel should be collapsed
+     */
+    setPanelCollapsedState(panelDiv, panel, collapsed) {
+        if (collapsed) {
+            panelDiv.classList.add('genie-panel-collapsed');
+        } else {
+            panelDiv.classList.remove('genie-panel-collapsed');
+        }
+        
+        if (panel) {
+            panel._isCollapsed = collapsed;
+        }
+    }
+    
+    /**
+     * Get effective height of panel (1 if collapsed, original height if expanded)
+     * @param {Object} panel - Panel object
+     * @param {HTMLElement} panelDiv - Panel DOM element
+     * @param {number} currentHeight - Current height from DOM
+     * @returns {number}
+     */
+    getPanelEffectiveHeight(panel, panelDiv, currentHeight) {
+        const isCollapsed = this.isPanelCollapsed(panelDiv, panel);
+        
+        if (isCollapsed) {
+            return 1; // Collapsed panels are always 1 row (header only)
+        }
+        
+        // Try to get original height from stored dimensions
+        if (panel && panel._originalDimensions) {
+            if (panel._originalDimensions.currentHeight) {
+                return panel._originalDimensions.currentHeight;
+            }
+            
+            // Try to parse from stored gridRow
+            if (panel._originalDimensions.gridRow) {
+                const storedGridRow = panel._originalDimensions.gridRow;
+                if (storedGridRow.includes('/')) {
+                    const match = storedGridRow.match(/(\d+)\s*\/\s*(\d+)/);
+                    if (match) {
+                        const start = parseInt(match[1]);
+                        const end = parseInt(match[2]);
+                        return end - start;
+                    }
+                }
+            }
+        }
+        
+        // Fallback to gridPos or current height
+        if (panel && panel.gridPos && panel.gridPos.h) {
+            return panel.gridPos.h;
+        }
+        
+        return currentHeight || 8;
+    }
+    
+    /**
+     * Store original dimensions before collapsing
+     * @param {Object} panel - Panel object
+     * @param {HTMLElement} panelDiv - Panel DOM element
+     * @param {HTMLElement} content - Panel content element
+     * @param {number} currentY - Current Y position
+     * @param {number} currentHeight - Current height
+     */
+    storeOriginalDimensions(panel, panelDiv, content, currentY, currentHeight) {
+        if (!panel) return;
+        
+        const computedStyle = window.getComputedStyle(panelDiv);
+        const currentGridRow = panelDiv.style.gridRow || computedStyle.gridRow;
+        
+        if (!panel._originalDimensions) {
+            panel._originalDimensions = {
+                height: computedStyle.height,
+                gridRow: currentGridRow,
+                minHeight: computedStyle.minHeight,
+                maxHeight: computedStyle.maxHeight,
+                currentY: currentY,
+                currentHeight: currentHeight
+            };
+            
+            // Store content dimensions
+            const contentComputed = window.getComputedStyle(content);
+            panel._originalContentDimensions = {
+                height: contentComputed.height,
+                minHeight: contentComputed.minHeight,
+                maxHeight: contentComputed.maxHeight,
+                padding: contentComputed.padding,
+                margin: contentComputed.margin
+            };
+        } else {
+            // Update stored position if dimensions already exist
+            panel._originalDimensions.currentY = currentY;
+            panel._originalDimensions.currentHeight = currentHeight;
+        }
+    }
+    
+    /**
+     * Restore original dimensions when expanding
+     * @param {Object} panel - Panel object
+     * @param {HTMLElement} panelDiv - Panel DOM element
+     * @param {HTMLElement} content - Panel content element
+     */
+    restoreOriginalDimensions(panel, panelDiv, content) {
+        if (!panel) return;
+        
+        // Restore panel dimensions
             if (panel._originalDimensions) {
                 if (panel._originalDimensions.height && panel._originalDimensions.height !== 'auto') {
                     panelDiv.style.height = panel._originalDimensions.height;
@@ -3278,14 +3686,103 @@
                 content.style.removeProperty('padding');
                 content.style.removeProperty('margin');
                 content.style.setProperty('visibility', 'visible', 'important');
+        }
+    }
+    
+    /**
+     * Recalculate all Y positions from top to bottom (unified function)
+     * This ensures consistent positioning regardless of how collapse/expand was triggered
+     * @param {boolean} skipDOMUpdate - If true, only update panel objects, not DOM
+     */
+    recalculateAllYPositions(skipDOMUpdate = false) {
+        const grid = this.dashboardGrid || document.getElementById(this.getInstanceId('grid'));
+        if (!grid) {
+            console.warn('[Genie] Dashboard grid not found, cannot recalculate Y positions');
+            return;
+        }
+        
+        // Get all panels with their current positions from DOM
+        const allPanelDivs = Array.from(grid.querySelectorAll('.genie-dashboard-panel'));
+        const panelsWithY = [];
+        
+        allPanelDivs.forEach((panelDiv) => {
+            const result = this.findPanelAndElement(panelDiv);
+            if (!result) return;
+            
+            const { panel, panelDiv: foundDiv } = result;
+            const { y, height } = this.getPanelPositionFromDOM(foundDiv);
+            
+            panelsWithY.push({ panel, panelDiv: foundDiv, currentY: y, height });
+        });
+        
+        // Sort by current Y position (top to bottom)
+        panelsWithY.sort((a, b) => a.currentY - b.currentY);
+        
+        // Recalculate Y positions from top to bottom
+        let newY = 0;
+        panelsWithY.forEach(({ panel, panelDiv, height }) => {
+            const effectiveHeight = this.getPanelEffectiveHeight(panel, panelDiv, height);
+            this.setPanelPosition(panel, panelDiv, newY, effectiveHeight, skipDOMUpdate);
+            newY += effectiveHeight;
+        });
+        
+        return panelsWithY.length;
+    }
+    
+    /**
+     * ============================================================================
+     * END OF MODULAR HELPER FUNCTIONS
+     * ============================================================================
+     */
+    
+    /**
+     * Toggle panel collapse/expand state
+     */
+    togglePanelCollapse(panelDiv, panelIndex) {
+        // Use helper function to find panel consistently
+        const result = this.findPanelAndElement(panelDiv || panelIndex);
+        if (!result) {
+            console.warn('[Genie] Could not find panel for collapse/expand');
+            return;
+        }
+        
+        const { panel, panelDiv: foundDiv, panelIndex: foundIndex } = result;
+        const content = panel._contentElement || foundDiv.querySelector('.genie-dashboard-panel-content');
+        const collapseButton = panel._collapseButton || foundDiv.querySelector('.genie-dashboard-panel-collapse-btn');
+        
+        if (!content || !collapseButton) {
+            console.warn('[Genie] Could not find content or collapse button for panel');
+            return;
+        }
+        
+        // Get current position from DOM (most reliable)
+        const { y: currentY, height: currentHeight } = this.getPanelPositionFromDOM(foundDiv);
+        
+        // Get the state BEFORE toggle - always read from DOM first (most reliable)
+        const wasCollapsed = this.isPanelCollapsed(foundDiv, panel);
+        
+        if (wasCollapsed) {
+            // Expand - restore original dimensions
+            this.setPanelCollapsedState(foundDiv, panel, false);
+            
+            // Get expanded height using helper
+            const expandedHeight = this.getPanelEffectiveHeight(panel, foundDiv, currentHeight);
+            
+            // Update grid row using current Y position and expanded height
+            // Skip if we're doing batch recalculation (will be done in batch)
+            if (!this._skipPositionRecalculation) {
+                this.setPanelPosition(panel, foundDiv, currentY, expandedHeight, false);
             }
             
+            // Restore original dimensions using helper
+            this.restoreOriginalDimensions(panel, foundDiv, content);
+            
+            // Update button
             collapseButton.innerHTML = '<i class="fa fa-chevron-right" style="font-size: 10px; font-weight: 300;"></i>';
             collapseButton.title = 'Collapse panel';
-            panel._isCollapsed = false;
             
             // Force a reflow to ensure the grid recalculates
-            void panelDiv.offsetHeight;
+            void foundDiv.offsetHeight;
             
             // Resize charts after expansion - wait for layout to settle
             const grid = this.dashboardGrid || document.getElementById(this.getInstanceId('grid'));
@@ -3293,7 +3790,7 @@
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         // Resize charts in this panel after expansion
-                        const panelId = this.getInstanceId(`panel-${panelIndex}`);
+                        const panelId = this.getInstanceId(`panel-${foundIndex}`);
                         const chart = this.charts[panelId];
                         if (chart && typeof chart.resize === 'function') {
                             chart.resize();
@@ -3318,93 +3815,159 @@
         } else {
             // Collapse - reduce grid row span to just header height (1 row)
             // Store the original computed dimensions before collapsing
-            if (panel._originalDimensions === undefined) {
-                const computedStyle = window.getComputedStyle(panelDiv);
-                panel._originalDimensions = {
-                    height: computedStyle.height,
-                    gridRow: panelDiv.style.gridRow || window.getComputedStyle(panelDiv).gridRow,
-                    minHeight: computedStyle.minHeight,
-                    maxHeight: computedStyle.maxHeight
-                };
-                // Also store content dimensions
-                const contentComputed = window.getComputedStyle(content);
-                panel._originalContentDimensions = {
-                    height: contentComputed.height,
-                    minHeight: contentComputed.minHeight,
-                    maxHeight: contentComputed.maxHeight,
-                    padding: contentComputed.padding,
-                    margin: contentComputed.margin
-                };
+            this.storeOriginalDimensions(panel, foundDiv, content, currentY, currentHeight);
+            
+            // Set collapsed state
+            this.setPanelCollapsedState(foundDiv, panel, true);
+            content.style.display = 'none';
+            
+            // Set grid row to span only 1 row (just the header) using current DOM position
+            // Skip if we're doing batch recalculation (will be done in batch)
+            if (!this._skipPositionRecalculation) {
+                this.setPanelPosition(panel, foundDiv, currentY, 1, false);
             }
             
-            panelDiv.classList.add('genie-panel-collapsed');
-            content.style.display = 'none';
-            // Set grid row to span only 1 row (just the header)
-            panelDiv.style.gridRow = `${gridPos.y + 1} / ${gridPos.y + 2}`;
             // Force height to auto to minimize space
-            panelDiv.style.height = 'auto';
-            panelDiv.style.minHeight = '0';
+            foundDiv.style.height = 'auto';
+            foundDiv.style.minHeight = '0';
+            
+            // Update button
             collapseButton.innerHTML = '<i class="fa fa-chevron-down" style="font-size: 10px; font-weight: 300;"></i>';
             collapseButton.title = 'Expand panel';
-            panel._isCollapsed = true;
         }
         
         // Recalculate Y positions of panels below this one to fill the gap
         // Pass the state BEFORE the toggle
-        this.recalculateYPositionsAfterCollapse(panelIndex, wasCollapsed);
+        // Skip if we're doing batch recalculation
+        if (!this._skipPositionRecalculation) {
+            this.recalculateYPositionsAfterCollapse(foundIndex, wasCollapsed);
+        }
     }
     
     /**
      * Recalculate Y positions of panels after collapse/expand to fill gaps
+     * This is used for single panel changes. For batch changes, use recalculateAllYPositions
      */
     recalculateYPositionsAfterCollapse(changedPanelIndex, wasCollapsed) {
-        const changedPanel = this.panels[changedPanelIndex];
-        if (!changedPanel) return;
+        // Use helper function to find panel consistently
+        const result = this.findPanelAndElement(changedPanelIndex);
+        if (!result) {
+            console.warn('[Genie] Could not find changed panel for recalculateYPositionsAfterCollapse');
+            // Fall back to full recalculation
+            this.recalculateAllYPositions();
+            return;
+        }
         
-        const gridPos = changedPanel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
-        const isNowCollapsed = changedPanel._isCollapsed;
+        const { panel: changedPanel, panelDiv: changedPanelDiv } = result;
+        
+        // Get current position from DOM
+        const { y: currentY, height: currentHeight } = this.getPanelPositionFromDOM(changedPanelDiv);
+        const isNowCollapsed = this.isPanelCollapsed(changedPanelDiv, changedPanel);
+        
+        // Get the original expanded height (not the effective height which accounts for collapsed state)
+        // This is the height the panel had when it was expanded, before any collapse
+        // When collapsing, togglePanelCollapse stores _originalDimensions.currentHeight BEFORE collapsing
+        // When expanding, we need to get the height it will expand to
+        let originalExpandedHeight = 8; // Default fallback
+        
+        if (wasCollapsed && !isNowCollapsed) {
+            // Expanding: currentHeight from DOM is 1 (collapsed), need the expanded height
+            // Priority: stored originalDimensions > gridPos.h > default
+            if (changedPanel._originalDimensions && changedPanel._originalDimensions.currentHeight) {
+                originalExpandedHeight = changedPanel._originalDimensions.currentHeight;
+            } else if (changedPanel.gridPos && changedPanel.gridPos.h && changedPanel.gridPos.h > 1) {
+                originalExpandedHeight = changedPanel.gridPos.h;
+            }
+        } else if (!wasCollapsed && isNowCollapsed) {
+            // Collapsing: DOM already shows height=1, but we stored the expanded height before collapse
+            // Priority: stored originalDimensions (saved before DOM update) > gridPos.h > default
+            if (changedPanel._originalDimensions && changedPanel._originalDimensions.currentHeight) {
+                originalExpandedHeight = changedPanel._originalDimensions.currentHeight;
+            } else if (changedPanel.gridPos && changedPanel.gridPos.h && changedPanel.gridPos.h > 1) {
+                originalExpandedHeight = changedPanel.gridPos.h;
+            }
+            // Note: currentHeight from DOM is 1 (already collapsed), so we can't use it
+        } else {
+            return; // No change
+        }
+        
+        // Ensure we have a valid height
+        if (originalExpandedHeight < 1) {
+            originalExpandedHeight = 8; // Fallback to default
+        }
+        
+        console.log(`[Genie] recalculateYPositionsAfterCollapse: wasCollapsed=${wasCollapsed}, isNowCollapsed=${isNowCollapsed}, currentHeight=${currentHeight}, originalExpandedHeight=${originalExpandedHeight}, heightDiff=${wasCollapsed ? (originalExpandedHeight - 1) : -(originalExpandedHeight - 1)}`);
         
         // Calculate the height difference
         let heightDiff = 0;
         if (wasCollapsed && !isNowCollapsed) {
             // Expanding: panels below need to move down
-            heightDiff = gridPos.h - 1; // Original height minus 1 row (header)
+            // Current height is 1 (collapsed), will become originalExpandedHeight
+            heightDiff = originalExpandedHeight - 1; // Original height minus 1 row (header)
         } else if (!wasCollapsed && isNowCollapsed) {
             // Collapsing: panels below need to move up
-            heightDiff = -(gridPos.h - 1); // Negative: move up
+            // Current height is originalExpandedHeight, will become 1
+            heightDiff = -(originalExpandedHeight - 1); // Negative: move up
         } else {
-            return; // No change
+            return; // No change (shouldn't reach here due to check above)
         }
         
         // Calculate the bottom position BEFORE the change
-        // When collapsing: was at gridPos.y + gridPos.h (full height), now will be at gridPos.y + 1
-        // When expanding: was at gridPos.y + 1 (just header), now will be at gridPos.y + gridPos.h
-        const oldBottom = wasCollapsed ? (gridPos.y + 1) : (gridPos.y + gridPos.h);
+        // When collapsing: was at currentY + originalExpandedHeight (full height), now will be at currentY + 1
+        // When expanding: was at currentY + 1 (just header), now will be at currentY + originalExpandedHeight
+        const oldBottom = wasCollapsed ? (currentY + 1) : (currentY + originalExpandedHeight);
         
-        // Find all panels below this one (using the OLD bottom position)
+        // Find all panels below this one by checking their actual DOM positions
+        const grid = this.dashboardGrid || document.getElementById(this.getInstanceId('grid'));
+        if (!grid) return;
+        
+        const allPanelDivs = Array.from(grid.querySelectorAll('.genie-dashboard-panel'));
         const panelsToAdjust = [];
-        this.panels.forEach((panel, index) => {
-            if (index === changedPanelIndex) return; // Skip the changed panel
+        
+        allPanelDivs.forEach((panelDiv) => {
+            if (panelDiv === changedPanelDiv) return; // Skip the changed panel
             
-            const pGridPos = panel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
-            
-            // Panel is below if its Y position is at or below the OLD bottom of the changed panel
-            if (pGridPos.y >= oldBottom) {
-                panelsToAdjust.push({ panel, index, gridPos: pGridPos });
+            // Get panel's current Y position from DOM using helper
+            const { y: panelY, height: panelHeight } = this.getPanelPositionFromDOM(panelDiv);
+                    
+                    // Panel is below if its Y position is at or below the OLD bottom of the changed panel
+                    if (panelY >= oldBottom) {
+                // Use helper to find panel object
+                const result = this.findPanelAndElement(panelDiv);
+                const panel = result ? result.panel : null;
+                
+                        panelsToAdjust.push({ 
+                            panel, // May be null for some panels, but that's OK
+                            panelDiv, 
+                            currentY: panelY, 
+                            height: panelHeight 
+                        });
             }
         });
         
-        // Adjust Y positions
-        panelsToAdjust.forEach(({ panel, index, gridPos: pGridPos }) => {
-            pGridPos.y += heightDiff;
+        // Sort panels by current Y position to adjust them in order
+        panelsToAdjust.sort((a, b) => a.currentY - b.currentY);
+        
+        console.log(`[Genie] Found ${panelsToAdjust.length} panels to adjust (oldBottom=${oldBottom}, heightDiff=${heightDiff})`);
+        
+        // Adjust Y positions using helper functions
+        panelsToAdjust.forEach(({ panel, panelDiv, currentY: panelY, height: panelHeight }) => {
+            const newY = panelY + heightDiff;
             
-            // Update DOM element grid position
-            const panelElement = document.getElementById(this.getInstanceId(`panel-${index}`));
-            if (panelElement) {
-                const panelHeight = panel._isCollapsed ? 1 : pGridPos.h;
-                panelElement.style.gridRow = `${pGridPos.y + 1} / ${pGridPos.y + panelHeight + 1}`;
-            }
+            // Get effective height using helper
+            const effectiveHeight = this.getPanelEffectiveHeight(panel, panelDiv, panelHeight);
+            
+            // Set position using helper
+            this.setPanelPosition(panel, panelDiv, newY, effectiveHeight, false);
+            
+            const panelType = panel ? (panel.type || 'unknown') : 'no panel object';
+            const isCollapsed = this.isPanelCollapsed(panelDiv, panel);
+            console.log(`[Genie] Adjusted panel (${panelType}) from Y=${panelY} to Y=${newY} (height=${effectiveHeight}, collapsed=${isCollapsed})`);
         });
+        
+        if (panelsToAdjust.length === 0) {
+            console.warn(`[Genie] No panels found below changed panel at Y=${currentY}, oldBottom=${oldBottom}`);
+        }
     }
     
     /**
@@ -3555,11 +4118,89 @@
         `;
         collapseButton.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.togglePanelCollapse(panelDiv, index);
+            // Get panelDiv from button's stored reference or find it
+            const targetPanelDiv = collapseButton._panelDiv || panelDiv;
+            
+            // Find panel using stored reference (most reliable after sorting)
+            let panelIndex = -1;
+            let targetPanel = null;
+            
+            // Method 1: Use stored panel object reference from button (most reliable)
+            if (collapseButton._panelObject) {
+                targetPanel = collapseButton._panelObject;
+                panelIndex = this.panels.indexOf(targetPanel);
+            }
+            
+            // Method 2: Use stored panel object reference from panelDiv
+            if (panelIndex === -1 && targetPanelDiv._panelObject) {
+                targetPanel = targetPanelDiv._panelObject;
+                panelIndex = this.panels.indexOf(targetPanel);
+            }
+            
+            // Method 3: Use stored panel index from button
+            if (panelIndex === -1 && collapseButton._panelIndex !== undefined) {
+                panelIndex = collapseButton._panelIndex;
+                if (panelIndex >= 0 && panelIndex < this.panels.length) {
+                    targetPanel = this.panels[panelIndex];
+                }
+            }
+            
+            // Method 4: Use stored panel index from panelDiv
+            if (panelIndex === -1 && targetPanelDiv._panelIndex !== undefined) {
+                panelIndex = targetPanelDiv._panelIndex;
+                if (panelIndex >= 0 && panelIndex < this.panels.length) {
+                    targetPanel = this.panels[panelIndex];
+                }
+            }
+            
+            // Method 5: Find by matching panelDiv to panel's DOM element
+            if (panelIndex === -1) {
+                for (let i = 0; i < this.panels.length; i++) {
+                    const p = this.panels[i];
+                    const expectedId = this.getInstanceId(`panel-${i}`);
+                    const panelElement = document.getElementById(expectedId);
+                    if (panelElement === targetPanelDiv) {
+                        panelIndex = i;
+                        targetPanel = p;
+                        break;
+                    }
+                }
+            }
+            
+            // Method 6: Try to find by panel object stored in closure
+            if (panelIndex === -1 && panel) {
+                targetPanel = panel;
+                panelIndex = this.panels.indexOf(panel);
+            }
+            
+            // Last resort: use the original index from closure
+            if (panelIndex === -1) {
+                panelIndex = index;
+                targetPanel = panel;
+            }
+            
+            // Update stored references for next time
+            if (targetPanel && panelIndex >= 0) {
+                targetPanelDiv._panelObject = targetPanel;
+                targetPanelDiv._panelIndex = panelIndex;
+                collapseButton._panelObject = targetPanel;
+                collapseButton._panelIndex = panelIndex;
+                collapseButton._panelDiv = targetPanelDiv;
+            }
+            
+            this.togglePanelCollapse(targetPanelDiv, panelIndex);
         });
         
-        // Store collapse button reference
+        // Store panel index and object in panelDiv and collapse button for easier lookup after sorting
+        panelDiv._panelIndex = index;
+        panelDiv._panelObject = panel;
+        collapseButton._panelIndex = index;
+        collapseButton._panelObject = panel;
+        collapseButton._panelDiv = panelDiv;
+        
+        // Store collapse button and panelDiv references on panel object
         panel._collapseButton = collapseButton;
+        panel._panelDiv = panelDiv;
         
         // Add button before title, then title div
         header.appendChild(collapseButton);
@@ -6189,7 +6830,9 @@
                         position: panel.options?.legend?.placement || 'bottom',
                     },
                     tooltip: {
-                        enabled: true,
+                        // Disable Chart.js tooltips when using custom tooltip legend (displayMode === 'tooltip')
+                        // This prevents conflicts and ensures only the custom tooltip legend is shown
+                        enabled: panel.options?.legend?.displayMode !== 'tooltip',
                         mode: panel.options?.tooltip?.mode || 'index',
                         intersect: false,
                         // Ensure tooltips work even when points are hidden
@@ -7691,7 +8334,7 @@
             const sliderPosition = panel.options?.timeSeries?.zoomSliderPosition || 'top';
             
             // Fixed component heights (including padding/margins)
-            const headerHeight = 40; // Header with title and tabs
+            const headerHeight = 36; // Header with title and tabs (reduced from 40px due to tab padding reduction)
             const bottomPadding = 8; // Panel content bottom padding
             const legendHeight = 54; // Legend height for 3 lines with scroll
             const legendSpacing = 2; // Space between chart and legend
@@ -8034,13 +8677,13 @@
             const rowHeightPerUnit = this.rowHeightPerUnit || 38;
             const calculatedTotalPanelHeight = gridPos.h * rowHeightPerUnit;
             
-            // Measure actual header height (includes padding: 6px top + 6px bottom + content)
+            // Measure actual header height (includes header padding and tab content)
             let actualHeaderHeight = 0;
             
             function updateAllHeights() {
                 // Re-measure header if not already measured
                 if (actualHeaderHeight === 0 && headerElement) {
-                    actualHeaderHeight = headerElement.offsetHeight || 40;
+                    actualHeaderHeight = headerElement.offsetHeight || 36;
                 }
                 
                 // Use systematic layout calculation
@@ -10811,6 +11454,26 @@
             });
         });
         
+        // Store intermediate processed stats series data in panel structure
+        // Convert seriesDataMap to plain object for easier access
+        panel._statsSeriesDataMap = {};
+        panel._statsSeriesNames = [];
+        seriesDataMap.forEach((metricMap, displayName) => {
+            panel._statsSeriesNames.push(displayName);
+            panel._statsSeriesDataMap[displayName] = {};
+            metricMap.forEach((seriesInfo, metric) => {
+                if (!panel._statsSeriesDataMap[displayName][metric]) {
+                    panel._statsSeriesDataMap[displayName][metric] = [];
+                }
+                panel._statsSeriesDataMap[displayName][metric] = {
+                    name: displayName,
+                    metric: metric,
+                    values: seriesInfo.values,
+                    stats: seriesInfo.stats
+                };
+            });
+        });
+        
         // Convert map to array format for backward compatibility
         // If multiple metrics exist for same displayName, we'll handle them separately
         const seriesData = [];
@@ -10832,6 +11495,9 @@
                 });
             });
         });
+        
+        // Also store the final seriesData array
+        panel._statsSeriesData = seriesData;
         
         // Extract previous period data if available
         if (processedPreviousDataArray) {
@@ -12509,6 +13175,25 @@
             console.log(`Chart data time range: ${new Date(sortedTimes[0]).toISOString()} to ${new Date(sortedTimes[sortedTimes.length - 1]).toISOString()} (${timeRange / 1000 / 60} minutes)`);
         }
         
+        // Store intermediate processed series data in panel structure
+        // Convert Map to plain object for easier access
+        panel._chartSeriesData = {};
+        panel._chartSeriesNames = [];
+        seriesData.forEach((dataMap, seriesName) => {
+            panel._chartSeriesNames.push(seriesName);
+            // Convert Map<timeKey, value> to array of {time, value} for easier access
+            const dataPoints = [];
+            dataMap.forEach((value, timeKey) => {
+                dataPoints.push({
+                    time: timeKey,
+                    value: value
+                });
+            });
+            // Sort by time
+            dataPoints.sort((a, b) => a.time - b.time);
+            panel._chartSeriesData[seriesName] = dataPoints;
+        });
+        
         // Build datasets - Chart.js expects {x: timestamp, y: value} for time series
         const datasets = [];
         seriesData.forEach((dataMap, seriesName) => {
@@ -12680,6 +13365,935 @@
             }));
         }
         return [];
+    }
+    
+    /**
+     * Calculate percentage change for timeseries panels when genie checkbox is checked
+     * For each panel with previous data, matches series names and calculates:
+     * %change = 100 * (previous - current) / previous
+     * Stores result in panel.change[seriesname] = %change value
+     */
+    calculateGeniePercentageChange() {
+        // Iterate through all panels
+        this.panels.forEach((panel, panelIndex) => {
+            // Process timeseries panels, or graph panels when bars or lines is true
+            const isTimeseries = panel.type === 'timeseries';
+            const isGraphWithBarsOrLines = panel.type === 'graph' && 
+                                          (panel.bars === true || panel.lines === true || 
+                                           panel.options?.bars === true || panel.options?.lines === true);
+            
+            if (!isTimeseries && !isGraphWithBarsOrLines) {
+                return;
+            }
+            
+            // Check if calculation already done (avoid duplicate calculations)
+            if (panel._genieChangeCalculated) {
+                return;
+            }
+            
+            // Initialize change object if not exists
+            if (!panel.change) {
+                panel.change = {};
+            }
+            
+            // Use intermediate processed series data from chart rendering (most accurate)
+            // Fallback to stats table data if chart data not available
+            let currentSeriesData = panel._chartSeriesData || panel._statsSeriesDataMap || {};
+            let currentSeriesNames = panel._chartSeriesNames || panel._statsSeriesNames || [];
+            
+            // If no intermediate data available, extract from raw data arrays
+            if (!currentSeriesNames || currentSeriesNames.length === 0) {
+                if (!panel._currentDataArray || panel._currentDataArray.length === 0) {
+                    console.log(`[Genie] Panel ${panelIndex}: No current data available`);
+                    return;
+                }
+                // Fallback: extract from raw data
+                currentSeriesData = this.extractSeriesAverages(panel._currentDataArray, panel);
+                currentSeriesNames = Object.keys(currentSeriesData);
+            }
+            
+            // For previous data, we need to check if it exists in intermediate form
+            // Previous data in chart would have suffix like "(-7d)", so we need to match without suffix
+            let previousSeriesData = {};
+            let previousSeriesNames = [];
+            
+            // Try to find previous series data (they might be in chartSeriesData with suffix)
+            if (panel._chartSeriesData) {
+                // Look for series with previous period suffix
+                Object.keys(panel._chartSeriesData).forEach(seriesName => {
+                    // Check if this is a previous period series (has suffix like "(-7d)")
+                    const match = seriesName.match(/^(.+?)\(-[^)]+\)$/);
+                    if (match) {
+                        const baseName = match[1].trim();
+                        const dataPoints = panel._chartSeriesData[seriesName];
+                        if (dataPoints && dataPoints.length > 0) {
+                            const values = dataPoints.map(dp => dp.value).filter(v => v !== null && v !== undefined && !isNaN(v));
+                            if (values.length > 0) {
+                                const avg = values.reduce((acc, val) => acc + val, 0) / values.length;
+                                previousSeriesData[baseName] = avg;
+                                if (!previousSeriesNames.includes(baseName)) {
+                                    previousSeriesNames.push(baseName);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // If no previous data found in intermediate form, try raw data
+            if (previousSeriesNames.length === 0 && panel._previousDataArray && panel._previousDataArray.length > 0) {
+                previousSeriesData = this.extractSeriesAverages(panel._previousDataArray, panel);
+                previousSeriesNames = Object.keys(previousSeriesData);
+            }
+            
+            if (previousSeriesNames.length === 0) {
+                console.log(`[Genie] Panel ${panelIndex}: No previous data available`);
+                return;
+            }
+            
+            // Store processed series data in panel structure
+            panel._currentSeriesData = currentSeriesData;
+            panel._previousSeriesData = previousSeriesData;
+            panel._currentSeriesNames = currentSeriesNames;
+            panel._previousSeriesNames = previousSeriesNames;
+            
+            // Debug: Log all series names found
+            console.log(`[Genie] Panel ${panelIndex} - Current series:`, currentSeriesNames);
+            console.log(`[Genie] Panel ${panelIndex} - Previous series:`, previousSeriesNames);
+            
+            // Match series names and calculate percentage change
+            currentSeriesNames.forEach(seriesName => {
+                const seriesNameTrimmed = seriesName.trim();
+                
+                // Calculate average from intermediate data
+                let currentAvg = null;
+                if (panel._chartSeriesData && panel._chartSeriesData[seriesNameTrimmed]) {
+                    // Use chart series data (array of {time, value})
+                    const dataPoints = panel._chartSeriesData[seriesNameTrimmed];
+                    const values = dataPoints.map(dp => dp.value).filter(v => v !== null && v !== undefined && !isNaN(v));
+                    if (values.length > 0) {
+                        currentAvg = values.reduce((acc, val) => acc + val, 0) / values.length;
+                    }
+                } else if (panel._statsSeriesDataMap && panel._statsSeriesDataMap[seriesNameTrimmed]) {
+                    // Use stats series data (has metrics, need to aggregate)
+                    const metrics = panel._statsSeriesDataMap[seriesNameTrimmed];
+                    const allValues = [];
+                    Object.keys(metrics).forEach(metric => {
+                        if (metrics[metric].values) {
+                            allValues.push(...metrics[metric].values);
+                        }
+                    });
+                    if (allValues.length > 0) {
+                        currentAvg = allValues.reduce((acc, val) => acc + val, 0) / allValues.length;
+                    }
+                } else if (currentSeriesData[seriesNameTrimmed]) {
+                    // Use pre-calculated average
+                    currentAvg = currentSeriesData[seriesNameTrimmed];
+                }
+                
+                if (currentAvg === null) {
+                    console.log(`[Genie] Panel ${panelIndex}, Series "${seriesNameTrimmed}": Could not calculate current average`);
+                    return;
+                }
+                
+                // Check if previous data has matching series name
+                // First try exact match
+                let previousAvg = previousSeriesData[seriesNameTrimmed];
+                let matchedSeriesName = seriesNameTrimmed;
+                
+                // If no exact match, try matching by text after last colon (in case of duplicate refIds)
+                if (previousAvg === undefined) {
+                    const lastColonIndex = seriesNameTrimmed.lastIndexOf(':');
+                    if (lastColonIndex >= 0) {
+                        const seriesNameAfterColon = seriesNameTrimmed.substring(lastColonIndex + 1);
+                        // Try to find a previous series that ends with the same text after colon
+                        for (const prevSeriesName of Object.keys(previousSeriesData)) {
+                            const prevLastColonIndex = prevSeriesName.lastIndexOf(':');
+                            const prevSeriesNameAfterColon = prevLastColonIndex >= 0 ? prevSeriesName.substring(prevLastColonIndex + 1) : prevSeriesName;
+                            if (prevSeriesNameAfterColon === seriesNameAfterColon) {
+                                previousAvg = previousSeriesData[prevSeriesName];
+                                matchedSeriesName = prevSeriesName;
+                                console.log(`[Genie] Panel ${panelIndex}, Series "${seriesNameTrimmed}": Matched with previous series "${prevSeriesName}" by text after colon`);
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                if (previousAvg !== undefined) {
+                    // Calculate percentage change: 100 * (previous - current) / previous
+                    if (previousAvg !== 0) {
+                        const percentChange = 100 * (previousAvg - currentAvg) / previousAvg;
+                        // Store change using the current series name (not the matched previous name)
+                        panel.change[seriesNameTrimmed] = percentChange;
+                        console.log(`[Genie] Panel ${panelIndex}, Series "${seriesNameTrimmed}": Current avg=${currentAvg.toFixed(2)}, Previous avg=${previousAvg.toFixed(2)} (from "${matchedSeriesName}"), %Change=${percentChange.toFixed(2)}%`);
+                    } else {
+                        // Handle division by zero: if both are 0, change is 0; otherwise Infinity/-Infinity
+                        const percentChange = (currentAvg === 0) ? 0 : (currentAvg > 0 ? Infinity : -Infinity);
+                        panel.change[seriesNameTrimmed] = percentChange;
+                        console.log(`[Genie] Panel ${panelIndex}, Series "${seriesNameTrimmed}": Previous avg is 0, Current avg=${currentAvg.toFixed(2)}, %Change=${percentChange}`);
+                    }
+                } else {
+                    console.log(`[Genie] Panel ${panelIndex}, Series "${seriesNameTrimmed}": No matching previous series found (tried exact match and text after colon)`);
+                }
+            });
+            
+            // Also check if there are previous series that don't match current (for debugging)
+            previousSeriesNames.forEach(seriesName => {
+                if (!currentSeriesNames.includes(seriesName.trim())) {
+                    console.log(`[Genie] Panel ${panelIndex}, Previous series "${seriesName}": No matching current series found`);
+                }
+            });
+            
+            // Mark as calculated to avoid duplicate calculations
+            panel._genieChangeCalculated = true;
+        });
+        
+        // After all calculations, sort panels and reorder dashboard
+        // Get threshold value from input
+        const thresholdInput = document.getElementById(this.getInstanceId('toolbar-genie-threshold'));
+        const threshold = thresholdInput ? parseFloat(thresholdInput.value) || 0 : 0;
+        this.sortAndReorderPanelsByChange(threshold);
+    }
+    
+    /**
+     * Sort panels by maximum absolute change value and reorder dashboard
+     * Panels with change calculations are sorted in descending order by max |change|
+     * Panels without change calculations go to the bottom
+     * Panels with max |change| below threshold will be collapsed
+     * @param {number} threshold - Threshold value for collapsing panels (panels with max |change| below this will be collapsed)
+     */
+    sortAndReorderPanelsByChange(threshold = 0) {
+        // Get grid to find all panels
+        const grid = this.dashboardGrid || document.getElementById(this.getInstanceId('grid'));
+        if (!grid) {
+            console.warn('[Genie] Dashboard grid not found, cannot reorder panels');
+            return;
+        }
+        
+        // Get ALL panels from the grid (including all types: timeseries, stat, etc.)
+        const allPanelDivs = Array.from(grid.querySelectorAll('.genie-dashboard-panel'));
+        
+        // Create a comprehensive list of all panels with their DOM elements
+        // First, match panels from this.panels array to their DOM elements
+        const allPanelsWithDivs = [];
+        
+        // Process panels from this.panels array
+        this.panels.forEach((panel, index) => {
+            // Try to find corresponding DOM element
+            let panelDiv = null;
+            
+            // Method 1: Try by expected ID
+            const expectedId = this.getInstanceId(`panel-${index}`);
+            panelDiv = document.getElementById(expectedId);
+            
+            // Method 2: Try by matching gridPos.y if available
+            if (!panelDiv && panel.gridPos) {
+                allPanelDivs.forEach(div => {
+                    const gridRow = div.style.gridRow || window.getComputedStyle(div).gridRow;
+                    if (gridRow && gridRow.includes('/')) {
+                        const match = gridRow.match(/(\d+)\s*\/\s*\d+/);
+                        if (match) {
+                            const currentY = parseInt(match[1]) - 1;
+                            if (currentY === panel.gridPos.y && !allPanelsWithDivs.find(p => p.div === div)) {
+                                panelDiv = div;
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Method 3: Try by panel title
+            if (!panelDiv && panel.title) {
+                allPanelDivs.forEach(div => {
+                    const titleEl = div.querySelector('.genie-dashboard-panel-title');
+                    if (titleEl && (titleEl.textContent || titleEl.innerText) === panel.title && 
+                        !allPanelsWithDivs.find(p => p.div === div)) {
+                        panelDiv = div;
+                    }
+                });
+            }
+            
+            allPanelsWithDivs.push({
+                panel: panel,
+                div: panelDiv,
+                index: index
+            });
+        });
+        
+        // Find panels in DOM that are not in this.panels array (shouldn't happen, but just in case)
+        const processedDivs = new Set(allPanelsWithDivs.filter(p => p.div).map(p => p.div));
+        const unprocessedDivs = allPanelDivs.filter(div => !processedDivs.has(div));
+        
+        // Add unprocessed panels (they don't have panel objects, but we still need to move them)
+        unprocessedDivs.forEach((div, idx) => {
+            allPanelsWithDivs.push({
+                panel: null, // No panel object
+                div: div,
+                index: this.panels.length + idx
+            });
+        });
+        
+        // Calculate max absolute change for each panel
+        const panelsWithChange = [];
+        const panelsWithoutChange = [];
+        
+        allPanelsWithDivs.forEach((item) => {
+            const panel = item.panel;
+            if (panel && panel.change && Object.keys(panel.change).length > 0) {
+                // Calculate max absolute change value
+                const changeValues = Object.values(panel.change).filter(v => v !== null && v !== undefined && !isNaN(v) && isFinite(v));
+                if (changeValues.length > 0) {
+                    const maxAbsChange = Math.max(...changeValues.map(v => Math.abs(v)));
+                    panelsWithChange.push({
+                        ...item,
+                        maxAbsChange: maxAbsChange
+                    });
+                } else {
+                    panelsWithoutChange.push(item);
+                }
+            } else {
+                panelsWithoutChange.push(item);
+            }
+        });
+        
+        
+        // Sort panels with change by max absolute change (descending)
+        panelsWithChange.sort((a, b) => b.maxAbsChange - a.maxAbsChange);
+        
+        // Combine: panels with change first, then panels without change
+        const sortedPanels = [...panelsWithChange, ...panelsWithoutChange];
+        
+        console.log(`[Genie] Sorting panels: ${panelsWithChange.length} with change, ${panelsWithoutChange.length} without change`);
+        panelsWithChange.forEach((item, idx) => {
+            const panelType = item.panel ? item.panel.type || 'unknown' : 'no panel object';
+            console.log(`[Genie] Panel ${item.index} (${panelType}, sorted position ${idx}): max |change| = ${item.maxAbsChange.toFixed(2)}%`);
+        });
+        
+        // Store original indices, Y positions, collapsed state, and title before reordering
+        sortedPanels.forEach((item) => {
+            const panel = item.panel;
+            const panelDiv = item.div;
+            if (panel) {
+                if (panel._genieOriginalIndex === undefined) {
+                    panel._genieOriginalIndex = item.index;
+                }
+                if (panel._genieOriginalY === undefined && panel.gridPos) {
+                    panel._genieOriginalY = panel.gridPos.y;
+                }
+                // Store original collapsed state if not already stored
+                if (panel._genieOriginalCollapsed === undefined && panelDiv) {
+                    panel._genieOriginalCollapsed = panelDiv.classList.contains('genie-panel-collapsed') || panel._isCollapsed || false;
+                }
+                // Store original title if not already stored
+                if (panel._genieOriginalTitle === undefined) {
+                    panel._genieOriginalTitle = panel.title || '';
+                }
+            }
+        });
+        
+        // Reorder panels array (only panels that have panel objects)
+        const panelsWithObjects = sortedPanels.filter(item => item.panel !== null);
+        this.panels = panelsWithObjects.map(item => item.panel);
+        
+        // Calculate new Y positions - place panels consecutively one below the other
+        // CSS Grid row numbers are 1-based
+        let currentY = 0;
+        sortedPanels.forEach((item, sortedIndex) => {
+            const panel = item.panel;
+            const panelDiv = item.div;
+            
+            if (!panelDiv) {
+                console.warn(`[Genie] No DOM element for panel at sorted index ${sortedIndex}`);
+                return;
+            }
+            
+            // Get panel height from gridPos or from current grid-row
+            let panelHeight = 8; // default
+            
+            if (panel && panel.gridPos && panel.gridPos.h) {
+                panelHeight = panel.gridPos.h;
+            } else {
+                // Try to get height from current grid-row
+                const gridRow = panelDiv.style.gridRow || window.getComputedStyle(panelDiv).gridRow;
+                if (gridRow && gridRow.includes('/')) {
+                    const match = gridRow.match(/(\d+)\s*\/\s*(\d+)/);
+                    if (match) {
+                        const start = parseInt(match[1]);
+                        const end = parseInt(match[2]);
+                        panelHeight = end - start;
+                    }
+                }
+            }
+            
+            // Update gridPos.y if panel object exists
+            if (panel && panel.gridPos) {
+                panel.gridPos.y = currentY;
+            }
+            
+            // Check if panel should be collapsed based on threshold
+            const shouldCollapse = item.maxAbsChange !== undefined && Math.abs(item.maxAbsChange) < threshold;
+            
+            // Get original collapsed state (before genie check)
+            const wasOriginallyCollapsed = panel && panel._genieOriginalCollapsed === true;
+            
+            // Collapse or expand panel based on threshold using existing collapse mechanism
+            if (panel) {
+                const isCurrentlyCollapsed = panelDiv.classList.contains('genie-panel-collapsed') || panel._isCollapsed;
+                const content = panel._contentElement || panelDiv.querySelector('.genie-dashboard-panel-content');
+                const collapseButton = panel._collapseButton || panelDiv.querySelector('.genie-dashboard-panel-collapse-btn');
+                
+                // Find panel index in this.panels array
+                const panelIndex = this.panels.indexOf(panel);
+                
+                // If threshold says to collapse, collapse it
+                if (shouldCollapse && !isCurrentlyCollapsed) {
+                    // Need to collapse - use existing collapse mechanism
+                    if (panelIndex >= 0 && content && collapseButton) {
+                        // Store original dimensions before collapsing if not already stored
+                        if (panel._originalDimensions === undefined) {
+                            const computedStyle = window.getComputedStyle(panelDiv);
+                            panel._originalDimensions = {
+                                height: computedStyle.height,
+                                gridRow: panelDiv.style.gridRow || computedStyle.gridRow,
+                                minHeight: computedStyle.minHeight,
+                                maxHeight: computedStyle.maxHeight
+                            };
+                            const contentComputed = window.getComputedStyle(content);
+                            panel._originalContentDimensions = {
+                                height: contentComputed.height,
+                                minHeight: contentComputed.minHeight,
+                                maxHeight: contentComputed.maxHeight,
+                                padding: contentComputed.padding,
+                                margin: contentComputed.margin
+                            };
+                        }
+                        
+                        // Collapse the panel
+                        panelDiv.classList.add('genie-panel-collapsed');
+                        content.style.display = 'none';
+                        panelDiv.style.height = 'auto';
+                        panelDiv.style.minHeight = '0';
+                        collapseButton.innerHTML = '<i class="fa fa-chevron-down" style="font-size: 10px; font-weight: 300;"></i>';
+                        collapseButton.title = 'Expand panel';
+                        panel._isCollapsed = true;
+                        
+                        // Update grid row to span 1 row when collapsed
+                        panelDiv.style.gridRow = `${currentY + 1} / ${currentY + 2}`;
+                        panelDiv.style.setProperty('grid-row', `${currentY + 1} / ${currentY + 2}`, 'important');
+                        panelHeight = 1; // Collapsed panels take 1 row
+                        
+                        console.log(`[Genie] Panel ${item.index} collapsed (max |change|=${item.maxAbsChange.toFixed(2)}% < threshold=${threshold})`);
+                    }
+                } else if (!shouldCollapse && isCurrentlyCollapsed) {
+                    // Threshold says to expand (maxAbsChange >= threshold)
+                    // Even if it was originally collapsed, threshold takes precedence - expand it
+                    if (panelIndex >= 0 && content && collapseButton) {
+                        // Expand the panel
+                        panelDiv.classList.remove('genie-panel-collapsed');
+                        
+                        // Restore panel height constraints
+                        if (panel._originalDimensions) {
+                            if (panel._originalDimensions.height && panel._originalDimensions.height !== 'auto') {
+                                panelDiv.style.height = panel._originalDimensions.height;
+                            } else {
+                                panelDiv.style.removeProperty('height');
+                            }
+                            if (panel._originalDimensions.minHeight) {
+                                panelDiv.style.minHeight = panel._originalDimensions.minHeight;
+                            } else {
+                                panelDiv.style.removeProperty('min-height');
+                            }
+                            if (panel._originalDimensions.maxHeight && panel._originalDimensions.maxHeight !== 'none') {
+                                panelDiv.style.maxHeight = panel._originalDimensions.maxHeight;
+                            } else {
+                                panelDiv.style.removeProperty('max-height');
+                            }
+                        } else {
+                            // Remove height constraints if no original dimensions stored
+                            panelDiv.style.removeProperty('height');
+                            panelDiv.style.removeProperty('min-height');
+                            panelDiv.style.removeProperty('max-height');
+                        }
+                        
+                        // Restore content display
+                        if (panel._originalContentDimensions) {
+                            content.style.setProperty('display', 'flex', 'important');
+                            content.style.setProperty('visibility', 'visible', 'important');
+                            if (panel._originalContentDimensions.height && panel._originalContentDimensions.height !== '0px') {
+                                content.style.height = panel._originalContentDimensions.height;
+                            } else {
+                                content.style.removeProperty('height');
+                            }
+                            if (panel._originalContentDimensions.minHeight) {
+                                content.style.minHeight = panel._originalContentDimensions.minHeight;
+                            } else {
+                                content.style.removeProperty('min-height');
+                            }
+                        } else {
+                            content.style.setProperty('display', 'flex', 'important');
+                            content.style.setProperty('visibility', 'visible', 'important');
+                            content.style.removeProperty('height');
+                            content.style.removeProperty('min-height');
+                        }
+                        
+                        collapseButton.innerHTML = '<i class="fa fa-chevron-right" style="font-size: 10px; font-weight: 300;"></i>';
+                        collapseButton.title = 'Collapse panel';
+                        panel._isCollapsed = false;
+                        
+                        // Update panelHeight to full height since we're expanding
+                        // Get the original height from gridPos (this is the full height, not collapsed)
+                        if (panel && panel.gridPos && panel.gridPos.h) {
+                            panelHeight = panel.gridPos.h;
+                        } else {
+                            // Fallback: use default height
+                            panelHeight = 8;
+                        }
+                        
+                        // Restore original grid row will happen after we set the new position
+                    }
+                } else if (!shouldCollapse && !isCurrentlyCollapsed && wasOriginallyCollapsed) {
+                    // Panel was originally collapsed but is now expanded
+                    // Threshold says to keep it expanded, so leave it as is
+                } else if (shouldCollapse && !isCurrentlyCollapsed && wasOriginallyCollapsed) {
+                    // Panel was originally collapsed, threshold says to collapse it
+                    // It's already collapsed, but make sure state is correct
+                    if (panelIndex >= 0 && content && collapseButton) {
+                        // Ensure collapsed state is maintained
+                        panelDiv.classList.add('genie-panel-collapsed');
+                        content.style.display = 'none';
+                        panelDiv.style.height = 'auto';
+                        panelDiv.style.minHeight = '0';
+                        collapseButton.innerHTML = '<i class="fa fa-chevron-down" style="font-size: 10px; font-weight: 300;"></i>';
+                        collapseButton.title = 'Expand panel';
+                        panel._isCollapsed = true;
+                        panelHeight = 1; // Collapsed panels take 1 row
+                    }
+                }
+            }
+            
+            // Update panelHeight based on final collapsed state
+            // Only override if we haven't already set it to full height during expansion
+            const finalCollapsedState = panelDiv.classList.contains('genie-panel-collapsed') || (panel && panel._isCollapsed);
+            if (finalCollapsedState) {
+                panelHeight = 1; // Collapsed panels take 1 row
+            } else if (panel && panel.gridPos && panel.gridPos.h && panelHeight === 1) {
+                // If panel is not collapsed but panelHeight is still 1, restore to full height
+                // This can happen if panel was expanded but panelHeight wasn't updated
+                panelHeight = panel.gridPos.h;
+            }
+            
+            // Update DOM element grid-row style (CSS grid is 1-based)
+            // Place panels consecutively - grid gap will be applied automatically by CSS
+            const gridRowStart = currentY + 1;
+            const gridRowEnd = currentY + 1 + panelHeight;
+            panelDiv.style.gridRow = `${gridRowStart} / ${gridRowEnd}`;
+            panelDiv.style.setProperty('grid-row', `${gridRowStart} / ${gridRowEnd}`, 'important');
+            
+            // Set grid column to full width when sorted (one panel per row)
+            panelDiv.style.gridColumn = '1 / -1';
+            panelDiv.style.setProperty('grid-column', '1 / -1', 'important');
+            
+            // Update panel references in panelDiv and collapse button for collapse button to work after sorting
+            if (panel) {
+                const currentPanelIndex = this.panels.indexOf(panel);
+                if (currentPanelIndex >= 0) {
+                    panelDiv._panelIndex = currentPanelIndex;
+                    panelDiv._panelObject = panel;
+                    
+                    // Also update collapse button references
+                    const collapseButton = panel._collapseButton || panelDiv.querySelector('.genie-dashboard-panel-collapse-btn');
+                    if (collapseButton) {
+                        collapseButton._panelIndex = currentPanelIndex;
+                        collapseButton._panelObject = panel;
+                        collapseButton._panelDiv = panelDiv;
+                    }
+                }
+                
+                // Update panel title to show change values if panel has changes
+                const titleEl = panelDiv.querySelector('.genie-dashboard-panel-title');
+                if (titleEl && panel.change && Object.keys(panel.change).length > 0) {
+                    const originalTitle = panel._genieOriginalTitle || panel.title || '';
+                    const changeEntries = [];
+                    
+                    // Collect all change entries with their absolute values for sorting
+                    Object.entries(panel.change).forEach(([seriesName, changeValue]) => {
+                        if (changeValue !== null && changeValue !== undefined && !isNaN(changeValue) && isFinite(changeValue)) {
+                            // Get text after last colon character
+                            const lastColonIndex = seriesName.lastIndexOf(':');
+                            let seriesNameShort = lastColonIndex >= 0 ? seriesName.substring(lastColonIndex + 1) : seriesName;
+                            
+                            // Truncate if more than 50 characters: show "..." + last 50 characters
+                            if (seriesNameShort.length > 50) {
+                                seriesNameShort = '...' + seriesNameShort.substring(seriesNameShort.length - 50);
+                            }
+                            
+                            changeEntries.push({
+                                seriesName: seriesNameShort,
+                                changeValue: changeValue,
+                                absValue: Math.abs(changeValue)
+                            });
+                        }
+                    });
+                    
+                    // Sort by absolute value in descending order
+                    changeEntries.sort((a, b) => b.absValue - a.absValue);
+                    
+                    // Build formatted change parts
+                    const changeParts = changeEntries.map(entry => {
+                        // Format change value with 2 decimal places and % sign
+                        const formattedChange = entry.changeValue.toFixed(2) + '%';
+                        return `${entry.seriesName}: ${formattedChange}`;
+                    });
+                    
+                    if (changeParts.length > 0) {
+                        // Format: "Original Title (series1:value1, series2:value2, ...)" sorted by absolute value
+                        // Use innerHTML to add a span with genie-time-range-display styling for the change values
+                        titleEl.innerHTML = `${originalTitle} <span class="genie-time-range-display">(${changeParts.join(', ')})</span>`;
+                    }
+                }
+            }
+            
+            const originalY = panel && panel._genieOriginalY !== undefined ? panel._genieOriginalY : 'unknown';
+            const maxChange = item.maxAbsChange !== undefined ? item.maxAbsChange.toFixed(2) : 'N/A';
+            const originalIndex = item.index;
+            const panelType = panel ? (panel.type || 'unknown') : 'no panel object';
+            const changeStatus = item.maxAbsChange !== undefined ? 'with change' : 'without change';
+            const collapseStatus = shouldCollapse ? ' (collapsed)' : '';
+            console.log(`[Genie] Panel ${originalIndex} (${panelType}, ${changeStatus}) moved from Y=${originalY} to Y=${currentY} (height=${panelHeight}, max |change|=${maxChange}%)${collapseStatus}`);
+            
+            // Move to next position - consecutive, no gaps
+            // The grid gap will be applied automatically by CSS between rows
+            currentY += panelHeight;
+        });
+        
+        console.log(`[Genie] Dashboard reordered: ${sortedPanels.length} panels repositioned`);
+    }
+    
+    /**
+     * Update collapsed states based on threshold without re-sorting (preserves current order)
+     * @param {number} threshold - Threshold value for collapsing panels
+     */
+    updateCollapsedStatesByThreshold(threshold = 0) {
+        const grid = this.dashboardGrid || document.getElementById(this.getInstanceId('grid'));
+        if (!grid) {
+            console.warn('[Genie] Dashboard grid not found, cannot update collapsed states');
+            return;
+        }
+        
+        // Cancel any pending batch recalculation from previous threshold changes
+        if (this._pendingBatchRecalculation) {
+            cancelAnimationFrame(this._pendingBatchRecalculation);
+            this._pendingBatchRecalculation = null;
+        }
+        
+        // Get all panel DOM elements
+        const allPanelDivs = Array.from(grid.querySelectorAll('.genie-dashboard-panel'));
+        
+        // Collect all panels with their current Y positions for sorting
+        const panelsWithPositions = [];
+        
+        this.panels.forEach((panel, index) => {
+            // Use helper function to find panel consistently
+            const result = this.findPanelAndElement(index);
+            if (!result) return;
+            
+            const { panelDiv } = result;
+            const { y: currentY } = this.getPanelPositionFromDOM(panelDiv);
+            
+            // Get current collapsed state using helper
+            const isCurrentlyCollapsed = this.isPanelCollapsed(panelDiv, panel);
+            
+            // Calculate max absolute change if panel has changes
+            let maxAbsChange = 0;
+            if (panel.change && Object.keys(panel.change).length > 0) {
+                // Filter out null, undefined, NaN, Infinity, -Infinity, but keep 0
+                const changeValues = Object.values(panel.change).filter(v => {
+                    return v !== null && v !== undefined && !isNaN(v) && isFinite(v);
+                });
+                if (changeValues.length > 0) {
+                    // Calculate max absolute value (0 is a valid value and should be included)
+                    maxAbsChange = Math.max(...changeValues.map(v => Math.abs(v)));
+                }
+                // Debug: Log change values for panels with 0% change
+                if (maxAbsChange === 0 && changeValues.length > 0) {
+                    console.log(`[Genie] Panel ${index} has 0% change values:`, changeValues, 'change object:', panel.change, 'all values:', Object.values(panel.change));
+                }
+            } else {
+                // Debug: Log panels with no change object or empty change object
+                if (panel.type === 'timeseries') {
+                    console.log(`[Genie] Panel ${index} (timeseries) has no change data. change object:`, panel.change, 'has _genieChangeCalculated:', panel._genieChangeCalculated);
+                }
+            }
+            
+            // Determine if panel should be collapsed based on threshold
+            // Collapse if: no changes (maxAbsChange = 0) OR maxAbsChange < threshold
+            // Only collapse if threshold > 0 (if threshold is 0, don't collapse anything)
+            const shouldCollapse = threshold > 0 && (maxAbsChange === 0 || maxAbsChange < threshold);
+            
+            // Debug: Log collapse decision
+            if (panel.type === 'timeseries' && threshold > 0) {
+                console.log(`[Genie] Panel ${index} collapse decision: maxAbsChange=${maxAbsChange.toFixed(2)}, threshold=${threshold}, shouldCollapse=${shouldCollapse}, isCurrentlyCollapsed=${isCurrentlyCollapsed}`);
+            }
+            
+            panelsWithPositions.push({
+                panel,
+                panelDiv,
+                currentY,
+                shouldCollapse,
+                isCurrentlyCollapsed,
+                maxAbsChange,
+                panelIndex: index
+            });
+        });
+        
+        // Sort by Y position (top to bottom) so we process panels in order
+        panelsWithPositions.sort((a, b) => a.currentY - b.currentY);
+        
+        // First pass: Update collapsed states using togglePanelCollapse for consistency
+        // Collect panels that need state changes
+        const panelsToToggle = [];
+        let panelsUpdated = 0;
+        
+        panelsWithPositions.forEach(({ panel, panelDiv, currentY, shouldCollapse, isCurrentlyCollapsed, maxAbsChange, panelIndex }) => {
+            // Update collapsed state if needed
+            if (shouldCollapse && !isCurrentlyCollapsed) {
+                // Need to collapse
+                const actualPanelIndex = this.panels.indexOf(panel);
+                if (actualPanelIndex >= 0) {
+                    panelsToToggle.push({ panel, panelDiv, actualPanelIndex, action: 'collapse', currentY, maxAbsChange });
+                    panelsUpdated++;
+                }
+            } else if (!shouldCollapse && isCurrentlyCollapsed) {
+                // Need to expand
+                const actualPanelIndex = this.panels.indexOf(panel);
+                if (actualPanelIndex >= 0) {
+                    panelsToToggle.push({ panel, panelDiv, actualPanelIndex, action: 'expand', currentY, maxAbsChange });
+                    panelsUpdated++;
+                }
+            }
+        });
+        
+        // Temporarily disable position recalculation by storing a flag
+        // We'll do batch recalculation at the end
+        this._skipPositionRecalculation = true;
+        
+        // Apply state changes using togglePanelCollapse (but it will skip recalculation)
+        panelsToToggle.forEach(({ panel, panelDiv, actualPanelIndex, action, currentY, maxAbsChange }) => {
+            // Use togglePanelCollapse to ensure state is changed correctly
+            // It will call recalculateYPositionsAfterCollapse, but we'll override that with batch recalculation
+            this.togglePanelCollapse(panelDiv, actualPanelIndex);
+            console.log(`[Genie] ${action === 'collapse' ? 'Collapsed' : 'Expanded'} panel ${actualPanelIndex} at Y=${currentY} (maxAbsChange=${maxAbsChange.toFixed(2)}, threshold=${threshold})`);
+        });
+        
+        // Re-enable position recalculation
+        this._skipPositionRecalculation = false;
+        
+        // Second pass: Recalculate all Y positions from top to bottom after all state changes
+        // Use requestAnimationFrame to ensure DOM has updated after all toggles
+        // Store the outer frame ID so we can cancel it if a new threshold change comes in
+        const outerFrameId = requestAnimationFrame(() => {
+            // Use a second frame to ensure all DOM updates from toggles have settled
+        requestAnimationFrame(() => {
+                // Verify we're still the latest batch recalculation (check if outer frame was cancelled)
+                // If outer frame was cancelled, this inner frame won't run, but double-check anyway
+                if (this._pendingBatchRecalculation !== outerFrameId) {
+                    // Was cancelled by a new threshold change, abort
+                    return;
+                }
+                
+                this._pendingBatchRecalculation = null;
+                
+                // Use unified recalculation function for consistency
+                const panelCount = this.recalculateAllYPositions(false);
+                
+                console.log(`[Genie] Updated collapsed states for ${panelsUpdated} panels and recalculated Y positions for all ${panelCount} panels based on threshold ${threshold}`);
+            });
+        });
+        
+        // Store the outer frame ID so we can cancel it if a new threshold change comes in
+        this._pendingBatchRecalculation = outerFrameId;
+    }
+    
+    /**
+     * Restore panels to their original order and positions
+     */
+    restoreOriginalPanelOrder() {
+        const grid = this.dashboardGrid || document.getElementById(this.getInstanceId('grid'));
+        if (!grid) {
+            console.warn('[Genie] Dashboard grid not found, cannot restore panel order');
+            return;
+        }
+        
+        // Sort panels back to original order by original index
+        const panelsWithOriginalIndex = this.panels.map((panel, currentIndex) => ({
+            panel: panel,
+            originalIndex: panel._genieOriginalIndex !== undefined ? panel._genieOriginalIndex : currentIndex,
+            originalY: panel._genieOriginalY !== undefined ? panel._genieOriginalY : (panel.gridPos ? panel.gridPos.y : 0)
+        }));
+        
+        panelsWithOriginalIndex.sort((a, b) => a.originalIndex - b.originalIndex);
+        
+        // Restore panels array order
+        this.panels = panelsWithOriginalIndex.map(item => item.panel);
+        
+        // Find all panel DOM elements
+        const allPanelDivs = Array.from(grid.querySelectorAll('.genie-dashboard-panel'));
+        const panelDivMap = new Map();
+        
+        // Map panels to their DOM elements by matching current positions
+        allPanelDivs.forEach((panelDiv, divIndex) => {
+            if (divIndex < this.panels.length) {
+                panelDivMap.set(this.panels[divIndex], panelDiv);
+            }
+        });
+        
+        // Restore original Y positions and expand any collapsed panels
+        let currentY = 0;
+        panelsWithOriginalIndex.forEach((item, index) => {
+            const panel = item.panel;
+            const panelDiv = panelDivMap.get(panel);
+            
+            if (panelDiv && panel.gridPos) {
+                const isCurrentlyCollapsed = panelDiv.classList.contains('genie-panel-collapsed') || panel._isCollapsed;
+                const wasOriginallyCollapsed = panel._genieOriginalCollapsed === true;
+                
+                // First, restore original Y position and grid column (before handling collapsed state)
+                const originalY = item.originalY !== undefined ? item.originalY : currentY;
+                panel.gridPos.y = originalY;
+                
+                // Restore original grid column width first
+                const gridColumnValue = `${panel.gridPos.x + 1} / ${panel.gridPos.x + panel.gridPos.w + 1}`;
+                panelDiv.style.gridColumn = gridColumnValue;
+                panelDiv.style.setProperty('grid-column', gridColumnValue, 'important');
+                
+                // Restore original collapsed state using togglePanelCollapse for proper handling
+                const panelIndex = this.panels.indexOf(panel);
+                if (panelIndex >= 0) {
+                    if (wasOriginallyCollapsed && !isCurrentlyCollapsed) {
+                        // Was originally collapsed but is now expanded - restore collapsed state
+                        // Use togglePanelCollapse to ensure proper state restoration
+                        this.togglePanelCollapse(panelDiv, panelIndex);
+                    } else if (!wasOriginallyCollapsed && isCurrentlyCollapsed) {
+                        // Was NOT originally collapsed but is now collapsed (collapsed by threshold) - expand it
+                        // Use togglePanelCollapse to ensure proper state restoration
+                        this.togglePanelCollapse(panelDiv, panelIndex);
+                    }
+                }
+                
+                // Update grid row after collapsed state is restored
+                // Use collapsed height (1) if panel is collapsed, otherwise use full height
+                const isCollapsedNow = panelDiv.classList.contains('genie-panel-collapsed') || panel._isCollapsed;
+                const panelHeight = isCollapsedNow ? 1 : (panel.gridPos.h || 8);
+                
+                // Update DOM element grid-row style with restored Y position
+                panelDiv.style.gridRow = `${originalY + 1} / ${originalY + 1 + panelHeight}`;
+                panelDiv.style.setProperty('grid-row', `${originalY + 1} / ${originalY + 1 + panelHeight}`, 'important');
+                
+                // Update panel references in panelDiv and collapse button for collapse button to work after restore
+                const currentPanelIndex = this.panels.indexOf(panel);
+                if (currentPanelIndex >= 0) {
+                    panelDiv._panelIndex = currentPanelIndex;
+                    panelDiv._panelObject = panel;
+                    
+                    // Also update collapse button references
+                    const collapseButton = panel._collapseButton || panelDiv.querySelector('.genie-dashboard-panel-collapse-btn');
+                    if (collapseButton) {
+                        collapseButton._panelIndex = currentPanelIndex;
+                        collapseButton._panelObject = panel;
+                        collapseButton._panelDiv = panelDiv;
+                    }
+                }
+                
+                // Restore original panel title
+                const titleEl = panelDiv.querySelector('.genie-dashboard-panel-title');
+                if (titleEl && panel._genieOriginalTitle !== undefined) {
+                    titleEl.textContent = panel._genieOriginalTitle;
+                    // Also update panel.title to match
+                    panel.title = panel._genieOriginalTitle;
+                }
+                
+                // Update currentY for next iteration (in case originalY wasn't stored)
+                if (item.originalY === undefined) {
+                    currentY += panelHeight;
+                }
+            }
+        });
+        
+        // Final pass: restore Y positions again after all collapsed states are handled
+        // This is needed because togglePanelCollapse may have recalculated positions
+        panelsWithOriginalIndex.forEach((item) => {
+            const panel = item.panel;
+            const panelDiv = panelDivMap.get(panel);
+            
+            if (panelDiv && panel.gridPos) {
+                const originalY = item.originalY !== undefined ? item.originalY : (panel.gridPos ? panel.gridPos.y : 0);
+                const isCollapsedNow = panelDiv.classList.contains('genie-panel-collapsed') || panel._isCollapsed;
+                const panelHeight = isCollapsedNow ? 1 : (panel.gridPos.h || 8);
+                
+                // Update grid row with restored Y position
+                panelDiv.style.gridRow = `${originalY + 1} / ${originalY + 1 + panelHeight}`;
+                panelDiv.style.setProperty('grid-row', `${originalY + 1} / ${originalY + 1 + panelHeight}`, 'important');
+                panel.gridPos.y = originalY;
+            }
+        });
+        
+        // Clear stored original values after restore so they can be stored fresh next time genie is checked
+        // This allows the next genie check to store the current (restored) state as the new original
+        this.panels.forEach(panel => {
+            panel._genieOriginalIndex = undefined;
+            panel._genieOriginalY = undefined;
+            panel._genieOriginalCollapsed = undefined;
+            panel._genieOriginalTitle = undefined;
+        });
+        
+        console.log(`[Genie] Dashboard order restored: ${panelsWithOriginalIndex.length} panels repositioned to original order`);
+    }
+    
+    /**
+     * Helper method to extract series averages from raw data array (fallback)
+     */
+    extractSeriesAverages(dataArray, panel) {
+        const seriesMap = {};
+        
+        dataArray.forEach((targetData) => {
+            const response = targetData.data;
+            const target = targetData.target;
+            
+            // Handle different response formats
+            let seriesArray = [];
+            if (Array.isArray(response)) {
+                seriesArray = response;
+            } else if (response.datapoints) {
+                seriesArray = [response];
+            } else if (response.times && response.values) {
+                seriesArray = [response];
+            }
+            
+            seriesArray.forEach(series => {
+                // Get series name (remove previous period suffix if exists)
+                let seriesName = this.getSeriesName(series, target, panel);
+                // Remove previous period suffix like "(-7d)" if present
+                seriesName = seriesName.replace(/\(-[^)]+\)$/, '').trim();
+                
+                // Extract data points
+                const dataPoints = this.extractDataPoints(series);
+                
+                // Extract values, filtering out null/undefined/NaN
+                const values = dataPoints
+                    .map(dp => dp.value)
+                    .filter(v => v !== null && v !== undefined && !isNaN(v));
+                
+                if (values.length > 0) {
+                    // Calculate average
+                    const sum = values.reduce((acc, val) => acc + val, 0);
+                    const average = sum / values.length;
+                    seriesMap[seriesName] = average;
+                }
+            });
+        });
+        
+        return seriesMap;
     }
     
     /**
@@ -14356,14 +15970,14 @@
             
             // Sync span type to toolbar aggregation dropdown
             // Update aggregation button display
-            if (this.inputConfig) {
+                    if (this.inputConfig) {
                 if (aggSpanType) {
-                    this.inputConfig['$agg'] = aggSpanType;
+                        this.inputConfig['$agg'] = aggSpanType;
                 } else {
                     // Clear aggregation
-                    this.inputConfig['$agg'] = '';
+                        this.inputConfig['$agg'] = '';
+                    }
                 }
-            }
             // Update button display if it exists
             if (this.updateAggButtonDisplay) {
                 this.updateAggButtonDisplay();

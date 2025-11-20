@@ -1788,17 +1788,23 @@ public class PerfGenieService implements IPerfGenieService {
         try {
             final EventHandler aggregator = new EventHandler();
             Map<String, String> allcounts = new HashMap<>();
-            end = Instant.now().toEpochMilli() + 60 * 60 * 1000;
-            for (int j = 5; j <= 50; j += 5) {
-                start = end - 5 * 24 * 60 * 60 * 1000L;
+
+            long curEnd = end + 60 * 60 * 1000;
+            long curStart = curEnd - 5 * 24 * 60 * 60 * 1000L;
+
+            while (curEnd > start) {
+                curStart = curEnd - 5 * 24 * 60 * 60 * 1000L;
+                if(start > curStart){
+                    curStart=start;
+                }
                 String pattern = "yyyy-MM-dd HH:mm:ss";
                 String timezone = "UTC";
 
-                String dateString1 = convertEpochToDateString(start, pattern, timezone);
-                String dateString2 = convertEpochToDateString(end, pattern, timezone);
+                String dateString1 = convertEpochToDateString(curStart, pattern, timezone);
+                String dateString2 = convertEpochToDateString(curEnd, pattern, timezone);
 
                 queryMap.remove("guid");
-                response = eventStore.loadGenieEventAndCommentPayloads(config.getTenant(), start, end, queryMap, dimMap, true);
+                response = eventStore.loadGenieEventAndCommentPayloads(config.getTenant(), curStart, curEnd, queryMap, dimMap, true);
 
                 if(response != null){
                     System.out.println(dateString1 + ":" + dateString2 + ":" + response.getEvents().size());
@@ -1807,7 +1813,7 @@ public class PerfGenieService implements IPerfGenieService {
                 }
                 if (response == null || response.getEvents().size() < 1) {
                     //System.out.println("Skip");
-                    end = start;
+                    curEnd = curStart;
 
                     continue;
                     //return Utils.toJson(new EventHandler.JfrParserResponse(null, "no profiles found for the given time range", queryMap, null));
@@ -1827,7 +1833,7 @@ public class PerfGenieService implements IPerfGenieService {
                         System.out.println("skip:"+payload);
                     }
                 }
-                end = start;
+                curEnd = curStart;
             }
             return Utils.toJson(new canaryResponse(aggregator.getLogContext(), allcounts));
         } catch (Exception e) {
