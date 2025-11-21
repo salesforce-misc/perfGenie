@@ -1512,12 +1512,308 @@
                 
                 // Setup dashboard collapse/expand functionality after everything is rendered
                 this.setupDashboardCollapse();
+                
+                // Validate all panel heights after rendering is complete
+                // Use setTimeout to ensure all DOM updates and height calculations are finished
+                setTimeout(() => {
+                    this.validateAllPanelHeights();
+                }, 500);
             }
             
         } catch (error) {
             console.error('GenieDashboard: Error rendering dashboard:', error);
             this.container.innerHTML = `<div class="genie-dashboard-panel-error">Error rendering dashboard: ${error.message}</div>`;
         }
+    }
+    
+    /**
+     * Calculate panel layout based on expectedHeight and panel configuration
+     * This modular function ensures consistent positioning across all chart types
+     * 
+     * @param {Object} config - Layout configuration
+     * @param {number} config.expectedHeight - Expected panel height (gridPos.h * rowHeightPerUnit)
+     * @param {number} config.headerHeight - Measured header height
+     * @param {string} config.chartType - Chart type: 'timeseries', 'bar', or 'pie'
+     * @param {Object} config.panel - Panel configuration object
+     * @returns {Object} Layout configuration with component positions and heights
+     */
+    calculatePanelLayout(config) {
+        const {
+            expectedHeight,
+            headerHeight,
+            chartType = 'timeseries',
+            panel = {}
+        } = config;
+        
+        // Component height constants (modular and consistent)
+        const CONSTANTS = {
+            bottomPadding: 8,
+            legendHeight: 54,
+            legendSpacing: 2,
+            tooltipLegendHeight: 20,
+            sliderContainerHeight: 20,
+            sliderSpacing: 2,
+            axisLabelHeight: 40,
+            bufferSpace: 2,
+            minChartHeight: 100
+        };
+        
+        // Get panel options
+        const options = panel.options || {};
+        const timeSeriesOptions = options.timeSeries || {};
+        const legendOptions = options.legend || {};
+        
+        // Determine component visibility
+        const showZoomSlider = chartType !== 'pie' && timeSeriesOptions.showZoomSlider !== false;
+        const currentSliderPosition = timeSeriesOptions.zoomSliderPosition || 'top';
+        const currentPlacement = legendOptions.placement || 'bottom';
+        const currentDisplayMode = legendOptions.displayMode || 'list';
+        const currentLegendTakesSpace = chartType !== 'pie' && currentDisplayMode === 'list' && legendOptions.showLegend !== false;
+        const currentTooltipLegendTakesSpace = chartType !== 'pie' && currentDisplayMode === 'tooltip' && legendOptions.showLegend !== false;
+        
+        // Calculate component positions systematically
+        let currentY = 0;
+        const layoutComponents = [];
+        
+        // 1. Header (always present)
+        layoutComponents.push({ 
+            name: 'header', 
+            y: currentY, 
+            height: headerHeight 
+        });
+        currentY += headerHeight;
+        
+        // 2. Top Slider (timeseries/bar only)
+        if (showZoomSlider && currentSliderPosition === 'top') {
+            layoutComponents.push({ 
+                name: 'topSlider', 
+                y: currentY + CONSTANTS.sliderSpacing, 
+                height: CONSTANTS.sliderContainerHeight 
+            });
+            currentY += CONSTANTS.sliderSpacing + CONSTANTS.sliderContainerHeight + CONSTANTS.sliderSpacing;
+        }
+        
+        // 3. Top Legend (timeseries/bar only)
+        if (currentLegendTakesSpace && currentPlacement === 'top') {
+            layoutComponents.push({ 
+                name: 'topLegend', 
+                y: currentY, 
+                height: CONSTANTS.legendHeight + CONSTANTS.legendSpacing 
+            });
+            currentY += CONSTANTS.legendHeight + CONSTANTS.legendSpacing;
+        }
+        
+        // 3a. Top Tooltip Legend (timeseries/bar only)
+        if (currentTooltipLegendTakesSpace) {
+            layoutComponents.push({ 
+                name: 'topTooltipLegend', 
+                y: currentY, 
+                height: CONSTANTS.tooltipLegendHeight 
+            });
+            currentY += CONSTANTS.tooltipLegendHeight;
+        }
+        
+        // 4. Chart Canvas (calculate available height)
+        let chartHeight = expectedHeight - currentY - CONSTANTS.bottomPadding;
+        
+        // Subtract space for bottom components (timeseries/bar only)
+        if (chartType !== 'pie') {
+            if (currentLegendTakesSpace && currentPlacement === 'bottom') {
+                chartHeight -= (CONSTANTS.legendHeight + CONSTANTS.legendSpacing);
+            }
+            if (showZoomSlider && currentSliderPosition === 'bottom') {
+                const extraSpacing = currentTooltipLegendTakesSpace ? 8 : 0;
+                chartHeight -= (extraSpacing + CONSTANTS.sliderSpacing + CONSTANTS.sliderContainerHeight + CONSTANTS.sliderSpacing);
+            }
+            chartHeight -= CONSTANTS.axisLabelHeight;
+            chartHeight -= CONSTANTS.bufferSpace;
+        } else {
+            // Pie charts: subtract axisLabelHeight and bufferSpace for consistency
+            chartHeight -= CONSTANTS.axisLabelHeight;
+            chartHeight -= CONSTANTS.bufferSpace;
+        }
+        
+        // Apply minimum height constraint
+        chartHeight = Math.max(CONSTANTS.minChartHeight, chartHeight);
+        
+        // Chart component includes axis labels for timeseries/bar, or just the chart for pie
+        const chartComponentHeight = chartType !== 'pie' 
+            ? chartHeight + CONSTANTS.axisLabelHeight 
+            : chartHeight + CONSTANTS.axisLabelHeight; // Keep consistent structure
+        
+        layoutComponents.push({ 
+            name: 'chart', 
+            y: currentY, 
+            height: chartComponentHeight 
+        });
+        currentY += chartComponentHeight;
+        
+        // 5. Bottom Legend (timeseries/bar only)
+        if (currentLegendTakesSpace && currentPlacement === 'bottom') {
+            layoutComponents.push({ 
+                name: 'bottomLegend', 
+                y: currentY + CONSTANTS.legendSpacing, 
+                height: CONSTANTS.legendHeight 
+            });
+            currentY += CONSTANTS.legendSpacing + CONSTANTS.legendHeight;
+        }
+        
+        // 6. Bottom Slider (timeseries/bar only)
+        if (showZoomSlider && currentSliderPosition === 'bottom') {
+            const extraSpacing = currentTooltipLegendTakesSpace ? 8 : 0;
+            layoutComponents.push({ 
+                name: 'bottomSlider', 
+                y: currentY + extraSpacing, 
+                height: CONSTANTS.sliderContainerHeight 
+            });
+            currentY += extraSpacing + CONSTANTS.sliderContainerHeight + CONSTANTS.sliderSpacing;
+        }
+        
+        // Calculate derived dimensions
+        const panelContentHeight = expectedHeight - headerHeight;
+        const chartContentHeight = expectedHeight - headerHeight - CONSTANTS.bottomPadding;
+        
+        return {
+            expectedHeight,
+            headerHeight,
+            panelContentHeight,
+            chartContentHeight,
+            components: layoutComponents,
+            constants: CONSTANTS,
+            // Helper methods to get specific component
+            getComponent: (name) => layoutComponents.find(c => c.name === name),
+            // Chart-specific dimensions
+            chartHeight: chartHeight,
+            chartComponentHeight: chartComponentHeight
+        };
+    }
+    
+    /**
+     * Validate that all panels are using the correct height based on gridPos.h
+     * This function checks all rendered panels and reports any discrepancies
+     */
+    validateAllPanelHeights() {
+        console.log('\n\n========================================');
+        console.log('🔍 VALIDATING ALL PANEL HEIGHTS');
+        console.log('========================================\n');
+        
+        const rowHeightPerUnit = this.rowHeightPerUnit || 38;
+        const issues = [];
+        const validPanels = [];
+        
+        // Iterate through all panels
+        this.panels.forEach((panel, index) => {
+            const gridPos = panel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+            const panelId = panel.id || `Panel ${index + 1}`;
+            const panelTitle = panel.title || panelId;
+            const panelType = panel.type || 'timeseries';
+            
+            // Find the panel DOM element
+            const panelDiv = panel._panelDiv || document.getElementById(this.getInstanceId(`panel-${index}`));
+            
+            if (!panelDiv) {
+                issues.push({
+                    panel: panelId,
+                    title: panelTitle,
+                    type: panelType,
+                    issue: 'Panel DOM element not found',
+                    gridPosH: gridPos.h
+                });
+                return;
+            }
+            
+            // Get actual panel height
+            const actualPanelHeight = panelDiv.offsetHeight;
+            
+            // Calculate expected height from gridPos.h
+            const expectedHeight = gridPos.h * rowHeightPerUnit;
+            
+            // Get computed styles to account for borders and padding
+            const computedStyle = window.getComputedStyle(panelDiv);
+            const borderTop = parseFloat(computedStyle.borderTopWidth) || 0;
+            const borderBottom = parseFloat(computedStyle.borderBottomWidth) || 0;
+            const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
+            const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
+            const totalBorderPadding = borderTop + borderBottom + paddingTop + paddingBottom;
+            
+            // Allow small tolerance for rounding and borders (2px)
+            const tolerance = 2;
+            const heightDifference = Math.abs(actualPanelHeight - expectedHeight);
+            const isWithinTolerance = heightDifference <= (tolerance + totalBorderPadding);
+            
+            // Check if height matches
+            if (!isWithinTolerance) {
+                issues.push({
+                    panel: panelId,
+                    title: panelTitle,
+                    type: panelType,
+                    gridPosH: gridPos.h,
+                    expectedHeight: expectedHeight,
+                    actualHeight: actualPanelHeight,
+                    difference: actualPanelHeight - expectedHeight,
+                    rowHeightPerUnit: rowHeightPerUnit,
+                    borderPadding: totalBorderPadding
+                });
+            } else {
+                validPanels.push({
+                    panel: panelId,
+                    title: panelTitle,
+                    type: panelType,
+                    gridPosH: gridPos.h,
+                    expectedHeight: expectedHeight,
+                    actualHeight: actualPanelHeight,
+                    difference: actualPanelHeight - expectedHeight
+                });
+            }
+        });
+        
+        // Report results
+        console.log(`\n📊 VALIDATION RESULTS:`);
+        console.log(`   Total Panels: ${this.panels.length}`);
+        console.log(`   ✅ Valid Panels: ${validPanels.length}`);
+        console.log(`   ❌ Panels with Issues: ${issues.length}`);
+        console.log(`   Row Height Per Unit: ${rowHeightPerUnit}px\n`);
+        
+        if (issues.length > 0) {
+            console.log(`\n❌ PANELS NOT USING gridPos.h CORRECTLY:\n`);
+            issues.forEach((issue, idx) => {
+                console.log(`   ${idx + 1}. ${issue.title || issue.panel} (${issue.type})`);
+                console.log(`      Panel ID: ${issue.panel}`);
+                console.log(`      gridPos.h: ${issue.gridPosH}`);
+                console.log(`      Expected Height: ${issue.expectedHeight}px (${issue.gridPosH} × ${issue.rowHeightPerUnit}px)`);
+                console.log(`      Actual Height: ${issue.actualHeight}px`);
+                console.log(`      Difference: ${issue.difference > 0 ? '+' : ''}${issue.difference.toFixed(1)}px`);
+                console.log(`      Border/Padding: ${issue.borderPadding}px`);
+                if (issue.issue) {
+                    console.log(`      Issue: ${issue.issue}`);
+                }
+                console.log('');
+            });
+        } else {
+            console.log(`\n✅ ALL PANELS ARE USING gridPos.h CORRECTLY!\n`);
+        }
+        
+        if (validPanels.length > 0 && issues.length > 0) {
+            console.log(`\n✅ VALID PANELS:\n`);
+            validPanels.forEach((panel, idx) => {
+                console.log(`   ${idx + 1}. ${panel.title || panel.panel} (${panel.type}) - gridPos.h: ${panel.gridPosH}, Height: ${panel.actualHeight}px`);
+            });
+        }
+        
+        console.log('\n========================================\n');
+        
+        // Store validation results for potential UI display
+        this._panelHeightValidation = {
+            timestamp: new Date().toISOString(),
+            rowHeightPerUnit: rowHeightPerUnit,
+            totalPanels: this.panels.length,
+            validPanels: validPanels.length,
+            issues: issues.length,
+            issuesList: issues,
+            validPanelsList: validPanels
+        };
+        
+        return this._panelHeightValidation;
     }
     
     /**
@@ -4666,6 +4962,12 @@
         
         await Promise.all(renderPromises);
         
+        // Validate all panel heights after dynamically loaded panels are rendered
+        // Use setTimeout to ensure all DOM updates and height calculations are finished
+        setTimeout(() => {
+            this.validateAllPanelHeights();
+        }, 500);
+        
         // If new input fields were added with default values, refresh all panels to ensure they use updated inputConfig
         // This is especially important if existing panels might use the new templating variables
         // NOTE: If new input fields do NOT have default values, we do NOT auto-refresh.
@@ -5822,13 +6124,14 @@
         const offset = this.getControlsRowOffset();
         panelDiv.style.gridRow = `${gridPos.y + offset} / ${gridPos.y + offset + gridPos.h}`;
         
-        // Ensure panel doesn't have height constraints that would clip content
-        // Remove any min-height to allow panels to shrink based on gridPos.h
-        // Don't set height - let CSS grid determine it based on gridPos.h
-        panelDiv.style.minHeight = '0';
-        // Don't set height = '100%' as it can interfere with grid's height allocation
-        // The grid will allocate height based on gridPos.h automatically
-        // Use overflow: hidden to prevent content from forcing panel to grow beyond grid allocation
+        // ENFORCE expectedHeight = gridPos.h * rowHeightPerUnit for consistency
+        // This ensures all panels with the same gridPos.h have exactly the same height
+        const rowHeightPerUnit = this.rowHeightPerUnit || 38;
+        const expectedHeight = gridPos.h * rowHeightPerUnit;
+        panelDiv.style.height = expectedHeight + 'px';
+        panelDiv.style.minHeight = expectedHeight + 'px';
+        panelDiv.style.maxHeight = expectedHeight + 'px';
+        // Use overflow: hidden to prevent content from forcing panel to grow beyond expected height
         panelDiv.style.overflow = 'hidden';
         // Set position: relative so absolutely positioned children (slider) are positioned relative to panel
         panelDiv.style.position = 'relative';
@@ -7235,6 +7538,10 @@
                 break;
             case 'bargauge':
                 this.renderBarGaugeChart(panel, dataArray, container);
+                break;
+            case 'piechart':
+            case 'pie':
+                this.renderPieChart(panel, dataArray, container);
                 break;
             default:
                 this.renderTimeSeriesChart(panel, dataArray, container, header); // Default to timeseries
@@ -8767,9 +9074,10 @@
         }
         
         // Render chart in chart tab
-        // Ensure container allows tooltips to overflow
+        // Constrain container to prevent chart from expanding beyond calculated height
+        // Similar to pie chart fix - use overflow: hidden to constrain height
         chartContent.style.position = 'relative';
-        chartContent.style.overflow = 'visible';
+        chartContent.style.overflow = 'hidden'; // Changed from 'visible' to 'hidden' to constrain height
         chartContent.style.width = '100%';
         chartContent.style.zIndex = '1';
         // Margin-top will be set by slider positioning to account for slider height
@@ -8974,22 +9282,27 @@
                 currentChart.destroy();
             }
             
-            // Determine chart type based on data format
+            // Determine chart type based on data format and drawStyle
             const useScatterFormat = chartData.datasets.length > 0 && 
                                      chartData.datasets[0].data.length > 0 && 
                                      typeof chartData.datasets[0].data[0] === 'object' &&
                                      chartData.datasets[0].data[0].x !== undefined;
             
+            // Check drawStyle to determine if we should use bar chart
+            const drawStyle = panel.fieldConfig?.defaults?.custom?.drawStyle || 'line';
+            const chartType = drawStyle === 'bars' ? 'bar' : 'line';
+            const isBarChart = chartType === 'bar';
+            
             const config = {
-                type: useScatterFormat ? 'line' : 'line',
+                type: chartType,
                 data: chartData,
                 options: {
                     responsive: true,
                 maintainAspectRatio: false,
                 resizeDelay: 0, // Prevent auto-resize
                 interaction: {
-                    mode: 'index',
-                    intersect: false
+                    mode: isBarChart ? 'nearest' : 'index', // Bar charts work better with 'nearest'
+                    intersect: isBarChart ? true : false
                 },
                 onHover: function(event, activeElements, chart) {
                     // Change cursor to pointer when hovering over chart
@@ -10790,6 +11103,8 @@
                         chartContent.style.height = chartComp.height + 'px';
                         chartContent.style.left = '0';
                         chartContent.style.right = '0';
+                        // Ensure overflow is hidden to constrain chart to calculated height (similar to pie chart fix)
+                        chartContent.style.overflow = 'hidden';
                     }
                     
                     // Position tooltip legend if present (relative to panelContent, which is at top: 0)
@@ -10848,114 +11163,49 @@
             const panelContentRef = container.closest('.genie-dashboard-panel-content');
             const headerElement = panelDiv ? panelDiv.querySelector('.genie-dashboard-panel-header') : null;
             
-            // Calculate heights based on gridPos.h and actual component measurements
-            // Total panel height = gridPos.h * rowHeightPerUnit
+            // Calculate heights based on gridPos.h - ALWAYS use expectedHeight for consistency
+            // Total panel height = gridPos.h * rowHeightPerUnit (expectedHeight)
             const rowHeightPerUnit = this.rowHeightPerUnit || 38;
-            const calculatedTotalPanelHeight = gridPos.h * rowHeightPerUnit;
+            const expectedHeight = gridPos.h * rowHeightPerUnit;
+            
+            // ENFORCE expectedHeight on panel div to ensure consistency
+            if (panelDiv) {
+                panelDiv.style.height = expectedHeight + 'px';
+                panelDiv.style.minHeight = expectedHeight + 'px';
+                panelDiv.style.maxHeight = expectedHeight + 'px';
+            }
             
             // Measure actual header height (includes header padding and tab content)
             let actualHeaderHeight = 0;
             
+            const self = this; // Store reference to GenieDashboard instance
             function updateAllHeights() {
                 // Re-measure header if not already measured
                 if (actualHeaderHeight === 0 && headerElement) {
                     actualHeaderHeight = headerElement.offsetHeight || 36;
                 }
                 
-                // Use systematic layout calculation
-                // Get slider position from panel options (use outer scope variables)
-                const currentSliderPosition = panel.options?.timeSeries?.zoomSliderPosition || 'top';
-                const currentPlacement = panel.options?.legend?.placement || 'bottom';
-                const currentDisplayMode = panel.options?.legend?.displayMode || 'list';
-                const currentLegendTakesSpace = currentDisplayMode === 'list' && panel.options?.legend?.showLegend !== false;
-                const currentTooltipLegendTakesSpace = currentDisplayMode === 'tooltip' && panel.options?.legend?.showLegend !== false;
+                // Use modular layout calculation for consistency
+                const layout = self.calculatePanelLayout({
+                    expectedHeight: expectedHeight,
+                    headerHeight: actualHeaderHeight,
+                    chartType: panel.type || 'timeseries',
+                    panel: panel
+                });
                 
-                const headerHeight = actualHeaderHeight;
-                const bottomPadding = 8;
-                const legendHeight = 54;
-                const legendSpacing = 2;
-                const tooltipLegendHeight = 20; // Tooltip legend item height (12px color box + 4px top padding + 4px bottom padding)
-                // Slider container includes both labels and track: labels (18px) + track (2px) = 20px total
-                const sliderContainerHeight = showZoomSlider ? 20 : 0; // Total container height (labels + track)
-                const sliderSpacing = showZoomSlider ? 2 : 0;
-                const axisLabelHeight = 40;
+                const layoutComponents = layout.components;
+                const totalPanelHeight = layout.expectedHeight;
+                const headerHeight = layout.headerHeight;
+                const bottomPadding = layout.constants.bottomPadding;
+                const sliderContainerHeight = layout.constants.sliderContainerHeight;
+                const sliderSpacing = layout.constants.sliderSpacing;
                 
-                // Get actual panel height
-                const actualTotalPanelHeight = panelDiv ? panelDiv.offsetHeight : calculatedTotalPanelHeight;
-                const totalPanelHeight = actualTotalPanelHeight > 0 ? actualTotalPanelHeight : calculatedTotalPanelHeight;
-                
-                // Calculate component positions systematically
-                let currentY = 0;
-                const layoutComponents = [];
-                
-                // 1. Header
-                layoutComponents.push({ name: 'header', y: currentY, height: headerHeight });
-                currentY += headerHeight;
-                
-                // 2. Top Slider
-                if (showZoomSlider && currentSliderPosition === 'top') {
-                    // Slider container includes both labels and track
-                    layoutComponents.push({ name: 'topSlider', y: currentY + sliderSpacing, height: sliderContainerHeight });
-                    // Total space needed: spacing before + container height + spacing after
-                    currentY += sliderSpacing + sliderContainerHeight + sliderSpacing;
-                }
-                
-                // 3. Top Legend
-                if (currentLegendTakesSpace && currentPlacement === 'top') {
-                    layoutComponents.push({ name: 'topLegend', y: currentY, height: legendHeight + legendSpacing });
-                    currentY += legendHeight + legendSpacing;
-                }
-                
-                // 3a. Top Tooltip Legend (if tooltip mode - always at top)
-                if (currentTooltipLegendTakesSpace) {
-                    layoutComponents.push({ name: 'topTooltipLegend', y: currentY, height: tooltipLegendHeight });
-                    currentY += tooltipLegendHeight;
-                }
-                
-                // 4. Chart Canvas
-                let chartHeight = totalPanelHeight - currentY - bottomPadding;
-                if (currentLegendTakesSpace && currentPlacement === 'bottom') {
-                    chartHeight -= (legendHeight + legendSpacing);
-                }
-                if (showZoomSlider && currentSliderPosition === 'bottom') {
-                    // Add extra spacing when tooltip legend is present
-                    const extraSpacing = currentTooltipLegendTakesSpace ? 8 : 0; // Increased to 8px for debugging
-                    chartHeight -= (extraSpacing + sliderSpacing + sliderContainerHeight + sliderSpacing);
-                }
-                chartHeight -= axisLabelHeight;
-                
-                // Reduce chart height by 2px to leave 2px at the bottom
-                chartHeight -= 2;
-                
-                chartHeight = Math.max(100, chartHeight);
-                
-                layoutComponents.push({ name: 'chart', y: currentY, height: chartHeight + axisLabelHeight });
-                currentY += chartHeight + axisLabelHeight;
-                
-                // 5. Bottom Legend
-                if (currentLegendTakesSpace && currentPlacement === 'bottom') {
-                    layoutComponents.push({ name: 'bottomLegend', y: currentY + legendSpacing, height: legendHeight });
-                    currentY += legendSpacing + legendHeight;
-                }
-                
-                // 6. Bottom Slider
-                if (showZoomSlider && currentSliderPosition === 'bottom') {
-                    // Add extra spacing when tooltip legend is present to avoid overlapping with x-axis labels
-                    const extraSpacing = currentTooltipLegendTakesSpace ? 8 : 0; // Increased to 8px for debugging
-                    // Slider container includes both labels and track, positioned at currentY + extra spacing
-                    layoutComponents.push({ name: 'bottomSlider', y: currentY + extraSpacing, height: sliderContainerHeight });
-                    // Total space needed: extra spacing + container height + spacing after
-                    currentY += extraSpacing + sliderContainerHeight + sliderSpacing;
-                }
-                
-                // Apply calculated positions
-                const chartComp = layoutComponents.find(c => c.name === 'chart');
-                const canvasHeight = chartComp ? chartComp.height : Math.max(200, totalPanelHeight - headerHeight - bottomPadding);
-                const chartContentHeight = totalPanelHeight - headerHeight - bottomPadding;
+                // Apply calculated positions using layout configuration
+                const chartComp = layout.getComponent('chart');
+                const canvasHeight = chartComp ? chartComp.height : layout.chartComponentHeight;
+                const chartContentHeight = layout.chartContentHeight;
                 const actualContentArea = chartContentHeight;
-                // Calculate available content height (total panel height minus header and bottom padding)
-                const availableContentHeight = totalPanelHeight - headerHeight - bottomPadding;
-                // Stats content height is the same as chart content height
+                const availableContentHeight = chartContentHeight;
                 const statsContentHeight = chartContentHeight;
                 
                 // Update canvas
@@ -10968,19 +11218,16 @@
                 
                 // Update chartContent (positioned relative to panelContent, which is at top: 0)
                 // chartContent should start at the calculated chart component Y position
-                if (chartContent) {
-                    const chartComp = layoutComponents.find(c => c.name === 'chart');
-                    if (chartComp) {
-                        chartContent.style.position = 'absolute';
-                        chartContent.style.top = chartComp.y + 'px';
-                        chartContent.style.height = chartComp.height + 'px';
-                        chartContent.style.left = '0';
-                        chartContent.style.right = '0';
-                    }
+                if (chartContent && chartComp) {
+                    chartContent.style.position = 'absolute';
+                    chartContent.style.top = chartComp.y + 'px';
+                    chartContent.style.height = chartComp.height + 'px';
+                    chartContent.style.left = '0';
+                    chartContent.style.right = '0';
                 }
                 
                 // Position tooltip legend if present (relative to panelContent, which is at top: 0)
-                const topTooltipLegendComp = layoutComponents.find(c => c.name === 'topTooltipLegend');
+                const topTooltipLegendComp = layout.getComponent('topTooltipLegend');
                 if (topTooltipLegendComp && panelContentRef) {
                     const tooltipLegendContainer = panelContentRef.querySelector('.genie-legend-tooltip-container');
                     if (tooltipLegendContainer) {
@@ -11016,10 +11263,17 @@
                     panelContentRef.style.paddingBottom = bottomPadding + 'px';
                 }
                 
+                // ENFORCE expectedHeight on panel div again to ensure it's maintained
+                if (panelDiv) {
+                    panelDiv.style.height = expectedHeight + 'px';
+                    panelDiv.style.minHeight = expectedHeight + 'px';
+                    panelDiv.style.maxHeight = expectedHeight + 'px';
+                }
+                
                 // Update slider position
                 if (showZoomSlider && sliderContainer) {
-                    const topSliderComp = layoutComponents.find(c => c.name === 'topSlider');
-                    const bottomSliderComp = layoutComponents.find(c => c.name === 'bottomSlider');
+                    const topSliderComp = layout.getComponent('topSlider');
+                    const bottomSliderComp = layout.getComponent('bottomSlider');
                     
                     if (currentSliderPosition === 'top' && topSliderComp) {
                         sliderContainer.style.position = 'absolute';
@@ -11090,9 +11344,10 @@
                 // Apply heights
                 if (panelDiv) {
                     // Enforce total panel height
-                    panelDiv.style.height = totalPanelHeight + 'px';
-                    panelDiv.style.maxHeight = totalPanelHeight + 'px';
-                    panelDiv.style.minHeight = totalPanelHeight + 'px';
+                    // ENFORCE expectedHeight for consistency
+                    panelDiv.style.height = expectedHeight + 'px';
+                    panelDiv.style.maxHeight = expectedHeight + 'px';
+                    panelDiv.style.minHeight = expectedHeight + 'px';
                     panelDiv.style.overflow = 'hidden';
                 }
                 
@@ -11118,18 +11373,42 @@
                 chartContent.style.minHeight = chartContentHeight + 'px';
                 chartContent.style.maxHeight = chartContentHeight + 'px';
                 chartContent.style.marginTop = '0px'; // No margin - slider is absolutely positioned
+                // Ensure overflow is hidden to constrain chart to calculated height (similar to pie chart fix)
+                chartContent.style.overflow = 'hidden';
                 
                 statsContent.style.setProperty('height', statsContentHeight + 'px', 'important');
                 statsContent.style.setProperty('min-height', statsContentHeight + 'px', 'important');
                 statsContent.style.setProperty('max-height', statsContentHeight + 'px', 'important');
                 
-                // Canvas height
+                // Canvas height - ensure it's constrained to calculated height
                 canvas.style.height = canvasHeight + 'px';
                 canvas.style.maxHeight = canvasHeight + 'px';
                 canvas.style.minHeight = canvasHeight + 'px';
+                // Canvas is constrained by chartContent overflow: hidden (similar to pie chart fix)
                 
                 // Calculate sliderOffset (offset for slider when positioned at top)
                 const sliderOffset = (showZoomSlider && currentSliderPosition === 'top') ? (sliderSpacing + sliderContainerHeight + sliderSpacing) : 0;
+                
+                console.log(`\n========== [BAR/TIMESERIES CHART] Panel ${panel.id} Height Calculation ==========`);
+                console.log(`gridPos.h: ${gridPos.h}`);
+                console.log(`totalPanelHeight: ${totalPanelHeight}px`);
+                console.log(`headerHeight: ${headerHeight}px`);
+                console.log(`bottomPadding: ${bottomPadding}px`);
+                console.log(`chartContentHeight: ${chartContentHeight}px`);
+                console.log(`containerHeight (totalPanelHeight - headerHeight): ${totalPanelHeight - headerHeight}px`);
+                console.log(`chartContent actual height: ${chartContent ? chartContent.offsetHeight : 'N/A'}px`);
+                console.log(`canvas actual height: ${canvas ? canvas.offsetHeight : 'N/A'}px`);
+                console.log(`container (panelContent) actual height: ${panelContentRef ? panelContentRef.offsetHeight : 'N/A'}px`);
+                console.log(`container paddingBottom: ${panelContentRef ? window.getComputedStyle(panelContentRef).paddingBottom : 'N/A'}`);
+                console.log(`availableContentHeight: ${availableContentHeight}px`);
+                console.log(`canvasHeight: ${canvasHeight}px`);
+                console.log(`*** FINAL TIMESERIES/BAR CHART HEIGHT (canvas height): ${canvasHeight}px ***`);
+                console.log(`=============================================================\n`);
+                console.log(`\n🔍 HEIGHT COMPARISON SUMMARY for Panel ${panel.id}:`);
+                console.log(`   gridPos.h: ${gridPos.h}`);
+                console.log(`   Timeseries/Bar Chart Final Height: ${canvasHeight}px`);
+                console.log(`   Chart Content Height (available): ${chartContentHeight}px`);
+                console.log(`   Difference: ${(chartContentHeight - canvasHeight).toFixed(1)}px\n`);
                 
                 console.log(`[Panel ${panel.id}] HEIGHT CALCULATION (FINAL):`, {
                     gridPosH: gridPos.h,
@@ -15388,23 +15667,35 @@
             const lineWidth = panel.fieldConfig?.defaults?.custom?.lineWidth || 0.75;
             console.log(`[GenieDashboard] Series "${seriesName}" - lineWidth: ${lineWidth}, panel.fieldConfig?.defaults?.custom?.lineWidth: ${panel.fieldConfig?.defaults?.custom?.lineWidth}`);
             const drawStyle = panel.fieldConfig?.defaults?.custom?.drawStyle || 'line';
+            const isBarChart = drawStyle === 'bars';
             
-            datasets.push({
+            const baseColor = this.getSeriesColor(seriesName, panel, datasets.length);
+            const datasetConfig = {
                 label: seriesName,
                 data: data,
-                borderColor: this.getSeriesColor(seriesName, panel, datasets.length),
-                backgroundColor: this.getSeriesColor(seriesName, panel, datasets.length) + '20',
-                tension: drawStyle === 'smooth' ? 0.4 : 0.1,
-                fill: panel.fieldConfig?.defaults?.custom?.fillOpacity > 0,
-                spanGaps: panel.fieldConfig?.defaults?.custom?.spanNulls || false,
-                pointRadius: panel.fieldConfig?.defaults?.custom?.showPoints === 'never' ? 0 : 
+                borderColor: baseColor,
+                backgroundColor: isBarChart ? baseColor + '80' : (baseColor + '20'), // More opaque for bars
+                borderWidth: isBarChart ? 1 : lineWidth
+            };
+            
+            // Add line-specific properties only if not a bar chart
+            if (!isBarChart) {
+                datasetConfig.tension = drawStyle === 'smooth' ? 0.4 : 0.1;
+                datasetConfig.fill = panel.fieldConfig?.defaults?.custom?.fillOpacity > 0;
+                datasetConfig.spanGaps = panel.fieldConfig?.defaults?.custom?.spanNulls || false;
+                datasetConfig.pointRadius = panel.fieldConfig?.defaults?.custom?.showPoints === 'never' ? 0 : 
                              (panel.fieldConfig?.defaults?.custom?.showPoints === 'auto' ? 3 : 
-                              (panel.fieldConfig?.defaults?.custom?.pointSize || 3) / 2),
-                pointHoverRadius: 6, // Larger radius on hover for better tooltip interaction
-                pointHoverBorderWidth: 2,
-                borderWidth: lineWidth,
-                stepped: drawStyle === 'step' || drawStyle === 'stepBefore' || drawStyle === 'stepAfter' ? true : false
-            });
+                                          (panel.fieldConfig?.defaults?.custom?.pointSize || 3) / 2);
+                datasetConfig.pointHoverRadius = 6; // Larger radius on hover for better tooltip interaction
+                datasetConfig.pointHoverBorderWidth = 2;
+                datasetConfig.stepped = drawStyle === 'step' || drawStyle === 'stepBefore' || drawStyle === 'stepAfter' ? true : false;
+            } else {
+                // Bar chart specific properties
+                datasetConfig.borderRadius = 2; // Rounded corners for bars
+                datasetConfig.borderSkipped = false; // Show border on all sides
+            }
+            
+            datasets.push(datasetConfig);
         });
         
         return {
@@ -17018,29 +17309,78 @@
         const statValue = this.calculateStatValue(dataArray, panel);
         const gridPos = panel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
         
-        // Adjust font size based on gridPos.h to make stat panels responsive
-        // For smaller heights (h < 4), use smaller font
-        let fontSize = 48;
-        if (gridPos.h <= 2) {
-            fontSize = 32;
-        } else if (gridPos.h <= 4) {
-            fontSize = 40;
-        }
+        // Get panel elements for height calculation
+        const panelDiv = container.closest('.genie-dashboard-panel');
+        const panelContentRef = container; // container IS the panelContentRef
+        const headerElement = panelDiv ? panelDiv.querySelector('.genie-dashboard-panel-header') : null;
         
-        // Remove all padding for stat panels to maximize available space
-        const statDiv = document.createElement('div');
-        statDiv.style.cssText = `font-size: ${fontSize}px; font-weight: bold; text-align: center; padding: 0; margin: 0; color: #1f2937; display: flex; align-items: center; justify-content: center; height: 100%; width: 100%; box-sizing: border-box;`;
-        statDiv.textContent = statValue;
-        
-        const unit = panel.fieldConfig?.defaults?.unit || '';
-        if (unit) {
-            const unitSpan = document.createElement('span');
-            unitSpan.style.cssText = `font-size: ${Math.round(fontSize * 0.5)}px; color: #6b7280; margin-left: 8px;`;
-            unitSpan.textContent = unit;
-            statDiv.appendChild(unitSpan);
-        }
-        
-        container.appendChild(statDiv);
+        // Use requestAnimationFrame to ensure header is measured after DOM is ready
+        requestAnimationFrame(() => {
+            // Measure header height
+            let actualHeaderHeight = 0;
+            if (headerElement) {
+                actualHeaderHeight = headerElement.offsetHeight || 36;
+            }
+            if (actualHeaderHeight === 0) {
+                actualHeaderHeight = 36; // Default estimate
+            }
+            
+            // Use modular layout calculation for consistency
+            const rowHeightPerUnit = this.rowHeightPerUnit || 38;
+            const expectedHeight = gridPos.h * rowHeightPerUnit;
+            
+            // ENFORCE expectedHeight on panel div to ensure consistency
+            if (panelDiv) {
+                panelDiv.style.height = expectedHeight + 'px';
+                panelDiv.style.minHeight = expectedHeight + 'px';
+                panelDiv.style.maxHeight = expectedHeight + 'px';
+                panelDiv.style.overflow = 'hidden';
+            }
+            
+            // Calculate available content height (expectedHeight - headerHeight)
+            const contentHeight = expectedHeight - actualHeaderHeight;
+            
+            // For stat charts, position panelContentRef (container) below the header
+            // The header is in normal flow, so we position container at headerHeight from top
+            if (panelContentRef) {
+                panelContentRef.style.position = 'absolute';
+                panelContentRef.style.top = actualHeaderHeight + 'px'; // Position below header
+                panelContentRef.style.left = '0';
+                panelContentRef.style.right = '0';
+                panelContentRef.style.height = contentHeight + 'px';
+                panelContentRef.style.minHeight = contentHeight + 'px';
+                panelContentRef.style.maxHeight = contentHeight + 'px';
+                panelContentRef.style.zIndex = '1';
+                panelContentRef.style.overflow = 'hidden';
+                panelContentRef.style.display = 'flex';
+                panelContentRef.style.alignItems = 'center';
+                panelContentRef.style.justifyContent = 'center';
+            }
+            
+            // Adjust font size based on available content height to make stat panels responsive
+            // Use a percentage of content height for font size, with min/max constraints
+            let fontSize = Math.max(24, Math.min(64, Math.round(contentHeight * 0.4)));
+            if (gridPos.h <= 2) {
+                fontSize = Math.max(20, Math.min(32, Math.round(contentHeight * 0.35)));
+            } else if (gridPos.h <= 4) {
+                fontSize = Math.max(24, Math.min(40, Math.round(contentHeight * 0.38)));
+            }
+            
+            // Create stat value div with proper sizing
+            const statDiv = document.createElement('div');
+            statDiv.style.cssText = `font-size: ${fontSize}px; font-weight: bold; text-align: center; padding: 0; margin: 0; color: #1f2937; display: flex; align-items: center; justify-content: center; height: 100%; width: 100%; box-sizing: border-box;`;
+            statDiv.textContent = statValue;
+            
+            const unit = panel.fieldConfig?.defaults?.unit || '';
+            if (unit) {
+                const unitSpan = document.createElement('span');
+                unitSpan.style.cssText = `font-size: ${Math.round(fontSize * 0.5)}px; color: #6b7280; margin-left: 8px;`;
+                unitSpan.textContent = unit;
+                statDiv.appendChild(unitSpan);
+            }
+            
+            container.appendChild(statDiv);
+        });
     }
     
     /**
@@ -17163,6 +17503,377 @@
     renderBarGaugeChart(panel, dataArray, container) {
         // Placeholder for bar gauge
         this.renderStatChart(panel, dataArray, container);
+    }
+    
+    /**
+     * Render pie chart using Chart.js
+     */
+    renderPieChart(panel, dataArray, container) {
+        container.innerHTML = '';
+        
+        // Filter out previous data - pie charts should only show current data
+        // Check if dataArray contains items with isPrevious flag
+        const currentDataArray = Array.isArray(dataArray) 
+            ? dataArray.filter(targetData => !targetData.isPrevious)
+            : [];
+        
+        // Store current data array on panel for consistency with other chart types
+        panel._currentDataArray = currentDataArray;
+        
+        // If no current data, try to use the dataArray as-is (backward compatibility)
+        const dataToUse = currentDataArray.length > 0 ? currentDataArray : (Array.isArray(dataArray) ? dataArray : []);
+        
+        console.log(`[renderPieChart] Panel: ${panel.title || panel.id}, Total dataArray: ${dataArray?.length || 0}, Current data: ${currentDataArray.length}, Using: ${dataToUse.length}`);
+        
+        // Get pie type from panel options (default to 'pie', can be 'pie' or 'doughnut')
+        const pieType = panel.options?.pieType || 'pie';
+        
+        // Get reduce function from panel options
+        const reduceOptions = panel.options?.reduceOptions || {};
+        const calc = (reduceOptions.calcs && Array.isArray(reduceOptions.calcs) && reduceOptions.calcs.length > 0) 
+            ? reduceOptions.calcs[0] 
+            : 'lastNotNull';
+        
+        // Calculate height using same approach as bar/timeseries charts
+        // This ensures pie charts have the same height as bar charts for the same gridPos.h
+        const gridPos = panel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+        
+        // Create a wrapper div to constrain the pie chart to calculated dimensions
+        // This prevents the circular pie chart from forcing the container to expand
+        // Position will be set to absolute in updatePieChartHeight to match bar/timeseries charts
+        const chartWrapper = document.createElement('div');
+        chartWrapper.style.cssText = 'width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden;';
+        
+        // Create canvas for pie chart
+        const canvas = document.createElement('canvas');
+        canvas.id = this.getInstanceId(`piechart-${panel.id || 'unknown'}`);
+        
+        // Calculate height using EXACT same approach as bar/timeseries charts
+        // Wait for layout to ensure accurate measurements
+        // Get panel elements first (same as bar/timeseries charts)
+        const panelDiv = container.closest('.genie-dashboard-panel');
+        const panelContentRef = container; // container is .genie-dashboard-panel-content
+        const headerElement = panelDiv ? panelDiv.querySelector('.genie-dashboard-panel-header') : null;
+        
+        // Measure actual header height (same as bar/timeseries charts)
+        let actualHeaderHeight = 0;
+        
+        const self = this; // Store reference to GenieDashboard instance
+        const updatePieChartHeight = () => {
+            // Re-measure header if not already measured
+            if (actualHeaderHeight === 0 && headerElement) {
+                actualHeaderHeight = headerElement.offsetHeight || 36;
+            }
+            if (actualHeaderHeight === 0) {
+                actualHeaderHeight = 36; // Default estimate
+            }
+            
+            // Use modular layout calculation for consistency
+            const rowHeightPerUnit = self.rowHeightPerUnit || 38;
+            const expectedHeight = gridPos.h * rowHeightPerUnit;
+            
+            const layout = self.calculatePanelLayout({
+                expectedHeight: expectedHeight,
+                headerHeight: actualHeaderHeight,
+                chartType: 'pie',
+                panel: panel
+            });
+            
+            // ENFORCE expectedHeight on panel div to ensure consistency
+            if (panelDiv) {
+                panelDiv.style.height = layout.expectedHeight + 'px';
+                panelDiv.style.minHeight = layout.expectedHeight + 'px';
+                panelDiv.style.maxHeight = layout.expectedHeight + 'px';
+                panelDiv.style.overflow = 'hidden';
+            }
+            
+            // Set container height using layout configuration
+            if (panelContentRef) {
+                panelContentRef.style.position = 'absolute';
+                panelContentRef.style.top = '0px';
+                panelContentRef.style.left = '0';
+                panelContentRef.style.right = '0';
+                panelContentRef.style.height = layout.panelContentHeight + 'px';
+                panelContentRef.style.minHeight = layout.panelContentHeight + 'px';
+                panelContentRef.style.maxHeight = layout.panelContentHeight + 'px';
+                panelContentRef.style.zIndex = '1';
+                panelContentRef.style.paddingBottom = layout.constants.bottomPadding + 'px';
+                panelContentRef.style.overflow = 'hidden';
+            }
+            
+            // Get chart component from layout
+            const chartComp = layout.getComponent('chart');
+            const currentY = chartComp ? chartComp.y : layout.headerHeight;
+            const availableHeight = layout.chartComponentHeight;
+            
+            // Position wrapper absolutely to match bar/timeseries chartContent positioning
+            chartWrapper.style.position = 'absolute';
+            chartWrapper.style.top = currentY + 'px';
+            chartWrapper.style.left = '0';
+            chartWrapper.style.right = '0';
+            chartWrapper.style.height = availableHeight + 'px';
+            chartWrapper.style.maxHeight = availableHeight + 'px';
+            chartWrapper.style.minHeight = availableHeight + 'px';
+            chartWrapper.style.paddingTop = '0px';
+            chartWrapper.style.paddingBottom = '0px';
+            chartWrapper.style.marginTop = '0px';
+            chartWrapper.style.marginBottom = '0px';
+            chartWrapper.style.boxSizing = 'border-box';
+            
+            // Log height calculations for debugging comparison with bar/timeseries charts
+            console.log(`\n========== [PIE CHART] Panel ${panel.id || 'unknown'} Height Calculation ==========`);
+            console.log(`gridPos.h: ${gridPos.h}`);
+            console.log(`rowHeightPerUnit: ${rowHeightPerUnit}px`);
+            console.log(`calculatedTotalPanelHeight (gridPos.h * rowHeightPerUnit): ${calculatedTotalPanelHeight}px`);
+            console.log(`actualTotalPanelHeight (panelDiv.offsetHeight): ${actualTotalPanelHeight}px`);
+            console.log(`totalPanelHeight (used): ${totalPanelHeight}px`);
+            console.log(`headerHeight: ${headerHeight}px`);
+            console.log(`currentY (starting position): ${currentY}px`);
+            console.log(`bottomPadding: ${bottomPadding}px`);
+            console.log(`axisLabelHeight: ${axisLabelHeight}px`);
+            console.log(`bufferSpace: ${bufferSpace}px`);
+            console.log(`pieChartHeight (before adding axisLabelHeight): ${pieChartHeight}px`);
+            console.log(`chartContentHeight (totalPanelHeight - headerHeight - bottomPadding): ${chartContentHeight}px`);
+            console.log(`containerHeight (totalPanelHeight - headerHeight): ${totalPanelHeight - headerHeight}px`);
+            console.log(`wrapper height (pieChartHeight + axisLabelHeight): ${availableHeight}px`);
+            console.log(`Calculation breakdown:`);
+            console.log(`  - calculatedTotalPanelHeight = ${gridPos.h} * ${rowHeightPerUnit} = ${calculatedTotalPanelHeight}px`);
+            console.log(`  - actualTotalPanelHeight = ${actualTotalPanelHeight}px`);
+            console.log(`  - totalPanelHeight = ${actualTotalPanelHeight > 0 ? actualTotalPanelHeight : calculatedTotalPanelHeight} = ${totalPanelHeight}px`);
+            console.log(`  - currentY: ${currentY}px`);
+            console.log(`  - bottomPadding: ${bottomPadding}px`);
+            console.log(`  - axisLabelHeight: ${axisLabelHeight}px`);
+            console.log(`  - bufferSpace: ${bufferSpace}px`);
+            console.log(`  - pieChartHeight = ${totalPanelHeight} - ${currentY} - ${bottomPadding} - ${axisLabelHeight} - ${bufferSpace} = ${pieChartHeight}px`);
+            console.log(`  - availableHeight = ${pieChartHeight} + ${axisLabelHeight} = ${availableHeight}px`);
+            console.log(`container actual height: ${panelContentRef ? panelContentRef.offsetHeight : 'N/A'}px`);
+            console.log(`wrapper actual height: ${chartWrapper.offsetHeight}px`);
+            console.log(`wrapper computed style height: ${window.getComputedStyle(chartWrapper).height}`);
+            console.log(`container paddingBottom: ${panelContentRef ? window.getComputedStyle(panelContentRef).paddingBottom : 'N/A'}`);
+            console.log(`*** FINAL PIE CHART HEIGHT (wrapper height): ${availableHeight}px ***`);
+            console.log(`=============================================================\n`);
+            console.log(`\n🔍 HEIGHT COMPARISON SUMMARY for Panel ${panel.id || 'unknown'}:`);
+            console.log(`   gridPos.h: ${gridPos.h}`);
+            console.log(`   Pie Chart Final Height: ${availableHeight}px`);
+            console.log(`   Chart Content Height (available): ${chartContentHeight}px`);
+            console.log(`   Difference: ${(chartContentHeight - availableHeight).toFixed(1)}px\n`);
+            
+            // Set canvas size based on wrapper's minimum dimension (to keep it square/circular)
+            const wrapperRect = chartWrapper.getBoundingClientRect();
+            if (wrapperRect.width > 0 && wrapperRect.height > 0) {
+                // Use the minimum of width/height to keep pie chart square
+                const size = Math.min(wrapperRect.width, wrapperRect.height);
+                canvas.style.width = size + 'px';
+                canvas.style.height = size + 'px';
+                canvas.style.maxWidth = '100%';
+                canvas.style.maxHeight = '100%';
+            }
+        };
+        
+        // Wait for layout to measure actual header height, then call updatePieChartHeight (same timing as bar/timeseries charts)
+        if (headerElement) {
+            requestAnimationFrame(() => {
+                actualHeaderHeight = headerElement.offsetHeight || 36;
+                requestAnimationFrame(() => {
+                    updatePieChartHeight();
+                });
+            });
+        } else {
+            actualHeaderHeight = 36; // Default estimate
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    updatePieChartHeight();
+                });
+            });
+        }
+        
+        chartWrapper.appendChild(canvas);
+        container.appendChild(chartWrapper);
+        
+        // Prepare data for pie chart
+        // For pie charts, we typically want one value per series
+        // Use the reduce function from panel options
+        const pieData = {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: []
+            }]
+        };
+        
+        // Generate colors for pie slices
+        const colors = [
+            '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
+            '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1',
+            '#14b8a6', '#f43f5e', '#a855f7', '#eab308', '#22c55e'
+        ];
+        
+        // Process each target/series (only current data)
+        // Track color index separately since we may have multiple series per target
+        let colorIndex = 0;
+        
+        dataToUse.forEach((targetData) => {
+            if (!targetData || !targetData.data) {
+                return;
+            }
+            
+            const response = targetData.data;
+            const target = targetData.target;
+            
+            // Handle different response formats - process ALL series in the response
+            let seriesArray = [];
+            
+            if (Array.isArray(response)) {
+                // Multiple series in one response (different scope values)
+                seriesArray = response;
+            } else if (response && response.datapoints) {
+                // Single series object
+                seriesArray = [response];
+            } else if (response && response.times && response.values) {
+                // Alternative format
+                seriesArray = [response];
+            } else if (response) {
+                // Fallback: treat as single series
+                seriesArray = [response];
+            }
+            
+            // Process each series in the response
+            seriesArray.forEach((series) => {
+                if (!series) {
+                    return;
+                }
+                
+                // Get series name/label using the same method as other charts
+                const seriesName = this.getSeriesName(series, target, panel) || targetData.refId || `Series ${colorIndex + 1}`;
+                
+                // Extract value from datapoints using the reduce function
+                let value = 0;
+                if (series.datapoints) {
+                    if (Array.isArray(series.datapoints)) {
+                        // Array format: [[value, timestamp], ...]
+                        const validPoints = series.datapoints.filter(dp => dp && dp[0] != null);
+                        if (validPoints.length > 0) {
+                            // Apply reduce function based on calc
+                            if (calc === 'sum') {
+                                value = validPoints.reduce((acc, dp) => acc + (dp[0] || 0), 0);
+                            } else if (calc === 'mean' || calc === 'avg') {
+                                const sum = validPoints.reduce((acc, dp) => acc + (dp[0] || 0), 0);
+                                value = sum / validPoints.length;
+                            } else if (calc === 'max') {
+                                value = Math.max(...validPoints.map(dp => dp[0]));
+                            } else if (calc === 'min') {
+                                value = Math.min(...validPoints.map(dp => dp[0]));
+                            } else if (calc === 'first' || calc === 'firstNotNull') {
+                                value = validPoints[0][0];
+                            } else {
+                                // Default to lastNotNull or last
+                                value = validPoints[validPoints.length - 1][0];
+                            }
+                        }
+                    } else if (typeof series.datapoints === 'object') {
+                        // Object format: { "timestamp": value, ... }
+                        const entries = Object.entries(series.datapoints)
+                            .filter(([time, val]) => val != null)
+                            .sort(([a], [b]) => parseInt(a) - parseInt(b));
+                        
+                        if (entries.length > 0) {
+                            // Apply reduce function based on calc
+                            if (calc === 'sum') {
+                                value = entries.reduce((acc, [t, v]) => acc + (v || 0), 0);
+                            } else if (calc === 'mean' || calc === 'avg') {
+                                const sum = entries.reduce((acc, [t, v]) => acc + (v || 0), 0);
+                                value = sum / entries.length;
+                            } else if (calc === 'max') {
+                                value = Math.max(...entries.map(([t, v]) => v));
+                            } else if (calc === 'min') {
+                                value = Math.min(...entries.map(([t, v]) => v));
+                            } else if (calc === 'first' || calc === 'firstNotNull') {
+                                value = entries[0][1];
+                            } else {
+                                // Default to lastNotNull or last
+                                value = entries[entries.length - 1][1];
+                            }
+                        }
+                    }
+                } else if (typeof series === 'number') {
+                    value = series;
+                } else if (series.value !== undefined) {
+                    value = series.value;
+                }
+                
+                // Only add if value is valid
+                if (value != null && !isNaN(value) && isFinite(value)) {
+                    pieData.labels.push(seriesName);
+                    pieData.datasets[0].data.push(value);
+                    pieData.datasets[0].backgroundColor.push(colors[colorIndex % colors.length]);
+                    colorIndex++;
+                }
+            });
+        });
+        
+        // If no data, show message
+        if (pieData.labels.length === 0) {
+            const noDataMsg = document.createElement('div');
+            noDataMsg.style.cssText = 'text-align: center; padding: 20px; color: #6b7280;';
+            noDataMsg.textContent = 'No data available';
+            container.appendChild(noDataMsg);
+            return;
+        }
+        
+        // Create pie chart using Chart.js
+        const chartId = canvas.id;
+        const ctx = canvas.getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (this.charts[chartId]) {
+            this.charts[chartId].destroy();
+        }
+        
+        // Determine chart type (pie or doughnut)
+        const chartType = (pieType === 'doughnut' || pieType === 'donut') ? 'doughnut' : 'pie';
+        
+        const chart = new Chart(ctx, {
+            type: chartType,
+            data: pieData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                    padding: {
+                        left: 5,
+                        right: 5,
+                        top: 5,
+                        bottom: 5
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 8,
+                            font: {
+                                size: 11
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Store chart reference
+        this.charts[chartId] = chart;
     }
     
     /**

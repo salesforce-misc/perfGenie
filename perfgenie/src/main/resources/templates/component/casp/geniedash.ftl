@@ -419,7 +419,7 @@ $(document).ready(() => {
         type: 'stat',
         title: 'Heap',
 
-        gridPos: { x: 0, y: 14, w: 4, h: 0 },
+        gridPos: { x: 0, y: 14, w: 4, h: 2 },
         fieldConfig: {
         defaults: {
         unit: 'G'
