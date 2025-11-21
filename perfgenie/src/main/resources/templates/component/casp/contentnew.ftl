@@ -65,6 +65,11 @@
                                 getCellTimeSeriesData($(this).text());
                             }else if(key == "pidstat") {
                                 //getPidStatMetrics($(this).text(),$(this).attr("t")-1*60*60*1000, $(this).attr("t"),$(this).nextAll('td').eq(instanceIndex-2).text());
+
+                                let $instance = $(this).nextAll('td').eq(instanceIndex-2).text();
+                                let arr = $instance.split(".");
+                                $instance = "aws-"+arr[0]+"-"+arr[0];
+
                                 const inputJson = {
                                         // REST endpoint with QEURY placeholder (will be replaced with URL-encoded query)
                                         argus: '/v1/geniequery/?query=QEURY',
@@ -74,7 +79,9 @@
                                         '$start': $(this).attr("t")-24*60*60*1000,  // 1 hour ago
                                         '$end': $(this).attr("t"),
                                         '$cell': $(this).text(),
-                                        '$instance': $(this).nextAll('td').eq(instanceIndex-2).text(),
+                                        '$instance': $instance,
+                                        '$domain': "core1",
+                                        '$substrate' : "aws",
                                         '$interval': '1m',
                                         '$agg': 'avg',
                                         'previous': 'none',
@@ -91,10 +98,10 @@
                     });
     });
 
-    function  getPidStatMetrics(cell,startEpoch,endEpoch,instance){
+    function  getPidStatMetrics(cell,startEpoch,endEpoch,instance, substrate, domain){
             console.log(cell + ":" + startEpoch + ":" + endEpoch);
 
-            URL = "v1/canaryview/pidstats/" + dataHost + "/?cell="+cell+"&start=" + startEpoch + "&end=" + endEpoch+ "&instance=" + instance;
+            URL = "v1/canaryview/pidstats/" + dataHost + "/?cell="+cell+"&start=" + startEpoch + "&end=" + endEpoch+ "&instance=" + instance+ "&substrate=" + substrate+ "&domain=" + domain;
             //showSpinner("spinnerswat");
             let currentSpinner = "spinner"+$("#canary-tabs .modern-tabs-nav-button.active").attr("data-tab-target");
                     //showSpinner(currentSpinner);

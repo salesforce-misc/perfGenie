@@ -103,10 +103,12 @@ public class PerfGenieController {
             @PathVariable(required = false, name = "host") String host,
             @RequestParam(required = false, name = "start") final long start,
             @RequestParam(required = false, name = "end") final long end,
+            @RequestParam(required = false, name = "substrate") final String substrate,
             @RequestParam(required = false, name = "instance") final String instance,
+            @RequestParam(required = false, name = "domain") final String domain,
             @RequestParam(required = false, name = "cell") final String cell) throws IOException {
         final Map<String, String> queryMap = new HashMap<>();
-        String res = service.getAllPidStatData(start, end, cell,instance,host);
+        String res = service.getAllPidStatData(start, end, cell,instance,substrate,domain,host);
         return res;
     }
 
@@ -132,8 +134,8 @@ public class PerfGenieController {
         //System.out.println(refId);
         if(datasource.equals("genie")){
             if(refId.equals("pidstats")){
-                String[] array = query.split(":");
-                return service.getAllPidStatData(startTimestamp,endendTimestamp,array[3],array[2],array[4]);
+                String[] array = query.split(":");//$start:$end:$substrate:$instance:$domain:$cell:$datahost
+                return service.getAllPidStatData(startTimestamp,endendTimestamp,array[5],array[3],array[2],array[4],array[5]);
             }
         }else {
             return ArgusQueryT.genieQuery(query, refId, previous);

@@ -1201,13 +1201,11 @@ public class PerfGenieService implements IPerfGenieService {
         eventStore.addGenieEvent(timestamp, queryMap, dimMap, expression, config.getTenant());
     }
 
-    public String getAllPidStatData(long start, long end, final String cell,String instance, String host) throws IOException {
+    public String getAllPidStatData(long start, long end, final String cell,String instance, String substrate, String domain, String host) throws IOException {
         List<List<Object>> datas = new ArrayList<>();
         final Map<String, String> queryMap =new HashMap<>();
-        //queryMap.put("host","=");
-        String[] arr = instance.split("\\.");
 
-        String tenant_id = "falcon-aws-"+arr[0] + "-" + arr[1]+"-core1-"+cell;
+        String tenant_id = "falcon-"+instance + "-" + domain +"-"+cell;
         queryMap.put("name","=pidstat");
         queryMap.put("tenant-id","="+tenant_id);
         //String scope = ArgusQueryT.getScope(start,start,cell);

@@ -334,7 +334,7 @@ $(document).ready(() => {
                                     }
                                 }
                                 ],
-                tab: 'Statistics',
+                tab: 'Timeseries',
                 tabs: true,
                 transpose: false,
                 type: 'timeseries',  // or 'stat', 'table', 'gauge', 'bargauge'
@@ -408,7 +408,7 @@ $(document).ready(() => {
                 targets: [
                 {
                                     refId: 'pidstats',
-                                    rawSql: '$start:$end:$instance:$cell:$datahost',
+                                    rawSql: '$start:$end:$substrate:$instance:$domain:$cell:$datahost',
                                     datasource: { type: 'genie' }
                                     }
                 ]
@@ -874,11 +874,11 @@ $(document).ready(() => {
                 "y": 0
               },
               "id": 9,
-              tab: 'Statistics',
+              tab: 'Timeseries',
               "options": {
                 "legend": {
                   "calcs": [],
-                  "displayMode": "list",
+                  "displayMode": "tooltip",
                   "placement": "bottom",
                   "showLegend": true
                 },
@@ -1541,15 +1541,32 @@ $(document).ready(() => {
         // Variables to replace in queries (all $ keys will be replaced)
         '$start': 1763514000000,  // 1 hour ago
         '$end': 1763517600000,
-        '$cell': 'usa12',
-        '$substrate': 'aws',
-        '$fi': 'aws-prod0-uswest2',
-        '$fd': 'core1',
-        '$interval': '1m',
-        '$agg': 'avg',
+        "Cell": {
+            "value": "usa12",
+            "placeholders": ["$cell", "$cellkey"]
+          },
+          "Substrate": {
+            "value": "aws",
+            "placeholders": ["$substrate", "$sub"]
+          },
+          "HF Instance": {
+                      "value": "aws-prod0-uswest2",
+                      "placeholders": ["$fi", "$falcon_instance", "$instance"]
+                    },
+          "Domain": {
+                                "value": "core1",
+                                "placeholders": ["$fd", "$functional_domain", "$domain"]
+                              },
+          "Interval": {
+                                          "value": "1m",
+                                          "placeholders": ["$interval"]
+                                        },
+         "Aggregate": {
+                       "value": "avg",
+                       "placeholders": ["$agg", "$aggregation"]
+                     },
         'previous': '-7d,none,-1d,-14d,-21d,-28d',
         '$host' : 'tmphost',
-        '$instance': 'prod0.uswest2',
         'overrides' : {
         "panels":
         {

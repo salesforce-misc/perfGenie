@@ -185,5 +185,73 @@ public class ClaudeConfig {
             return "https://api.anthropic.com/v1/messages";
         }
     }
+    
+    /**
+     * Load configuration from a specific file path
+     * @param filePath The path to the configuration file
+     * @return true if the file was successfully loaded, false otherwise
+     */
+    public boolean loadConfigFromPath(String filePath) {
+        if (filePath == null || filePath.isEmpty()) {
+            return false;
+        }
+        
+        File configFile = new File(filePath);
+        if (!configFile.exists()) {
+            logger.debug("Config file does not exist: " + filePath);
+            return false;
+        }
+        
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode config = mapper.readTree(configFile);
+            
+            // Load environment variables from config file
+            JsonNode env = config.get("env");
+            if (env != null) {
+                if (env.has("ANTHROPIC_AUTH_TOKEN") && (authToken == null || authToken.isEmpty())) {
+                    this.authToken = env.get("ANTHROPIC_AUTH_TOKEN").asText();
+                    logger.info("Loaded auth token from " + filePath);
+                }
+                if (env.has("ANTHROPIC_BEDROCK_BASE_URL") && (bedrockBaseUrl == null || bedrockBaseUrl.isEmpty())) {
+                    this.bedrockBaseUrl = env.get("ANTHROPIC_BEDROCK_BASE_URL").asText();
+                }
+                if (env.has("CLAUDE_CODE_USE_BEDROCK")) {
+                    this.useBedrock = "1".equals(env.get("CLAUDE_CODE_USE_BEDROCK").asText());
+                }
+                if (env.has("CLAUDE_CODE_SKIP_BEDROCK_AUTH")) {
+                    this.skipBedrockAuth = "1".equals(env.get("CLAUDE_CODE_SKIP_BEDROCK_AUTH").asText());
+                }
+            }
+            
+            // Load model from config file if not set via properties
+            if (config.has("model") && "claude-3-sonnet-20240229".equals(this.model)) {
+                this.model = config.get("model").asText();
+            }
+            
+            // Load MCP servers
+            JsonNode mcpServersNode = config.get("mcp_servers");
+            if (mcpServersNode != null && mcpServersNode.isArray()) {
+                ObjectMapper mcpMapper = new ObjectMapper();
+                this.mcpServers = new ArrayList<>();
+                for (JsonNode serverNode : mcpServersNode) {
+                    MCPServerConfig serverConfig = mcpMapper.treeToValue(serverNode, MCPServerConfig.class);
+                    this.mcpServers.add(serverConfig);
+                }
+            }
+            
+            // Fallback to environment variables if still not set
+            if (authToken == null || authToken.isEmpty()) {
+                authToken = System.getenv("ANTHROPIC_AUTH_TOKEN");
+            }
+            
+            logger.info("Configuration reloaded from " + filePath);
+            return true;
+            
+        } catch (IOException e) {
+            logger.warn("Failed to load Claude configuration from " + filePath, e);
+            return false;
+        }
+    }
 }
 

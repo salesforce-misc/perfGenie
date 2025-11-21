@@ -22,6 +22,7 @@ import server.claude.mcp.MCPTool;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -98,6 +99,41 @@ public class ClaudeService implements IClaudeService {
     
     @Override
     public ClaudeResponse sendRequest(ClaudeRequest request) throws IOException {
+        // Check if auth token exists, if not try to reload from /tmp/settings.json
+        if (config.getAuthToken() == null || config.getAuthToken().isEmpty()) {
+            File tmpConfigFile = new File("/tmp/settings.json");
+            if (tmpConfigFile.exists()) {
+                logger.info("Auth token not found, attempting to reload config from /tmp/settings.json");
+                boolean reloaded = config.loadConfigFromPath("/tmp/settings.json");
+                if (reloaded && (config.getAuthToken() != null && !config.getAuthToken().isEmpty())) {
+                    logger.info("Successfully reloaded config from /tmp/settings.json");
+                    
+                    // Reload MCP servers after config reload
+                    try {
+                        // Disconnect all existing MCP servers
+                        List<String> connectedServers = mcpManager.getConnectedServers();
+                        for (String serverName : connectedServers) {
+                            mcpManager.disconnectServer(serverName);
+                            logger.debug("Disconnected MCP server: " + serverName);
+                        }
+                        
+                        // Reload MCP server configurations from the updated config
+                        mcpManager.reloadMCPServers();
+                        
+                        // Reconnect all MCP servers from the reloaded config
+                        mcpManager.connectAllServers();
+                        logger.info("MCP servers reloaded and reconnected");
+                    } catch (Exception e) {
+                        logger.warn("Failed to reload MCP servers after config reload", e);
+                    }
+                } else {
+                    logger.warn("Failed to load auth token from /tmp/settings.json");
+                }
+            } else {
+                logger.debug("/tmp/settings.json does not exist, skipping config reload");
+            }
+        }
+        
         String json;
         if (config.isUseBedrock()) {
             // For Bedrock, create a custom JSON payload without model and stream fields

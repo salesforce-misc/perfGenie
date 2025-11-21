@@ -59,6 +59,18 @@ public class MCPManager {
     }
     
     /**
+     * Reload MCP server configurations from ClaudeConfig
+     * This should be called after the config has been reloaded
+     */
+    public void reloadMCPServers() {
+        // Clear existing server configs
+        serverConfigs.clear();
+        // Reload from config
+        loadMCPServers();
+        logger.info("MCP server configurations reloaded");
+    }
+    
+    /**
      * Connect to all enabled MCP servers
      */
     public void connectAllServers() {

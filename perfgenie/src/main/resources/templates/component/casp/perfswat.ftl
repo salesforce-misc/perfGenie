@@ -113,7 +113,7 @@ $(document).ready(() => {
         targets: [
         {
             refId: 'pidstats',
-            rawSql: '$start:$end:$instance:$cell:$datahost',
+            rawSql: '$start:$end:$substrate:$instance:$domain:$cell:$datahost',
             datasource: { type: 'genie' }
         }
         ]

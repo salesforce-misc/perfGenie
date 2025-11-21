@@ -1252,18 +1252,162 @@
         
         panels.forEach(panel => {
             if (panel && typeof panel === 'object') {
+                // Ensure panel has gridPos
+                if (!panel.gridPos) {
+                    panel.gridPos = { x: 0, y: 0, w: 12, h: 8 };
+                }
+                
+                // Create a copy of gridPos to avoid mutating original if shared
+                if (!panel._gridPosAdjusted) {
+                    panel.gridPos = { ...panel.gridPos };
+                    panel._gridPosAdjusted = true;
+                }
+                
                 // Add the panel itself
                 flattened.push(panel);
                 
                 // If panel has nested panels, recursively flatten them
-                if (panel.panels && Array.isArray(panel.panels)) {
+                if (panel.panels && Array.isArray(panel.panels) && panel.panels.length > 0) {
                     const nestedPanels = this.flattenPanels(panel.panels);
+                    
+                    // Get parent panel's grid position
+                    const parentGridPos = panel.gridPos;
+                    const parentBottomY = parentGridPos.y + parentGridPos.h;
+                    
+                    // Find the minimum Y position of nested panels to calculate relative offset
+                    let minNestedY = Infinity;
+                    let maxNestedBottom = 0;
+                    nestedPanels.forEach(nestedPanel => {
+                        const nestedGridPos = nestedPanel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+                        if (nestedGridPos.y < minNestedY) {
+                            minNestedY = nestedGridPos.y;
+                        }
+                        const nestedBottom = nestedGridPos.y + (nestedGridPos.h || 8);
+                        if (nestedBottom > maxNestedBottom) {
+                            maxNestedBottom = nestedBottom;
+                        }
+                    });
+                    if (minNestedY === Infinity) {
+                        minNestedY = 0;
+                    }
+                    
+                    // Find the maximum bottom Y of all panels already in flattened list
+                    // This ensures nested panels don't overlap with existing panels
+                    let maxExistingBottom = 0;
+                    flattened.forEach(existingPanel => {
+                        const existingGridPos = existingPanel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+                        const existingBottom = existingGridPos.y + (existingGridPos.h || 8);
+                        if (existingBottom > maxExistingBottom) {
+                            maxExistingBottom = existingBottom;
+                        }
+                    });
+                    
+                    // Use the maximum of parent bottom and existing panels bottom
+                    const startY = Math.max(parentBottomY, maxExistingBottom);
+                    
+                    // Adjust nested panels' Y positions to be below parent panel and existing panels
+                    // Maintain relative positions between nested panels
+                    nestedPanels.forEach(nestedPanel => {
+                        if (!nestedPanel.gridPos) {
+                            nestedPanel.gridPos = { x: 0, y: 0, w: 12, h: 8 };
+                        }
+                        // Create a copy to avoid mutating original
+                        if (!nestedPanel._gridPosAdjusted) {
+                            nestedPanel.gridPos = { ...nestedPanel.gridPos };
+                            nestedPanel._gridPosAdjusted = true;
+                        }
+                        // Calculate relative offset from minimum nested Y
+                        const relativeOffset = nestedPanel.gridPos.y - minNestedY;
+                        // Position nested panel below parent and existing panels, maintaining relative position
+                        nestedPanel.gridPos.y = startY + relativeOffset;
+                    });
+                    
                     flattened.push(...nestedPanels);
                 }
             }
         });
         
         return flattened;
+    }
+    
+    /**
+     * Resolve overlapping panels by adjusting their Y positions
+     * @param {Array} panels - Array of panels to check and adjust
+     * @returns {Array} - Array of panels with adjusted positions
+     */
+    resolveOverlappingPanels(panels) {
+        if (!Array.isArray(panels) || panels.length === 0) {
+            return panels;
+        }
+        
+        // Sort panels by Y position, then by X position
+        const sortedPanels = [...panels].sort((a, b) => {
+            const gridPosA = a.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+            const gridPosB = b.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+            if (gridPosA.y !== gridPosB.y) {
+                return gridPosA.y - gridPosB.y;
+            }
+            return gridPosA.x - gridPosB.x;
+        });
+        
+        // Check for overlaps and adjust positions
+        // Only adjust panels that actually overlap in BOTH X and Y dimensions
+        for (let i = 0; i < sortedPanels.length; i++) {
+            const currentPanel = sortedPanels[i];
+            
+            // Ensure gridPos exists
+            if (!currentPanel.gridPos) {
+                currentPanel.gridPos = { x: 0, y: 0, w: 12, h: 8 };
+            }
+            
+            // Create a copy to avoid mutating original if shared
+            if (!currentPanel._gridPosAdjusted) {
+                currentPanel.gridPos = { ...currentPanel.gridPos };
+                currentPanel._gridPosAdjusted = true;
+            }
+            
+            const currentGridPos = currentPanel.gridPos;
+            const currentY = currentGridPos.y;
+            const currentX = currentGridPos.x;
+            const currentW = currentGridPos.w || 12;
+            const currentH = currentGridPos.h || 8;
+            const currentRight = currentX + currentW;
+            const currentBottom = currentY + currentH;
+            
+            // Find the maximum bottom Y position of all previous panels that actually overlap with current panel
+            let maxOverlappingBottom = 0;
+            let hasOverlap = false;
+            
+            for (let j = 0; j < i; j++) {
+                const prevPanel = sortedPanels[j];
+                const prevGridPos = prevPanel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
+                const prevX = prevGridPos.x || 0;
+                const prevW = prevGridPos.w || 12;
+                const prevY = prevGridPos.y || 0;
+                const prevH = prevGridPos.h || 8;
+                const prevRight = prevX + prevW;
+                const prevBottom = prevY + prevH;
+                
+                // Check if panels overlap in BOTH X and Y dimensions
+                const overlapsX = !(currentX >= prevRight || currentRight <= prevX);
+                const overlapsY = !(currentY >= prevBottom || currentBottom <= prevY);
+                
+                if (overlapsX && overlapsY) {
+                    hasOverlap = true;
+                    if (prevBottom > maxOverlappingBottom) {
+                        maxOverlappingBottom = prevBottom;
+                    }
+                }
+            }
+            
+            // Only adjust if there's an actual overlap
+            if (hasOverlap && currentY < maxOverlappingBottom) {
+                currentGridPos.y = maxOverlappingBottom;
+                console.log(`GenieDashboard: Adjusted panel "${currentPanel.title || currentPanel.id}" from Y=${currentY} to Y=${maxOverlappingBottom} to avoid overlap with previous panels`);
+            }
+        }
+        
+        return sortedPanels;
     }
     
     /**
@@ -1275,6 +1419,12 @@
         try {
             this.dashboardConfig = dashboardJson;
             this.inputConfig = inputJson;
+            
+            // Validate inputConfig format
+            if (inputJson && !this.validateInputConfig(inputJson)) {
+                console.error('GenieDashboard: Invalid inputConfig format. Please check the console for details.');
+                // Continue rendering but log the error
+            }
             
             // Clear previous dashboard
             this.container.innerHTML = '';
@@ -1316,6 +1466,9 @@
             // Extract panels (flatten nested panels recursively)
             this.panels = this.flattenPanels(this.dashboardConfig.panels || []);
             
+            // Resolve any overlapping panels after flattening
+            this.panels = this.resolveOverlappingPanels(this.panels);
+            
             // Create grid container
             const grid = document.createElement('div');
             grid.className = 'genie-dashboard-grid';
@@ -1328,6 +1481,9 @@
             
             // Store grid reference for collapse toggle
             this.dashboardGrid = grid;
+            
+            // Render dashboard controls row (Cell, Substrate, HF Instance, Domain, Span, Aggregate)
+            this.renderDashboardControlsRow(grid, toolbarConfig);
             
             // Calculate a consistent row height per unit based on grid-auto-rows
             // We'll use a fixed calculation: estimate ~38px per row unit (based on typical content)
@@ -1362,6 +1518,280 @@
             console.error('GenieDashboard: Error rendering dashboard:', error);
             this.container.innerHTML = `<div class="genie-dashboard-panel-error">Error rendering dashboard: ${error.message}</div>`;
         }
+    }
+    
+    /**
+     * Get the default controls row height in grid units
+     * This can be easily adjusted when more input fields are added
+     * If fields wrap to multiple rows, increase this value accordingly
+     * @returns {number} Default height of controls row in grid units
+     */
+    getDefaultControlsRowHeight() {
+        // Default: controls row occupies 1 grid row
+        // If more fields are added and they wrap, increase this value
+        // For example, if fields wrap to 2 rows, return 2
+        return 1;
+    }
+    
+    /**
+     * Render dashboard controls row (Cell, Substrate, HF Instance, Domain, Span, Aggregate)
+     * This row is fixed at the top of the dashboard panel and doesn't move during sorting
+     */
+    renderDashboardControlsRow(grid, toolbarConfig) {
+        // Check if controls row already exists (don't recreate if it does)
+        let controlsRow = document.getElementById(this.getInstanceId('controls-row'));
+        if (controlsRow) {
+            // Controls row already exists, ensure it's in the correct position
+            controlsRow.style.gridColumn = '1 / -1';
+            const controlsRowHeight = this.getDefaultControlsRowHeight();
+            controlsRow.style.gridRow = `1 / ${1 + controlsRowHeight}`;
+            return;
+        }
+        
+        controlsRow = document.createElement('div');
+        controlsRow.className = 'genie-dashboard-controls-row';
+        controlsRow.id = this.getInstanceId('controls-row');
+        // Position controls row at the top of the grid (row 1, spanning all 24 columns)
+        // Mark it with a data attribute to prevent it from being treated as a panel
+        controlsRow.setAttribute('data-controls-row', 'true');
+        // Get default height (modularized for easy adjustment when more fields are added)
+        const controlsRowHeight = this.getDefaultControlsRowHeight();
+        controlsRow.style.cssText = `display: flex; align-items: center; gap: 4px; padding: 4px 8px; background: #ffffff; border-bottom: 1px solid #e5e7eb; margin-bottom: 4px; flex-wrap: wrap; grid-column: 1 / -1; grid-row: 1 / ${1 + controlsRowHeight};`;
+        
+        // Cell label and input
+        const cellLabel = document.createElement('label');
+        cellLabel.className = 'genie-toolbar-label';
+        cellLabel.setAttribute('for', 'genie-toolbar-cell');
+        cellLabel.textContent = 'Cell:';
+        cellLabel.style.cssText = 'font-size: 11px; color: #6b7280; height: 24px; display: flex; align-items: center; white-space: nowrap;';
+        
+        const cellInput = document.createElement('input');
+        cellInput.type = 'text';
+        cellInput.id = this.getInstanceId('toolbar-cell');
+        cellInput.className = 'genie-toolbar-input';
+        cellInput.value = this.getInputConfigValue('Cell', this.inputConfig) || '';
+        cellInput.placeholder = 'e.g., cell value';
+        cellInput.style.cssText = 'width: 50px; height: 24px; font-size: 11px; padding: 2px 4px; margin-right: 4px;';
+        
+        controlsRow.appendChild(cellLabel);
+        controlsRow.appendChild(cellInput);
+        
+        // Substrate label and dropdown
+        const substrateLabel = document.createElement('label');
+        substrateLabel.className = 'genie-toolbar-label';
+        substrateLabel.setAttribute('for', 'genie-toolbar-substrate');
+        substrateLabel.textContent = 'Substrate:';
+        substrateLabel.style.cssText = 'font-size: 11px; color: #6b7280; height: 24px; display: flex; align-items: center; white-space: nowrap;';
+        
+        const substrateSelect = document.createElement('select');
+        substrateSelect.id = this.getInstanceId('toolbar-substrate');
+        substrateSelect.className = 'genie-toolbar-input';
+        substrateSelect.style.cssText = 'width: 100px; height: 24px; font-size: 11px; padding: 2px 4px; margin-right: 4px;';
+        const substrateOption = document.createElement('option');
+        substrateOption.value = '';
+        substrateOption.textContent = '-- Select --';
+        substrateSelect.appendChild(substrateOption);
+        
+        controlsRow.appendChild(substrateLabel);
+        controlsRow.appendChild(substrateSelect);
+        
+        // HF Instance label and dropdown
+        const hfInstanceLabel = document.createElement('label');
+        hfInstanceLabel.className = 'genie-toolbar-label';
+        hfInstanceLabel.setAttribute('for', 'genie-toolbar-hfinstance');
+        hfInstanceLabel.textContent = 'HF Instance:';
+        hfInstanceLabel.style.cssText = 'font-size: 11px; color: #6b7280; height: 24px; display: flex; align-items: center; white-space: nowrap;';
+        
+        const hfInstanceSelect = document.createElement('select');
+        hfInstanceSelect.id = this.getInstanceId('toolbar-hfinstance');
+        hfInstanceSelect.className = 'genie-toolbar-input';
+        hfInstanceSelect.style.cssText = 'width: 150px; height: 24px; font-size: 11px; padding: 2px 4px; margin-right: 4px;';
+        const hfInstanceOption = document.createElement('option');
+        hfInstanceOption.value = '';
+        hfInstanceOption.textContent = '-- Select --';
+        hfInstanceSelect.appendChild(hfInstanceOption);
+        
+        controlsRow.appendChild(hfInstanceLabel);
+        controlsRow.appendChild(hfInstanceSelect);
+        
+        // Domain label and dropdown
+        const domainLabel = document.createElement('label');
+        domainLabel.className = 'genie-toolbar-label';
+        domainLabel.setAttribute('for', 'genie-toolbar-domain');
+        domainLabel.textContent = 'Domain:';
+        domainLabel.style.cssText = 'font-size: 11px; color: #6b7280; height: 24px; display: flex; align-items: center; white-space: nowrap;';
+        
+        const domainSelect = document.createElement('select');
+        domainSelect.id = this.getInstanceId('toolbar-domain');
+        domainSelect.className = 'genie-toolbar-input';
+        domainSelect.style.cssText = 'width: 100px; height: 24px; font-size: 11px; padding: 2px 4px; margin-right: 4px;';
+        const domainOption = document.createElement('option');
+        domainOption.value = '';
+        domainOption.textContent = '-- Select --';
+        domainSelect.appendChild(domainOption);
+        
+        controlsRow.appendChild(domainLabel);
+        controlsRow.appendChild(domainSelect);
+        
+        // Span label and input
+        const intervalLabel = document.createElement('label');
+        intervalLabel.className = 'genie-toolbar-label';
+        intervalLabel.setAttribute('for', 'genie-toolbar-interval');
+        intervalLabel.textContent = 'Span:';
+        intervalLabel.style.cssText = 'font-size: 11px; color: #6b7280; height: 24px; display: flex; align-items: center; white-space: nowrap;';
+        
+        const intervalInput = document.createElement('input');
+        intervalInput.type = 'text';
+        intervalInput.id = this.getInstanceId('toolbar-interval');
+        intervalInput.className = 'genie-toolbar-input';
+        intervalInput.value = this.getInputConfigValue('Span', this.inputConfig) || '1m';
+        intervalInput.placeholder = 'e.g., 1m, 5m, 1h';
+        intervalInput.style.cssText = 'width: 50px; height: 24px; font-size: 11px; padding: 2px 4px; margin-right: 4px;';
+        
+        controlsRow.appendChild(intervalLabel);
+        controlsRow.appendChild(intervalInput);
+        
+        // Aggregation button with dropdown menu
+        const showAggregation = toolbarConfig.showAggregation !== false;
+        if (showAggregation) {
+            // Aggregation label
+            const aggLabel = document.createElement('label');
+            aggLabel.className = 'genie-toolbar-label';
+            aggLabel.setAttribute('for', 'genie-toolbar-agg-button');
+            aggLabel.textContent = 'Aggregation:';
+            aggLabel.style.cssText = 'font-size: 11px; color: #6b7280; height: 24px; display: flex; align-items: center; white-space: nowrap;';
+            
+            // Create container for aggregation button and dropdown menu
+            const aggContainer = document.createElement('div');
+            aggContainer.style.cssText = 'position: relative; display: inline-block; margin-left: 2px;';
+            
+            // Aggregation button
+            const aggButton = document.createElement('button');
+            aggButton.type = 'button';
+            aggButton.className = 'genie-dashboard-tab';
+            aggButton.id = this.getInstanceId('toolbar-agg-button');
+            aggButton.setAttribute('aria-label', 'Aggregation');
+            aggButton.style.cssText = 'display: flex; align-items: center; padding: 2px 6px; font-size: 11px; color: #6b7280; background: transparent; border: 1px solid #d1d5db; border-radius: 3px; cursor: pointer; font-weight: 500; min-width: 45px; height: 24px;';
+            
+            // Update button display based on selected aggregation
+            const updateAggButtonDisplay = () => {
+                const currentAggValue = this.getInputConfigValue('Aggregate', this.inputConfig) || '';
+                const aggOptions = {
+                    '': '-- Select --',
+                    'sum': 'Sum',
+                    'avg': 'Avg',
+                    'max': 'Max',
+                    'min': 'Min'
+                };
+                aggButton.textContent = aggOptions[currentAggValue] || '-- Select --';
+                
+                // Keep button in default state (no highlighting after selection)
+                aggButton.style.background = 'transparent';
+                aggButton.style.color = '#6b7280';
+                aggButton.style.borderColor = '#d1d5db';
+            };
+            
+            updateAggButtonDisplay();
+            aggContainer.appendChild(aggButton);
+            
+            // Create dropdown menu with options
+            const aggMenu = document.createElement('div');
+            aggMenu.className = 'genie-dashboard-agg-menu';
+            aggMenu.id = this.getInstanceId('agg-menu');
+            aggMenu.style.cssText = 'display: none; position: fixed; background: white; border: 1px solid #d1d5db; border-radius: 4px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); z-index: 10000; min-width: 140px; padding: 4px; max-height: 300px; overflow-y: auto;';
+            document.body.appendChild(aggMenu);
+            
+            // Function to populate aggregation menu
+            const populateAggMenu = () => {
+                aggMenu.innerHTML = '';
+                const aggOptions = [
+                    { value: '', label: '-- Select --' },
+                    { value: 'sum', label: 'Sum' },
+                    { value: 'avg', label: 'Avg' },
+                    { value: 'max', label: 'Max' },
+                    { value: 'min', label: 'Min' }
+                ];
+                
+                const currentAggValue = this.inputConfig['$agg'] || '';
+                
+                aggOptions.forEach(option => {
+                    const menuItem = document.createElement('div');
+                    menuItem.className = 'genie-dashboard-agg-menu-item';
+                    menuItem.style.cssText = `padding: 2px 8px; cursor: pointer; display: flex; align-items: center; font-size: 13px; color: ${option.value === currentAggValue ? '#3b82f6' : '#1f2937'}; margin: 0; font-weight: ${option.value === currentAggValue ? '500' : '400'};`;
+                    menuItem.textContent = option.label;
+                    
+                    // Highlight selected item
+                    if (option.value === currentAggValue) {
+                        menuItem.style.background = 'rgba(59, 130, 246, 0.1)';
+                    }
+                    
+                    // Hover effect
+                    menuItem.addEventListener('mouseenter', () => {
+                        menuItem.style.background = '#f3f4f6';
+                    });
+                    menuItem.addEventListener('mouseleave', () => {
+                        menuItem.style.background = option.value === currentAggValue ? 'rgba(59, 130, 246, 0.1)' : 'transparent';
+                    });
+                    
+                    // Click handler
+                    menuItem.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Update inputConfig
+                        if (this.inputConfig) {
+                            this.setInputConfigValue('Aggregate', option.value || '', ['$agg']);
+                        }
+                        // Update button display
+                        updateAggButtonDisplay();
+                        // Close menu
+                        aggMenu.style.display = 'none';
+                        // Trigger change event for any listeners
+                        const changeEvent = new Event('change', { bubbles: true });
+                        aggButton.dispatchEvent(changeEvent);
+                    });
+                    
+                    aggMenu.appendChild(menuItem);
+                });
+            };
+            
+            // Initial population
+            populateAggMenu();
+            
+            // Toggle menu on button click
+            aggButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isVisible = aggMenu.style.display === 'block' || aggMenu.style.display === 'flex';
+                if (isVisible) {
+                    aggMenu.style.display = 'none';
+                } else {
+                    // Repopulate menu before showing
+                    populateAggMenu();
+                    // Calculate position relative to button using fixed positioning
+                    const buttonRect = aggButton.getBoundingClientRect();
+                    const menuTop = buttonRect.bottom + window.scrollY + 4; // 4px margin
+                    const menuLeft = buttonRect.left + window.scrollX;
+                    
+                    aggMenu.style.top = menuTop + 'px';
+                    aggMenu.style.left = menuLeft + 'px';
+                    aggMenu.style.display = 'block';
+                }
+            });
+            
+            // Close menu when clicking outside
+            const closeMenuHandler = (e) => {
+                if (!aggContainer.contains(e.target) && !aggMenu.contains(e.target)) {
+                    aggMenu.style.display = 'none';
+                }
+            };
+            document.addEventListener('click', closeMenuHandler);
+            
+            // Store reference for later use
+            this.aggButton = aggButton;
+            
+            controlsRow.appendChild(aggLabel);
+            controlsRow.appendChild(aggContainer);
+        }
+        
+        grid.appendChild(controlsRow);
     }
     
     /**
@@ -1476,30 +1906,11 @@
             toolbar.appendChild(timeRangeGroup);
         }
         
-        // Interval input
-        if (showInterval) {
-            const intervalGroup = document.createElement('div');
-            intervalGroup.className = 'genie-toolbar-group';
-            
-            const intervalLabel = document.createElement('label');
-            intervalLabel.className = 'genie-toolbar-label';
-            intervalLabel.setAttribute('for', 'genie-toolbar-interval');
-            intervalLabel.textContent = 'Span:';
-            intervalLabel.style.cssText = 'font-size: 12px; color: #6b7280; height: 30px; display: flex; align-items: center;';
-            
-            const intervalInput = document.createElement('input');
-            intervalInput.type = 'text';
-            intervalInput.id = this.getInstanceId('toolbar-interval');
-            intervalInput.className = 'genie-toolbar-input';
-            intervalInput.value = this.inputConfig['$interval'] || '1m';
-            intervalInput.placeholder = 'e.g., 1m, 5m, 1h';
-            intervalInput.style.cssText = 'width: 50px; height: 30px; font-size: 12px; padding: 4px 8px;';
-            
-            intervalGroup.appendChild(intervalLabel);
-            intervalGroup.appendChild(intervalInput);
+        // Note: Cell, Substrate, HF Instance, Domain, Span, and Aggregate controls
+        // have been moved to the dashboard panel controls row (renderDashboardControlsRow)
         
-            // Aggregation button with dropdown menu (inside Span group)
-        if (showAggregation) {
+        // Aggregation button with dropdown menu (standalone if interval is not shown)
+        if (!showInterval && showAggregation) {
                 // Create container for aggregation button and dropdown menu
                 const aggContainer = document.createElement('div');
                 aggContainer.style.cssText = 'position: relative; display: inline-block; margin-left: 2px;';
@@ -1629,143 +2040,8 @@
                 this.updateAggButtonDisplay = updateAggButtonDisplay;
                 this.populateAggMenu = populateAggMenu;
                 
-                intervalGroup.appendChild(aggContainer);
+                toolbar.appendChild(aggContainer);
             }
-            
-            toolbar.appendChild(intervalGroup);
-        } else if (showAggregation) {
-            // If interval is not shown but aggregation is, create standalone aggregation
-            // Create container for aggregation button and dropdown menu
-            const aggContainer = document.createElement('div');
-            aggContainer.style.cssText = 'position: relative; display: inline-block;';
-            
-            // Aggregation button
-            const aggButton = document.createElement('button');
-            aggButton.type = 'button';
-            aggButton.className = 'genie-dashboard-tab';
-            aggButton.id = this.getInstanceId('toolbar-agg-button');
-            aggButton.setAttribute('aria-label', 'Aggregation');
-            aggButton.style.cssText = 'display: flex; align-items: center; padding: 4px 8px; font-size: 13px; color: #6b7280; background: transparent; border: 1px solid #d1d5db; border-radius: 4px; cursor: pointer; font-weight: 500; min-width: 50px; height: 30px;';
-            
-            // Update button display based on selected aggregation
-            const updateAggButtonDisplay = () => {
-                const currentAggValue = this.inputConfig['$agg'] || '';
-                const aggOptions = {
-                    '': '-- Select --',
-                    'sum': 'Sum',
-                    'avg': 'Avg',
-                    'max': 'Max',
-                    'min': 'Min'
-                };
-                aggButton.textContent = aggOptions[currentAggValue] || '-- Select --';
-                
-                // Keep button in default state (no highlighting after selection)
-                aggButton.style.background = 'transparent';
-                aggButton.style.color = '#6b7280';
-                aggButton.style.borderColor = '#d1d5db';
-            };
-            
-            updateAggButtonDisplay();
-            aggContainer.appendChild(aggButton);
-            
-            // Create dropdown menu with options
-            const aggMenu = document.createElement('div');
-            aggMenu.className = 'genie-dashboard-agg-menu';
-            aggMenu.id = this.getInstanceId('agg-menu');
-            aggMenu.style.cssText = 'display: none; position: fixed; background: white; border: 1px solid #d1d5db; border-radius: 4px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); z-index: 10000; min-width: 140px; padding: 4px; max-height: 300px; overflow-y: auto;';
-            document.body.appendChild(aggMenu);
-            
-            // Function to populate aggregation menu
-            const populateAggMenu = () => {
-                aggMenu.innerHTML = '';
-                const aggOptions = [
-                    { value: '', label: '-- Select --' },
-                    { value: 'sum', label: 'Sum' },
-                    { value: 'avg', label: 'Avg' },
-                    { value: 'max', label: 'Max' },
-                    { value: 'min', label: 'Min' }
-                ];
-                
-                const currentAggValue = this.inputConfig['$agg'] || '';
-                
-                aggOptions.forEach(option => {
-                    const menuItem = document.createElement('div');
-                    menuItem.className = 'genie-dashboard-agg-menu-item';
-                    menuItem.style.cssText = `padding: 2px 8px; cursor: pointer; display: flex; align-items: center; font-size: 13px; color: ${option.value === currentAggValue ? '#3b82f6' : '#1f2937'}; margin: 0; font-weight: ${option.value === currentAggValue ? '500' : '400'};`;
-                    menuItem.textContent = option.label;
-                    
-                    // Highlight selected item
-                    if (option.value === currentAggValue) {
-                        menuItem.style.background = 'rgba(59, 130, 246, 0.1)';
-                    }
-                    
-                    // Hover effect
-                    menuItem.addEventListener('mouseenter', () => {
-                        menuItem.style.background = '#f3f4f6';
-                    });
-                    menuItem.addEventListener('mouseleave', () => {
-                        menuItem.style.background = option.value === currentAggValue ? 'rgba(59, 130, 246, 0.1)' : 'transparent';
-                    });
-                    
-                    // Click handler
-                    menuItem.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        // Update inputConfig
-                        if (this.inputConfig) {
-                            this.inputConfig['$agg'] = option.value || '';
-                        }
-                        // Update button display
-                        updateAggButtonDisplay();
-                        // Close menu
-                        aggMenu.style.display = 'none';
-                        // Trigger change event for any listeners
-                        const changeEvent = new Event('change', { bubbles: true });
-                        aggButton.dispatchEvent(changeEvent);
-                    });
-                    
-                    aggMenu.appendChild(menuItem);
-                });
-            };
-            
-            // Initial population
-            populateAggMenu();
-            
-            // Toggle menu on button click
-            aggButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const isVisible = aggMenu.style.display === 'block' || aggMenu.style.display === 'flex';
-                if (isVisible) {
-                    aggMenu.style.display = 'none';
-                } else {
-                    // Repopulate menu before showing
-                    populateAggMenu();
-                    // Calculate position relative to button using fixed positioning
-                    const buttonRect = aggButton.getBoundingClientRect();
-                    const menuTop = buttonRect.bottom + window.scrollY + 4; // 4px margin
-                    const menuLeft = buttonRect.left + window.scrollX;
-                    
-                    aggMenu.style.top = menuTop + 'px';
-                    aggMenu.style.left = menuLeft + 'px';
-                    aggMenu.style.display = 'block';
-                }
-            });
-            
-            // Close menu when clicking outside
-            const closeMenuHandler = (e) => {
-                if (!aggContainer.contains(e.target) && !aggMenu.contains(e.target)) {
-                    aggMenu.style.display = 'none';
-                }
-            };
-            document.addEventListener('click', closeMenuHandler);
-            
-            // Store references for later use
-            this.aggButton = aggButton;
-            this.aggMenu = aggMenu;
-            this.updateAggButtonDisplay = updateAggButtonDisplay;
-            this.populateAggMenu = populateAggMenu;
-            
-            toolbar.appendChild(aggContainer);
-        }
         
         // Experts button with dropdown menu (always shown if edit is enabled)
         if (showEdit) {
@@ -2194,8 +2470,8 @@
         let isCustomRangeSelected = true;
         const applyTimeRange = (start, end, isCustom = false) => {
             if (!this.inputConfig) return;
-            this.inputConfig['$start'] = start;
-            this.inputConfig['$end'] = end;
+            this.setInputConfigValue('Start', start, ['$start']);
+            this.setInputConfigValue('End', end, ['$end']);
             isCustomRangeSelected = isCustom;
             const timeRangeDisplay = document.getElementById(this.getInstanceId('time-range-display'));
             if (timeRangeDisplay) {
@@ -2204,6 +2480,20 @@
             const popup = document.getElementById(this.getInstanceId('time-range-popup'));
             if (popup) {
                 popup.classList.remove('genie-dashboard-show');
+            }
+            
+            // If cell value is already filled, fetch scopes when time range is set
+            // Check if fetchScopesFunction is available (it's defined later in setupToolbarHandlers)
+            if (cellInput) {
+                const cellValue = cellInput.value ? cellInput.value.trim() : '';
+                if (cellValue && cellValue !== '' && start && end) {
+                    // Use a small delay to ensure time range is fully applied and fetchScopesFunction is available
+                    setTimeout(() => {
+                        if (fetchScopesFunction) {
+                            fetchScopesFunction();
+                        }
+                    }, 100);
+                }
             }
         };
         
@@ -2221,9 +2511,11 @@
             timeRangeButton.addEventListener('click', (e) => {
                 e.stopPropagation();
                 timeRangePopup.classList.toggle('genie-dashboard-show');
-                if (this.inputConfig && this.inputConfig['$start'] && this.inputConfig['$end']) {
-                    if (startInput) startInput.value = formatDateForInput(this.inputConfig['$start']);
-                    if (endInput) endInput.value = formatDateForInput(this.inputConfig['$end']);
+                const startValue = this.getInputConfigValue('Start', this.inputConfig) || this.getInputConfigValue('start', this.inputConfig) || this.inputConfig?.['$start'];
+                const endValue = this.getInputConfigValue('End', this.inputConfig) || this.getInputConfigValue('end', this.inputConfig) || this.inputConfig?.['$end'];
+                if (this.inputConfig && startValue && endValue) {
+                    if (startInput) startInput.value = formatDateForInput(startValue);
+                    if (endInput) endInput.value = formatDateForInput(endValue);
                 }
             });
             
@@ -2283,7 +2575,7 @@
             aggButton.addEventListener('change', () => {
                 // inputConfig is already updated in the menu click handler
                 // Sync to any open panel settings
-                const currentAggValue = this.inputConfig ? (this.inputConfig['$agg'] || '') : '';
+                const currentAggValue = this.inputConfig ? (this.getInputConfigValue('agg', this.inputConfig) || '') : '';
                 const openSettingsPanels = document.querySelectorAll(`[id^="${this.instanceId}-panel-settings-"]`);
                 openSettingsPanels.forEach(settingsPanel => {
                     const panelIdMatch = settingsPanel.id.match(new RegExp(`${this.instanceId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-panel-settings-(\\d+)`));
@@ -2298,18 +2590,269 @@
             });
         }
         
+        // Cell input handler - fetch scopes when user leaves the cell input box
+        const cellInput = document.getElementById(this.getInstanceId('toolbar-cell'));
+        const substrateSelect = document.getElementById(this.getInstanceId('toolbar-substrate'));
+        const hfInstanceSelect = document.getElementById(this.getInstanceId('toolbar-hfinstance'));
+        const domainSelect = document.getElementById(this.getInstanceId('toolbar-domain'));
+        
+        // Store reference to fetchScopes so it can be called from applyTimeRange
+        let fetchScopesFunction = null;
+        
+        /**
+         * Parse scope entry and extract substrate, HF instance, and domain
+         * Format: "core.aws.aws-prod0-uswest2.core1"
+         * Where: aws (index 1) = substrate, aws-prod0-uswest2 (index 2) = HF instance, core1 (index 3) = domain
+         */
+        const parseScopeEntry = (scopeEntry) => {
+            const parts = scopeEntry.split('.');
+            if (parts.length >= 4) {
+                return {
+                    substrate: parts[1] || '',
+                    hfInstance: parts[2] || '',
+                    domain: parts[3] || ''
+                };
+            }
+            return null;
+        };
+        
+        /**
+         * Populate dropdowns with unique values from parsed scopes
+         */
+        const populateDropdowns = (scopes) => {
+            const substrates = new Set();
+            const hfInstances = new Set();
+            const domains = new Set();
+            
+            // Parse all scopes and collect unique values
+            scopes.forEach(scope => {
+                const parsed = parseScopeEntry(scope);
+                if (parsed) {
+                    if (parsed.substrate) substrates.add(parsed.substrate);
+                    if (parsed.hfInstance) hfInstances.add(parsed.hfInstance);
+                    if (parsed.domain) domains.add(parsed.domain);
+                }
+            });
+            
+            // Populate Substrate dropdown
+            if (substrateSelect) {
+                // Clear existing options except the first "-- Select --" option
+                while (substrateSelect.options.length > 1) {
+                    substrateSelect.remove(1);
+                }
+                // Add unique substrates sorted
+                const sortedSubstrates = Array.from(substrates).sort();
+                sortedSubstrates.forEach(substrate => {
+                    const option = document.createElement('option');
+                    option.value = substrate;
+                    option.textContent = substrate;
+                    substrateSelect.appendChild(option);
+                });
+                // Auto-select if there's only one value
+                if (sortedSubstrates.length === 1) {
+                    substrateSelect.value = sortedSubstrates[0];
+                }
+            }
+            
+            // Populate HF Instance dropdown
+            if (hfInstanceSelect) {
+                // Clear existing options except the first "-- Select --" option
+                while (hfInstanceSelect.options.length > 1) {
+                    hfInstanceSelect.remove(1);
+                }
+                // Add unique HF instances sorted
+                const sortedHfInstances = Array.from(hfInstances).sort();
+                sortedHfInstances.forEach(hfInstance => {
+                    const option = document.createElement('option');
+                    option.value = hfInstance;
+                    option.textContent = hfInstance;
+                    hfInstanceSelect.appendChild(option);
+                });
+                // Auto-select if there's only one value
+                if (sortedHfInstances.length === 1) {
+                    hfInstanceSelect.value = sortedHfInstances[0];
+                }
+            }
+            
+            // Populate Domain dropdown
+            if (domainSelect) {
+                // Clear existing options except the first "-- Select --" option
+                while (domainSelect.options.length > 1) {
+                    domainSelect.remove(1);
+                }
+                // Add unique domains sorted
+                const sortedDomains = Array.from(domains).sort();
+                sortedDomains.forEach(domain => {
+                    const option = document.createElement('option');
+                    option.value = domain;
+                    option.textContent = domain;
+                    domainSelect.appendChild(option);
+                });
+                // Auto-select if there's only one value
+                if (sortedDomains.length === 1) {
+                    domainSelect.value = sortedDomains[0];
+                }
+            }
+        };
+        
+        /**
+         * Fetch scopes based on cell value and time range
+         * Similar to contentcustomnew.ftl fetchScopes function
+         */
+        const fetchScopes = async () => {
+            if (!cellInput) return;
+            
+            const cell = cellInput.value ? cellInput.value.trim() : '';
+            const start = this.inputConfig ? (this.getInputConfigValue('Start', this.inputConfig) || this.getInputConfigValue('start', this.inputConfig) || this.inputConfig['$start']) : null;
+            const end = this.inputConfig ? (this.getInputConfigValue('End', this.inputConfig) || this.getInputConfigValue('end', this.inputConfig) || this.inputConfig['$end']) : null;
+            
+            // Check if cell is empty
+            if (!cell || cell === '') {
+                // Clear dropdowns if cell is empty
+                if (substrateSelect) {
+                    while (substrateSelect.options.length > 1) {
+                        substrateSelect.remove(1);
+                    }
+                }
+                if (hfInstanceSelect) {
+                    while (hfInstanceSelect.options.length > 1) {
+                        hfInstanceSelect.remove(1);
+                    }
+                }
+                if (domainSelect) {
+                    while (domainSelect.options.length > 1) {
+                        domainSelect.remove(1);
+                    }
+                }
+                return;
+            }
+            
+            // Check if time range is provided
+            if (!start || !end) {
+                alert('Time range is required to fetch scopes');
+                return;
+            }
+            
+            try {
+                // Build API URL - match the pattern used in contentcustomnew.ftl
+                const hostPart = (typeof dataHost !== 'undefined' && dataHost) ? dataHost + "/" : "";
+                const url = "v1/getscope/" + hostPart + "?start=" + start + "&end=" + end + "&cell=" + encodeURIComponent(cell);
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                // Parse the result - it should be a JSON array of strings
+                let scopes = [];
+                if (typeof result === 'string') {
+                    scopes = JSON.parse(result);
+                } else if (Array.isArray(result)) {
+                    scopes = result;
+                } else {
+                    console.error("Unexpected scope response format:", result);
+                    alert("Unexpected scope response format: " + JSON.stringify(result));
+                    return;
+                }
+                
+                // Populate dropdowns with parsed scope values
+                if (scopes && scopes.length > 0) {
+                    populateDropdowns(scopes);
+                } else {
+                    // Clear dropdowns if no scopes found
+                    if (substrateSelect) {
+                        while (substrateSelect.options.length > 1) {
+                            substrateSelect.remove(1);
+                        }
+                    }
+                    if (hfInstanceSelect) {
+                        while (hfInstanceSelect.options.length > 1) {
+                            hfInstanceSelect.remove(1);
+                        }
+                    }
+                    if (domainSelect) {
+                        while (domainSelect.options.length > 1) {
+                            domainSelect.remove(1);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch scopes:", error);
+                alert("Failed to fetch scopes for cell: " + cell + "\n\nError: " + error.message);
+            }
+        };
+        
+        // Store reference for use in applyTimeRange
+        fetchScopesFunction = fetchScopes;
+        
+        if (cellInput) {
+            // Only fetch scopes when user leaves the input field (blur event)
+            cellInput.addEventListener('blur', fetchScopes);
+            
+            // If cell value is already set from inputConfig, fetch scopes immediately
+            // Use setTimeout to ensure time range is available (it might be set up after this)
+            const cellValue = cellInput.value ? cellInput.value.trim() : '';
+            if (cellValue && cellValue !== '') {
+                // Wait a bit for time range to be available, then fetch scopes
+                setTimeout(() => {
+                    const start = this.inputConfig ? (this.getInputConfigValue('start', this.inputConfig) || this.inputConfig['$start']) : null;
+                    const end = this.inputConfig ? (this.getInputConfigValue('end', this.inputConfig) || this.inputConfig['$end']) : null;
+                    // Only fetch if time range is available
+                    if (start && end) {
+                        fetchScopes();
+                    }
+                }, 500); // Small delay to ensure time range is set up
+            }
+        }
+        
         // Refresh button
         if (refreshButton) {
             refreshButton.addEventListener('click', async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                // Update inputJson from toolbar
-                const intervalInput = document.getElementById(this.getInstanceId('toolbar-interval'));
-                
-                if (intervalInput && intervalInput.value) {
-                    this.inputConfig['$interval'] = intervalInput.value.trim();
+                // Update inputConfig from all input fields before refreshing
+                // Cell value
+                const cellInput = document.getElementById(this.getInstanceId('toolbar-cell'));
+                if (cellInput && cellInput.value) {
+                    this.setInputConfigValue('Cell', cellInput.value.trim(), ['$cell']);
                 }
+                
+                // Substrate value
+                const substrateSelect = document.getElementById(this.getInstanceId('toolbar-substrate'));
+                if (substrateSelect && substrateSelect.value) {
+                    this.setInputConfigValue('Substrate', substrateSelect.value, ['$substrate']);
+                }
+                
+                // HF Instance value
+                const hfInstanceSelect = document.getElementById(this.getInstanceId('toolbar-hfinstance'));
+                if (hfInstanceSelect && hfInstanceSelect.value) {
+                    this.setInputConfigValue('HFInstance', hfInstanceSelect.value, ['$fi', '$hfInstance']);
+                }
+                
+                // Domain value
+                const domainSelect = document.getElementById(this.getInstanceId('toolbar-domain'));
+                if (domainSelect && domainSelect.value) {
+                    this.setInputConfigValue('Domain', domainSelect.value, ['$fd', '$domain']);
+                }
+                
+                // Span/Interval value
+                const intervalInput = document.getElementById(this.getInstanceId('toolbar-interval'));
+                if (intervalInput && intervalInput.value) {
+                    this.setInputConfigValue('Span', intervalInput.value.trim(), ['$interval']);
+                }
+                
+                // Time range - ensure current values are in inputConfig
+                const startValue = this.getInputConfigValue('Start', this.inputConfig) || this.getInputConfigValue('start', this.inputConfig) || this.inputConfig?.['$start'];
+                const endValue = this.getInputConfigValue('End', this.inputConfig) || this.getInputConfigValue('end', this.inputConfig) || this.inputConfig?.['$end'];
+                if (startValue && endValue) {
+                    // Ensure time range is in inputConfig (applyTimeRange should have already done this, but double-check)
+                    this.setInputConfigValue('Start', startValue, ['$start']);
+                    this.setInputConfigValue('End', endValue, ['$end']);
+                }
+                
                 // Aggregation is already in inputConfig from button click handler
                 
                 // Preserve currently loaded expert views before refresh
@@ -2362,10 +2905,12 @@
         }
         
         // Update time range display on init
-        if (this.inputConfig && this.inputConfig['$start'] && this.inputConfig['$end']) {
+        const startValue = this.getInputConfigValue('Start', this.inputConfig) || this.getInputConfigValue('start', this.inputConfig) || this.inputConfig?.['$start'];
+        const endValue = this.getInputConfigValue('End', this.inputConfig) || this.getInputConfigValue('end', this.inputConfig) || this.inputConfig?.['$end'];
+        if (this.inputConfig && startValue && endValue) {
             const timeRangeDisplay = document.getElementById(this.getInstanceId('time-range-display'));
             if (timeRangeDisplay) {
-                timeRangeDisplay.textContent = formatTimeRangeDisplay(this.inputConfig['$start'], this.inputConfig['$end'], isCustomRangeSelected);
+                timeRangeDisplay.textContent = formatTimeRangeDisplay(startValue, endValue, isCustomRangeSelected);
             }
         }
         
@@ -2780,9 +3325,12 @@
         // Get panel overrides from the overrides object
         const panelOverrides = overrides && overrides.panels ? overrides.panels : null;
         
-        // Convert panels
-        if (externalConfig.panels && Array.isArray(externalConfig.panels)) {
-            converted.panels = externalConfig.panels.map(panel => {
+        /**
+         * Recursively convert a single panel (handles nested panels)
+         * @param {Object} panel - Panel to convert
+         * @returns {Object} Converted panel
+         */
+        const convertPanel = (panel) => {
                 const convertedPanel = {};
                 
                 // Basic panel properties
@@ -2797,9 +3345,12 @@
                 if (panel.lines !== undefined) convertedPanel.lines = panel.lines;
                 
                 // Targets/queries - add timestamp prefix to refId to prevent collisions
+                // Preserve all target properties including datasource, datasourceType, etc.
                 if (panel.targets !== undefined) {
                     convertedPanel.targets = panel.targets.map(target => {
-                        const convertedTarget = { ...target };
+                        // Copy all target properties to preserve everything (including datasource, datasourceType, type, etc.)
+                        const convertedTarget = Object.assign({}, target);
+                        // Update refId with timestamp prefix
                         if (target.refId !== undefined && target.refId !== null) {
                             convertedTarget.refId = `${timestampPrefix}_${target.refId}`;
                         } else {
@@ -2861,13 +3412,22 @@
                 if (panel.maxDataPoints !== undefined) convertedPanel.maxDataPoints = panel.maxDataPoints;
                 if (panel.interval !== undefined) convertedPanel.interval = panel.interval;
                 
+                // Preserve nested panels recursively - use convertPanel function recursively
+                if (panel.panels && Array.isArray(panel.panels) && panel.panels.length > 0) {
+                    convertedPanel.panels = panel.panels.map(nestedPanel => convertPanel(nestedPanel));
+                }
+                
                 // Apply overrides if provided
                 if (panelOverrides) {
                     return this.deepMerge(convertedPanel, panelOverrides);
                 }
                 
                 return convertedPanel;
-            });
+        };
+        
+        // Convert panels using the recursive helper function
+        if (externalConfig.panels && Array.isArray(externalConfig.panels)) {
+            converted.panels = externalConfig.panels.map(panel => convertPanel(panel));
         }
         
         return converted;
@@ -3461,7 +4021,10 @@
         }
         
         // Flatten panels from expert config
-        const expertPanels = this.flattenPanels(expertConfig.panels || []);
+        let expertPanels = this.flattenPanels(expertConfig.panels || []);
+        
+        // Resolve any overlapping panels
+        expertPanels = this.resolveOverlappingPanels(expertPanels);
         
         // Calculate Y offset to place expert panels below existing panels
         const yOffset = this.getMaxBottomY();
@@ -3690,7 +4253,8 @@
             if (panelElement) {
                 const gridPos = panel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
                 panelElement.style.gridColumn = `${gridPos.x + 1} / ${gridPos.x + gridPos.w + 1}`;
-                panelElement.style.gridRow = `${gridPos.y + 1} / ${gridPos.y + gridPos.h + 1}`;
+                // Use setPanelPosition to ensure controls row offset is applied
+                this.setPanelPosition(panel, panelElement, gridPos.y, gridPos.h, false);
             }
         });
     }
@@ -3783,9 +4347,12 @@
         if (gridRow && gridRow.includes('/')) {
             const match = gridRow.match(/(\d+)\s*\/\s*(\d+)/);
             if (match) {
-                y = parseInt(match[1]) - 1; // Convert to 0-based
+                const gridRowStart = parseInt(match[1]);
+                // Account for controls row offset (modularized for future changes)
+                const offset = this.getControlsRowOffset();
+                y = gridRowStart - offset; // Subtract offset to get logical Y position (0-based)
                 const end = parseInt(match[2]);
-                height = end - parseInt(match[1]);
+                height = end - gridRowStart;
             }
         }
         
@@ -3802,7 +4369,9 @@
      */
     setPanelPosition(panel, panelDiv, y, height, skipDOMUpdate = false) {
         if (!skipDOMUpdate) {
-            const gridRowValue = `${y + 1} / ${y + 1 + height}`;
+            // Get offset for controls row (modularized for future changes)
+            const offset = this.getControlsRowOffset();
+            const gridRowValue = `${y + offset} / ${y + offset + height}`;
             panelDiv.style.gridRow = gridRowValue;
             panelDiv.style.setProperty('grid-row', gridRowValue, 'important');
         }
@@ -4003,6 +4572,57 @@
     }
     
     /**
+     * Get the controls row height in grid units
+     * This is modularized so it can be easily adjusted when more input fields are added
+     * First tries to get the actual height from DOM, falls back to default if not found
+     * @returns {number} Height of controls row in grid units
+     */
+    getControlsRowHeight() {
+        const controlsRow = document.getElementById(this.getInstanceId('controls-row'));
+        if (controlsRow) {
+            // Get the grid-row value to determine how many rows it spans
+            const gridRow = controlsRow.style.gridRow || window.getComputedStyle(controlsRow).gridRow;
+            if (gridRow && gridRow.includes('/')) {
+                const match = gridRow.match(/(\d+)\s*\/\s*(\d+)/);
+                if (match) {
+                    const start = parseInt(match[1]);
+                    const end = parseInt(match[2]);
+                    return end - start; // Return height in grid units
+                }
+            }
+        }
+        // Fallback to default height (modularized method)
+        return this.getDefaultControlsRowHeight();
+    }
+    
+    /**
+     * Get the offset needed for panels to account for controls row
+     * This includes: controls row height + 1 for 1-based grid indexing
+     * @returns {number} Total offset needed (controls row height + 1)
+     */
+    getControlsRowOffset() {
+        return this.getControlsRowHeight() + 1; // +1 for 1-based grid rows
+    }
+    
+    /**
+     * Ensure controls row stays in place at the top of the grid
+     * Call this after any operation that might affect panel positions
+     */
+    ensureControlsRowPosition() {
+        const controlsRow = document.getElementById(this.getInstanceId('controls-row'));
+        if (controlsRow) {
+            // Ensure controls row is positioned correctly
+            controlsRow.style.gridColumn = '1 / -1';
+            const controlsRowHeight = this.getControlsRowHeight();
+            controlsRow.style.gridRow = `1 / ${1 + controlsRowHeight}`;
+            // Ensure it's not treated as a panel
+            if (!controlsRow.hasAttribute('data-controls-row')) {
+                controlsRow.setAttribute('data-controls-row', 'true');
+            }
+        }
+    }
+    
+    /**
      * Recalculate all Y positions from top to bottom (unified function)
      * This ensures consistent positioning regardless of how collapse/expand was triggered
      * @param {boolean} skipDOMUpdate - If true, only update panel objects, not DOM
@@ -4015,7 +4635,9 @@
         }
         
         // Get all panels with their current positions from DOM
-        const allPanelDivs = Array.from(grid.querySelectorAll('.genie-dashboard-panel'));
+        // Exclude controls row by ensuring we only get elements with .genie-dashboard-panel class
+        const allPanelDivs = Array.from(grid.querySelectorAll('.genie-dashboard-panel'))
+            .filter(div => !div.classList.contains('genie-dashboard-controls-row') && !div.hasAttribute('data-controls-row'));
         const panelsWithY = [];
         
         allPanelDivs.forEach((panelDiv) => {
@@ -4032,12 +4654,19 @@
         panelsWithY.sort((a, b) => a.currentY - b.currentY);
         
         // Recalculate Y positions from top to bottom
+        // Note: setPanelPosition will add the controls row offset automatically
+        // So we start from 0 (logical position), which becomes the correct grid row after offset
         let newY = 0;
         panelsWithY.forEach(({ panel, panelDiv, height }) => {
             const effectiveHeight = this.getPanelEffectiveHeight(panel, panelDiv, height);
             this.setPanelPosition(panel, panelDiv, newY, effectiveHeight, skipDOMUpdate);
             newY += effectiveHeight;
         });
+        
+        // Ensure controls row stays in place after recalculation
+        if (!skipDOMUpdate) {
+            this.ensureControlsRowPosition();
+        }
         
         return panelsWithY.length;
     }
@@ -4154,6 +4783,8 @@
         // Skip if we're doing batch recalculation
         if (!this._skipPositionRecalculation) {
             this.recalculateYPositionsAfterCollapse(foundIndex, wasCollapsed);
+            // Ensure controls row stays in place after collapse/expand
+            this.ensureControlsRowPosition();
         }
     }
     
@@ -4334,8 +4965,9 @@
         // Set grid position
         const gridPos = panel.gridPos || { x: 0, y: 0, w: 12, h: 8 };
         panelDiv.style.gridColumn = `${gridPos.x + 1} / ${gridPos.x + gridPos.w + 1}`;
-        // Set both row start and row end to span exactly gridPos.h rows
-        panelDiv.style.gridRow = `${gridPos.y + 1} / ${gridPos.y + gridPos.h + 1}`;
+        // Offset Y position to account for controls row at the top (modularized for future changes)
+        const offset = this.getControlsRowOffset();
+        panelDiv.style.gridRow = `${gridPos.y + offset} / ${gridPos.y + offset + gridPos.h}`;
         
         // Ensure panel doesn't have height constraints that would clip content
         // Remove any min-height to allow panels to shrink based on gridPos.h
@@ -5047,8 +5679,8 @@
         let startTimestamp = null;
         let endTimestamp = null;
         if (this.inputConfig) {
-            startTimestamp = this.inputConfig.$start;
-            endTimestamp = this.inputConfig.$end;
+            startTimestamp = this.getInputConfigValue('Start', this.inputConfig) || this.getInputConfigValue('start', this.inputConfig) || this.inputConfig.$start;
+            endTimestamp = this.getInputConfigValue('End', this.inputConfig) || this.getInputConfigValue('end', this.inputConfig) || this.inputConfig.$end;
             if (previousOffset > 0 && startTimestamp && endTimestamp) {
                 startTimestamp = startTimestamp - previousOffset;
                 endTimestamp = endTimestamp - previousOffset;
@@ -5067,7 +5699,8 @@
             try {
                 const query = target.rawSql || target.expr || target.query || '';
                 const processedQuery = this.processQuery(query, previousOffset);
-                const endpoint = this.getEndpointForTarget(target);
+                const endpoint = this.getEndpointForTarget(target, panel);
+                console.log(`[fetchPanelData] Endpoint returned for target ${target.refId}:`, endpoint);
                 
                 if (!endpoint) {
                     console.warn(`GenieDashboard: No endpoint found for target:`, target);
@@ -5078,9 +5711,34 @@
                     };
                 }
                 
-                // Get datasource from target or dashboard config
-                const datasource = target.datasource || this.dashboardConfig.datasource;
-                const dsType = typeof datasource === 'string' ? datasource : (datasource ? datasource.type : null);
+                // Get datasource type using the same logic as getEndpointForTarget
+                // This ensures we use panel.datasource.type when available
+                let dsType = null;
+                if (target.datasourceType) {
+                    dsType = target.datasourceType;
+                } else if (target.datasource) {
+                    if (typeof target.datasource === 'string') {
+                        dsType = target.datasource;
+                    } else if (target.datasource && typeof target.datasource === 'object' && target.datasource.type) {
+                        dsType = target.datasource.type;
+                    }
+                } else if (panel && panel.datasource) {
+                    // Use panel-level datasource (PRIMARY SOURCE)
+                    if (typeof panel.datasource === 'string') {
+                        dsType = panel.datasource;
+                    } else if (panel.datasource && typeof panel.datasource === 'object' && panel.datasource.type) {
+                        dsType = panel.datasource.type;
+                    }
+                } else if (this.dashboardConfig && this.dashboardConfig.datasource) {
+                    const dashboardDs = this.dashboardConfig.datasource;
+                    if (typeof dashboardDs === 'string') {
+                        dsType = dashboardDs;
+                    } else if (dashboardDs && typeof dashboardDs === 'object' && dashboardDs.type) {
+                        dsType = dashboardDs.type;
+                    }
+                }
+                
+                console.log(`[fetchPanelData] Datasource type for target ${target.refId}:`, dsType);
                 
                 const response = await this.fetchData(endpoint, processedQuery, startTimestamp, endTimestamp, refId, previousDuration, dsType);
                 
@@ -5182,6 +5840,215 @@
     }
     
     /**
+     * Validate inputConfig format and log errors if invalid
+     * @param {Object} config - Input config object to validate
+     * @returns {boolean} True if valid, false otherwise
+     */
+    validateInputConfig(config) {
+        if (!config) return true; // Empty config is valid
+        
+        if (typeof config !== 'object' || Array.isArray(config)) {
+            console.error('GenieDashboard: Invalid inputConfig format - must be an object, got:', typeof config);
+            return false;
+        }
+        
+        // Check each field in config
+        for (const key in config) {
+            if (config.hasOwnProperty(key)) {
+                const value = config[key];
+                
+                // Skip special keys like datasource endpoints
+                if (key.startsWith('$') && typeof value !== 'object') {
+                    // Old format: { "$cell": "value" } - valid
+                    continue;
+                }
+                
+                // Check if it's new format: { "Cell": { "value": "...", "placeholders": [...] } }
+                if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                    // Should have 'value' property
+                    if (!('value' in value)) {
+                        console.warn(`GenieDashboard: Invalid inputConfig format for field '${key}' - object should have 'value' property`);
+                        // Don't return false, just warn - might be a datasource config
+                    }
+                    
+                    // If it has 'value', check if 'placeholders' is an array if present
+                    if ('value' in value && 'placeholders' in value && !Array.isArray(value.placeholders)) {
+                        console.error(`GenieDashboard: Invalid inputConfig format for field '${key}' - 'placeholders' must be an array`);
+                        return false;
+                    }
+                }
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Get value from inputConfig supporting both old and new formats
+     * Old format: { "$cell": "usa12" }
+     * New format: { "cell": { "value": "usa12", "placeholders": ["$cell", "$cellkey"] } }
+     * @param {string} fieldName - Field name (e.g., "cell", "substrate")
+     * @param {Object} config - Input config object
+     * @returns {*} The value if found, undefined otherwise
+     */
+    getInputConfigValue(fieldName, config) {
+        if (!config) return undefined;
+        
+        try {
+            // Check new format first: { "Cell": { "value": "...", "placeholders": [...] } }
+            if (config[fieldName] && typeof config[fieldName] === 'object' && config[fieldName] !== null && !Array.isArray(config[fieldName])) {
+                if ('value' in config[fieldName]) {
+                    return config[fieldName].value;
+                }
+            }
+            
+            // Check old lowercase format for backward compatibility: { "cell": { "value": "..." } }
+            const lowerFieldName = fieldName.charAt(0).toLowerCase() + fieldName.slice(1);
+            if (lowerFieldName !== fieldName && config[lowerFieldName] && typeof config[lowerFieldName] === 'object' && config[lowerFieldName] !== null && !Array.isArray(config[lowerFieldName])) {
+                if ('value' in config[lowerFieldName]) {
+                    return config[lowerFieldName].value;
+                }
+            }
+            
+            // Check old format: { "$cell": "..." }
+            const oldFormatKey = '$' + lowerFieldName;
+            if (config[oldFormatKey] !== undefined) {
+                return config[oldFormatKey];
+            }
+            
+            // Also check with capitalized field name
+            const oldFormatKeyCap = '$' + fieldName;
+            if (config[oldFormatKeyCap] !== undefined) {
+                return config[oldFormatKeyCap];
+            }
+            
+            // Special case for "Aggregate" field - also check old shortened format "$agg"
+            if (fieldName === 'Aggregate' || lowerFieldName === 'aggregate') {
+                if (config['$agg'] !== undefined) {
+                    return config['$agg'];
+                }
+            }
+        } catch (error) {
+            console.error(`GenieDashboard: Error reading inputConfig field '${fieldName}':`, error);
+            return undefined;
+        }
+        
+        return undefined;
+    }
+    
+    /**
+     * Set value in inputConfig using new format
+     * Creates new format structure if it doesn't exist, or updates existing value
+     * Also maintains old format for backward compatibility
+     * @param {string} fieldName - Field name (e.g., "Cell", "Substrate")
+     * @param {*} value - Value to set
+     * @param {Array<string>} placeholders - Array of placeholder strings (optional, only used if creating new format)
+     */
+    setInputConfigValue(fieldName, value, placeholders = null) {
+        try {
+            if (!this.inputConfig) {
+                this.inputConfig = {};
+            }
+            
+            if (!fieldName || typeof fieldName !== 'string') {
+                console.error('GenieDashboard: setInputConfigValue - invalid fieldName:', fieldName);
+                return;
+            }
+            
+            // Get lowercase version for old format compatibility
+            const lowerFieldName = fieldName.charAt(0).toLowerCase() + fieldName.slice(1);
+            
+            // Validate placeholders if provided
+            if (placeholders !== null && !Array.isArray(placeholders)) {
+                console.warn(`GenieDashboard: setInputConfigValue - placeholders for '${fieldName}' must be an array, got:`, typeof placeholders);
+                placeholders = null;
+            }
+            
+            // Update or create new format
+            if (!this.inputConfig[fieldName] || typeof this.inputConfig[fieldName] !== 'object' || Array.isArray(this.inputConfig[fieldName])) {
+                // Create new format structure
+                this.inputConfig[fieldName] = {
+                    value: value,
+                    placeholders: placeholders || ['$' + lowerFieldName]
+                };
+            } else {
+                // Update existing new format
+                this.inputConfig[fieldName].value = value;
+                // Preserve existing placeholders if not provided
+                if (placeholders && (!this.inputConfig[fieldName].placeholders || !Array.isArray(this.inputConfig[fieldName].placeholders))) {
+                    this.inputConfig[fieldName].placeholders = placeholders;
+                }
+            }
+            
+            // Also maintain old format for backward compatibility (use lowercase)
+            const oldFormatKey = '$' + lowerFieldName;
+            this.inputConfig[oldFormatKey] = value;
+        } catch (error) {
+            console.error(`GenieDashboard: Error in setInputConfigValue for field '${fieldName}':`, error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Get all placeholder mappings from inputConfig
+     * Returns a map of placeholder -> value for all fields
+     * Supports both old and new formats
+     * @param {Object} config - Input config object
+     * @returns {Map} Map of placeholder string to value
+     */
+    getPlaceholderMappings(config) {
+        const mappings = new Map();
+        
+        if (!config) return mappings;
+        
+        try {
+            // Process new format: { "Cell": { "value": "...", "placeholders": ["$cell", "$cellkey"] } }
+            Object.keys(config).forEach(key => {
+                try {
+                    const fieldConfig = config[key];
+                    // Skip old format keys (starting with $)
+                    if (key.startsWith('$')) return;
+                    
+                    if (fieldConfig && typeof fieldConfig === 'object' && fieldConfig !== null && !Array.isArray(fieldConfig)) {
+                        if ('value' in fieldConfig) {
+                            const value = fieldConfig.value;
+                            const placeholders = Array.isArray(fieldConfig.placeholders) ? fieldConfig.placeholders : [];
+                            
+                            // Add mappings for all placeholders
+                            placeholders.forEach(placeholder => {
+                                if (placeholder && typeof placeholder === 'string') {
+                                    mappings.set(placeholder, value);
+                                }
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`GenieDashboard: Error processing field '${key}' in getPlaceholderMappings:`, error);
+                }
+            });
+            
+            // Process old format: { "$cell": "..." } - for backward compatibility
+            Object.keys(config).forEach(key => {
+                try {
+                    if (key.startsWith('$') && !mappings.has(key)) {
+                        // Only add if not already in mappings (new format takes precedence)
+                        const value = config[key];
+                        if (value !== undefined && value !== null) {
+                            mappings.set(key, value);
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`GenieDashboard: Error processing old format key '${key}' in getPlaceholderMappings:`, error);
+                }
+            });
+        } catch (error) {
+            console.error('GenieDashboard: Error in getPlaceholderMappings:', error);
+        }
+        
+        return mappings;
+    }
+    
+    /**
      * Process query string by replacing placeholders
      */
     processQuery(query, previousOffset = 0) {
@@ -5192,36 +6059,71 @@
         let processed = query;
         
         // Create a copy of inputConfig with adjusted times if previousOffset is provided
-        const config = this.inputConfig ? { ...this.inputConfig } : {};
-        if (previousOffset > 0 && config.$start && config.$end) {
-            config.$start = config.$start - previousOffset;
-            config.$end = config.$end - previousOffset;
+        // Use shallow copy with spread operator to avoid JSON serialization issues
+        let config = {};
+        try {
+            if (this.inputConfig) {
+                if (typeof this.inputConfig !== 'object' || Array.isArray(this.inputConfig)) {
+                    console.error('GenieDashboard: processQuery - inputConfig must be an object, got:', typeof this.inputConfig);
+                    return query; // Return original query if config is invalid
+                }
+                config = { ...this.inputConfig };
+            }
+        } catch (error) {
+            console.error('GenieDashboard: processQuery - Error copying inputConfig:', error);
+            return query; // Return original query if copy fails
         }
         
-        // Replace $variables from config
-        // Process in order: longer variable names first to avoid partial replacements
-        // (e.g., $substrate should be replaced before $sub if both exist)
-        const sortedKeys = Object.keys(config)
-            .filter(key => key.startsWith('$'))
-            .sort((a, b) => b.length - a.length); // Sort by length descending
+        if (previousOffset > 0) {
+            try {
+                // Handle time fields with new format support
+                const startValue = this.getInputConfigValue('Start', config) || this.getInputConfigValue('start', config);
+                const endValue = this.getInputConfigValue('End', config) || this.getInputConfigValue('end', config);
+                if (startValue && endValue) {
+                    // Update in new format if it exists
+                    if (config.Start && typeof config.Start === 'object' && !Array.isArray(config.Start)) {
+                        config.Start = { ...config.Start, value: startValue - previousOffset };
+                    } else if (config.start && typeof config.start === 'object' && !Array.isArray(config.start)) {
+                        config.start = { ...config.start, value: startValue - previousOffset };
+                    }
+                    // Update in old format for backward compatibility
+                    config.$start = startValue - previousOffset;
+                    config.$end = endValue - previousOffset;
+                } else if (config.$start && config.$end) {
+                    // Old format only
+                    config.$start = config.$start - previousOffset;
+                    config.$end = config.$end - previousOffset;
+                }
+            } catch (error) {
+                console.error('GenieDashboard: processQuery - Error adjusting time offsets:', error);
+                // Continue with unadjusted config
+            }
+        }
         
-        for (const key of sortedKeys) {
-            const value = config[key];
+        // Get all placeholder mappings (supports both old and new formats)
+        const placeholderMappings = this.getPlaceholderMappings(config);
+        
+        // Sort placeholders by length (longest first) to avoid partial replacements
+        // (e.g., $substrate should be replaced before $sub if both exist)
+        const sortedPlaceholders = Array.from(placeholderMappings.keys())
+            .sort((a, b) => b.length - a.length);
+        
+        for (const placeholder of sortedPlaceholders) {
+            const value = placeholderMappings.get(placeholder);
             if (value !== undefined && value !== null) {
                 // Convert value to string for replacement
                 // For timestamps (numbers), keep as number in string form
                 const stringValue = String(value);
                 
-                // Escape special regex characters in the key
-                // Since key starts with $, we need to escape $ and other special chars
-                // The replace function escapes all special regex chars including $
-                const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                // Escape special regex characters in the placeholder
+                // Since placeholder starts with $, we need to escape $ and other special chars
+                const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 
-                // Create regex that matches the variable name exactly
+                // Create regex that matches the placeholder exactly
                 // Need to match: $variable followed by non-word character (:, }, #, -, etc.) or end of string
                 // Use negative lookahead to ensure we don't match partial variable names
                 // Match $variable not followed by alphanumeric, underscore, or $
-                const regex = new RegExp(escapedKey + '(?![a-zA-Z0-9_$])', 'g');
+                const regex = new RegExp(escapedPlaceholder + '(?![a-zA-Z0-9_$])', 'g');
                 processed = processed.replace(regex, stringValue);
             }
         }
@@ -5235,10 +6137,11 @@
         if (processed !== query) {
             console.log('processQuery - Original:', query);
             console.log('processQuery - Processed:', processed);
-            console.log('processQuery - Variables replaced:', sortedKeys.filter(k => query.includes(k)));
+            console.log('processQuery - Variables replaced:', sortedPlaceholders.filter(k => query.includes(k)));
         } else if (query && query.includes('$')) {
             console.warn('processQuery - No replacements made for query containing $:', query);
-            console.warn('processQuery - Available config keys:', Object.keys(config).filter(k => k.startsWith('$')));
+            const availablePlaceholders = Array.from(placeholderMappings.keys());
+            console.warn('processQuery - Available placeholders:', availablePlaceholders);
         }
         
         return processed;
@@ -5246,18 +6149,125 @@
     
     /**
      * Get endpoint URL for a target based on datasource type
+     * @param {Object} target - Target/query object
+     * @param {Object} panel - Optional panel object to check panel-level datasource
      */
-    getEndpointForTarget(target) {
-        const datasource = target.datasource || this.dashboardConfig.datasource;
-        const dsType = typeof datasource === 'string' ? datasource : datasource.type;
+    getEndpointForTarget(target, panel = null) {
+        // Try multiple ways to get datasource type (in order of priority):
+        // 1. target.datasourceType (explicit type property on target - highest priority for target-specific override)
+        // 2. target.datasource.type or target.datasource (if target has its own datasource)
+        // 3. panel.datasource.type or panel.datasource (panel-level datasource - PRIMARY SOURCE for panel targets)
+        // 4. dashboardConfig.datasource (dashboard-level default - fallback only)
+        // Note: target.type is NEVER used as it's the query type (timeserie, table, etc.), not datasource type
+        let dsType = null;
         
-        // Get endpoint from inputConfig based on datasource type
-        const endpoint = this.inputConfig[dsType];
+        // Priority 1: Target-specific datasource type override
+        if (target.datasourceType) {
+            dsType = target.datasourceType;
+            console.log('GenieDashboard: Using target.datasourceType:', dsType);
+        }
+        // Priority 2: Target-level datasource (if target has its own datasource)
+        else if (target.datasource) {
+            if (typeof target.datasource === 'string') {
+                dsType = target.datasource;
+                console.log('GenieDashboard: Using target.datasource (string):', dsType);
+            } else if (target.datasource && typeof target.datasource === 'object' && target.datasource.type) {
+                dsType = target.datasource.type;
+                console.log('GenieDashboard: Using target.datasource.type:', dsType);
+            }
+        }
+        // Priority 3: Panel-level datasource (PRIMARY SOURCE - should be used for most cases)
+        else if (panel && panel.datasource) {
+            if (typeof panel.datasource === 'string') {
+                dsType = panel.datasource;
+                console.log('GenieDashboard: Using panel.datasource (string):', dsType);
+            } else if (panel.datasource && typeof panel.datasource === 'object' && panel.datasource.type) {
+                dsType = panel.datasource.type;
+                console.log('GenieDashboard: Using panel.datasource.type:', dsType, 'from panel:', panel.id || panel.title);
+            } else {
+                console.warn('GenieDashboard: panel.datasource exists but type extraction failed:', panel.datasource);
+            }
+        }
+        // Priority 4: Dashboard-level default (fallback only)
+        else if (this.dashboardConfig && this.dashboardConfig.datasource) {
+            const dashboardDs = this.dashboardConfig.datasource;
+            if (typeof dashboardDs === 'string') {
+                dsType = dashboardDs;
+                console.log('GenieDashboard: Using dashboardConfig.datasource (string):', dsType);
+            } else if (dashboardDs && typeof dashboardDs === 'object' && dashboardDs.type) {
+                dsType = dashboardDs.type;
+                console.log('GenieDashboard: Using dashboardConfig.datasource.type:', dsType);
+            }
+        }
         
-        if (!endpoint) {
+        if (!dsType) {
+            console.warn('GenieDashboard: No datasource type found for target:', target);
+            console.warn('GenieDashboard: Target properties:', {
+                datasourceType: target.datasourceType,
+                datasource: target.datasource,
+                type: target.type
+            });
+            if (panel) {
+                console.warn('GenieDashboard: Panel datasource:', panel.datasource);
+            }
+            if (this.dashboardConfig && this.dashboardConfig.datasource) {
+                console.warn('GenieDashboard: Dashboard datasource:', this.dashboardConfig.datasource);
+            }
             return null;
         }
         
+        // Get endpoint from inputConfig based on datasource type
+        // Check both the datasource type directly and also check if it's in the new input config format
+        let endpoint = this.inputConfig[dsType];
+        
+        // If not found, check if it's in the new format (e.g., "Argus": { value: "...", placeholders: [...] })
+        if (!endpoint) {
+            // Try capitalized version
+            const capitalizedType = dsType.charAt(0).toUpperCase() + dsType.slice(1);
+            const configEntry = this.inputConfig[capitalizedType];
+            if (configEntry && typeof configEntry === 'object' && configEntry.value) {
+                endpoint = configEntry.value;
+            }
+        }
+        
+        // If still not found, try lowercase
+        if (!endpoint) {
+            const lowercaseType = dsType.toLowerCase();
+            endpoint = this.inputConfig[lowercaseType];
+        }
+        
+        console.log(`GenieDashboard: Looking up endpoint for datasource type "${dsType}":`, {
+            targetRefId: target.refId,
+            resolvedType: dsType,
+            'inputConfig[argus]': this.inputConfig['argus'],
+            'inputConfig[Argus]': this.inputConfig['Argus'],
+            'inputConfig[ARGUS]': this.inputConfig['ARGUS'],
+            allInputConfigKeys: Object.keys(this.inputConfig || {}),
+            endpointFound: !!endpoint,
+            endpointValue: endpoint
+        });
+        
+        // Log all datasource-related keys in inputConfig
+        const datasourceKeys = Object.keys(this.inputConfig || {}).filter(key => 
+            key.toLowerCase().includes('argus') || 
+            key.toLowerCase().includes('genie') ||
+            key.toLowerCase().includes('datasource')
+        );
+        if (datasourceKeys.length > 0) {
+            console.log('GenieDashboard: Datasource-related keys in inputConfig:', datasourceKeys.map(key => ({
+                key: key,
+                value: this.inputConfig[key]
+            })));
+        }
+        
+        if (!endpoint) {
+            console.warn(`GenieDashboard: No endpoint found in inputConfig for datasource type "${dsType}"`);
+            console.warn('GenieDashboard: Available endpoints in inputConfig:', Object.keys(this.inputConfig || {}));
+            console.warn('GenieDashboard: inputConfig contents:', this.inputConfig);
+            return null;
+        }
+        
+        console.log(`GenieDashboard: Returning endpoint "${endpoint}" for datasource type "${dsType}"`);
         return endpoint;
     }
     
@@ -5447,7 +6457,7 @@
         const aggregationType = aggregationConfig?.type || null; // 'sum' or 'avg'
         // Use panel-specific span aggregation, or fall back to dashboard toolbar defaults
         const spanAggregation = aggregationConfig?.span || this.inputConfig['$interval'] || null; // e.g., '5m', '1h'
-        const spanAggregationType = aggregationConfig?.spanAggregation || this.inputConfig['$agg'] || null; // 'sum', 'avg', 'max', or 'min' for span aggregation
+        const spanAggregationType = aggregationConfig?.spanAggregation || this.getInputConfigValue('Aggregate', this.inputConfig) || null; // 'sum', 'avg', 'max', or 'min' for span aggregation
         
         // Initialize aggregation state
         // If config specifies a default aggregation type, enable it automatically
@@ -11622,7 +12632,7 @@
         
         // Get span aggregation config (can be applied even without aggregation tag)
         const spanAggregation = aggregationConfig?.span || this.inputConfig['$interval'] || null;
-        const spanAggregationType = aggregationConfig?.spanAggregation || this.inputConfig['$agg'] || null;
+        const spanAggregationType = aggregationConfig?.spanAggregation || this.getInputConfigValue('Aggregate', this.inputConfig) || null;
         
         // Apply span aggregation to all series if configured (even without aggregation tag)
         if (spanAggregation && spanAggregationType) {
@@ -13885,7 +14895,9 @@
         }
         
         // Get ALL panels from the grid (including all types: timeseries, stat, etc.)
-        const allPanelDivs = Array.from(grid.querySelectorAll('.genie-dashboard-panel'));
+        // Exclude controls row by ensuring we only get elements with .genie-dashboard-panel class
+        const allPanelDivs = Array.from(grid.querySelectorAll('.genie-dashboard-panel'))
+            .filter(div => !div.classList.contains('genie-dashboard-controls-row') && !div.hasAttribute('data-controls-row'));
         
         // Create a comprehensive list of all panels with their DOM elements
         // First, match panels from this.panels array to their DOM elements
@@ -14092,8 +15104,15 @@
                         panel._isCollapsed = true;
                         
                         // Update grid row to span 1 row when collapsed
-                        panelDiv.style.gridRow = `${currentY + 1} / ${currentY + 2}`;
-                        panelDiv.style.setProperty('grid-row', `${currentY + 1} / ${currentY + 2}`, 'important');
+                        // Use setPanelPosition to ensure controls row offset is applied
+                        if (panel) {
+                            this.setPanelPosition(panel, panelDiv, currentY, 1, false);
+                        } else {
+                            // For panels without panel object, apply offset manually (modularized)
+                            const offset = this.getControlsRowOffset();
+                            panelDiv.style.gridRow = `${currentY + offset} / ${currentY + offset + 1}`;
+                            panelDiv.style.setProperty('grid-row', `${currentY + offset} / ${currentY + offset + 1}`, 'important');
+                        }
                         panelHeight = 1; // Collapsed panels take 1 row
                         
                         console.log(`[Genie] Panel ${item.index} collapsed (max |change|=${item.maxAbsChange.toFixed(2)}% < threshold=${threshold})`);
@@ -14196,12 +15215,18 @@
                 panelHeight = panel.gridPos.h;
             }
             
-            // Update DOM element grid-row style (CSS grid is 1-based)
-            // Place panels consecutively - grid gap will be applied automatically by CSS
-            const gridRowStart = currentY + 1;
-            const gridRowEnd = currentY + 1 + panelHeight;
-            panelDiv.style.gridRow = `${gridRowStart} / ${gridRowEnd}`;
-            panelDiv.style.setProperty('grid-row', `${gridRowStart} / ${gridRowEnd}`, 'important');
+            // Update panel position using setPanelPosition to ensure controls row offset is applied
+            // setPanelPosition will add +2 offset (1 for controls row, 1 for 1-based grid)
+            if (panel) {
+                this.setPanelPosition(panel, panelDiv, currentY, panelHeight, false);
+            } else {
+                // For panels without panel object, set directly but still apply offset (modularized)
+                const offset = this.getControlsRowOffset();
+                const gridRowStart = currentY + offset;
+                const gridRowEnd = currentY + offset + panelHeight;
+                panelDiv.style.gridRow = `${gridRowStart} / ${gridRowEnd}`;
+                panelDiv.style.setProperty('grid-row', `${gridRowStart} / ${gridRowEnd}`, 'important');
+            }
             
             // Set grid column to full width when sorted (one panel per row)
             panelDiv.style.gridColumn = '1 / -1';
@@ -14417,8 +15442,14 @@
                 
                 this._pendingBatchRecalculation = null;
                 
+                // Ensure controls row stays in place before recalculation
+                this.ensureControlsRowPosition();
+                
                 // Use unified recalculation function for consistency
                 const panelCount = this.recalculateAllYPositions(false);
+                
+                // Ensure controls row stays in place after recalculation
+                this.ensureControlsRowPosition();
                 
                 console.log(`[Genie] Updated collapsed states for ${panelsUpdated} panels and recalculated Y positions for all ${panelCount} panels based on threshold ${threshold}`);
             });
@@ -14500,8 +15531,8 @@
                 const panelHeight = isCollapsedNow ? 1 : (panel.gridPos.h || 8);
                 
                 // Update DOM element grid-row style with restored Y position
-                panelDiv.style.gridRow = `${originalY + 1} / ${originalY + 1 + panelHeight}`;
-                panelDiv.style.setProperty('grid-row', `${originalY + 1} / ${originalY + 1 + panelHeight}`, 'important');
+                // Use setPanelPosition to ensure controls row offset is applied
+                this.setPanelPosition(panel, panelDiv, originalY, panelHeight, false);
                 
                 // Update panel references in panelDiv and collapse button for collapse button to work after restore
                 const currentPanelIndex = this.panels.indexOf(panel);
@@ -14545,11 +15576,15 @@
                 const panelHeight = isCollapsedNow ? 1 : (panel.gridPos.h || 8);
                 
                 // Update grid row with restored Y position
-                panelDiv.style.gridRow = `${originalY + 1} / ${originalY + 1 + panelHeight}`;
-                panelDiv.style.setProperty('grid-row', `${originalY + 1} / ${originalY + 1 + panelHeight}`, 'important');
+                // Use setPanelPosition to ensure controls row offset is applied
+                this.setPanelPosition(panel, panelDiv, originalY, panelHeight, false);
+                // setPanelPosition already updates panel.gridPos.y, but ensure it's set
                 panel.gridPos.y = originalY;
             }
         });
+        
+        // Ensure controls row stays in place after restoring panel order
+        this.ensureControlsRowPosition();
         
         // Clear stored original values after restore so they can be stored fresh next time genie is checked
         // This allows the next genie check to store the current (restored) state as the new original
@@ -15556,7 +16591,7 @@
             if (spanTypeSelect) {
                 // If panel doesn't have spanAggregation set, use toolbar value
                 if (!aggregationConfig.spanAggregation && this.inputConfig?.['$agg']) {
-                    spanTypeSelect.value = this.inputConfig['$agg'];
+                    spanTypeSelect.value = this.getInputConfigValue('Aggregate', this.inputConfig) || '';
                 }
             }
             
@@ -15956,7 +16991,7 @@
                                                 }
                                             }
                                             
-                                            const endpoint = this.getEndpointForTarget(currentTarget);
+                                            const endpoint = this.getEndpointForTarget(currentTarget, panel);
                                             
                                             if (!endpoint) {
                                                 dataEl.textContent = 'Error: No endpoint found for target';
@@ -16285,10 +17320,10 @@
             // Update aggregation button display
                     if (this.inputConfig) {
                 if (aggSpanType) {
-                        this.inputConfig['$agg'] = aggSpanType;
+                        this.setInputConfigValue('Aggregate', aggSpanType, ['$agg']);
                 } else {
                     // Clear aggregation
-                        this.inputConfig['$agg'] = '';
+                        this.setInputConfigValue('Aggregate', '', ['$agg']);
                     }
                 }
             // Update button display if it exists
