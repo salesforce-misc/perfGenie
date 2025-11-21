@@ -1634,20 +1634,20 @@
         controlsRow.appendChild(domainSelect);
         
         // Span label and input
-        const intervalLabel = document.createElement('label');
-        intervalLabel.className = 'genie-toolbar-label';
-        intervalLabel.setAttribute('for', 'genie-toolbar-interval');
-        intervalLabel.textContent = 'Span:';
+            const intervalLabel = document.createElement('label');
+            intervalLabel.className = 'genie-toolbar-label';
+            intervalLabel.setAttribute('for', 'genie-toolbar-interval');
+            intervalLabel.textContent = 'Span:';
         intervalLabel.style.cssText = 'font-size: 11px; color: #6b7280; height: 24px; display: flex; align-items: center; white-space: nowrap;';
-        
-        const intervalInput = document.createElement('input');
-        intervalInput.type = 'text';
-        intervalInput.id = this.getInstanceId('toolbar-interval');
-        intervalInput.className = 'genie-toolbar-input';
+            
+            const intervalInput = document.createElement('input');
+            intervalInput.type = 'text';
+            intervalInput.id = this.getInstanceId('toolbar-interval');
+            intervalInput.className = 'genie-toolbar-input';
         intervalInput.value = this.getInputConfigValue('Span', this.inputConfig) || '1m';
-        intervalInput.placeholder = 'e.g., 1m, 5m, 1h';
+            intervalInput.placeholder = 'e.g., 1m, 5m, 1h';
         intervalInput.style.cssText = 'width: 50px; height: 24px; font-size: 11px; padding: 2px 4px; margin-right: 4px;';
-        
+            
         controlsRow.appendChild(intervalLabel);
         controlsRow.appendChild(intervalInput);
         
@@ -1661,131 +1661,131 @@
             aggLabel.textContent = 'Aggregation:';
             aggLabel.style.cssText = 'font-size: 11px; color: #6b7280; height: 24px; display: flex; align-items: center; white-space: nowrap;';
             
-            // Create container for aggregation button and dropdown menu
-            const aggContainer = document.createElement('div');
-            aggContainer.style.cssText = 'position: relative; display: inline-block; margin-left: 2px;';
-            
-            // Aggregation button
-            const aggButton = document.createElement('button');
-            aggButton.type = 'button';
-            aggButton.className = 'genie-dashboard-tab';
-            aggButton.id = this.getInstanceId('toolbar-agg-button');
-            aggButton.setAttribute('aria-label', 'Aggregation');
+                // Create container for aggregation button and dropdown menu
+                const aggContainer = document.createElement('div');
+                aggContainer.style.cssText = 'position: relative; display: inline-block; margin-left: 2px;';
+                
+                // Aggregation button
+                const aggButton = document.createElement('button');
+                aggButton.type = 'button';
+                aggButton.className = 'genie-dashboard-tab';
+                aggButton.id = this.getInstanceId('toolbar-agg-button');
+                aggButton.setAttribute('aria-label', 'Aggregation');
             aggButton.style.cssText = 'display: flex; align-items: center; padding: 2px 6px; font-size: 11px; color: #6b7280; background: transparent; border: 1px solid #d1d5db; border-radius: 3px; cursor: pointer; font-weight: 500; min-width: 45px; height: 24px;';
-            
-            // Update button display based on selected aggregation
-            const updateAggButtonDisplay = () => {
+                
+                // Update button display based on selected aggregation
+                const updateAggButtonDisplay = () => {
                 const currentAggValue = this.getInputConfigValue('Aggregate', this.inputConfig) || '';
-                const aggOptions = {
-                    '': '-- Select --',
-                    'sum': 'Sum',
-                    'avg': 'Avg',
-                    'max': 'Max',
-                    'min': 'Min'
+                    const aggOptions = {
+                        '': '-- Select --',
+                        'sum': 'Sum',
+                        'avg': 'Avg',
+                        'max': 'Max',
+                        'min': 'Min'
+                    };
+                    aggButton.textContent = aggOptions[currentAggValue] || '-- Select --';
+                    
+                    // Keep button in default state (no highlighting after selection)
+                    aggButton.style.background = 'transparent';
+                    aggButton.style.color = '#6b7280';
+                    aggButton.style.borderColor = '#d1d5db';
                 };
-                aggButton.textContent = aggOptions[currentAggValue] || '-- Select --';
                 
-                // Keep button in default state (no highlighting after selection)
-                aggButton.style.background = 'transparent';
-                aggButton.style.color = '#6b7280';
-                aggButton.style.borderColor = '#d1d5db';
-            };
-            
-            updateAggButtonDisplay();
-            aggContainer.appendChild(aggButton);
-            
-            // Create dropdown menu with options
-            const aggMenu = document.createElement('div');
-            aggMenu.className = 'genie-dashboard-agg-menu';
-            aggMenu.id = this.getInstanceId('agg-menu');
-            aggMenu.style.cssText = 'display: none; position: fixed; background: white; border: 1px solid #d1d5db; border-radius: 4px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); z-index: 10000; min-width: 140px; padding: 4px; max-height: 300px; overflow-y: auto;';
-            document.body.appendChild(aggMenu);
-            
-            // Function to populate aggregation menu
-            const populateAggMenu = () => {
-                aggMenu.innerHTML = '';
-                const aggOptions = [
-                    { value: '', label: '-- Select --' },
-                    { value: 'sum', label: 'Sum' },
-                    { value: 'avg', label: 'Avg' },
-                    { value: 'max', label: 'Max' },
-                    { value: 'min', label: 'Min' }
-                ];
+                updateAggButtonDisplay();
+                aggContainer.appendChild(aggButton);
                 
-                const currentAggValue = this.inputConfig['$agg'] || '';
+                // Create dropdown menu with options
+                const aggMenu = document.createElement('div');
+                aggMenu.className = 'genie-dashboard-agg-menu';
+                aggMenu.id = this.getInstanceId('agg-menu');
+                aggMenu.style.cssText = 'display: none; position: fixed; background: white; border: 1px solid #d1d5db; border-radius: 4px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); z-index: 10000; min-width: 140px; padding: 4px; max-height: 300px; overflow-y: auto;';
+                document.body.appendChild(aggMenu);
                 
-                aggOptions.forEach(option => {
-                    const menuItem = document.createElement('div');
-                    menuItem.className = 'genie-dashboard-agg-menu-item';
-                    menuItem.style.cssText = `padding: 2px 8px; cursor: pointer; display: flex; align-items: center; font-size: 13px; color: ${option.value === currentAggValue ? '#3b82f6' : '#1f2937'}; margin: 0; font-weight: ${option.value === currentAggValue ? '500' : '400'};`;
-                    menuItem.textContent = option.label;
+                // Function to populate aggregation menu
+                const populateAggMenu = () => {
+                    aggMenu.innerHTML = '';
+                    const aggOptions = [
+                        { value: '', label: '-- Select --' },
+                        { value: 'sum', label: 'Sum' },
+                        { value: 'avg', label: 'Avg' },
+                        { value: 'max', label: 'Max' },
+                        { value: 'min', label: 'Min' }
+                    ];
                     
-                    // Highlight selected item
-                    if (option.value === currentAggValue) {
-                        menuItem.style.background = 'rgba(59, 130, 246, 0.1)';
-                    }
+                    const currentAggValue = this.inputConfig['$agg'] || '';
                     
-                    // Hover effect
-                    menuItem.addEventListener('mouseenter', () => {
-                        menuItem.style.background = '#f3f4f6';
-                    });
-                    menuItem.addEventListener('mouseleave', () => {
-                        menuItem.style.background = option.value === currentAggValue ? 'rgba(59, 130, 246, 0.1)' : 'transparent';
-                    });
-                    
-                    // Click handler
-                    menuItem.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        // Update inputConfig
-                        if (this.inputConfig) {
-                            this.setInputConfigValue('Aggregate', option.value || '', ['$agg']);
+                    aggOptions.forEach(option => {
+                        const menuItem = document.createElement('div');
+                        menuItem.className = 'genie-dashboard-agg-menu-item';
+                        menuItem.style.cssText = `padding: 2px 8px; cursor: pointer; display: flex; align-items: center; font-size: 13px; color: ${option.value === currentAggValue ? '#3b82f6' : '#1f2937'}; margin: 0; font-weight: ${option.value === currentAggValue ? '500' : '400'};`;
+                        menuItem.textContent = option.label;
+                        
+                        // Highlight selected item
+                        if (option.value === currentAggValue) {
+                            menuItem.style.background = 'rgba(59, 130, 246, 0.1)';
                         }
-                        // Update button display
-                        updateAggButtonDisplay();
-                        // Close menu
-                        aggMenu.style.display = 'none';
-                        // Trigger change event for any listeners
-                        const changeEvent = new Event('change', { bubbles: true });
-                        aggButton.dispatchEvent(changeEvent);
+                        
+                        // Hover effect
+                        menuItem.addEventListener('mouseenter', () => {
+                            menuItem.style.background = '#f3f4f6';
+                        });
+                        menuItem.addEventListener('mouseleave', () => {
+                            menuItem.style.background = option.value === currentAggValue ? 'rgba(59, 130, 246, 0.1)' : 'transparent';
+                        });
+                        
+                        // Click handler
+                        menuItem.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            // Update inputConfig
+                            if (this.inputConfig) {
+                            this.setInputConfigValue('Aggregate', option.value || '', ['$agg']);
+                            }
+                            // Update button display
+                            updateAggButtonDisplay();
+                            // Close menu
+                            aggMenu.style.display = 'none';
+                            // Trigger change event for any listeners
+                            const changeEvent = new Event('change', { bubbles: true });
+                            aggButton.dispatchEvent(changeEvent);
+                        });
+                        
+                        aggMenu.appendChild(menuItem);
                     });
-                    
-                    aggMenu.appendChild(menuItem);
+                };
+                
+                // Initial population
+                populateAggMenu();
+                
+                // Toggle menu on button click
+                aggButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isVisible = aggMenu.style.display === 'block' || aggMenu.style.display === 'flex';
+                    if (isVisible) {
+                        aggMenu.style.display = 'none';
+                    } else {
+                        // Repopulate menu before showing
+                        populateAggMenu();
+                        // Calculate position relative to button using fixed positioning
+                        const buttonRect = aggButton.getBoundingClientRect();
+                        const menuTop = buttonRect.bottom + window.scrollY + 4; // 4px margin
+                        const menuLeft = buttonRect.left + window.scrollX;
+                        
+                        aggMenu.style.top = menuTop + 'px';
+                        aggMenu.style.left = menuLeft + 'px';
+                        aggMenu.style.display = 'block';
+                    }
                 });
-            };
-            
-            // Initial population
-            populateAggMenu();
-            
-            // Toggle menu on button click
-            aggButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const isVisible = aggMenu.style.display === 'block' || aggMenu.style.display === 'flex';
-                if (isVisible) {
-                    aggMenu.style.display = 'none';
-                } else {
-                    // Repopulate menu before showing
-                    populateAggMenu();
-                    // Calculate position relative to button using fixed positioning
-                    const buttonRect = aggButton.getBoundingClientRect();
-                    const menuTop = buttonRect.bottom + window.scrollY + 4; // 4px margin
-                    const menuLeft = buttonRect.left + window.scrollX;
-                    
-                    aggMenu.style.top = menuTop + 'px';
-                    aggMenu.style.left = menuLeft + 'px';
-                    aggMenu.style.display = 'block';
-                }
-            });
-            
-            // Close menu when clicking outside
-            const closeMenuHandler = (e) => {
-                if (!aggContainer.contains(e.target) && !aggMenu.contains(e.target)) {
-                    aggMenu.style.display = 'none';
-                }
-            };
-            document.addEventListener('click', closeMenuHandler);
-            
+                
+                // Close menu when clicking outside
+                const closeMenuHandler = (e) => {
+                    if (!aggContainer.contains(e.target) && !aggMenu.contains(e.target)) {
+                        aggMenu.style.display = 'none';
+                    }
+                };
+                document.addEventListener('click', closeMenuHandler);
+                
             // Store reference for later use
-            this.aggButton = aggButton;
+                this.aggButton = aggButton;
             
             controlsRow.appendChild(aggLabel);
             controlsRow.appendChild(aggContainer);
@@ -1813,11 +1813,11 @@
             refreshPanelsButton.style.borderColor = '#d1d5db';
         });
         
-        // Click handler - refresh only panel data
+                    // Click handler - refresh only panel data (input fields refresh button)
         refreshPanelsButton.addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            await this.refreshPanelsOnly();
+            await this.refreshPanelsDataOnly();
         });
         
         controlsRow.appendChild(refreshPanelsButton);
@@ -1994,8 +1994,277 @@
                     controlsRow.appendChild(label);
                     controlsRow.appendChild(select);
                     
+                } else if (varType === 'query' && (templateVar.query || templateVar.definition)) {
+                    // Create dropdown for query type - execute query to get options
+                    const label = document.createElement('label');
+                    label.className = 'genie-toolbar-label';
+                    label.setAttribute('for', this.getInstanceId(`toolbar-${varName}`));
+                    label.textContent = `${varLabel}:`;
+                    label.style.cssText = 'font-size: 11px; color: #6b7280; height: 24px; display: flex; align-items: center; white-space: nowrap;';
+                    
+                    const isMulti = templateVar.multi === true;
+                    const includeAll = templateVar.includeAll === true;
+                    
+                    const select = document.createElement('select');
+                    select.id = this.getInstanceId(`toolbar-${varName}`);
+                    select.className = 'genie-toolbar-input';
+                    if (isMulti) {
+                        select.multiple = true;
+                        select.style.cssText = 'width: 150px; height: 24px; font-size: 11px; padding: 2px 4px; margin-right: 4px;';
+                    } else {
+                        select.style.cssText = 'width: 100px; height: 24px; font-size: 11px; padding: 2px 4px; margin-right: 4px;';
+                    }
+                    
+                    // Add loading option initially
+                    const loadingOption = document.createElement('option');
+                    loadingOption.value = '';
+                    loadingOption.textContent = 'Loading...';
+                    select.appendChild(loadingOption);
+                    
+                    // Function to execute query and populate dropdown
+                    const executeTemplatingQuery = async () => {
+                        try {
+                            // Get datasource from templating variable or dashboard config
+                            const datasource = templateVar.datasource || this.dashboardConfig?.datasource;
+                            let dsType = null;
+                            if (datasource) {
+                                if (typeof datasource === 'string') {
+                                    dsType = datasource;
+                                } else if (datasource && typeof datasource === 'object' && datasource.type) {
+                                    dsType = datasource.type;
+                                }
+                            }
+                            
+                            // Get endpoint for this datasource
+                            const endpoint = dsType ? (this.inputConfig?.[dsType] || null) : null;
+                            if (!endpoint) {
+                                console.warn(`GenieDashboard: No endpoint found for templating variable "${varName}" datasource:`, dsType);
+                                select.innerHTML = '';
+                                const emptyOption = document.createElement('option');
+                                emptyOption.value = '';
+                                emptyOption.textContent = '-- No endpoint --';
+                                select.appendChild(emptyOption);
+                                return;
+                            }
+                            
+                            // Process the query (replace placeholders) - use definition if query is not available
+                            const query = templateVar.query || templateVar.definition || '';
+                            const processedQuery = this.processQuery(query, 0);
+                            
+                            // Get time range
+                            const startTimestamp = this.getInputConfigValue('Start', this.inputConfig) || this.getInputConfigValue('start', this.inputConfig) || this.inputConfig?.['$start'];
+                            const endTimestamp = this.getInputConfigValue('End', this.inputConfig) || this.getInputConfigValue('end', this.inputConfig) || this.inputConfig?.['$end'];
+                            
+                            if (!startTimestamp || !endTimestamp) {
+                                console.warn(`GenieDashboard: Time range not available for templating query "${varName}"`);
+                                select.innerHTML = '';
+                                const emptyOption = document.createElement('option');
+                                emptyOption.value = '';
+                                emptyOption.textContent = '-- No time range --';
+                                select.appendChild(emptyOption);
+                                return;
+                            }
+                            
+                            // Execute query
+                            const response = await this.fetchData(endpoint, processedQuery, startTimestamp, endTimestamp, 'templating_' + varName, null, dsType);
+                            
+                            // Parse response to extract options
+                            // Response format depends on datasource - could be array of strings, or object with data array
+                            let options = [];
+                            if (Array.isArray(response)) {
+                                options = response;
+                            } else if (response && Array.isArray(response.data)) {
+                                options = response.data;
+                            } else if (response && Array.isArray(response.values)) {
+                                options = response.values;
+                            } else if (typeof response === 'object' && response.result) {
+                                if (Array.isArray(response.result)) {
+                                    options = response.result;
+                                } else if (Array.isArray(response.result.data)) {
+                                    options = response.result.data;
+                                }
+                            } else if (typeof response === 'string') {
+                                // If response is a string, try to parse it
+                                try {
+                                    const parsed = JSON.parse(response);
+                                    if (Array.isArray(parsed)) {
+                                        options = parsed;
+                                    }
+                                } catch (e) {
+                                    // If not JSON, treat as single value
+                                    options = [response];
+                                }
+                            }
+                            
+                            // Apply regex if specified
+                            if (templateVar.regex && templateVar.regex !== '' && options.length > 0) {
+                                try {
+                                    const regex = new RegExp(templateVar.regex);
+                                    options = options.map(opt => {
+                                        const str = typeof opt === 'string' ? opt : (opt.text || opt.value || String(opt));
+                                        const match = str.match(regex);
+                                        return match && match[1] ? match[1] : str;
+                                    }).filter(opt => opt);
+                                } catch (e) {
+                                    console.warn(`GenieDashboard: Invalid regex for templating variable "${varName}":`, templateVar.regex);
+                                }
+                            }
+                            
+                            // Remove duplicates and sort
+                            options = [...new Set(options)].filter(opt => opt !== null && opt !== undefined && opt !== '');
+                            if (templateVar.sort !== undefined && templateVar.sort !== null) {
+                                // sort: 0 = none, 1 = alphabetical, 2 = numerical, etc.
+                                if (templateVar.sort === 1) {
+                                    options.sort();
+                                } else if (templateVar.sort === 2) {
+                                    options.sort((a, b) => {
+                                        const numA = parseFloat(a);
+                                        const numB = parseFloat(b);
+                                        if (!isNaN(numA) && !isNaN(numB)) {
+                                            return numA - numB;
+                                        }
+                                        return String(a).localeCompare(String(b));
+                                    });
+                                }
+                            } else {
+                                // Default sort
+                                options.sort();
+                            }
+                            
+                            // Clear loading option and populate dropdown
+                            select.innerHTML = '';
+                            
+                            // Add "All" option if includeAll is true
+                            if (includeAll) {
+                                const allOption = document.createElement('option');
+                                allOption.value = '$__all';
+                                allOption.textContent = 'All';
+                                // Check if current value includes $__all
+                                const currentValues = Array.isArray(currentValue) ? currentValue : (currentValue ? [currentValue] : []);
+                                if (currentValues.includes('$__all') || currentValues.includes('All')) {
+                                    allOption.selected = true;
+                                }
+                                select.appendChild(allOption);
+                            }
+                            
+                            // Add empty option if not multi and not includeAll
+                            if (!isMulti && !includeAll) {
+                                const emptyOption = document.createElement('option');
+                                emptyOption.value = '';
+                                emptyOption.textContent = '-- Select --';
+                                select.appendChild(emptyOption);
+                            }
+                            
+                            // Add options
+                            options.forEach(opt => {
+                                const optionEl = document.createElement('option');
+                                const optValue = typeof opt === 'string' ? opt : (opt.value || opt.text || String(opt));
+                                const optText = typeof opt === 'string' ? opt : (opt.text || opt.value || String(opt));
+                                optionEl.value = optValue;
+                                optionEl.textContent = optText;
+                                
+                                // Handle multi-select current values
+                                if (isMulti) {
+                                    const currentValues = Array.isArray(currentValue) ? currentValue : (currentValue ? [currentValue] : []);
+                                    if (currentValues.includes(optValue) || currentValues.includes(optText)) {
+                                        optionEl.selected = true;
+                                    }
+                                } else {
+                                    if (optValue === currentValue || optText === currentValue) {
+                                        optionEl.selected = true;
+                                    }
+                                }
+                                
+                                select.appendChild(optionEl);
+                            });
+                            
+                            // Auto-select if only one option and not multi
+                            if (!isMulti && options.length === 1 && !currentValue && !includeAll) {
+                                select.value = options[0];
+                                this.setInputConfigValue(varLabel, options[0], possiblePlaceholders);
+                            }
+                            
+                            // Set current value if it exists and not already set
+                            if (currentValue && !select.value && !isMulti) {
+                                select.value = currentValue;
+                            }
+                            
+                            console.log(`GenieDashboard: Executed templating query for "${varName}", got ${options.length} options`);
+                        } catch (error) {
+                            console.error(`GenieDashboard: Error executing templating query for "${varName}":`, error);
+                            select.innerHTML = '';
+                            const errorOption = document.createElement('option');
+                            errorOption.value = '';
+                            errorOption.textContent = '-- Error --';
+                            select.appendChild(errorOption);
+                        }
+                    };
+                    
+                    // Store query execution function for refresh (only if refresh: 1)
+                    const shouldRefresh = templateVar.refresh === 1 || templateVar.refresh === true;
+                    if (shouldRefresh) {
+                        if (!this.templatingQueryFunctions) {
+                            this.templatingQueryFunctions = {};
+                        }
+                        this.templatingQueryFunctions[varName] = executeTemplatingQuery;
+                    }
+                    
+                    // Execute query to populate dropdown
+                    executeTemplatingQuery();
+                    
+                    // Initialize value in inputConfig if currentValue exists
+                    if (currentValue) {
+                        const valueToStore = Array.isArray(currentValue) ? currentValue : currentValue;
+                        this.setInputConfigValue(varLabel, valueToStore, possiblePlaceholders);
+                    }
+                    
+                    // Store value in inputConfig when changed
+                    select.addEventListener('change', () => {
+                        let value;
+                        if (isMulti) {
+                            // For multi-select, get all selected values
+                            value = Array.from(select.selectedOptions).map(opt => opt.value);
+                        } else {
+                            value = select.value;
+                        }
+                        this.setInputConfigValue(varLabel, value, possiblePlaceholders);
+                    });
+                    
+                    controlsRow.appendChild(label);
+                    controlsRow.appendChild(select);
+                    
+                } else if (varType === 'textbox') {
+                    // Create text input for textbox type
+                    const label = document.createElement('label');
+                    label.className = 'genie-toolbar-label';
+                    label.setAttribute('for', this.getInstanceId(`toolbar-${varName}`));
+                    label.textContent = `${varLabel}:`;
+                    label.style.cssText = 'font-size: 11px; color: #6b7280; height: 24px; display: flex; align-items: center; white-space: nowrap;';
+                    
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.id = this.getInstanceId(`toolbar-${varName}`);
+                    input.className = 'genie-toolbar-input';
+                    input.value = currentValue;
+                    input.placeholder = templateVar.query || `e.g., ${varName} value`;
+                    input.style.cssText = 'width: 200px; height: 24px; font-size: 11px; padding: 2px 4px; margin-right: 4px;';
+                    
+                    // Initialize value in inputConfig if currentValue exists
+                    if (currentValue) {
+                        this.setInputConfigValue(varLabel, currentValue, possiblePlaceholders);
+                    }
+                    
+                    // Store value in inputConfig when changed
+                    input.addEventListener('blur', () => {
+                        const value = input.value;
+                        this.setInputConfigValue(varLabel, value, possiblePlaceholders);
+                    });
+                    
+                    controlsRow.appendChild(label);
+                    controlsRow.appendChild(input);
+                    
                 } else {
-                    // Create text input for query type or other types
+                    // Create text input for other types (fallback)
                     const label = document.createElement('label');
                     label.className = 'genie-toolbar-label';
                     label.setAttribute('for', this.getInstanceId(`toolbar-${varName}`));
@@ -2147,137 +2416,137 @@
         
         // Aggregation button with dropdown menu (standalone if interval is not shown)
         if (!showInterval && showAggregation) {
-                // Create container for aggregation button and dropdown menu
-                const aggContainer = document.createElement('div');
+            // Create container for aggregation button and dropdown menu
+            const aggContainer = document.createElement('div');
                 aggContainer.style.cssText = 'position: relative; display: inline-block; margin-left: 2px;';
-                
-                // Aggregation button
-                const aggButton = document.createElement('button');
-                aggButton.type = 'button';
-                aggButton.className = 'genie-dashboard-tab';
-                aggButton.id = this.getInstanceId('toolbar-agg-button');
-                aggButton.setAttribute('aria-label', 'Aggregation');
-                aggButton.style.cssText = 'display: flex; align-items: center; padding: 4px 8px; font-size: 13px; color: #6b7280; background: transparent; border: 1px solid #d1d5db; border-radius: 4px; cursor: pointer; font-weight: 500; min-width: 50px; height: 30px;';
-                
-                // Update button display based on selected aggregation
-                const updateAggButtonDisplay = () => {
-            const currentAggValue = this.inputConfig['$agg'] || '';
-                    const aggOptions = {
-                        '': '-- Select --',
-                        'sum': 'Sum',
-                        'avg': 'Avg',
-                        'max': 'Max',
-                        'min': 'Min'
-                    };
-                    aggButton.textContent = aggOptions[currentAggValue] || '-- Select --';
-                    
-                    // Keep button in default state (no highlighting after selection)
-                    aggButton.style.background = 'transparent';
-                    aggButton.style.color = '#6b7280';
-                    aggButton.style.borderColor = '#d1d5db';
+            
+            // Aggregation button
+            const aggButton = document.createElement('button');
+            aggButton.type = 'button';
+            aggButton.className = 'genie-dashboard-tab';
+            aggButton.id = this.getInstanceId('toolbar-agg-button');
+            aggButton.setAttribute('aria-label', 'Aggregation');
+            aggButton.style.cssText = 'display: flex; align-items: center; padding: 4px 8px; font-size: 13px; color: #6b7280; background: transparent; border: 1px solid #d1d5db; border-radius: 4px; cursor: pointer; font-weight: 500; min-width: 50px; height: 30px;';
+            
+            // Update button display based on selected aggregation
+            const updateAggButtonDisplay = () => {
+                const currentAggValue = this.inputConfig['$agg'] || '';
+                const aggOptions = {
+                    '': '-- Select --',
+                    'sum': 'Sum',
+                    'avg': 'Avg',
+                    'max': 'Max',
+                    'min': 'Min'
                 };
+                aggButton.textContent = aggOptions[currentAggValue] || '-- Select --';
                 
-                updateAggButtonDisplay();
-                aggContainer.appendChild(aggButton);
+                // Keep button in default state (no highlighting after selection)
+                aggButton.style.background = 'transparent';
+                aggButton.style.color = '#6b7280';
+                aggButton.style.borderColor = '#d1d5db';
+            };
+            
+            updateAggButtonDisplay();
+            aggContainer.appendChild(aggButton);
+            
+            // Create dropdown menu with options
+            const aggMenu = document.createElement('div');
+            aggMenu.className = 'genie-dashboard-agg-menu';
+            aggMenu.id = this.getInstanceId('agg-menu');
+            aggMenu.style.cssText = 'display: none; position: fixed; background: white; border: 1px solid #d1d5db; border-radius: 4px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); z-index: 10000; min-width: 140px; padding: 4px; max-height: 300px; overflow-y: auto;';
+            document.body.appendChild(aggMenu);
+            
+            // Function to populate aggregation menu
+            const populateAggMenu = () => {
+                aggMenu.innerHTML = '';
+                const aggOptions = [
+                    { value: '', label: '-- Select --' },
+                    { value: 'sum', label: 'Sum' },
+                    { value: 'avg', label: 'Avg' },
+                    { value: 'max', label: 'Max' },
+                    { value: 'min', label: 'Min' }
+                ];
                 
-                // Create dropdown menu with options
-                const aggMenu = document.createElement('div');
-                aggMenu.className = 'genie-dashboard-agg-menu';
-                aggMenu.id = this.getInstanceId('agg-menu');
-                aggMenu.style.cssText = 'display: none; position: fixed; background: white; border: 1px solid #d1d5db; border-radius: 4px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); z-index: 10000; min-width: 140px; padding: 4px; max-height: 300px; overflow-y: auto;';
-                document.body.appendChild(aggMenu);
+                const currentAggValue = this.inputConfig['$agg'] || '';
                 
-                // Function to populate aggregation menu
-                const populateAggMenu = () => {
-                    aggMenu.innerHTML = '';
-                    const aggOptions = [
-                        { value: '', label: '-- Select --' },
-                        { value: 'sum', label: 'Sum' },
-                        { value: 'avg', label: 'Avg' },
-                        { value: 'max', label: 'Max' },
-                        { value: 'min', label: 'Min' }
-                    ];
+                aggOptions.forEach(option => {
+                    const menuItem = document.createElement('div');
+                    menuItem.className = 'genie-dashboard-agg-menu-item';
+                    menuItem.style.cssText = `padding: 2px 8px; cursor: pointer; display: flex; align-items: center; font-size: 13px; color: ${option.value === currentAggValue ? '#3b82f6' : '#1f2937'}; margin: 0; font-weight: ${option.value === currentAggValue ? '500' : '400'};`;
+                    menuItem.textContent = option.label;
                     
-                    const currentAggValue = this.inputConfig['$agg'] || '';
+                    // Highlight selected item
+                    if (option.value === currentAggValue) {
+                        menuItem.style.background = 'rgba(59, 130, 246, 0.1)';
+                    }
                     
-                    aggOptions.forEach(option => {
-                        const menuItem = document.createElement('div');
-                        menuItem.className = 'genie-dashboard-agg-menu-item';
-                        menuItem.style.cssText = `padding: 2px 8px; cursor: pointer; display: flex; align-items: center; font-size: 13px; color: ${option.value === currentAggValue ? '#3b82f6' : '#1f2937'}; margin: 0; font-weight: ${option.value === currentAggValue ? '500' : '400'};`;
-                        menuItem.textContent = option.label;
-                        
-                        // Highlight selected item
-                        if (option.value === currentAggValue) {
-                            menuItem.style.background = 'rgba(59, 130, 246, 0.1)';
-                        }
-                        
-                        // Hover effect
-                        menuItem.addEventListener('mouseenter', () => {
-                            menuItem.style.background = '#f3f4f6';
-                        });
-                        menuItem.addEventListener('mouseleave', () => {
-                            menuItem.style.background = option.value === currentAggValue ? 'rgba(59, 130, 246, 0.1)' : 'transparent';
-                        });
-                        
-                        // Click handler
-                        menuItem.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            // Update inputConfig
-                            if (this.inputConfig) {
-                                this.inputConfig['$agg'] = option.value || '';
-                            }
-                            // Update button display
-                            updateAggButtonDisplay();
-                            // Close menu
-                            aggMenu.style.display = 'none';
-                            // Trigger change event for any listeners
-                            const changeEvent = new Event('change', { bubbles: true });
-                            aggButton.dispatchEvent(changeEvent);
-                        });
-                        
-                        aggMenu.appendChild(menuItem);
+                    // Hover effect
+                    menuItem.addEventListener('mouseenter', () => {
+                        menuItem.style.background = '#f3f4f6';
                     });
-                };
-                
-                // Initial population
-                populateAggMenu();
-                
-                // Toggle menu on button click
-                aggButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const isVisible = aggMenu.style.display === 'block' || aggMenu.style.display === 'flex';
-                    if (isVisible) {
+                    menuItem.addEventListener('mouseleave', () => {
+                        menuItem.style.background = option.value === currentAggValue ? 'rgba(59, 130, 246, 0.1)' : 'transparent';
+                    });
+                    
+                    // Click handler
+                    menuItem.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Update inputConfig
+                        if (this.inputConfig) {
+                            this.inputConfig['$agg'] = option.value || '';
+                        }
+                        // Update button display
+                        updateAggButtonDisplay();
+                        // Close menu
                         aggMenu.style.display = 'none';
-                    } else {
-                        // Repopulate menu before showing
-                        populateAggMenu();
-                        // Calculate position relative to button using fixed positioning
-                        const buttonRect = aggButton.getBoundingClientRect();
-                        const menuTop = buttonRect.bottom + window.scrollY + 4; // 4px margin
-                        const menuLeft = buttonRect.left + window.scrollX;
-                        
-                        aggMenu.style.top = menuTop + 'px';
-                        aggMenu.style.left = menuLeft + 'px';
-                        aggMenu.style.display = 'block';
-                    }
+                        // Trigger change event for any listeners
+                        const changeEvent = new Event('change', { bubbles: true });
+                        aggButton.dispatchEvent(changeEvent);
+                    });
+                    
+                    aggMenu.appendChild(menuItem);
                 });
-                
-                // Close menu when clicking outside
-                const closeMenuHandler = (e) => {
-                    if (!aggContainer.contains(e.target) && !aggMenu.contains(e.target)) {
-                        aggMenu.style.display = 'none';
-                    }
-                };
-                document.addEventListener('click', closeMenuHandler);
-                
-                // Store references for later use
-                this.aggButton = aggButton;
-                this.aggMenu = aggMenu;
-                this.updateAggButtonDisplay = updateAggButtonDisplay;
-                this.populateAggMenu = populateAggMenu;
-                
-                toolbar.appendChild(aggContainer);
-            }
+            };
+            
+            // Initial population
+            populateAggMenu();
+            
+            // Toggle menu on button click
+            aggButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isVisible = aggMenu.style.display === 'block' || aggMenu.style.display === 'flex';
+                if (isVisible) {
+                    aggMenu.style.display = 'none';
+                } else {
+                    // Repopulate menu before showing
+                    populateAggMenu();
+                    // Calculate position relative to button using fixed positioning
+                    const buttonRect = aggButton.getBoundingClientRect();
+                    const menuTop = buttonRect.bottom + window.scrollY + 4; // 4px margin
+                    const menuLeft = buttonRect.left + window.scrollX;
+                    
+                    aggMenu.style.top = menuTop + 'px';
+                    aggMenu.style.left = menuLeft + 'px';
+                    aggMenu.style.display = 'block';
+                }
+            });
+            
+            // Close menu when clicking outside
+            const closeMenuHandler = (e) => {
+                if (!aggContainer.contains(e.target) && !aggMenu.contains(e.target)) {
+                    aggMenu.style.display = 'none';
+                }
+            };
+            document.addEventListener('click', closeMenuHandler);
+            
+            // Store references for later use
+            this.aggButton = aggButton;
+            this.aggMenu = aggMenu;
+            this.updateAggButtonDisplay = updateAggButtonDisplay;
+            this.populateAggMenu = populateAggMenu;
+            
+            toolbar.appendChild(aggContainer);
+        }
         
         // Experts button with dropdown menu (always shown if edit is enabled)
         if (showEdit) {
@@ -2776,7 +3045,10 @@
                     if (minutes) {
                         const { start, end } = getTimeRangeFromMinutes(minutes);
                         applyTimeRange(start, end, false);
-                        setTimeout(() => this.render(this.dashboardConfig, this.inputConfig), 100);
+                        // Time range change: Just refresh panel data (like input fields refresh button)
+                        setTimeout(async () => {
+                            await this.refreshPanelsDataOnly();
+                        }, 100);
                     }
                 }
             });
@@ -2790,7 +3062,10 @@
                     const end = parseInputDate(endInput.value);
                     if (start && end && start < end) {
                         applyTimeRange(start, end, true);
-                        setTimeout(() => this.render(this.dashboardConfig, this.inputConfig), 100);
+                        // Time range change: Just refresh panel data (like input fields refresh button)
+                        setTimeout(async () => {
+                            await this.refreshPanelsDataOnly();
+                        }, 100);
                     } else {
                         alert('Start time must be before end time');
                     }
@@ -3020,8 +3295,9 @@
             }
         };
         
-        // Store reference for use in applyTimeRange
+        // Store reference for use in applyTimeRange and refreshPanelsOnly
         fetchScopesFunction = fetchScopes;
+        this.fetchScopesFunction = fetchScopes; // Also store on instance for access from other methods
         
         if (cellInput) {
             // Only fetch scopes when user leaves the input field (blur event)
@@ -3117,39 +3393,39 @@
                     });
                 }
                 
-                // Preserve currently loaded expert views before refresh
-                const loadedExpertNames = Array.from(this.loadedExpertViews);
-                
-                // Refresh dashboard
+                // Dashboard refresh: Re-fetch all input field queries, then refresh panels if all values exist
                 refreshButton.disabled = true;
                 refreshButton.innerHTML = '<span>⏳</span>';
                 refreshButton.title = 'Refreshing...';
                 
                 try {
-                    await this.render(this.dashboardConfig, this.inputConfig);
-                    
-                    // Re-append expert views that were loaded before refresh
-                    if (loadedExpertNames.length > 0) {
-                        // Re-append each expert view in order
-                        for (let i = 0; i < loadedExpertNames.length; i++) {
-                            const expertName = loadedExpertNames[i];
-                            if (this.expertViews[expertName]) {
-                                await this.appendExpertView(expertName);
-                            }
+                    // Step 1: Re-fetch all input field queries
+                    // Re-fetch scopes for Cell -> Substrate/HF Instance/Domain
+                    if (cellInput && cellInput.value && this.fetchScopesFunction) {
+                        const cellValue = cellInput.value.trim();
+                        if (cellValue) {
+                            console.log(`GenieDashboard: Dashboard refresh - Re-running fetchScopes to refresh dropdown data`);
+                            await this.fetchScopesFunction();
                         }
-                        
-                        // Update experts dropdown to reflect current state (after re-appending)
-                        // This ensures the dropdown shows the experts as selected
-                        this.updateExpertsDropdown();
                     }
                     
-                    // Check if all input fields have default values, and if so, auto-refresh panels
+                    // Re-execute templating queries (for query-type templating variables)
+                    if (this.templatingQueryFunctions) {
+                        console.log(`GenieDashboard: Dashboard refresh - Re-executing ${Object.keys(this.templatingQueryFunctions).length} templating queries`);
+                        const queryPromises = Object.values(this.templatingQueryFunctions).map(fn => fn());
+                        await Promise.all(queryPromises);
+                    }
+                    
+                    // Step 2: Update inputConfig from all input fields after queries complete
+                    // (Values are already read above, just ensure they're in inputConfig)
+                    
+                    // Step 3: If all field values exist, refresh panels
                     const allFieldsHaveValues = this.checkAllInputFieldsHaveValues();
                     if (allFieldsHaveValues) {
-                        console.log(`GenieDashboard: All input fields have values, auto-refreshing panels after dashboard refresh`);
-                        await this.refreshPanelsOnly();
+                        console.log(`GenieDashboard: All input fields have values, refreshing panels after dashboard refresh`);
+                        await this.refreshPanelsDataOnly();
                     } else {
-                        console.log(`GenieDashboard: Some input fields are empty, user should fill them and use the input fields refresh button`);
+                        console.log(`GenieDashboard: Some input fields are empty, panels not refreshed. Please fill all fields and use the input fields refresh button.`);
                     }
                 } finally {
                     refreshButton.disabled = false;
@@ -4505,8 +4781,9 @@
     /**
      * Refresh only panel data without re-rendering the entire dashboard
      * Reads values from all input fields and time range, updates inputConfig, then re-fetches data for all panels
+     * Does NOT re-fetch input field queries (like fetchScopes)
      */
-    async refreshPanelsOnly() {
+    async refreshPanelsDataOnly() {
         const refreshButton = document.getElementById(this.getInstanceId('controls-refresh-button'));
         if (refreshButton) {
             refreshButton.disabled = true;
@@ -6667,8 +6944,8 @@
                     config.$end = endValue - previousOffset;
                 } else if (config.$start && config.$end) {
                     // Old format only
-                    config.$start = config.$start - previousOffset;
-                    config.$end = config.$end - previousOffset;
+            config.$start = config.$start - previousOffset;
+            config.$end = config.$end - previousOffset;
                 }
             } catch (error) {
                 console.error('GenieDashboard: processQuery - Error adjusting time offsets:', error);
@@ -15800,8 +16077,8 @@
                 const offset = this.getControlsRowOffset();
                 const gridRowStart = currentY + offset;
                 const gridRowEnd = currentY + offset + panelHeight;
-                panelDiv.style.gridRow = `${gridRowStart} / ${gridRowEnd}`;
-                panelDiv.style.setProperty('grid-row', `${gridRowStart} / ${gridRowEnd}`, 'important');
+            panelDiv.style.gridRow = `${gridRowStart} / ${gridRowEnd}`;
+            panelDiv.style.setProperty('grid-row', `${gridRowStart} / ${gridRowEnd}`, 'important');
             }
             
             // Set grid column to full width when sorted (one panel per row)
