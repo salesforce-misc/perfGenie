@@ -1791,7 +1791,243 @@
             controlsRow.appendChild(aggContainer);
         }
         
+        // Add input fields from templating variables that don't already exist in placeholder mappings
+        this.addTemplatingInputFields(controlsRow);
+        
+        // Add refresh button for input fields (refreshes only panel data, not entire dashboard)
+        const refreshPanelsButton = document.createElement('button');
+        refreshPanelsButton.type = 'button';
+        refreshPanelsButton.id = this.getInstanceId('controls-refresh-button');
+        refreshPanelsButton.className = 'genie-toolbar-button';
+        refreshPanelsButton.innerHTML = '<span>🔄</span>';
+        refreshPanelsButton.title = 'Refresh panels';
+        refreshPanelsButton.style.cssText = 'display: flex; align-items: center; justify-content: center; padding: 2px 8px; font-size: 11px; color: #6b7280; background: transparent; border: 1px solid #d1d5db; border-radius: 3px; cursor: pointer; height: 24px; min-width: 32px; margin-left: 4px;';
+        
+        // Add hover effect
+        refreshPanelsButton.addEventListener('mouseenter', () => {
+            refreshPanelsButton.style.background = '#f3f4f6';
+            refreshPanelsButton.style.borderColor = '#9ca3af';
+        });
+        refreshPanelsButton.addEventListener('mouseleave', () => {
+            refreshPanelsButton.style.background = 'transparent';
+            refreshPanelsButton.style.borderColor = '#d1d5db';
+        });
+        
+        // Click handler - refresh only panel data
+        refreshPanelsButton.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await this.refreshPanelsOnly();
+        });
+        
+        controlsRow.appendChild(refreshPanelsButton);
+        
         grid.appendChild(controlsRow);
+    }
+    
+    /**
+     * Add input fields from dashboard templating variables that don't already exist in placeholder mappings
+     * @param {HTMLElement} controlsRow - The controls row container to append fields to
+     */
+    addTemplatingInputFields(controlsRow) {
+        if (!this.dashboardConfig || !this.dashboardConfig.templating || !this.dashboardConfig.templating.list) {
+            return;
+        }
+        
+        // Get existing placeholder mappings to check what's already covered
+        const existingMappings = this.getPlaceholderMappings(this.inputConfig || {});
+        const existingPlaceholders = new Set();
+        existingMappings.forEach((value, key) => {
+            existingPlaceholders.add(key.toLowerCase());
+        });
+        
+        // Map of known field names to their placeholder patterns
+        // This helps us avoid creating duplicate fields
+        const knownFieldMappings = {
+            'Cell': ['$cell', '$cellkey'],
+            'Substrate': ['$substrate', '$sub'],
+            'HF Instance': ['$fi', '$hfInstance', '$falcon_instance'],
+            'Domain': ['$fd', '$domain', '$functional_domain'],
+            'Span': ['$interval', '$span'],
+            'Aggregate': ['$agg', '$aggregate']
+        };
+        
+        // Get all placeholders that are already covered by existing fields
+        const coveredPlaceholders = new Set();
+        Object.values(knownFieldMappings).forEach(placeholders => {
+            placeholders.forEach(p => coveredPlaceholders.add(p.toLowerCase()));
+        });
+        existingPlaceholders.forEach(p => coveredPlaceholders.add(p.toLowerCase()));
+        
+        const templatingList = this.dashboardConfig.templating.list;
+        
+        templatingList.forEach(templateVar => {
+            if (!templateVar || !templateVar.name) {
+                return;
+            }
+            
+            const varName = templateVar.name;
+            const varLabel = templateVar.label || varName;
+            const varType = templateVar.type || 'query';
+            const hide = templateVar.hide || 0;
+            
+            // Skip if hidden (hide: 2 means hidden)
+            if (hide === 2) {
+                return;
+            }
+            
+            // Generate possible placeholder names for this variable
+            // Common patterns: $varName, $VARNAME, or as used in queries
+            const possiblePlaceholders = [
+                `$${varName}`,
+                `$${varName.toLowerCase()}`,
+                `$${varName.toUpperCase()}`
+            ];
+            
+            // Check if any of the possible placeholders are already covered
+            const isCovered = possiblePlaceholders.some(p => coveredPlaceholders.has(p.toLowerCase()));
+            
+            if (!isCovered) {
+                // Create input field for this templating variable
+                const currentValue = templateVar.current?.value || templateVar.current?.text || '';
+                
+                // Determine field type based on templating variable type
+                if (varType === 'interval') {
+                    // Create dropdown for interval
+                    const label = document.createElement('label');
+                    label.className = 'genie-toolbar-label';
+                    label.setAttribute('for', this.getInstanceId(`toolbar-${varName}`));
+                    label.textContent = `${varLabel}:`;
+                    label.style.cssText = 'font-size: 11px; color: #6b7280; height: 24px; display: flex; align-items: center; white-space: nowrap;';
+                    
+                    const select = document.createElement('select');
+                    select.id = this.getInstanceId(`toolbar-${varName}`);
+                    select.className = 'genie-toolbar-input';
+                    select.style.cssText = 'width: 80px; height: 24px; font-size: 11px; padding: 2px 4px; margin-right: 4px;';
+                    
+                    // Add options from templating variable
+                    if (templateVar.options && Array.isArray(templateVar.options)) {
+                        templateVar.options.forEach(option => {
+                            const optionEl = document.createElement('option');
+                            optionEl.value = option.value || option.text || '';
+                            optionEl.textContent = option.text || option.value || '';
+                            if (option.selected) {
+                                optionEl.selected = true;
+                            }
+                            select.appendChild(optionEl);
+                        });
+                    } else if (templateVar.query) {
+                        // Parse query string for interval options (e.g., "1m,2m,5m,10m")
+                        const options = templateVar.query.split(',').map(opt => opt.trim()).filter(opt => opt);
+                        options.forEach(opt => {
+                            const optionEl = document.createElement('option');
+                            optionEl.value = opt;
+                            optionEl.textContent = opt;
+                            if (opt === currentValue) {
+                                optionEl.selected = true;
+                            }
+                            select.appendChild(optionEl);
+                        });
+                    }
+                    
+                    // Set current value
+                    if (currentValue && !select.value) {
+                        select.value = currentValue;
+                    }
+                    
+                    // Initialize value in inputConfig if currentValue exists
+                    if (currentValue) {
+                        this.setInputConfigValue(varLabel, currentValue, possiblePlaceholders);
+                    }
+                    
+                    // Store value in inputConfig when changed
+                    select.addEventListener('change', () => {
+                        const value = select.value;
+                        this.setInputConfigValue(varLabel, value, possiblePlaceholders);
+                    });
+                    
+                    controlsRow.appendChild(label);
+                    controlsRow.appendChild(select);
+                    
+                } else if (varType === 'custom' && templateVar.options) {
+                    // Create dropdown for custom type with options
+                    const label = document.createElement('label');
+                    label.className = 'genie-toolbar-label';
+                    label.setAttribute('for', this.getInstanceId(`toolbar-${varName}`));
+                    label.textContent = `${varLabel}:`;
+                    label.style.cssText = 'font-size: 11px; color: #6b7280; height: 24px; display: flex; align-items: center; white-space: nowrap;';
+                    
+                    const select = document.createElement('select');
+                    select.id = this.getInstanceId(`toolbar-${varName}`);
+                    select.className = 'genie-toolbar-input';
+                    select.style.cssText = 'width: 100px; height: 24px; font-size: 11px; padding: 2px 4px; margin-right: 4px;';
+                    
+                    // Add options
+                    if (Array.isArray(templateVar.options)) {
+                        templateVar.options.forEach(option => {
+                            const optionEl = document.createElement('option');
+                            optionEl.value = option.value || option.text || '';
+                            optionEl.textContent = option.text || option.value || '';
+                            if (option.selected) {
+                                optionEl.selected = true;
+                            }
+                            select.appendChild(optionEl);
+                        });
+                    }
+                    
+                    // Set current value
+                    if (currentValue && !select.value) {
+                        select.value = currentValue;
+                    }
+                    
+                    // Initialize value in inputConfig if currentValue exists
+                    if (currentValue) {
+                        this.setInputConfigValue(varLabel, currentValue, possiblePlaceholders);
+                    }
+                    
+                    // Store value in inputConfig when changed
+                    select.addEventListener('change', () => {
+                        const value = select.value;
+                        this.setInputConfigValue(varLabel, value, possiblePlaceholders);
+                    });
+                    
+                    controlsRow.appendChild(label);
+                    controlsRow.appendChild(select);
+                    
+                } else {
+                    // Create text input for query type or other types
+                    const label = document.createElement('label');
+                    label.className = 'genie-toolbar-label';
+                    label.setAttribute('for', this.getInstanceId(`toolbar-${varName}`));
+                    label.textContent = `${varLabel}:`;
+                    label.style.cssText = 'font-size: 11px; color: #6b7280; height: 24px; display: flex; align-items: center; white-space: nowrap;';
+                    
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.id = this.getInstanceId(`toolbar-${varName}`);
+                    input.className = 'genie-toolbar-input';
+                    input.value = currentValue;
+                    input.placeholder = `e.g., ${varName} value`;
+                    input.style.cssText = 'width: 100px; height: 24px; font-size: 11px; padding: 2px 4px; margin-right: 4px;';
+                    
+                    // Initialize value in inputConfig if currentValue exists
+                    if (currentValue) {
+                        this.setInputConfigValue(varLabel, currentValue, possiblePlaceholders);
+                    }
+                    
+                    // Store value in inputConfig when changed
+                    input.addEventListener('blur', () => {
+                        const value = input.value;
+                        this.setInputConfigValue(varLabel, value, possiblePlaceholders);
+                    });
+                    
+                    controlsRow.appendChild(label);
+                    controlsRow.appendChild(input);
+                }
+                
+                console.log(`GenieDashboard: Added input field for templating variable "${varName}" (${varLabel}) with placeholders:`, possiblePlaceholders);
+            }
+        });
     }
     
     /**
@@ -2855,6 +3091,32 @@
                 
                 // Aggregation is already in inputConfig from button click handler
                 
+                // Update inputConfig from all templating input fields (dynamically added fields)
+                if (this.dashboardConfig && this.dashboardConfig.templating && this.dashboardConfig.templating.list) {
+                    this.dashboardConfig.templating.list.forEach(templateVar => {
+                        if (!templateVar || !templateVar.name) return;
+                        const varName = templateVar.name;
+                        const varLabel = templateVar.label || varName;
+                        
+                        // Find the input field for this templating variable
+                        const inputId = this.getInstanceId(`toolbar-${varName}`);
+                        const inputElement = document.getElementById(inputId);
+                        
+                        if (inputElement) {
+                            const value = inputElement.value || inputElement.textContent || '';
+                            if (value) {
+                                // Generate possible placeholder names for this variable
+                                const possiblePlaceholders = [
+                                    `$${varName}`,
+                                    `$${varName.toLowerCase()}`,
+                                    `$${varName.toUpperCase()}`
+                                ];
+                                this.setInputConfigValue(varLabel, value, possiblePlaceholders);
+                            }
+                        }
+                    });
+                }
+                
                 // Preserve currently loaded expert views before refresh
                 const loadedExpertNames = Array.from(this.loadedExpertViews);
                 
@@ -2879,6 +3141,15 @@
                         // Update experts dropdown to reflect current state (after re-appending)
                         // This ensures the dropdown shows the experts as selected
                         this.updateExpertsDropdown();
+                    }
+                    
+                    // Check if all input fields have default values, and if so, auto-refresh panels
+                    const allFieldsHaveValues = this.checkAllInputFieldsHaveValues();
+                    if (allFieldsHaveValues) {
+                        console.log(`GenieDashboard: All input fields have values, auto-refreshing panels after dashboard refresh`);
+                        await this.refreshPanelsOnly();
+                    } else {
+                        console.log(`GenieDashboard: Some input fields are empty, user should fill them and use the input fields refresh button`);
                     }
                 } finally {
                     refreshButton.disabled = false;
@@ -3321,6 +3592,7 @@
         if (externalConfig.refresh) converted.refresh = externalConfig.refresh;
         if (externalConfig.schemaVersion) converted.schemaVersion = externalConfig.schemaVersion;
         if (externalConfig.version) converted.version = externalConfig.version;
+        if (externalConfig.templating) converted.templating = externalConfig.templating;
         
         // Get panel overrides from the overrides object
         const panelOverrides = overrides && overrides.panels ? overrides.panels : null;
@@ -4010,6 +4282,61 @@
         const expertConfig = expertData.config;
         const expertInputConfig = expertData.inputConfig;
         
+        // Track if new templating variables were added and if they have default values
+        let addedTemplatingCount = 0;
+        let hasDefaultValues = false;
+        
+        // Merge templating from expert config into main dashboard config
+        if (expertConfig.templating && expertConfig.templating.list) {
+            console.log(`GenieDashboard: Merging templating from expert view "${expertName}":`, expertConfig.templating.list);
+            
+            if (!this.dashboardConfig.templating) {
+                this.dashboardConfig.templating = { list: [] };
+            }
+            if (!this.dashboardConfig.templating.list) {
+                this.dashboardConfig.templating.list = [];
+            }
+            
+            // Merge templating variables from expert config (avoid duplicates by name)
+            const existingVarNames = new Set(
+                this.dashboardConfig.templating.list.map(v => v.name || v.label || '')
+            );
+            
+            expertConfig.templating.list.forEach(expertVar => {
+                const varName = expertVar.name || expertVar.label || '';
+                if (varName && !existingVarNames.has(varName)) {
+                    this.dashboardConfig.templating.list.push(expertVar);
+                    existingVarNames.add(varName);
+                    addedTemplatingCount++;
+                    
+                    // Check if this variable has a default value
+                    const currentValue = expertVar.current?.value || expertVar.current?.text || '';
+                    if (currentValue) {
+                        hasDefaultValues = true;
+                    }
+                    
+                    console.log(`GenieDashboard: Added templating variable "${varName}" from expert view "${expertName}"`);
+                } else {
+                    console.log(`GenieDashboard: Skipped templating variable "${varName}" (already exists or no name)`);
+                }
+            });
+            
+            // Add input fields for new templating variables from expert view
+            if (addedTemplatingCount > 0) {
+                const controlsRow = document.getElementById(this.getInstanceId('controls-row'));
+                if (controlsRow) {
+                    console.log(`GenieDashboard: Adding input fields for ${addedTemplatingCount} new templating variables from expert view "${expertName}"`);
+                    this.addTemplatingInputFields(controlsRow);
+                } else {
+                    console.warn(`GenieDashboard: Controls row not found, cannot add input fields for expert view "${expertName}"`);
+                }
+            } else {
+                console.log(`GenieDashboard: No new templating variables to add from expert view "${expertName}"`);
+            }
+        } else {
+            console.log(`GenieDashboard: Expert view "${expertName}" has no templating section`);
+        }
+        
         // Get grid container
         let grid = this.dashboardGrid;
         if (!grid) {
@@ -4063,8 +4390,257 @@
         
         await Promise.all(renderPromises);
         
+        // If new input fields were added with default values, refresh all panels to ensure they use updated inputConfig
+        // This is especially important if existing panels might use the new templating variables
+        // NOTE: If new input fields do NOT have default values, we do NOT auto-refresh.
+        //       The user must fill in the values and manually click refresh to update the dashboard.
+        if (addedTemplatingCount > 0 && hasDefaultValues) {
+                console.log(`GenieDashboard: New input fields have default values, refreshing all panels to use updated inputConfig`);
+                // Refresh all panels to ensure they use the updated inputConfig with new templating variable values
+                // This ensures both existing and new panels use the correct values
+                const allPanelDivs = grid.querySelectorAll('.genie-dashboard-panel');
+                const refreshPromises = Array.from(allPanelDivs).map(async (panelDiv) => {
+                    const panelIndex = parseInt(panelDiv.id.split('-').pop());
+                    if (panelIndex >= 0 && panelIndex < this.panels.length) {
+                        const panel = this.panels[panelIndex];
+                        if (panel && panel.targets && panel.targets.length > 0) {
+                            // Re-fetch data for this panel with updated inputConfig
+                            try {
+                                const result = await this.fetchPanelData(panel);
+                                const data = result.data || result;
+                                const failedTargets = result.failedTargets || [];
+                                
+                                // Update the panel's chart with new data
+                                const content = panelDiv.querySelector('.genie-panel-content');
+                                const header = panelDiv.querySelector('.genie-panel-header');
+                                if (content && data) {
+                                    this.renderPanelChart(panel, data, content, header);
+                                    
+                                    // Update error display if needed
+                                    if (failedTargets.length > 0) {
+                                        panel._failedTargets = failedTargets;
+                                        this.showPanelError(panel, content, failedTargets);
+                                    } else {
+                                        this.hidePanelError(panel, content);
+                                    }
+                                }
+                            } catch (error) {
+                                console.error(`GenieDashboard: Error refreshing panel ${panelIndex}:`, error);
+                            }
+                        }
+                    }
+                });
+                
+                await Promise.all(refreshPromises);
+                console.log(`GenieDashboard: Finished refreshing all panels with updated inputConfig`);
+        }
+        
         // Mark as loaded
         this.loadedExpertViews.add(expertName);
+    }
+    
+    /**
+     * Check if all input fields (including templating fields) have values
+     * @returns {boolean} True if all fields have values, false otherwise
+     */
+    checkAllInputFieldsHaveValues() {
+        // Check standard fields
+        const cellInput = document.getElementById(this.getInstanceId('toolbar-cell'));
+        if (cellInput && !cellInput.value) {
+            return false;
+        }
+        
+        const substrateSelect = document.getElementById(this.getInstanceId('toolbar-substrate'));
+        if (substrateSelect && !substrateSelect.value) {
+            return false;
+        }
+        
+        const hfInstanceSelect = document.getElementById(this.getInstanceId('toolbar-hfinstance'));
+        if (hfInstanceSelect && !hfInstanceSelect.value) {
+            return false;
+        }
+        
+        const domainSelect = document.getElementById(this.getInstanceId('toolbar-domain'));
+        if (domainSelect && !domainSelect.value) {
+            return false;
+        }
+        
+        const intervalInput = document.getElementById(this.getInstanceId('toolbar-interval'));
+        if (intervalInput && !intervalInput.value) {
+            return false;
+        }
+        
+        // Check time range
+        const startValue = this.getInputConfigValue('Start', this.inputConfig) || this.getInputConfigValue('start', this.inputConfig) || this.inputConfig?.['$start'];
+        const endValue = this.getInputConfigValue('End', this.inputConfig) || this.getInputConfigValue('end', this.inputConfig) || this.inputConfig?.['$end'];
+        if (!startValue || !endValue) {
+            return false;
+        }
+        
+        // Check templating fields
+        if (this.dashboardConfig && this.dashboardConfig.templating && this.dashboardConfig.templating.list) {
+            for (const templateVar of this.dashboardConfig.templating.list) {
+                if (!templateVar || !templateVar.name) continue;
+                const varName = templateVar.name;
+                const hide = templateVar.hide || 0;
+                
+                // Skip hidden fields
+                if (hide === 2) continue;
+                
+                const inputId = this.getInstanceId(`toolbar-${varName}`);
+                const inputElement = document.getElementById(inputId);
+                
+                if (inputElement) {
+                    const value = inputElement.value || inputElement.textContent || '';
+                    if (!value) {
+                        return false;
+                    }
+                }
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Refresh only panel data without re-rendering the entire dashboard
+     * Reads values from all input fields and time range, updates inputConfig, then re-fetches data for all panels
+     */
+    async refreshPanelsOnly() {
+        const refreshButton = document.getElementById(this.getInstanceId('controls-refresh-button'));
+        if (refreshButton) {
+            refreshButton.disabled = true;
+            refreshButton.innerHTML = '<span>⏳</span>';
+            refreshButton.title = 'Refreshing panels...';
+        }
+        
+        try {
+            // Update inputConfig from all input fields before refreshing
+            // Cell value
+            const cellInput = document.getElementById(this.getInstanceId('toolbar-cell'));
+            if (cellInput && cellInput.value) {
+                this.setInputConfigValue('Cell', cellInput.value.trim(), ['$cell']);
+            }
+            
+            // Substrate value
+            const substrateSelect = document.getElementById(this.getInstanceId('toolbar-substrate'));
+            if (substrateSelect && substrateSelect.value) {
+                this.setInputConfigValue('Substrate', substrateSelect.value, ['$substrate']);
+            }
+            
+            // HF Instance value
+            const hfInstanceSelect = document.getElementById(this.getInstanceId('toolbar-hfinstance'));
+            if (hfInstanceSelect && hfInstanceSelect.value) {
+                this.setInputConfigValue('HFInstance', hfInstanceSelect.value, ['$fi', '$hfInstance']);
+            }
+            
+            // Domain value
+            const domainSelect = document.getElementById(this.getInstanceId('toolbar-domain'));
+            if (domainSelect && domainSelect.value) {
+                this.setInputConfigValue('Domain', domainSelect.value, ['$fd', '$domain']);
+            }
+            
+            // Span/Interval value
+            const intervalInput = document.getElementById(this.getInstanceId('toolbar-interval'));
+            if (intervalInput && intervalInput.value) {
+                this.setInputConfigValue('Span', intervalInput.value.trim(), ['$interval']);
+            }
+            
+            // Time range - ensure current values are in inputConfig
+            const startValue = this.getInputConfigValue('Start', this.inputConfig) || this.getInputConfigValue('start', this.inputConfig) || this.inputConfig?.['$start'];
+            const endValue = this.getInputConfigValue('End', this.inputConfig) || this.getInputConfigValue('end', this.inputConfig) || this.inputConfig?.['$end'];
+            if (startValue && endValue) {
+                this.setInputConfigValue('Start', startValue, ['$start']);
+                this.setInputConfigValue('End', endValue, ['$end']);
+            }
+            
+            // Update inputConfig from all templating input fields (dynamically added fields)
+            if (this.dashboardConfig && this.dashboardConfig.templating && this.dashboardConfig.templating.list) {
+                this.dashboardConfig.templating.list.forEach(templateVar => {
+                    if (!templateVar || !templateVar.name) return;
+                    const varName = templateVar.name;
+                    const varLabel = templateVar.label || varName;
+                    
+                    // Find the input field for this templating variable
+                    const inputId = this.getInstanceId(`toolbar-${varName}`);
+                    const inputElement = document.getElementById(inputId);
+                    
+                    if (inputElement) {
+                        const value = inputElement.value || inputElement.textContent || '';
+                        if (value) {
+                            // Generate possible placeholder names for this variable
+                            const possiblePlaceholders = [
+                                `$${varName}`,
+                                `$${varName.toLowerCase()}`,
+                                `$${varName.toUpperCase()}`
+                            ];
+                            this.setInputConfigValue(varLabel, value, possiblePlaceholders);
+                        }
+                    }
+                });
+            }
+            
+            // Get grid container
+            const grid = this.dashboardGrid || document.getElementById(this.getInstanceId('grid'));
+            if (!grid) {
+                console.warn('GenieDashboard: Grid container not found for panel refresh');
+                return;
+            }
+            
+            // Refresh all panels
+            const allPanelDivs = grid.querySelectorAll('.genie-dashboard-panel');
+            const refreshPromises = Array.from(allPanelDivs).map(async (panelDiv) => {
+                // Extract panel index from panel ID (format: {instanceId}-panel-{index})
+                const panelId = panelDiv.id;
+                const expectedIdPrefix = this.getInstanceId('panel-');
+                if (!panelId.startsWith(expectedIdPrefix)) {
+                    return; // Skip if ID format doesn't match
+                }
+                
+                const indexStr = panelId.substring(expectedIdPrefix.length);
+                const panelIndex = parseInt(indexStr, 10);
+                
+                if (panelIndex >= 0 && panelIndex < this.panels.length) {
+                    const panel = this.panels[panelIndex];
+                    if (panel && panel.targets && panel.targets.length > 0) {
+                        // Re-fetch data for this panel with updated inputConfig
+                        try {
+                            const result = await this.fetchPanelData(panel);
+                            const data = result.data || result;
+                            const failedTargets = result.failedTargets || [];
+                            
+                            // Update the panel's chart with new data
+                            const content = panelDiv.querySelector('.genie-panel-content');
+                            const header = panelDiv.querySelector('.genie-panel-header');
+                            if (content && data) {
+                                this.renderPanelChart(panel, data, content, header);
+                                
+                                // Update error display if needed
+                                if (failedTargets.length > 0) {
+                                    panel._failedTargets = failedTargets;
+                                    this.showPanelError(panel, content, failedTargets);
+                                } else {
+                                    this.hidePanelError(panel, content);
+                                }
+                            }
+                        } catch (error) {
+                            console.error(`GenieDashboard: Error refreshing panel ${panelIndex}:`, error);
+                        }
+                    }
+                }
+            });
+            
+            await Promise.all(refreshPromises);
+            console.log(`GenieDashboard: Finished refreshing all panels`);
+        } catch (error) {
+            console.error('GenieDashboard: Error refreshing panels:', error);
+        } finally {
+            if (refreshButton) {
+                refreshButton.disabled = false;
+                refreshButton.innerHTML = '<span>🔄</span>';
+                refreshButton.title = 'Refresh panels';
+            }
+        }
     }
     
     /**

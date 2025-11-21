@@ -1551,7 +1551,7 @@ $(document).ready(() => {
           },
           "HF Instance": {
                       "value": "aws-prod0-uswest2",
-                      "placeholders": ["$fi", "$falcon_instance", "$instance"]
+                      "placeholders": ["$fi", "$falcon_instance", "$fd_instance", "$instance"]
                     },
           "Domain": {
                                 "value": "core1",
