@@ -19,6 +19,7 @@ import server.claude.model.ClaudeRequest;
 import server.claude.model.ClaudeResponse;
 import server.claude.mcp.MCPManager;
 import server.claude.mcp.MCPTool;
+import server.claude.rag.RAGService;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -40,12 +41,20 @@ public class ClaudeService implements IClaudeService {
     private final ClaudeConfig config;
     private final ObjectMapper objectMapper;
     private final MCPManager mcpManager;
+    private final ConversationHistoryManager historyManager;
+    private final RAGService ragService;
+    private final TokenCounter tokenCounter;
     private OkHttpClient httpClient;
     
     @Autowired
-    public ClaudeService(ClaudeConfig config, MCPManager mcpManager) {
+    public ClaudeService(ClaudeConfig config, MCPManager mcpManager, 
+                        ConversationHistoryManager historyManager, RAGService ragService,
+                        TokenCounter tokenCounter) {
         this.config = config;
         this.mcpManager = mcpManager;
+        this.historyManager = historyManager;
+        this.ragService = ragService;
+        this.tokenCounter = tokenCounter;
         this.objectMapper = new ObjectMapper();
     }
     
@@ -83,22 +92,143 @@ public class ClaudeService implements IClaudeService {
         // Build messages list
         List<ClaudeMessage> messages = new java.util.ArrayList<>();
         
-        // Add conversation history if provided
-        if (conversationHistory != null) {
-            messages.addAll(conversationHistory);
+        // Handle conversation history with truncation
+        if (conversationHistory != null && !conversationHistory.isEmpty()) {
+            // Strategy 1: If RAG is enabled, retrieve relevant context instead of full history
+            if (ragService.isEnabled()) {
+                List<ClaudeMessage> relevantContext = ragService.retrieveRelevantContext(
+                    userMessage, null, 10); // Get top 10 relevant messages
+                if (!relevantContext.isEmpty()) {
+                    messages.addAll(relevantContext);
+                    logger.debug("Using RAG: Retrieved {} relevant messages from vector database", 
+                            relevantContext.size());
+                } else {
+                    // Fallback to truncation if RAG returns nothing
+                    List<ClaudeMessage> truncated = historyManager.smartTruncate(conversationHistory, config.getModel());
+                    messages.addAll(truncated);
+                    logTruncation(conversationHistory.size(), truncated.size());
+                }
+            } else {
+                // Strategy 2: Use truncation (sliding window + token limits)
+                List<ClaudeMessage> truncated = historyManager.smartTruncate(conversationHistory, config.getModel());
+                messages.addAll(truncated);
+                logTruncation(conversationHistory.size(), truncated.size());
+            }
         }
         
-        // Add user message
+        // Add user message - this is always required
+        if (userMessage == null || userMessage.trim().isEmpty()) {
+            throw new IllegalArgumentException("User message cannot be null or empty");
+        }
         messages.add(new ClaudeMessage("user", userMessage));
+        
+        // Final validation - ensure we have at least the user message
+        if (messages.isEmpty()) {
+            throw new IllegalStateException("Messages list is empty after adding user message");
+        }
+        
+        // Log token estimate for debugging
+        int estimatedTokens = historyManager.estimateTokens(messages);
+        logger.debug("Estimated tokens in request: {} ({} messages)", estimatedTokens, messages.size());
         
         // Create request
         ClaudeRequest request = new ClaudeRequest(config.getModel(), messages);
         
+        // Validate request before sending
+        if (request.getMessages() == null || request.getMessages().isEmpty()) {
+            throw new IllegalStateException("Request has empty messages list before sending");
+        }
+        
         return sendRequest(request);
+    }
+    
+    /**
+     * Send a direct message without history management (for internal use like summarization).
+     * This bypasses truncation and summarization logic to avoid recursion.
+     * 
+     * @param message The message to send
+     * @return ClaudeResponse containing the API response
+     * @throws IOException if there's an error communicating with the API
+     */
+    public ClaudeResponse sendDirectMessage(String message) throws IOException {
+        if (message == null || message.trim().isEmpty()) {
+            throw new IllegalArgumentException("Message cannot be null or empty");
+        }
+        
+        List<ClaudeMessage> messages = new java.util.ArrayList<>();
+        ClaudeMessage userMessage = new ClaudeMessage("user", message);
+        messages.add(userMessage);
+        
+        // Validate we have at least one message
+        if (messages.isEmpty()) {
+            throw new IllegalStateException("Failed to create message list");
+        }
+        
+        ClaudeRequest request = new ClaudeRequest(config.getModel(), messages);
+        
+        // Validate request before sending
+        if (request.getMessages() == null || request.getMessages().isEmpty()) {
+            throw new IllegalStateException("Request has empty messages list");
+        }
+        
+        return sendRequestOnce(request, 0);
+    }
+    
+    /**
+     * Log truncation information.
+     */
+    private void logTruncation(int originalSize, int truncatedSize) {
+        if (originalSize > truncatedSize) {
+            logger.info("Truncated conversation history from {} to {} messages to fit token limits", 
+                    originalSize, truncatedSize);
+        }
     }
     
     @Override
     public ClaudeResponse sendRequest(ClaudeRequest request) throws IOException {
+        // Validate request
+        if (request == null) {
+            throw new IllegalArgumentException("Request cannot be null");
+        }
+        
+        if (request.getMessages() == null || request.getMessages().isEmpty()) {
+            throw new IllegalArgumentException("Request must contain at least one message");
+        }
+        
+        // Apply truncation to prevent "Input is too long" errors
+        List<ClaudeMessage> originalMessages = request.getMessages();
+        String modelName = request.getModel() != null ? request.getModel() : config.getModel();
+        
+        // Apply model-aware truncation
+        List<ClaudeMessage> truncatedMessages = historyManager.smartTruncate(originalMessages, modelName);
+        
+        // Validate truncated messages are not empty
+        if (truncatedMessages == null || truncatedMessages.isEmpty()) {
+            logger.error("Truncation resulted in empty message list! Original had {} messages. Using original messages.", 
+                    originalMessages.size());
+            // Use original messages as fallback
+            truncatedMessages = originalMessages;
+        }
+        
+        if (truncatedMessages.size() < originalMessages.size()) {
+            int originalSize = originalMessages.size();
+            int truncatedSize = truncatedMessages.size();
+            int estimatedTokens = historyManager.estimateTokens(truncatedMessages);
+            logger.warn("Truncated request messages from {} to {} messages ({} tokens) to prevent 'Input is too long' error", 
+                    originalSize, truncatedSize, estimatedTokens);
+            request.setMessages(truncatedMessages);
+        } else {
+            // Still log token count for monitoring
+            int estimatedTokens = historyManager.estimateTokens(truncatedMessages);
+            logger.debug("Request contains {} messages with estimated {} tokens", 
+                    truncatedMessages.size(), estimatedTokens);
+        }
+        
+        // Final validation before sending
+        if (request.getMessages() == null || request.getMessages().isEmpty()) {
+            throw new IllegalStateException("Cannot send request with empty messages list");
+        }
+        
         // Check if auth token exists, if not try to reload from /tmp/settings.json
         if (config.getAuthToken() == null || config.getAuthToken().isEmpty()) {
             File tmpConfigFile = new File("/tmp/settings.json");
@@ -134,16 +264,72 @@ public class ClaudeService implements IClaudeService {
             }
         }
         
+        // Internal method to send request with retry logic (used by retry mechanism)
+        return sendRequestOnce(request, 0);
+    }
+    
+    /**
+     * Internal method to send a single request with retry logic
+     * @param request The request to send
+     * @param retryCount Current retry count (0 = first attempt)
+     */
+    private ClaudeResponse sendRequestOnce(ClaudeRequest request, int retryCount) throws IOException {
+        // Prevent infinite retry loops (allow up to 3 retries = 4 total attempts)
+        if (retryCount > 3) {
+            logger.error("Max retry attempts reached ({}). Giving up to prevent infinite loop.", retryCount);
+            throw new IOException("Max retry attempts reached. Request is still too long after multiple truncation attempts.");
+        }
+        // Final validation before building JSON
+        if (request == null) {
+            throw new IllegalArgumentException("Request cannot be null");
+        }
+        
+        if (request.getMessages() == null || request.getMessages().isEmpty()) {
+            logger.error("Attempting to send request with empty messages list. Model: {}, MaxTokens: {}", 
+                    request.getModel(), request.getMaxTokens());
+            throw new IllegalArgumentException("Request must contain at least one message");
+        }
+        
+        logger.debug("Sending request with {} messages to model {}", 
+                request.getMessages().size(), request.getModel());
+        
+        // Validate messages before serialization
+        List<ClaudeMessage> messagesToSend = request.getMessages();
+        if (messagesToSend == null || messagesToSend.isEmpty()) {
+            logger.error("Messages list is null or empty before JSON serialization. Request model: {}", 
+                    request.getModel());
+            throw new IllegalStateException("Cannot serialize request with empty messages list");
+        }
+        
+        logger.debug("Serializing request with {} messages", messagesToSend.size());
+        
         String json;
         if (config.isUseBedrock()) {
             // For Bedrock, create a custom JSON payload without model and stream fields
             java.util.Map<String, Object> payload = new java.util.HashMap<>();
             payload.put("max_tokens", request.getMaxTokens());
-            payload.put("messages", request.getMessages());
+            payload.put("messages", messagesToSend); // Use validated list
             payload.put("anthropic_version", request.getAnthropicVersion());
             json = objectMapper.writeValueAsString(payload);
         } else {
             json = objectMapper.writeValueAsString(request);
+        }
+        
+        // Validate JSON was created and contains messages
+        if (json == null || json.isEmpty()) {
+            throw new IllegalStateException("Failed to serialize request to JSON");
+        }
+        
+        // Check for empty messages array in JSON
+        if (json.contains("\"messages\":[]") || json.contains("\"messages\": null")) {
+            logger.error("JSON payload has empty or null messages array. JSON: {}", json);
+            throw new IllegalStateException("JSON payload has empty messages array");
+        }
+        
+        // Verify messages array exists in JSON
+        if (!json.contains("\"messages\"")) {
+            logger.error("JSON payload missing messages field. JSON: {}", json);
+            throw new IllegalStateException("JSON payload missing messages field");
         }
         
         RequestBody body = RequestBody.create(
@@ -181,6 +367,87 @@ public class ClaudeService implements IClaudeService {
             if (!response.isSuccessful()) {
                 String errorBody = response.body() != null ? response.body().string() : "Unknown error";
                 logger.error("Claude API error: HTTP {} - {}", response.code(), errorBody);
+                
+                // Handle "Input is too long" error with automatic retry
+                if (errorBody.contains("Input is too long") || errorBody.contains("input_too_long") 
+                        || errorBody.contains("context_length_exceeded") || errorBody.contains("Input is too long for requested model")) {
+                    
+                    if (retryCount >= 2) {
+                        logger.error("Input too long error persists after {} retries. Using final fallback: last message only.", retryCount);
+                        // Last resort: keep only the user's current message, and truncate its content if needed
+                        if (request != null && request.getMessages() != null && !request.getMessages().isEmpty()) {
+                            ClaudeMessage lastMessage = request.getMessages().get(request.getMessages().size() - 1);
+                            
+                            // If even the last message is too long, truncate its content
+                            String messageContent = lastMessage.getContent();
+                            if (messageContent != null) {
+                                int messageTokens = tokenCounter.countTokens(messageContent);
+                                
+                                // If message is very long (>30k tokens), truncate it aggressively
+                                if (messageTokens > 30000) {
+                                    logger.warn("Last message is also very long ({} tokens), truncating content", messageTokens);
+                                    // Keep first 500 characters and last 500 characters (total ~1000 chars = ~250 tokens)
+                                    if (messageContent.length() > 1000) {
+                                        messageContent = messageContent.substring(0, 500) + 
+                                                "\n\n[... content truncated due to length - keeping only beginning and end ...]\n\n" + 
+                                                messageContent.substring(messageContent.length() - 500);
+                                    }
+                                    lastMessage = new ClaudeMessage(lastMessage.getRole(), messageContent);
+                                }
+                            }
+                            
+                            List<ClaudeMessage> singleMessage = new java.util.ArrayList<>();
+                            singleMessage.add(lastMessage);
+                            request.setMessages(singleMessage);
+                            
+                            int finalTokens = tokenCounter.countTokens(singleMessage);
+                            logger.warn("Final retry (attempt {}): sending only the last message ({} tokens).", 
+                                    retryCount + 1, finalTokens);
+                            
+                            // This is the absolute last attempt - if this fails, we give up
+                            return sendRequestOnce(request, retryCount + 1);
+                        } else {
+                            logger.error("Cannot perform final fallback - request has no messages");
+                            throw new IOException("Request is too long and has no messages to send.");
+                        }
+                    }
+                    
+                    logger.warn("Input too long error detected (retry {}), attempting retry with more aggressive truncation", retryCount + 1);
+                    
+                    // Retry with very aggressive truncation
+                    if (request != null && request.getMessages() != null && !request.getMessages().isEmpty()) {
+                        List<ClaudeMessage> originalMessages = request.getMessages();
+                        int originalSize = originalMessages.size();
+                        int currentTokens = historyManager.estimateTokens(originalMessages);
+                        
+                        // Progressively more aggressive: reduce by 70% each retry
+                        double reductionFactor = Math.pow(0.3, retryCount + 1); // 0.3, 0.09, 0.027...
+                        int newMaxTokens = Math.max(2000, (int)(currentTokens * reductionFactor)); // At least 2k tokens
+                        int newMaxMessages = Math.max(1, (int)(originalSize * reductionFactor)); // At least 1 message
+                        
+                        logger.warn("Retry {}: Current request has {} messages (~{} tokens). Retrying with max {} messages and {} tokens", 
+                                retryCount + 1, originalSize, currentTokens, newMaxMessages, newMaxTokens);
+                        
+                        List<ClaudeMessage> moreAggressivelyTruncated = historyManager.smartTruncate(
+                            originalMessages, newMaxMessages, newMaxTokens);
+                        
+                        // Ensure we have at least one message (keep the last one - the user's current message)
+                        if (moreAggressivelyTruncated == null || moreAggressivelyTruncated.isEmpty()) {
+                            logger.warn("Aggressive truncation resulted in empty list, keeping last message only");
+                            ClaudeMessage lastMessage = originalMessages.get(originalMessages.size() - 1);
+                            moreAggressivelyTruncated = new java.util.ArrayList<>();
+                            moreAggressivelyTruncated.add(lastMessage);
+                        }
+                        
+                        request.setMessages(moreAggressivelyTruncated);
+                        logger.info("Retry {}: Retrying with {} messages and max {} tokens (reduced from {} messages, ~{} tokens)", 
+                                retryCount + 1, moreAggressivelyTruncated.size(), newMaxTokens, originalSize, currentTokens);
+                        
+                        // Recursively retry with incremented counter
+                        return sendRequestOnce(request, retryCount + 1);
+                    }
+                }
+                
                 throw new IOException("HTTP " + response.code() + ": " + errorBody);
             }
             

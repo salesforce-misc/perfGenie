@@ -1555,6 +1555,11 @@
             showCanaryTable(canaryContextArray,"canaryperfswatcustomview",4);
             }
             }
+        }else if(id == "admin"){
+            // Load admin data when admin tab is activated
+            if (typeof loadAdminData === 'function') {
+                loadAdminData();
+            }
         }
     }
     
@@ -2222,6 +2227,11 @@ function getCanaryHeader(start, end, source){
                 <div class="card-title">Week over week custom</div>
             </a>
         </li>
+        <li class="modern-tabs-nav-item">
+            <a href="#admin" class="modern-tabs-nav-button" data-tab-target="admin">
+                <div class="card-title">Admin</div>
+            </a>
+        </li>
     </ul>
     
     <!-- Modern Accordion for Data Explorer -->
@@ -2247,6 +2257,9 @@ function getCanaryHeader(start, end, source){
     </div>
         <div id="perfswatcustom" class="modern-tab-panel" style="min-height: 900px; padding-top:4px !important;padding-left:0px !important;padding-right:8px !important;">
         <#include "perfswatcustom.ftl">
+    </div>
+        <div id="admin" class="modern-tab-panel" style="min-height: 900px; padding-top:4px !important;padding-left:0px !important;padding-right:8px !important;">
+        <#include "admin.ftl">
     </div>
 </div>
 </div>

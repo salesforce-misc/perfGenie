@@ -97,6 +97,29 @@ public class ClaudeConfig {
                     if (env.has("CLAUDE_CODE_SKIP_BEDROCK_AUTH")) {
                         this.skipBedrockAuth = "1".equals(env.get("CLAUDE_CODE_SKIP_BEDROCK_AUTH").asText());
                     }
+                    
+                    // Handle NODE_EXTRA_CA_CERTS for SSL certificate bundle
+                    if (env.has("NODE_EXTRA_CA_CERTS")) {
+                        String caCertPath = env.get("NODE_EXTRA_CA_CERTS").asText();
+                        if (caCertPath != null && !caCertPath.trim().isEmpty()) {
+                            // Check if already set in environment
+                            String existingCaCert = System.getenv("NODE_EXTRA_CA_CERTS");
+                            if (existingCaCert == null || existingCaCert.isEmpty()) {
+                                // Check if the certificate file exists
+                                File caCertFile = new File(caCertPath);
+                                if (caCertFile.exists() && caCertFile.isFile()) {
+                                    // Set as system property for Java SSL context
+                                    System.setProperty("javax.net.ssl.trustStore", caCertPath);
+                                    System.setProperty("NODE_EXTRA_CA_CERTS", caCertPath);
+                                    logger.info("NODE_EXTRA_CA_CERTS set to: " + caCertPath);
+                                } else {
+                                    logger.warn("NODE_EXTRA_CA_CERTS file does not exist: " + caCertPath);
+                                }
+                            } else {
+                                logger.debug("NODE_EXTRA_CA_CERTS already set in environment: " + existingCaCert);
+                            }
+                        }
+                    }
                 }
                 
                 // Load model from config file if not set via properties
@@ -221,6 +244,29 @@ public class ClaudeConfig {
                 }
                 if (env.has("CLAUDE_CODE_SKIP_BEDROCK_AUTH")) {
                     this.skipBedrockAuth = "1".equals(env.get("CLAUDE_CODE_SKIP_BEDROCK_AUTH").asText());
+                }
+                
+                // Handle NODE_EXTRA_CA_CERTS for SSL certificate bundle
+                if (env.has("NODE_EXTRA_CA_CERTS")) {
+                    String caCertPath = env.get("NODE_EXTRA_CA_CERTS").asText();
+                    if (caCertPath != null && !caCertPath.trim().isEmpty()) {
+                        // Check if already set in environment
+                        String existingCaCert = System.getenv("NODE_EXTRA_CA_CERTS");
+                        if (existingCaCert == null || existingCaCert.isEmpty()) {
+                            // Check if the certificate file exists
+                            File caCertFile = new File(caCertPath);
+                            if (caCertFile.exists() && caCertFile.isFile()) {
+                                // Set as system property for Java SSL context
+                                System.setProperty("javax.net.ssl.trustStore", caCertPath);
+                                System.setProperty("NODE_EXTRA_CA_CERTS", caCertPath);
+                                logger.info("NODE_EXTRA_CA_CERTS set to: " + caCertPath);
+                            } else {
+                                logger.warn("NODE_EXTRA_CA_CERTS file does not exist: " + caCertPath);
+                            }
+                        } else {
+                            logger.debug("NODE_EXTRA_CA_CERTS already set in environment: " + existingCaCert);
+                        }
+                    }
                 }
             }
             

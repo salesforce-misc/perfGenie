@@ -845,16 +845,16 @@
             }
             
             .genie-chat-message-user .genie-chat-message-content {
-                /* Glassmorphism blue matching navigation theme */
-                background: rgba(90, 159, 212, 0.4) !important;
+                /* Purple/violet glassmorphism - distinct from header/send button blue, lighter background */
+                background: rgba(139, 92, 246, 0.3) !important;
                 background-image: 
-                    linear-gradient(135deg, rgba(90, 159, 212, 0.45) 0%, rgba(127, 192, 232, 0.35) 50%, rgba(90, 159, 212, 0.45) 100%),
-                    linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%) !important;
+                    linear-gradient(135deg, rgba(139, 92, 246, 0.35) 0%, rgba(167, 139, 250, 0.28) 50%, rgba(139, 92, 246, 0.35) 100%),
+                    linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.2) 100%) !important;
                 backdrop-filter: blur(15px) saturate(180%);
                 -webkit-backdrop-filter: blur(15px) saturate(180%);
                 border: 1px solid rgba(255, 255, 255, 0.4) !important;
                 box-shadow: 
-                    0 2px 8px rgba(90, 159, 212, 0.3),
+                    0 2px 8px rgba(139, 92, 246, 0.25),
                     inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
                 color: #ffffff !important;
                 border-bottom-right-radius: 4px;
@@ -862,13 +862,19 @@
             }
             
             .genie-chat-message-assistant .genie-chat-message-content {
-                background: rgba(255, 255, 255, 0.9);
-                backdrop-filter: blur(10px);
-                -webkit-backdrop-filter: blur(10px);
+                /* Soft blue-gray matching the navigation theme */
+                background: rgba(240, 247, 252, 0.95) !important;
+                background-image: 
+                    linear-gradient(135deg, rgba(240, 247, 252, 0.98) 0%, rgba(230, 242, 250, 0.95) 50%, rgba(240, 247, 252, 0.98) 100%),
+                    linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.2) 100%) !important;
+                backdrop-filter: blur(10px) saturate(120%);
+                -webkit-backdrop-filter: blur(10px) saturate(120%);
                 color: #1f2937;
-                border: 1px solid rgba(90, 159, 212, 0.2);
+                border: 1px solid rgba(90, 159, 212, 0.25) !important;
                 border-bottom-left-radius: 4px;
-                box-shadow: 0 1px 3px rgba(90, 159, 212, 0.1);
+                box-shadow: 
+                    0 2px 6px rgba(90, 159, 212, 0.15),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
             }
             
             .genie-chat-input-container {
@@ -19510,6 +19516,54 @@
         }
     }
     /**
+     * Extract unique metric names from series names
+     * Metric name is the token between last ':' (if exists) and first '{' (if exists)
+     * Examples:
+     *   "cpu:user{avg}" -> "user"
+     *   "memory:used{max}" -> "used"
+     *   "network:bytes_in" -> "bytes_in"
+     *   "cpu_user" -> "cpu_user" (no ':' or '{')
+     * @param {Array<string>} seriesNames - Array of series names
+     * @returns {Array<string>} Array of unique metric names
+     */
+    extractUniqueMetrics(seriesNames) {
+        if (!seriesNames || !Array.isArray(seriesNames) || seriesNames.length === 0) {
+            return [];
+        }
+        
+        const metrics = new Set();
+        
+        seriesNames.forEach(seriesName => {
+            if (!seriesName || typeof seriesName !== 'string') {
+                return;
+            }
+            
+            let metric = seriesName.trim();
+            
+            // Extract metric name: token between last ':' and first '{'
+            if (metric.includes(':')) {
+                // Get part after last ':'
+                const lastColonIndex = metric.lastIndexOf(':');
+                metric = metric.substring(lastColonIndex + 1);
+            }
+            
+            if (metric.includes('{')) {
+                // Get part before first '{'
+                const firstBraceIndex = metric.indexOf('{');
+                metric = metric.substring(0, firstBraceIndex);
+            }
+            
+            // Trim and add to set (automatically handles uniqueness)
+            metric = metric.trim();
+            if (metric) {
+                metrics.add(metric);
+            }
+        });
+        
+        return Array.from(metrics).sort(); // Return sorted array of unique metrics
+    }
+    
+    /**
      * Get panel metadata for all panels
      * @returns {Array} Array of panel metadata objects
      */
@@ -19529,14 +19583,18 @@
             };
             
             // Get series names from various sources
+            let allSeriesNames = [];
             if (panel._chartSeriesNames && Array.isArray(panel._chartSeriesNames)) {
-                metadata.seriesNames = [...panel._chartSeriesNames];
+                allSeriesNames = [...panel._chartSeriesNames];
             } else if (panel._currentSeriesNames && Array.isArray(panel._currentSeriesNames)) {
-                metadata.seriesNames = [...panel._currentSeriesNames];
+                allSeriesNames = [...panel._currentSeriesNames];
             } else if (this.charts[panel.id] && this.charts[panel.id].data && this.charts[panel.id].data.datasets) {
                 // Extract from chart datasets
-                metadata.seriesNames = this.charts[panel.id].data.datasets.map(ds => ds.label || 'Unknown').filter(Boolean);
+                allSeriesNames = this.charts[panel.id].data.datasets.map(ds => ds.label || 'Unknown').filter(Boolean);
             }
+            
+            // Extract unique metric names from series names
+            metadata.seriesNames = this.extractUniqueMetrics(allSeriesNames);
             
             return metadata;
         });

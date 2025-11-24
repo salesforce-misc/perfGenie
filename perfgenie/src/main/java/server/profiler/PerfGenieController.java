@@ -172,6 +172,57 @@ public class PerfGenieController {
         return Resources.toString(Resources.getResource("canaryheader.json"), StandardCharsets.UTF_8);
     }
 
+    @GetMapping(path = {"/v1/podconfig","/component/casp/v1/podconfig"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String podconfig() throws IOException {
+        try {
+            return Utils.toJson(ArgusQueryT.pc);
+        } catch (Exception e) {
+            return "{\"error\":\"" + e.getMessage() + "\"}";
+        }
+    }
+
+    @PostMapping(path = {"/v1/podconfig","/component/casp/v1/podconfig"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> updatePodConfig(@RequestBody PodConfigUpdateRequest request) {
+        try {
+            if (request == null || request.getConfig() == null) {
+                return ResponseEntity.badRequest().body("{\"error\":\"Invalid request: config is required\"}");
+            }
+            
+            // Update the in-memory PodConfig object
+            if (ArgusQueryT.pc == null) {
+                ArgusQueryT.pc = new perfgenie.utils.PodConfig();
+            }
+            ArgusQueryT.pc.setConfig(request.getConfig());
+            
+            // Save config as an event (always uses fixed host name)
+            try {
+                String configJson = Utils.toJson(ArgusQueryT.pc);
+                service.addConfigEvent(configJson);
+            } catch (IOException e) {
+                // Log error but don't fail the request
+                System.err.println("Failed to save PodConfig as event: " + e.getMessage());
+                e.printStackTrace();
+            }
+            
+            return ResponseEntity.ok("{\"success\":true,\"message\":\"PodConfig updated successfully\"}");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("{\"error\":\"" + e.getMessage() + "\"}");
+        }
+    }
+    
+    // Inner class for request body
+    static class PodConfigUpdateRequest {
+        private Map<String, Map<String, Object>> config;
+        
+        public Map<String, Map<String, Object>> getConfig() {
+            return config;
+        }
+        
+        public void setConfig(Map<String, Map<String, Object>> config) {
+            this.config = config;
+        }
+    }
+
     /*@GetMapping(path = {"/component/casp/v1/canary","/component/casp/v1/canary/{host}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String canary(
             @PathVariable(required = false, name = "host") String host,

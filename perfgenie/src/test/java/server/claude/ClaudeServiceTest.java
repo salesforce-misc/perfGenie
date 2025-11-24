@@ -16,6 +16,7 @@ import server.claude.model.ClaudeMessage;
 import server.claude.model.ClaudeRequest;
 import server.claude.model.ClaudeResponse;
 import server.claude.mcp.MCPManager;
+import server.claude.rag.RAGService;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,6 +32,15 @@ public class ClaudeServiceTest {
     
     @Mock
     private MCPManager mcpManager;
+    
+    @Mock
+    private ConversationHistoryManager historyManager;
+    
+    @Mock
+    private RAGService ragService;
+    
+    @Mock
+    private TokenCounter tokenCounter;
 
     private ClaudeService claudeService;
 
@@ -43,7 +53,10 @@ public class ClaudeServiceTest {
         when(claudeConfig.isUseBedrock()).thenReturn(false);
         when(claudeConfig.getApiUrl()).thenReturn("https://api.anthropic.com/v1/messages");
         
-        claudeService = new ClaudeService(claudeConfig, mcpManager);
+        // Mock RAG service
+        when(ragService.isEnabled()).thenReturn(false);
+        
+        claudeService = new ClaudeService(claudeConfig, mcpManager, historyManager, ragService, tokenCounter);
         claudeService.init(); // Initialize the HTTP client
     }
 
@@ -63,9 +76,12 @@ public class ClaudeServiceTest {
             return;
         }
         
-        // For integration test, we need a real MCPManager
+        // For integration test, we need real dependencies
         MCPManager realMCPManager = new MCPManager(realConfig);
-        ClaudeService realService = new ClaudeService(realConfig, realMCPManager);
+        TokenCounter realTokenCounter = new TokenCounter();
+        ConversationHistoryManager realHistoryManager = new ConversationHistoryManager(realTokenCounter);
+        RAGService realRAGService = new RAGService();
+        ClaudeService realService = new ClaudeService(realConfig, realMCPManager, realHistoryManager, realRAGService, realTokenCounter);
         realService.init();
         
         try {
@@ -107,7 +123,10 @@ public class ClaudeServiceTest {
         }
         
         MCPManager realMCPManager = new MCPManager(realConfig);
-        ClaudeService realService = new ClaudeService(realConfig, realMCPManager);
+        TokenCounter realTokenCounter = new TokenCounter();
+        ConversationHistoryManager realHistoryManager = new ConversationHistoryManager(realTokenCounter);
+        RAGService realRAGService = new RAGService();
+        ClaudeService realService = new ClaudeService(realConfig, realMCPManager, realHistoryManager, realRAGService, realTokenCounter);
         realService.init();
         
         try {
@@ -145,7 +164,10 @@ public class ClaudeServiceTest {
         }
         
         MCPManager realMCPManager = new MCPManager(realConfig);
-        ClaudeService realService = new ClaudeService(realConfig, realMCPManager);
+        TokenCounter realTokenCounter = new TokenCounter();
+        ConversationHistoryManager realHistoryManager = new ConversationHistoryManager(realTokenCounter);
+        RAGService realRAGService = new RAGService();
+        ClaudeService realService = new ClaudeService(realConfig, realMCPManager, realHistoryManager, realRAGService, realTokenCounter);
         realService.init();
         
         try {

@@ -341,7 +341,7 @@
                             }
             if(tokens[1] == "timestamp" || tokens[1] == "text" || tokens[1] == "url"){
                 canaryviewtable.addContextTableHeader(tableHeader, headerLableMap[tokens[0]], -1, "", title);
-                if(tokens[0] == "timestamp" && tokens[1] == "timestamp"  && type == 1){
+                if(tokens[0] == "timestamp" && tokens[1] == "timestamp"  && (type == 1 || type==4)){
                     canaryviewtable.addContextTableHeader(tableHeader, "day", -1, "", "Day");
                 }
             }else if(tokens[1] == "number" || tokens[1] == "numberc" || tokens[1] == "int"){
@@ -448,9 +448,9 @@
                     if (headerTypeMap[tokens[0]] == "timestamp") {
                         if(type == 2 || type == 3 || type == 4 || type == 1){
                             curTimestamp = val;
-                            canaryviewtable.addContextTableRow(tableRows[rowIndex], moment.utc(val).format('YY-MM-DD HH:MM:SS'));
+                            canaryviewtable.addContextTableRow(tableRows[rowIndex], moment.utc(val).format('YY-MM-DD HH:mm:ss'));
 
-                            if(tokens[0] == "timestamp" && type == 1){
+                            if(tokens[0] == "timestamp" && (type == 1 || type == 4) ){
                                 if(minTimeStamp > val){
                                     minTimeStamp = val;
                                 }

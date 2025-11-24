@@ -35,6 +35,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.slf4j.LoggerFactory;
+import javax.annotation.PostConstruct;
 
 
 public class PerfGenieService implements IPerfGenieService {
@@ -84,6 +85,70 @@ public class PerfGenieService implements IPerfGenieService {
             //canarySideBySideTask(0, 0,"sidebyside", null);
             canarySideBySideTask(0, 0,"release", "perf-genie-test45");
             //System.exit(0);
+        }
+    }
+    
+    private void loadLatestConfigEvent() {
+        try {
+            long end = System.currentTimeMillis();
+            long start = end - (7L * 24 * 59 * 60 * 1000); // 7 days ago
+            long fiveDaysAgo = end - (5L * 24 * 60 * 60 * 1000); // 5 days ago
+
+            final Map<String, String> dimMap = new HashMap<>();
+            final Map<String, String> queryMap = new HashMap<>();
+            queryMap.put("source", "=" + canarySource);
+            queryMap.put("tenant-id", "=podconfig");
+            queryMap.put("type", "=podconfig");
+            queryMap.put("name", "=podconfig");
+            queryMap.put("file-name", "=podconfig-update");
+            
+            Map<Long, String> configEvents = eventStore.getOtherPayLoads(config.getTenant(), start, end, queryMap, dimMap, true);
+            
+            if (configEvents != null && !configEvents.isEmpty()) {
+                // Get the latest event (highest timestamp)
+                Long latestTimestamp = configEvents.keySet().stream()
+                    .max(Long::compareTo)
+                    .orElse(null);
+                
+                if (latestTimestamp != null) {
+                    String configJson = configEvents.get(latestTimestamp);
+                    if (configJson != null && !configJson.trim().isEmpty()) {
+                        perfgenie.utils.PodConfig latestConfig = (perfgenie.utils.PodConfig) Utils.readValue(configJson, perfgenie.utils.PodConfig.class);
+                        if (latestConfig != null && latestConfig.getConfig() != null) {
+                            ArgusQueryT.pc = latestConfig;
+                            logger.info("Loaded latest PodConfig from event at timestamp: " + latestTimestamp + " (" + 
+                                Utils.convertEpochToUTCString(latestTimestamp) + ")");
+                            
+                            // If the latest event is older than 5 days, save it again to make it fresh
+                            if (latestTimestamp < fiveDaysAgo) {
+                                try {
+                                    String currentConfigJson = Utils.toJson(ArgusQueryT.pc);
+                                    addConfigEvent(currentConfigJson);
+                                    logger.info("Refreshed PodConfig event (previous event was older than 5 days)");
+                                } catch (IOException e) {
+                                    logger.warn("Failed to refresh PodConfig event: " + e.getMessage(), e);
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // No config events found - save the current in-memory pc config as an event
+                logger.info("No config events found in the last 7 days, saving current in-memory PodConfig as event");
+                if (ArgusQueryT.pc != null && ArgusQueryT.pc.getConfig() != null) {
+                    try {
+                        String currentConfigJson = Utils.toJson(ArgusQueryT.pc);
+                        addConfigEvent(currentConfigJson);
+                        logger.info("Saved current in-memory PodConfig as event");
+                    } catch (IOException e) {
+                        logger.warn("Failed to save current PodConfig as event: " + e.getMessage(), e);
+                    }
+                } else {
+                    logger.warn("ArgusQueryT.pc is null or has no config, cannot save as event");
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to load latest config event: " + e.getMessage(), e);
         }
     }
 
@@ -360,6 +425,12 @@ public class PerfGenieService implements IPerfGenieService {
         this.parser = parser;
         this.config = config;
         WeekOverWeek.setEventStore(eventStore);
+    }
+    
+    @PostConstruct
+    public void initialize() {
+        // Load latest config event once after application starts
+        loadLatestConfigEvent();
     }
 
     @Override
@@ -1201,6 +1272,34 @@ public class PerfGenieService implements IPerfGenieService {
         eventStore.addGenieEvent(timestamp, queryMap, dimMap, expression, config.getTenant());
     }
 
+    public void addConfigEvent(String c) throws IOException {
+        long timestamp = System.currentTimeMillis(); // Always use new timestamp
+        // Always use fixed host name for config events
+        String host = "perf-genie-tracker";
+        String substrate = System.getenv("SUBSTRATE");
+        if (substrate != null || config.getStorageType().equals("grpc")) {
+            if(host == null) {
+                host = "perf-genie-tracker";
+            }
+        }else{
+            host = InetAddress.getLocalHost().getHostName();
+        }
+        final Map<String, Double> dimMap = new HashMap<>();
+        final Map<String, String> queryMap = new HashMap<>();
+        queryMap.put("source", canarySource);
+        queryMap.put("tenant-id", "podconfig");
+        queryMap.put("instance-id", host);
+        queryMap.put("host", host);
+        queryMap.put("source-file", "podconfig");
+        queryMap.put("file-name", "podconfig-update");//
+        queryMap.put("type", "podconfig");
+        queryMap.put("name", "podconfig");
+        queryMap.put("guid", timestamp + "podconfig");
+
+        System.out.println(timestamp + " addConfigEvent 7--->" + Utils.toJson(queryMap));
+        eventStore.addGenieEvent(timestamp, queryMap, dimMap, c, this.config.getTenant());
+    }
+
     public String getAllPidStatData(long start, long end, final String cell,String instance, String substrate, String domain, String host) throws IOException {
         List<List<Object>> datas = new ArrayList<>();
         final Map<String, String> queryMap =new HashMap<>();
@@ -1518,7 +1617,7 @@ public class PerfGenieService implements IPerfGenieService {
         try {
             long end = Instant.now().toEpochMilli() + 60 * 60 * 1000;
             List<String> lenses = new ArrayList<>();
-            for (int j = 5; j <= 15; j += 5) {
+            for (int j = 5; j <= 10; j += 5) {
                 long start = end - 5 * 24 * 60 * 60 * 1000L;
                 List<String> lenses1 = eventStore.getCanaryLenses(config.getTenant(), start, end, queryMap, dimMap, true);
                 if(lenses1 != null){
@@ -1948,7 +2047,7 @@ public class PerfGenieService implements IPerfGenieService {
         String substrate = System.getenv("SUBSTRATE");
         if (substrate != null || config.getStorageType().equals("grpc")) {
             if(host == null) {
-                host = "perf-genie-test13";
+                host = "perf-genie-test45";
             }
         }else{
             host = InetAddress.getLocalHost().getHostName();
@@ -1974,7 +2073,7 @@ public class PerfGenieService implements IPerfGenieService {
         String substrate = System.getenv("SUBSTRATE");
         if (substrate != null || config.getStorageType().equals("grpc")) {
             if(host == null) {
-                host = "perf-genie-test13";
+                host = "perf-genie-test45";
             }
         }else{
             host = InetAddress.getLocalHost().getHostName();
@@ -2026,7 +2125,7 @@ public class PerfGenieService implements IPerfGenieService {
         String substrate = System.getenv("SUBSTRATE");
         if (substrate != null || config.getStorageType().equals("grpc")) {
             if(host == null) {
-                host = "perf-genie-test13";
+                host = "perf-genie-test45";
             }
         }else{
             local = true;
@@ -2118,10 +2217,23 @@ public class PerfGenieService implements IPerfGenieService {
             String host = InetAddress.getLocalHost().getHostName();
             System.out.println(args[0]);
             if (substrate != null) {
-                host = "perf-genie-test13";
+                host = "perf-genie-test45";
             }
             host = "perf-genie-test45";
-            if (args[0].equals("refresh")) {
+            if (args[0].equals("process")) {
+                if (args.length > 5) {
+                    long startTime1 = Long.parseLong(args[1]);
+                    long endTime1 = Long.parseLong(args[2]);
+                    long startTime2 = Long.parseLong(args[3]);
+                    long endTime2 = Long.parseLong(args[4]);
+                    String cell = args[5];
+                    System.out.println("process service.processWeekOverWeekCanaryTask");
+                    service.processWeekOverWeekCanaryTask(startTime1, endTime1, cell, startTime2, endTime2, cell, host);
+                }else{
+                    System.out.println(args.length);
+                }
+
+            }else if (args[0].equals("refresh")) {
                 long startTime = Long.parseLong(args[1]);
                 long endTime = Long.parseLong(args[2]);
                 String cell = args[3];

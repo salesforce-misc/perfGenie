@@ -398,14 +398,19 @@ public class WeekOverWeek {
                         }
                     }
                     if(metric.equals("PA")){
-                        int startIndex = getPeakIndexIfExists(x,peakStart);
-                        int index = getPAKickinIndexIfExists(v,startIndex);
-                        long offset = x.get(index) - peakStart;
-                        if(offset < 0){
-                            offset = 0;
+                        if(x.size() > 0) {
+                            int startIndex = getPeakIndexIfExists(x, peakStart);
+                            int index = getPAKickinIndexIfExists(v, startIndex);
+                            long offset = x.get(index) - peakStart;
+                            if (offset < 0) {
+                                offset = 0;
+                            }
+                            System.out.println("---> PAStartOfset2 time:" + offset + ":" + peakStart + ":" + x.get(index) + ":" + Utils.convertEpochToUTCString(x.get(index)));
+                            percentiles.put("PAStartOfset", offset * 1.0);
+                        }else{
+                            System.out.println("timestamps size is 0 ---> " + cell);
+                            percentiles.put("PAStartOfset", 0.0);
                         }
-                        System.out.println("---> PAStartOfset2 time:" + offset + ":" +peakStart+":"+x.get(index) + ":"+ Utils.convertEpochToUTCString(x.get(index)));
-                        percentiles.put("PAStartOfset", offset*1.0);
                     }
                     return percentiles;
                 }
@@ -434,14 +439,19 @@ public class WeekOverWeek {
                 }
             }
             if(metric.equals("PA")){
-                int startIndex = getPeakIndexIfExists(timestamps,peakStart);
-                int index = getPAKickinIndexIfExists(values,startIndex);
-                long offset = timestamps.get(index) - peakStart;
-                if(offset < 0){
-                    offset = 0;
+                if(timestamps.size() > 0) {
+                    int startIndex = getPeakIndexIfExists(timestamps, peakStart);
+                    int index = getPAKickinIndexIfExists(values, startIndex);
+                    long offset = timestamps.get(index) - peakStart;
+                    if (offset < 0) {
+                        offset = 0;
+                    }
+                    System.out.println("---> PAStartOfset1 time:" + offset + ":" + peakStart + ":" + timestamps.get(index) + ":" + Utils.convertEpochToUTCString(timestamps.get(index)));
+                    percentiles.put("PAStartOfset", 1.0 * offset);
+                }else{
+                    System.out.println("timestamps size is 0 ---> " + cell);
+                    percentiles.put("PAStartOfset", 0.0);
                 }
-                System.out.println("---> PAStartOfset1 time:" + offset + ":" + peakStart+":"+timestamps.get(index) + ":" + Utils.convertEpochToUTCString(timestamps.get(index)));
-                percentiles.put("PAStartOfset", 1.0*offset);
             }
             return percentiles;
         }
@@ -1169,6 +1179,7 @@ public class WeekOverWeek {
             }
         }catch (Exception e){
             System.out.println( "Exception:" + e.getMessage());
+            e.printStackTrace(System.out);
         }
         return null;
     }
@@ -1261,6 +1272,7 @@ public class WeekOverWeek {
                 return true;
             }
         } catch (Exception e) {
+            System.out.println(e);
             return false;
         }
         return false;
@@ -1268,9 +1280,11 @@ public class WeekOverWeek {
 
     public static void main(String[] args) {
         try {
-            CanaryResponse res = processWeekOverWeekCanary(1742270400000L, 1742302800000L, "ind86", null);
+            //CanaryResponse res = processWeekOverWeekCanary(1742270400000L, 1742302800000L, "ind86", null);
+            CanaryResponse res1 = getCanaryResponseWeekOverWeek(1763893800000L,1763908200000L,"gra202",1763813700000L,1763828100000L,"gra202",4, "perf-genie-test45");
+
             //
-            System.out.println("--->" + Utils.toJson(res));
+            System.out.println("--->" + Utils.toJson(res1));
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
