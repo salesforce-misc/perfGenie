@@ -5698,11 +5698,11 @@ class GenieAnalytics {
 
     showDateTimeFilter(dimensionName) {
         // Use instance-specific ID to prevent conflicts between multiple instances
-        const filterId = this.getInstanceId('dateTimeFilter_' + dimensionName);
         // Check if filter already exists in this instance
-        if (this.getElementById('dateTimeFilter_' + dimensionName) || document.getElementById(filterId)) {
+        if (this.getElementById('dateTimeFilter_' + dimensionName)) {
             return;
         }
+        const filterId = this.getInstanceId('dateTimeFilter_' + dimensionName);
         
         const filterContainer = document.createElement('div');
         filterContainer.id = filterId;
@@ -5772,15 +5772,17 @@ class GenieAnalytics {
         const filterTypeRadios = filterContainer.querySelectorAll('input[name="filterType_' + this.instanceId + '_' + dimensionName + '"]');
         filterTypeRadios.forEach(radio => {
             radio.addEventListener('change', () => {
-                const relativeDiv = document.getElementById(this.getInstanceId('relative_' + dimensionName));
-                const absoluteDiv = document.getElementById(this.getInstanceId('absolute_' + dimensionName));
+                const relativeDiv = this.getElementById('relative_' + dimensionName);
+                const absoluteDiv = this.getElementById('absolute_' + dimensionName);
                 
-                if (radio.value === 'relative') {
-                    relativeDiv.style.display = 'block';
-                    absoluteDiv.style.display = 'none';
-                } else {
-                    relativeDiv.style.display = 'none';
-                    absoluteDiv.style.display = 'block';
+                if (relativeDiv && absoluteDiv) {
+                    if (radio.value === 'relative') {
+                        relativeDiv.style.display = 'block';
+                        absoluteDiv.style.display = 'none';
+                    } else {
+                        relativeDiv.style.display = 'none';
+                        absoluteDiv.style.display = 'block';
+                    }
                 }
             });
         });
@@ -5788,8 +5790,7 @@ class GenieAnalytics {
 
     hideDateTimeFilter(dimensionName) {
         // Use instance-specific ID
-        const filterId = this.getInstanceId('dateTimeFilter_' + dimensionName);
-        const filterElement = document.getElementById(filterId);
+        const filterElement = this.getElementById('dateTimeFilter_' + dimensionName);
         if (filterElement) {
             filterElement.remove();
         }
@@ -5813,7 +5814,7 @@ class GenieAnalytics {
         const filterType = filterTypeRadio.value;
         
         if (filterType === 'relative') {
-            const periodElement = document.getElementById(this.getInstanceId('relativePeriod_' + dimensionName));
+            const periodElement = this.getElementById('relativePeriod_' + dimensionName);
             if (!periodElement) {
                 console.error('Relative period element not found for dimension:', dimensionName);
                 return;
@@ -5821,8 +5822,8 @@ class GenieAnalytics {
             const period = periodElement.value;
             this.dateTimeFilters[dimensionName] = { type: 'relative', period: period };
         } else {
-            const fromDateElement = document.getElementById(this.getInstanceId('fromDate_' + dimensionName));
-            const toDateElement = document.getElementById(this.getInstanceId('toDate_' + dimensionName));
+            const fromDateElement = this.getElementById('fromDate_' + dimensionName);
+            const toDateElement = this.getElementById('toDate_' + dimensionName);
             if (!fromDateElement || !toDateElement) {
                 console.error('Date elements not found for dimension:', dimensionName);
                 return;
@@ -9850,11 +9851,11 @@ class GenieAnalytics {
         Object.keys(this.dateTimeFilters).forEach(dimensionName => {
             const filter = this.dateTimeFilters[dimensionName];
             if (filter.type === 'relative') {
-                const periodSelect = document.getElementById('relativePeriod_' + dimensionName);
+                const periodSelect = this.getElementById('relativePeriod_' + dimensionName);
                 if (periodSelect) periodSelect.value = filter.period || '';
             } else if (filter.type === 'absolute') {
-                const fromInput = document.getElementById('fromDate_' + dimensionName);
-                const toInput = document.getElementById('toDate_' + dimensionName);
+                const fromInput = this.getElementById('fromDate_' + dimensionName);
+                const toInput = this.getElementById('toDate_' + dimensionName);
                 if (fromInput) fromInput.value = filter.from || '';
                 if (toInput) toInput.value = filter.to || '';
             }
@@ -9895,10 +9896,16 @@ class GenieAnalytics {
     }
 
     showSaveLensModal() {
-        const modal = document.getElementById('saveLensModal');
-        const nameInput = document.getElementById('lensNameInput');
-        const descriptionInput = document.getElementById('lensDescriptionInput');
-        const previewContent = document.getElementById('lensPreviewContent');
+        const modal = this.getElementById('saveLensModal');
+        const nameInput = this.getElementById('lensNameInput');
+        const descriptionInput = this.getElementById('lensDescriptionInput');
+        const previewContent = this.getElementById('lensPreviewContent');
+
+        // Check if elements exist
+        if (!modal || !nameInput || !descriptionInput || !previewContent) {
+            console.error('Save lens modal elements not found');
+            return;
+        }
 
         // Clear previous values
         nameInput.value = '';
@@ -9962,11 +9969,17 @@ class GenieAnalytics {
             return;
         }
 
-        const modal = document.getElementById('saveLensModal');
-        const closeBtn = document.getElementById('closeSaveLensModal');
-        const cancelBtn = document.getElementById('cancelSaveLens');
-        const confirmBtn = document.getElementById('confirmSaveLens');
-        const nameInput = document.getElementById('lensNameInput');
+        const modal = this.getElementById('saveLensModal');
+        const closeBtn = this.getElementById('closeSaveLensModal');
+        const cancelBtn = this.getElementById('cancelSaveLens');
+        const confirmBtn = this.getElementById('confirmSaveLens');
+        const nameInput = this.getElementById('lensNameInput');
+
+        // Check if elements exist
+        if (!modal || !closeBtn || !cancelBtn || !confirmBtn || !nameInput) {
+            console.error('Save lens modal event elements not found');
+            return;
+        }
 
         // Close modal functions
         const closeModal = () => {
@@ -10011,9 +10024,15 @@ class GenieAnalytics {
     }
 
     confirmSaveLens() {
-        const nameInput = document.getElementById('lensNameInput');
-        const descriptionInput = document.getElementById('lensDescriptionInput');
-        const modal = document.getElementById('saveLensModal');
+        const nameInput = this.getElementById('lensNameInput');
+        const descriptionInput = this.getElementById('lensDescriptionInput');
+        const modal = this.getElementById('saveLensModal');
+
+        // Check if elements exist
+        if (!nameInput || !descriptionInput || !modal) {
+            console.error('Save lens modal elements not found');
+            return;
+        }
 
         const lensName = nameInput.value.trim();
         const description = descriptionInput.value.trim();
@@ -10486,8 +10505,14 @@ class GenieAnalytics {
     switchView(view) {
         const tableView = document.getElementById('genieAnalyticsTable');
         const chartView = document.getElementById('genieAnalyticsCharts');
-        const tableBtn = document.getElementById('tableViewBtn');
+        const tableBtn = this.getElementById('tableViewBtn');
         const chartBtn = document.getElementById('chartViewBtn');
+        
+        // Check if elements exist
+        if (!tableView || !chartView || !tableBtn || !chartBtn) {
+            console.error('switchView: Some elements not found');
+            return;
+        }
         
         if (view === 'table') {
             tableView.style.display = 'block';
@@ -11697,13 +11722,13 @@ class GenieAnalytics {
      * Show the expression builder modal
      */
     showExpressionBuilder() {
-        const modal = document.getElementById('expressionBuilderModal');
+        const modal = this.getElementById('expressionBuilderModal');
         if (!modal) return;
         
         // Reset the form
-        const nameInput = document.getElementById('expressionNameInput');
-        const expressionParts = document.getElementById('expressionParts');
-        const preview = document.getElementById('expressionPreview');
+        const nameInput = this.getElementById('expressionNameInput');
+        const expressionParts = this.getElementById('expressionParts');
+        const preview = this.getElementById('expressionPreview');
         
         if (nameInput) nameInput.value = '';
         if (expressionParts) expressionParts.innerHTML = '';
@@ -11771,7 +11796,7 @@ class GenieAnalytics {
             partDiv.style.margin = '1px';
             partDiv.appendChild(select);
             
-            const expressionParts = document.getElementById('expressionParts');
+            const expressionParts = this.getElementById('expressionParts');
             if (expressionParts) {
                 expressionParts.appendChild(partDiv);
                 this.currentExpressionParts.push({ type: 'metric', value: null });
@@ -11819,7 +11844,7 @@ class GenieAnalytics {
             partDiv.style.margin = '1px';
             partDiv.appendChild(input);
             
-            const expressionParts = document.getElementById('expressionParts');
+            const expressionParts = this.getElementById('expressionParts');
             if (expressionParts) {
                 expressionParts.appendChild(partDiv);
                 this.currentExpressionParts.push({ type: 'constant', value: null });
@@ -11848,7 +11873,7 @@ class GenieAnalytics {
             span.textContent = operatorSymbol;
             partDiv.appendChild(span);
             
-            const expressionParts = document.getElementById('expressionParts');
+            const expressionParts = this.getElementById('expressionParts');
             if (expressionParts) {
                 expressionParts.appendChild(partDiv);
                 this.currentExpressionParts.push({ type: 'operator', value: type });
@@ -11860,7 +11885,7 @@ class GenieAnalytics {
      * Clear the current expression being built
      */
     clearExpression() {
-        const expressionParts = document.getElementById('expressionParts');
+        const expressionParts = this.getElementById('expressionParts');
         if (expressionParts) {
             expressionParts.innerHTML = '';
         }
@@ -11872,7 +11897,7 @@ class GenieAnalytics {
      * Create the expression
      */
     createExpression() {
-        const nameInput = document.getElementById('expressionNameInput');
+        const nameInput = this.getElementById('expressionNameInput');
         const expressionName = nameInput ? nameInput.value.trim() : '';
         
         if (!expressionName) {
@@ -11941,7 +11966,7 @@ class GenieAnalytics {
         this.setupDragAndDrop();
         
         // Close the modal
-        const modal = document.getElementById('expressionBuilderModal');
+        const modal = this.getElementById('expressionBuilderModal');
         if (modal) {
             modal.style.display = 'none';
         }
@@ -11962,28 +11987,30 @@ class GenieAnalytics {
             return;
         }
 
-        const modal = document.getElementById('saveExpressionModal');
-        const nameInput = document.getElementById('saveExpressionNameInput');
-        const descriptionInput = document.getElementById('saveExpressionDescriptionInput');
-        const previewContent = document.getElementById('expressionPreviewContent');
+        const modal = this.getElementById('saveExpressionModal');
+        const nameInput = this.getElementById('saveExpressionNameInput');
+        const descriptionInput = this.getElementById('saveExpressionDescriptionInput');
+        const previewContent = this.getElementById('expressionPreviewContent');
+
+        // Check if elements exist
+        if (!modal || !nameInput || !descriptionInput || !previewContent) {
+            console.error('Save expression modal elements not found');
+            return;
+        }
 
         // Clear previous values
-        if (nameInput) nameInput.value = '';
-        if (descriptionInput) descriptionInput.value = '';
+        nameInput.value = '';
+        descriptionInput.value = '';
 
         // Generate expression preview
         this.generateExpressionPreview(previewContent);
 
         // Show modal
-        if (modal) {
-            modal.style.display = 'flex';
-        }
+        modal.style.display = 'flex';
 
         // Focus on name input
         setTimeout(() => {
-            if (nameInput) {
-                nameInput.focus();
-            }
+            nameInput.focus();
         }, 100);
 
         // Set up modal events if not already done
@@ -12018,11 +12045,17 @@ class GenieAnalytics {
             return;
         }
 
-        const modal = document.getElementById('saveExpressionModal');
-        const closeBtn = document.getElementById('closeSaveExpressionModal');
-        const cancelBtn = document.getElementById('cancelSaveExpression');
-        const confirmBtn = document.getElementById('confirmSaveExpression');
-        const nameInput = document.getElementById('saveExpressionNameInput');
+        const modal = this.getElementById('saveExpressionModal');
+        const closeBtn = this.getElementById('closeSaveExpressionModal');
+        const cancelBtn = this.getElementById('cancelSaveExpression');
+        const confirmBtn = this.getElementById('confirmSaveExpression');
+        const nameInput = this.getElementById('saveExpressionNameInput');
+
+        // Check if elements exist
+        if (!modal || !closeBtn || !cancelBtn || !confirmBtn || !nameInput) {
+            console.error('Save expression modal event elements not found');
+            return;
+        }
 
         // Close modal functions
         const closeModal = () => {
@@ -12051,7 +12084,7 @@ class GenieAnalytics {
         });
 
         // Prevent form submission
-        const form = document.getElementById('saveExpressionForm');
+        const form = this.getElementById('saveExpressionForm');
         if (form) {
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -12067,12 +12100,18 @@ class GenieAnalytics {
      * Confirm save derived metric
      */
     confirmSaveExpression() {
-        const nameInput = document.getElementById('saveExpressionNameInput');
-        const descriptionInput = document.getElementById('saveExpressionDescriptionInput');
-        const modal = document.getElementById('saveExpressionModal');
+        const nameInput = this.getElementById('saveExpressionNameInput');
+        const descriptionInput = this.getElementById('saveExpressionDescriptionInput');
+        const modal = this.getElementById('saveExpressionModal');
 
-        const expressionName = nameInput ? nameInput.value.trim() : '';
-        const description = descriptionInput ? descriptionInput.value.trim() : '';
+        // Check if elements exist
+        if (!nameInput || !descriptionInput || !modal) {
+            console.error('Save expression modal elements not found');
+            return;
+        }
+
+        const expressionName = nameInput.value.trim();
+        const description = descriptionInput.value.trim();
 
         // Validate name
         if (!expressionName) {
@@ -12326,7 +12365,12 @@ class GenieAnalytics {
      * Update a specific missing items indicator
      */
     updateMissingItemsIndicator(elementId, count) {
-        const indicator = document.getElementById(elementId);
+        // Try instance-specific ID first (for IDs in the IDs map)
+        let indicator = this.getElementById(elementId);
+        // Fall back to document.getElementById for legacy/global elements
+        if (!indicator) {
+            indicator = document.getElementById(elementId);
+        }
         if (indicator) {
             if (count > 0) {
                 indicator.textContent = count;
@@ -12341,8 +12385,18 @@ class GenieAnalytics {
      * Hide all missing items indicators
      */
     hideMissingItemsIndicators() {
-        const indicators = ['dimensionsMissing', 'metricsMissing', 'filtersMissing', 'dimensionsMissingBlue', 'metricsMissingBlue', 'filtersMissingBlue'];
-        indicators.forEach(id => {
+        // Use instance-specific IDs for the main indicators
+        const instanceIndicators = ['dimensionsMissing', 'metricsMissing', 'filtersMissing'];
+        instanceIndicators.forEach(baseId => {
+            const indicator = this.getElementById(baseId);
+            if (indicator) {
+                indicator.style.display = 'none';
+            }
+        });
+        
+        // Handle any legacy blue indicators (if they exist)
+        const legacyIndicators = ['dimensionsMissingBlue', 'metricsMissingBlue', 'filtersMissingBlue'];
+        legacyIndicators.forEach(id => {
             const indicator = document.getElementById(id);
             if (indicator) {
                 indicator.style.display = 'none';
@@ -12402,25 +12456,25 @@ class GenieAnalytics {
      */
     setupExpressionBuilderEvents() {
         // Close modal on X button
-        const closeBtn = document.getElementById('closeExpressionBuilderModal');
+        const closeBtn = this.getElementById('closeExpressionBuilderModal');
         if (closeBtn) {
             closeBtn.addEventListener('click', () => {
-                const modal = document.getElementById('expressionBuilderModal');
+                const modal = this.getElementById('expressionBuilderModal');
                 if (modal) modal.style.display = 'none';
             });
         }
         
         // Cancel button
-        const cancelBtn = document.getElementById('cancelExpressionBuilder');
+        const cancelBtn = this.getElementById('cancelExpressionBuilder');
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => {
-                const modal = document.getElementById('expressionBuilderModal');
+                const modal = this.getElementById('expressionBuilderModal');
                 if (modal) modal.style.display = 'none';
             });
         }
         
         // Save button
-        const saveBtn = document.getElementById('confirmExpressionBuilder');
+        const saveBtn = this.getElementById('confirmExpressionBuilder');
         if (saveBtn) {
             saveBtn.addEventListener('click', () => {
                 this.createExpression();
