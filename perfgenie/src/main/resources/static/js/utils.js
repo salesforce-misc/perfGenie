@@ -215,12 +215,15 @@ function stackDigVizAjax(pod, method, endpoint, successFunc, errorFunc) {
     return internalPerfGenieAjax(endpoint, method, successFunc, errorFuncWithRetry, headers);
 }
 
-const toastType = {
-    INFO: 1,
-    WARNING: 2,
-    ERROR: 3
-};
-Object.freeze(toastType);
+// Only declare toastType if it doesn't already exist (to avoid redeclaration errors)
+if (typeof toastType === 'undefined') {
+    var toastType = {
+        INFO: 1,
+        WARNING: 2,
+        ERROR: 3
+    };
+    Object.freeze(toastType);
+}
 
 function toastMessage(type, msg, d = 5000){
     if(type == toastType.INFO) {
