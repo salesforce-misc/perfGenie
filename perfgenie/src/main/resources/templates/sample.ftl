@@ -1285,7 +1285,8 @@
     function showSampleStack(stackid) {
         updateUrl("stack_id",stackid,true);
         stack_id=stackid;
-        $('#stack-view-guid').text(getStackTrace(stackid,getEventOfStackID(stackid)));
+        let tmp = getStackTrace(stackid,getEventOfStackID(stackid));
+        $('#stack-view-guid').html(tmp.replace(/\n/g, '<br>'));
         $('.stack-badge').removeClass("badge-warning");
         $(".stack"+stackid).addClass("badge-warning");
     }
