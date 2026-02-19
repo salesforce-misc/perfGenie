@@ -116,6 +116,100 @@ function setTenantInput1Value(value) {
     updateHostHintIconState();
 }
 
+function getPickerIndex(inputId) {
+    const match = String(inputId || "").match(/(\d+)$/);
+    return match ? match[1] : "1";
+}
+
+function setDateTimeInputValue($input, formattedValue, dateValue) {
+    if (!$input || $input.length === 0) {
+        return;
+    }
+
+    const beforeValue = $input.val();
+
+    try {
+        $input.datetimepicker('setOptions', { value: formattedValue });
+    } catch (error) {
+        // Ignore if method isn't supported by plugin build
+    }
+
+    try {
+        $input.datetimepicker('setDate', dateValue);
+    } catch (error) {
+        // Ignore if method isn't supported by plugin build
+    }
+
+    $input.val(formattedValue);
+    if ($input[0]) {
+        $input[0].value = formattedValue;
+    }
+    $input.trigger('input').trigger('change');
+}
+
+function shiftTimeRangeByMinutes(inputId, minutes) {
+    const format = 'YYYY-MM-DD HH:mm:ss';
+    const selector = "#" + inputId;
+    const $input = $(selector);
+    const currentValue = $input.val();
+    const currentTime = currentValue ? moment.utc(currentValue, format) : moment.utc();
+    const nextTime = currentTime.clone().add(minutes, 'minutes');
+    setDateTimeInputValue($input, nextTime.format(format), nextTime.toDate());
+}
+
+function ensureQuickRangeControls($input) {
+    let $picker = $(".xdsoft_datetimepicker:visible");
+    if ($picker.length === 0) {
+        $picker = $(".xdsoft_datetimepicker").last();
+    }
+    if ($picker.length === 0) {
+        return;
+    }
+
+    const rawInputId = $input && $input.attr ? $input.attr("id") : null;
+    const inputId = rawInputId || activePickerInputId || (document.activeElement ? document.activeElement.id : null) || null;
+    const index = getPickerIndex(inputId);
+    let $controls = $picker.find(".xdsoft-quick-range");
+
+    if ($controls.length === 0) {
+        $controls = $(
+            '<div class="xdsoft-quick-range">' +
+                '<span class="xdsoft-quick-range-label">Previous:</span>' +
+                '<button type="button" data-minutes="-15">15m</button>' +
+                '<button type="button" data-minutes="-30">30m</button>' +
+                '<button type="button" data-minutes="-60">60m</button>' +
+                '<span class="xdsoft-quick-range-label">| Next:</span>' +
+                '<button type="button" data-minutes="15">15m</button>' +
+                '<button type="button" data-minutes="30">30m</button>' +
+                '<button type="button" data-minutes="60">60m</button>' +
+            '</div>'
+        );
+        // Events handled at document level to avoid picker swallowing clicks.
+        $picker.prepend($controls);
+    }
+
+    $controls.attr("data-range-index", index);
+    $controls.attr("data-input-id", inputId || "");
+}
+
+let activePickerInputId = null;
+
+function initDateTimePicker(selector) {
+    jQuery(selector).datetimepicker({
+        format: 'Y-m-d H:i:s',
+        formatDate: 'Y-m-d',
+        formatTime: 'H:i',
+        step: 5,
+        onShow: function () {
+            const $input = $(this);
+            activePickerInputId = $input.attr("id");
+            setTimeout(function () {
+                ensureQuickRangeControls($input);
+            }, 0);
+        }
+    });
+}
+
 $(document).ready(function () {
 
     dataSource = urlParams.get('dataSource') || "genie";
@@ -280,33 +374,50 @@ $(document).ready(function () {
         profile2 = $("#bases2").val();
     });
 
-    jQuery("#startpicker1").datetimepicker({
-        format: 'Y-m-d H:i:s',
-        formatDate: 'Y-m-d',
-        formatTime: 'H:i',
-        step: 5
+    initDateTimePicker("#startpicker1");
+    initDateTimePicker("#endpicker1");
+    initDateTimePicker("#startpicker2");
+    initDateTimePicker("#endpicker2");
+
+    $("#startpicker1, #endpicker1, #startpicker2, #endpicker2").on("focus click", function () {
+        activePickerInputId = this.id || null;
     });
 
-    jQuery("#endpicker1").datetimepicker({
-        format: 'Y-m-d H:i:s',
-        formatDate: 'Y-m-d',
-        formatTime: 'H:i',
-        step: 5
-    });
+    let lastQuickRangeAt = 0;
+    document.addEventListener("pointerdown", function (event) {
+        const target = event.target;
+        if (!target || !target.closest) {
+            return;
+        }
+        const button = target.closest(".xdsoft-quick-range button");
+        if (!button) {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.stopImmediatePropagation) {
+            event.stopImmediatePropagation();
+        }
+        const now = Date.now();
+        if (now - lastQuickRangeAt < 250) {
+            return;
+        }
+        lastQuickRangeAt = now;
+        const minutes = parseInt(button.getAttribute("data-minutes"), 10);
+        if (Number.isNaN(minutes)) {
+            return;
+        }
+        const inputId =
+            activePickerInputId ||
+            (document.activeElement ? document.activeElement.id : null) ||
+            button.closest(".xdsoft-quick-range")?.getAttribute("data-input-id");
+        if (!inputId) {
+            return;
+        }
+        shiftTimeRangeByMinutes(inputId, minutes);
+    }, true);
 
-    jQuery("#startpicker2").datetimepicker({
-        format: 'Y-m-d H:i:s',
-        formatDate: 'Y-m-d',
-        formatTime: 'H:i',
-        step: 5
-    });
-
-    jQuery("#endpicker2").datetimepicker({
-        format: 'Y-m-d H:i:s',
-        formatDate: 'Y-m-d',
-        formatTime: 'H:i',
-        step: 5
-    });
+    // Handlers are bound directly when controls are created.
 
     $("#submit-input").click(function () {
         if (validateDateRange(1) && validateDateRange(2)) {

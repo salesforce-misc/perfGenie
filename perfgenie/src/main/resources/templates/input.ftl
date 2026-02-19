@@ -88,6 +88,37 @@
         pointer-events: auto;
     }
 
+    .xdsoft-quick-range {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 6px 2px 6px;
+        border-bottom: 1px solid #e9ecef;
+        color: #495057;
+        font-size: 11px;
+        width: 100%;
+        clear: both;
+        box-sizing: border-box;
+    }
+
+    .xdsoft-quick-range-label {
+        font-weight: 500;
+        color: #6c757d;
+    }
+
+    .xdsoft-quick-range button {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 3px;
+        padding: 1px 4px;
+        cursor: pointer;
+        line-height: 1.2;
+    }
+
+    .xdsoft-quick-range button:hover {
+        background: #e9ecef;
+    }
+
     /* Modern Input Styling - all dimensions preserved */
     .filterinput {
         border: 1px solid #dee2e6 !important;
