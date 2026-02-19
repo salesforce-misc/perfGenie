@@ -98,6 +98,24 @@ function addInputNote(toggle, msg) {
     }
 }
 
+function updateHostHintIconState() {
+    const $icon = $("#host-hint-icon1");
+    if ($icon.length === 0) {
+        return;
+    }
+
+    const tenantValue = $("#tenant-input1").val();
+    const isActive = Boolean(tenantValue && tenantValue.trim() !== "");
+
+    $icon.toggleClass("host-hint-icon--active", isActive);
+    $icon.attr("aria-disabled", (!isActive).toString());
+}
+
+function setTenantInput1Value(value) {
+    $("#tenant-input1").val(value);
+    updateHostHintIconState();
+}
+
 $(document).ready(function () {
 
     dataSource = urlParams.get('dataSource') || "genie";
@@ -146,7 +164,7 @@ $(document).ready(function () {
     $("#startpicker2").val(moment.utc(startTime2).format('YYYY-MM-DD HH:mm:ss'));
     $("#endpicker2").val(moment.utc(endTime2).format('YYYY-MM-DD HH:mm:ss'));
 
-    $("#tenant-input1").val(tenant1);
+    setTenantInput1Value(tenant1);
     $("#tenant-input2").val(tenant2);
     $("#host-input1").val(host1);
     $("#host-input2").val(host2);
@@ -200,6 +218,7 @@ $(document).ready(function () {
 
     $("#tenant-input1").on("change", (event) => {
         tenant1 = $("#tenant-input1").val();
+        updateHostHintIconState();
         host1 = undefined;
         profile1 = undefined;
         $("#hosts1").empty();
@@ -211,6 +230,10 @@ $(document).ready(function () {
             handleHostHints(startTime1, endTime1,$("#tenant-input1").val());
             getInstanceData1(startTime1, endTime1, tenant1);
         }
+    });
+
+    $("#tenant-input1").on("input blur", () => {
+        updateHostHintIconState();
     });
 
     $("#tenant-input2").on("change", (event) => {
@@ -404,7 +427,7 @@ function handleGoldCheck() {
         $("#backup-gold").show();
         const tenantDatalist = $("#tenants1");
         tenantDatalist.empty();
-        $("#tenant-input1").val("");
+        setTenantInput1Value("");
 
         const hostDatalist = $("#hosts1");
         hostDatalist.empty();
@@ -622,7 +645,7 @@ function getGoldData1(start, end) {
 
             const tenantDatalist = $("#tenants1");
             tenantDatalist.empty();
-            $("#tenant-input1").val("");
+            setTenantInput1Value("");
 
             const hostDatalist = $("#hosts1");
             hostDatalist.empty();
@@ -1215,7 +1238,7 @@ function updateTenantDropdown1(start, end) {
     let tenantOptionHtml = "";
     const tenantDatalist = $("#tenants1");
     tenantDatalist.empty();
-    $("#tenant-input1").val("");
+    setTenantInput1Value("");
     let useGold = false;
     if (dataSource == "gold") {
         useGold = true;
@@ -1224,7 +1247,7 @@ function updateTenantDropdown1(start, end) {
         for (let val in tenantData1) {
             if (tenant1 == val || tenant1 == "") {
                 tenant1 = val;
-                $("#tenant-input1").val(val);
+                setTenantInput1Value(val);
             }
             if (useGold) {
                 tenantOptionHtml += "<option value=\"" + val + "\">gold</option>";

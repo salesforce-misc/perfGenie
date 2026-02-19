@@ -74,6 +74,20 @@
         color: #495057;
     }
 
+    .host-hint-icon {
+        color: #adb5bd;
+        margin-left: 4px;
+        transition: color 0.2s ease;
+        pointer-events: auto;
+        cursor: default;
+    }
+
+    .host-hint-icon--active {
+        color: #46a5e3;
+        cursor: pointer;
+        pointer-events: auto;
+    }
+
     /* Modern Input Styling - all dimensions preserved */
     .filterinput {
         border: 1px solid #dee2e6 !important;
@@ -291,7 +305,7 @@
             </div>
             
             <!-- Row 1: Field 4 - Host -->
-            <label title="Click to see host selection hints" for="host-input1" id="host-label1" class="fieldlable form-field-label" style="cursor: pointer; grid-column: 7; grid-row: 1;">Host: </label>
+            <label for="host-input1" id="host-label1" class="fieldlable form-field-label" style="grid-column: 7; grid-row: 1;">Host:<i id="host-hint-icon1" class="fa fa-info-circle host-hint-icon" title="select a Tenant then click me to see host selection hints" aria-disabled="true"></i></label>
             <div id="host-field-div1" class="form-field-input" style="grid-column: 8; grid-row: 1;">
                 <input style="height:30px;text-align: center;" class="filterinput form-control send-ga" id="host-input1" name="host1"
                        placeholder="Choose a host..."
