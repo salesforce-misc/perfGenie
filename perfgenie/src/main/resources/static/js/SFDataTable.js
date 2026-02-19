@@ -355,6 +355,16 @@ class SFDataTable {
         this.#SFDataTablePageSize = size;
     }
 
+    SFHandlePageSizeChange(value){
+        const nextSize = parseInt(value, 10);
+        if (Number.isNaN(nextSize)) {
+            return;
+        }
+        this.#SFDataTablePageSize = nextSize;
+        this.#SFDataTablePage = 0;
+        this.SFDataTable();
+    }
+
     SFDataTableClear(){
         if($('#'+this.#SFDataTableID)){
             $('#'+this.#SFDataTableID).html('');
@@ -691,9 +701,17 @@ class SFDataTable {
         let toolbar = "<div class='sf-data-table-toolbar'>";
         toolbar += "<a title='Download as csv' id='" + this.#sfDownloadID + "table' href='javascript:" + this.#instanceName + ".downloadTableAsCSV()' class='sf-toolbar-icon'><i class=\"fa fa-download\" aria-hidden=\"true\"></i></a>";
 
-        toolbar += "<span class='sf-search-label'>Search:</span> <input type='text' id='" + this.#sfSearchID + "' class='sf-search-input' name='SFSearch' value='" + (this.#SFDataTableSearchStr == undefined ? "" : this.#SFDataTableSearchStr) + "' onkeypress='if(event.keyCode == 13) javascript:" + this.#instanceName + ".SFSearch()'>";
+        const pageSizeOptions = [10, 15, 20, 25, 50];
+        let pageSizeHtml = "<select id='" + this.#sfPaginationID + "pagesize' class='sf-search-input' style='min-width: 70px;' onchange='javascript:" + this.#instanceName + ".SFHandlePageSizeChange(this.value)'>";
+        pageSizeOptions.forEach((size) => {
+            const selected = (size === this.#SFDataTablePageSize) ? " selected" : "";
+            pageSizeHtml += "<option value='" + size + "'" + selected + ">" + size + "</option>";
+        });
+        pageSizeHtml += "</select>";
 
+        toolbar += "<span class='sf-search-label'>Search:</span> <input type='text' id='" + this.#sfSearchID + "' class='sf-search-input' name='SFSearch' value='" + (this.#SFDataTableSearchStr == undefined ? "" : this.#SFDataTableSearchStr) + "' onkeypress='if(event.keyCode == 13) javascript:" + this.#instanceName + ".SFSearch()'>";
         toolbar += "<a title='Search' id='" + this.#sfSearchID + "table' href='javascript:" + this.#instanceName + ".SFSearch()' class='sf-toolbar-icon'><i class=\"fa fa-search\" aria-hidden=\"true\"></i></a>";
+        toolbar += "<span class='sf-search-label'>Rows:</span> " + pageSizeHtml;
 
         // Add percent icon only if base metric column exists
         if (this.#validatePercentMetricColumn()) {
