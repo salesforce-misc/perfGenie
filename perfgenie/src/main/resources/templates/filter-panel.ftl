@@ -6800,7 +6800,7 @@
         let end1 = performance.now();
         console.log("genRequestTable 0 time:" + (end1 - start1))
         let start = performance.now();
-        let order = getOrderandType();
+        let order = 0;//getOrderandType();
         if (tableFormat == 2 || tableFormat == 3) {
             let minStart = getContextTree(1, eventType).context.start; //records are aligned to method profile context start
             if(eventType == "json-jstack" || eventType == "Jstack"){//find other profile start time

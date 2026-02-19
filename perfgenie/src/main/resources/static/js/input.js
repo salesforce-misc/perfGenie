@@ -995,7 +995,7 @@ function loadDiagData1() {
 
             let dimExists = false;
             for (let dim in metaData1[key].dimensions) {
-                if (dim.charAt(0) !== '.' && dim !== 'exit_code') {
+                if (dim.charAt(0) !== '.' && dim !== 'exit_code' && metaData1[key].metadata.name != "jfr") {
                     dimExists = true;
                     break;
                 }
@@ -1698,7 +1698,10 @@ function populateIDs1(tenant, host, clearInput, skipPArsing) {
     if (skipPArsing == undefined) {
         skipPArsing = false;
     }
+    let guids = [];
     let profiles = {};
+    let profilesVal = {};
+    let profilesStr = {};
     let profileOptionHtml = "<option  value=''> Choose a profile... </option>";
     const baseDatalist = $("#bases1");
     baseDatalist.empty();
@@ -1761,10 +1764,16 @@ function populateIDs1(tenant, host, clearInput, skipPArsing) {
                     metaData1[key].metadata.guid = guid;
                 }
                 if (profiles[metaData1[key].metadata.guid] == undefined) {
-                    let str = moment.utc(metaData1[key].timestampMillis).format("YYYY-MM-DD HH:mm:ss");
-                    let val = metaData1[key].timestampMillis + " - " + metaData1[key].metadata.guid;
                     if (filename != undefined) {
-                        if (filename.includes("jfr_dump")) {
+                        let str = moment.utc(metaData1[key].timestampMillis).format("YYYY-MM-DD HH:mm:ss");
+                        let val = metaData1[key].timestampMillis + " - " + metaData1[key].metadata.guid;
+                        profiles[metaData1[key].metadata.guid] = [];
+                        profiles[metaData1[key].metadata.guid].push(getSFDCprofileName(filename));
+                        profilesVal[metaData1[key].metadata.guid] = val;
+                        profilesStr[metaData1[key].metadata.guid] = str;
+                        guids.push(metaData1[key].metadata.guid);
+
+                        /*if (filename.includes("jfr_dump")) {
                             filename = "jfr-sfdc"; //sfdc
                         }
                         if (profile1 == val || profile1 == "") {
@@ -1772,9 +1781,13 @@ function populateIDs1(tenant, host, clearInput, skipPArsing) {
                             profileOptionHtml += "<option value=\"" + val + "\" selected>" + str + ":" + filename + "</option>";
                         } else {
                             profileOptionHtml += "<option value=\"" + val + "\">" + str + ":" + filename + "</option>";
-                        }
+                        }*/
                         profileFound = true;
-                        profiles[metaData1[key].metadata.guid] = 1;
+                    }
+                }else{
+                    if (filename != undefined && filename.includes("jfr_dump") && !filename.includes("sql")) {
+                        profiles[metaData1[key].metadata.guid].push(getSFDCprofileName(filename));
+                        //profiles[metaData1[key].metadata.guid] = profiles[metaData1[key].metadata.guid] +":"+filename;
                     }
                 }
             } else {//not a profile
@@ -1782,6 +1795,18 @@ function populateIDs1(tenant, host, clearInput, skipPArsing) {
                     otherEvents1[name] = true;
                 }
             }
+        }
+    }
+
+    if (profileFound) {
+        profileOptionHtml = "<option  value=''> Choose a profile... </option>";
+        for (let i = 0; i < guids.length; i++) {
+              if (profile1 == profilesVal[guids[i]] || profile1 == "") {
+                    profile1 = profilesVal[guids[i]];
+                    profileOptionHtml += "<option value=\"" + profilesVal[guids[i]] + "\" selected>" + profilesStr[guids[i]] + ":" + profiles[guids[i]].sort() + "</option>";
+              } else {
+                    profileOptionHtml += "<option value=\"" + profilesVal[guids[i]] + "\">" + profilesStr[guids[i]] + ":" + profiles[guids[i]].sort() + "</option>";
+              }
         }
     }
 
@@ -1800,11 +1825,27 @@ function populateIDs1(tenant, host, clearInput, skipPArsing) {
         }
     }
     const optGroupTemplate = '<optgroup label="">OPTIONS</optgroup>';
+
     baseDatalist.append(optGroupTemplate.replace("OPTIONS", profileOptionHtml));
 
     if($("#host-input1").val() == "" && host1 != undefined && host1 != "" && instanceData1[host1] != undefined) {
         $("#host-input1").val(host1); //user can enter host manually if not found, use host if available from metadata
     }
+}
+
+function getSFDCprofileName(name){
+    if(name.includes("jfr_dump.")){
+        return "method";
+    }else if(name.includes("jfr_dump_log")){
+        return "context";
+    }else if(name.includes("jfr_dump_apex")){
+        return "apex";
+    }else if(name.includes("jfr_dump_socket")){
+        return "socket";
+    }else if(name.includes("jfr_dump_memory")){
+        return "memory";
+    }
+    return name;
 }
 
 function populateIDs2(tenant, host, clearInput, skipPArsing) {
@@ -1814,6 +1855,9 @@ function populateIDs2(tenant, host, clearInput, skipPArsing) {
     if (skipPArsing == undefined) {
         skipPArsing = false;
     }
+    let guids = [];
+    let profilesVal = {};
+    let profilesStr = {};
     let profiles = {};
     let profileOptionHtml = "<option  value=''> Choose a profile... </option>";
     const baseDatalist = $("#bases2");
@@ -1877,6 +1921,32 @@ function populateIDs2(tenant, host, clearInput, skipPArsing) {
                     metaData2[key].metadata.guid = guid;
                 }
                 if (profiles[metaData2[key].metadata.guid] == undefined) {
+                    if (filename != undefined) {
+                        let str = moment.utc(metaData2[key].timestampMillis).format("YYYY-MM-DD HH:mm:ss");
+                        let val = metaData2[key].timestampMillis + " - " + metaData2[key].metadata.guid;
+                        profiles[metaData2[key].metadata.guid] = [];
+                        profiles[metaData2[key].metadata.guid].push(getSFDCprofileName(filename));
+                        profilesVal[metaData2[key].metadata.guid] = val;
+                        profilesStr[metaData2[key].metadata.guid] = str;
+                        guids.push(metaData2[key].metadata.guid);
+
+                        /*if (filename.includes("jfr_dump")) {
+                            filename = "jfr-sfdc"; //sfdc
+                        }
+                        if (profile1 == val || profile1 == "") {
+                            profile1 = val;
+                            profileOptionHtml += "<option value=\"" + val + "\" selected>" + str + ":" + filename + "</option>";
+                        } else {
+                            profileOptionHtml += "<option value=\"" + val + "\">" + str + ":" + filename + "</option>";
+                        }*/
+                        profileFound = true;
+                    }
+                }else{
+                    if (filename != undefined && filename.includes("jfr_dump") && !filename.includes("sql")) {
+                        profiles[metaData2[key].metadata.guid].push(getSFDCprofileName(filename));
+                    }
+                }
+                /*if (profiles[metaData2[key].metadata.guid] == undefined) {
                     let str = moment.utc(metaData2[key].timestampMillis).format("YYYY-MM-DD HH:mm:ss");
                     let val = metaData2[key].timestampMillis + " - " + metaData2[key].metadata.guid;
                     if (filename != undefined) {
@@ -1892,7 +1962,7 @@ function populateIDs2(tenant, host, clearInput, skipPArsing) {
                         profileFound = true;
                         profiles[metaData2[key].metadata.guid] = 1;
                     }
-                }
+                }*/
             } else {//not a profile
                 if (name != undefined && otherEventsSupported[name]) {
                     otherEvents2[name] = true;
@@ -1901,6 +1971,17 @@ function populateIDs2(tenant, host, clearInput, skipPArsing) {
         }
     }
 
+    if (profileFound) {
+        profileOptionHtml = "<option  value=''> Choose a profile... </option>";
+        for (let i = 0; i < guids.length; i++) {
+              if (profile2 == profilesVal[guids[i]] || profile2 == "") {
+                    profile2 = profilesVal[guids[i]];
+                    profileOptionHtml += "<option value=\"" + profilesVal[guids[i]] + "\" selected>" + profilesStr[guids[i]] + ":" + profiles[guids[i]].sort() + "</option>";
+              } else {
+                    profileOptionHtml += "<option value=\"" + profilesVal[guids[i]] + "\">" + profilesStr[guids[i]] + ":" + profiles[guids[i]].sort() + "</option>";
+              }
+        }
+    }
     if (profileFound) {
         if (profile2 == "All") {
             profileOptionHtml += "<option value=\"All\" selected>All profiles</option>";
