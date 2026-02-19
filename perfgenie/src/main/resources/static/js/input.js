@@ -152,6 +152,9 @@ $(document).ready(function () {
     $("#host-input2").val(host2);
     $("#bases1").val(profile1);
     $("#bases2").val(profile2);
+    if(tenant1 != "" && tenant1 != undefined){
+        handleHostHints(startTime1, endTime1,$("#tenant-input1").val());
+    }
 
 
     getTenantData1(getStart1(), getEnd1());
@@ -163,6 +166,7 @@ $(document).ready(function () {
             startTime1 = moment.utc($("#startpicker1").val()).valueOf();
             if (validateDateRange(1)) {
                 getTenantData1(startTime1, endTime1);
+                handleHostHints(startTime1, endTime1,$("#tenant-input1").val());
             }
         }
     });
@@ -204,6 +208,7 @@ $(document).ready(function () {
         if (tenant1 != "") {
             startTime1 = moment.utc($("#startpicker1").val()).valueOf();
             endTime1 = moment.utc($("#endpicker1").val()).valueOf();
+            handleHostHints(startTime1, endTime1,$("#tenant-input1").val());
             getInstanceData1(startTime1, endTime1, tenant1);
         }
     });
@@ -303,6 +308,8 @@ $(document).ready(function () {
 function submitTo() {
     window.location.reload(true);
 }
+
+
 
 let backupStarted = false;
 function backupAsGold() {
@@ -464,7 +471,7 @@ function getTenantData2(start, end) {
 }
 let kpodview = undefined;
 function getKpodView(start,end,tenant,count) {
-
+    return;//skip
     let URL = getKpodViewDataURL(start, end, tenant);
     if(URL != undefined){
         ProgressBar.start({id: 'getKpodView',container: 'tabs',position: 'top'});
@@ -942,7 +949,7 @@ function getMetaData2(start, end, tenant, host) {
 
 function loadCellView(array,count){
      let localcontextData = getContextData(count);
-     if (array == undefined || localcontextData == undefined || localcontextData.header == undefined) {
+     if (array == undefined || array == "" || localcontextData == undefined || localcontextData.header == undefined) {
          return;
      }
      let records = {};
@@ -1574,7 +1581,7 @@ function populateIDs1(tenant, host, clearInput, skipPArsing) {
             let name = metaData1[key].metadata["name"];
             let filename = metaData1[key].metadata["file-name"];
 
-            if (filename != undefined && filename.includes(".jfr.gz") && !filename.includes("collapsed")) {//need to parse
+            if (filename != undefined && filename.includes(".jfr.gz") && !filename.includes("collapsed") && !filename.includes("dump_full")) {//need to parse
                 addToParse(1, tenant, host, metaData1[key].timestampMillis, filename, guid)
                 needToParse = true;
             }
@@ -1690,7 +1697,7 @@ function populateIDs2(tenant, host, clearInput, skipPArsing) {
             let name = metaData2[key].metadata["name"];
             let filename = metaData2[key].metadata["file-name"];
 
-            if (filename != undefined && filename.includes(".jfr.gz") && !filename.includes("collapsed")) {//need to parse
+            if (filename != undefined && filename.includes(".jfr.gz") && !filename.includes("collapsed") && !filename.includes("dump_full")) {//need to parse
                 addToParse(2, tenant, host, metaData2[key].timestampMillis, filename, guid)
                 needToParse = true;
             }
@@ -1710,6 +1717,11 @@ function populateIDs2(tenant, host, clearInput, skipPArsing) {
         let guid = metaData2[key].metadata["guid"];
         let name = metaData2[key].metadata["name"];
         let filename = metaData2[key].metadata["file-name"];
+
+        if (filename != undefined && filename.includes(".jfr.gz")) {
+                    continue;
+        }
+
         if (metaData2[key].metadata["source-file"] != undefined) {
             filename = metaData2[key].metadata["source-file"];
         }

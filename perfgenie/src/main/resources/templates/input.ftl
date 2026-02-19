@@ -291,7 +291,7 @@
             </div>
             
             <!-- Row 1: Field 4 - Host -->
-            <label for="host-input1" id="host-label1" class="fieldlable form-field-label" style="grid-column: 7; grid-row: 1;">Host: </label>
+            <label title="Click to see host selection hints" for="host-input1" id="host-label1" class="fieldlable form-field-label" style="cursor: pointer; grid-column: 7; grid-row: 1;">Host: </label>
             <div id="host-field-div1" class="form-field-input" style="grid-column: 8; grid-row: 1;">
                 <input style="height:30px;text-align: center;" class="filterinput form-control send-ga" id="host-input1" name="host1"
                        placeholder="Choose a host..."

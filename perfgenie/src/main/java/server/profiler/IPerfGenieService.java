@@ -100,6 +100,18 @@ public interface IPerfGenieService {
     String getContextEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap) throws IOException;
 
     String getJstackProfile(final String tenant, final long start, final long end, final Map<String, String> queryMap) throws IOException;
+    
+    /**
+     * Get raw jstack events as a map of timestamp to jstack content
+     * 
+     * @param tenant Cell/tenant name
+     * @param start Start time in milliseconds
+     * @param end End time in milliseconds
+     * @param queryMap Query parameters (should include name, cell, host, etc.)
+     * @return Map of timestamp (Long) to raw jstack content (String), or null if no jstacks found
+     * @throws IOException if there's an error fetching jstacks
+     */
+    Map<Long, String> getRawJstacks(final String tenant, final long start, final long end, final Map<String, String> queryMap) throws IOException;
 
     public String getGenieInstances(long start, long end, final String tenant, final Map<String, String> queryMap) throws IOException;
     public String getOtherEvents(final String tenant, long start, long end, final Map<String, String> queryMap, final Map<String, String> dimMap);

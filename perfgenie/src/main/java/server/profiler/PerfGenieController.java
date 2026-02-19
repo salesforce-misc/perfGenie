@@ -24,13 +24,16 @@ import server.profiler.PerfGenieService;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.JarURLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
 
 @RestController
 public class PerfGenieController {
@@ -127,6 +130,7 @@ public class PerfGenieController {
     public String geniequery(
         @RequestParam(required = false, name = "query") final String query,
         @RequestParam(required = false, name = "refId") final String refId,
+        @RequestParam(required = false, name = "regex") final String regex,
         @RequestParam(required = false, name = "datasource") final String datasource,
         @RequestParam(required = false, name = "previous") final String previous,
         @RequestParam(required = false, name = "startTimestamp") final long startTimestamp,
@@ -138,7 +142,7 @@ public class PerfGenieController {
                 return service.getAllPidStatData(startTimestamp,endendTimestamp,array[5],array[3],array[2],array[4],array[5]);
             }
         }else {
-            return ArgusQueryT.genieQuery(query, refId, previous);
+            return ArgusQueryT.genieQuery(query, refId, previous,startTimestamp,endendTimestamp,regex);
         }
         return null;
     }
@@ -748,6 +752,429 @@ public class PerfGenieController {
 
         private String name;
 
+    }
+
+    /**
+     * POST endpoint for genie anomaly detection and percentage change calculation
+     * Processes multiple panels with current and historical data
+     */
+    @PostMapping(path = {"/v1/genie/anomaly", "/api/v1/genie/anomaly"}, 
+                 produces = MediaType.APPLICATION_JSON_VALUE,
+                 consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> detectAnomalies(@RequestBody AnomalyRequest request) {
+        try {
+            String result = service.detectGenieAnomalies(request);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            System.err.println("Error in genie anomaly detection: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                    .body("{\"error\":\"" + e.getMessage().replace("\"", "\\\"") + "\"}");
+        }
+    }
+
+    /**
+     * Request DTO for anomaly detection
+     */
+    public static class AnomalyRequest {
+        private java.util.List<PanelData> panels;
+        private java.util.List<PanelData> noncomparepanels;
+        private AnomalyOptions options;
+
+        public java.util.List<PanelData> getPanels() {
+            return panels;
+        }
+
+        public void setPanels(java.util.List<PanelData> panels) {
+            this.panels = panels;
+        }
+
+        public java.util.List<PanelData> getNoncomparepanels() {
+            return noncomparepanels;
+        }
+
+        public void setNoncomparepanels(java.util.List<PanelData> noncomparepanels) {
+            this.noncomparepanels = noncomparepanels;
+        }
+
+        public AnomalyOptions getOptions() {
+            return options;
+        }
+
+        public void setOptions(AnomalyOptions options) {
+            this.options = options;
+        }
+    }
+
+    /**
+     * Panel data structure
+     */
+    public static class PanelData {
+        private String panelId;
+        private String panelTitle;
+        private String panelIndex;
+        private java.util.List<Object> currentData;
+        private java.util.Map<String, java.util.List<Object>> historicalData;
+        private Long startTimestamp;
+        private Long endTimestamp;
+        private String panelType;
+        private Object thresholds;
+        private Object fieldConfig;
+
+        public String getPanelId() {
+            return panelId;
+        }
+
+        public void setPanelId(String panelId) {
+            this.panelId = panelId;
+        }
+
+        public String getPanelTitle() {
+            return panelTitle;
+        }
+
+        public void setPanelTitle(String panelTitle) {
+            this.panelTitle = panelTitle;
+        }
+
+        public String getPanelIndex() {
+            return panelIndex;
+        }
+
+        public void setPanelIndex(String panelIndex) {
+            this.panelIndex = panelIndex;
+        }
+
+        public java.util.List<Object> getCurrentData() {
+            return currentData;
+        }
+
+        public void setCurrentData(java.util.List<Object> currentData) {
+            this.currentData = currentData;
+        }
+
+        public java.util.Map<String, java.util.List<Object>> getHistoricalData() {
+            return historicalData;
+        }
+
+        public void setHistoricalData(java.util.Map<String, java.util.List<Object>> historicalData) {
+            this.historicalData = historicalData;
+        }
+
+        public Long getStartTimestamp() {
+            return startTimestamp;
+        }
+
+        public void setStartTimestamp(Long startTimestamp) {
+            this.startTimestamp = startTimestamp;
+        }
+
+        public Long getEndTimestamp() {
+            return endTimestamp;
+        }
+
+        public void setEndTimestamp(Long endTimestamp) {
+            this.endTimestamp = endTimestamp;
+        }
+
+        public String getPanelType() {
+            return panelType;
+        }
+
+        public void setPanelType(String panelType) {
+            this.panelType = panelType;
+        }
+
+        public Object getThresholds() {
+            return thresholds;
+        }
+
+        public void setThresholds(Object thresholds) {
+            this.thresholds = thresholds;
+        }
+
+        public Object getFieldConfig() {
+            return fieldConfig;
+        }
+
+        public void setFieldConfig(Object fieldConfig) {
+            this.fieldConfig = fieldConfig;
+        }
+    }
+
+    /**
+     * Anomaly detection options
+     */
+    public static class AnomalyOptions {
+        private Integer maxDataPoints;
+        private Boolean enablePatternAnalysis;
+        private Double threshold;
+
+        public Integer getMaxDataPoints() {
+            return maxDataPoints;
+        }
+
+        public void setMaxDataPoints(Integer maxDataPoints) {
+            this.maxDataPoints = maxDataPoints;
+        }
+
+        public Boolean getEnablePatternAnalysis() {
+            return enablePatternAnalysis;
+        }
+
+        public void setEnablePatternAnalysis(Boolean enablePatternAnalysis) {
+            this.enablePatternAnalysis = enablePatternAnalysis;
+        }
+
+        public Double getThreshold() {
+            return threshold;
+        }
+
+        public void setThreshold(Double threshold) {
+            this.threshold = threshold;
+        }
+    }
+
+    /**
+     * GET endpoint to list available expert dashboard JSON files
+     * Returns a list of JSON filenames from the expert-dashboards resource directory
+     * GET /api/v1/expert-dashboards/list
+     */
+    @GetMapping(path = {"/api/v1/expert-dashboards/list", "/v1/expert-dashboards/list"}, 
+                 produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> listExpertDashboards() {
+        try {
+            java.util.List<String> expertFiles = new java.util.ArrayList<>();
+            
+            // Try to load from resources/expert-dashboards directory
+            try {
+                java.net.URL resourceUrl = Resources.getResource("expert-dashboards");
+
+                String protocol = resourceUrl.getProtocol();
+
+                if ("file".equals(protocol)) {
+                    // Running from IDE / exploded classes
+                    File resourceDir = new File(resourceUrl.toURI());
+
+                    File[] files = resourceDir.listFiles((dir, name) ->
+                            name.toLowerCase().endsWith(".json")
+                    );
+
+                    if (files != null) {
+                        for (File file : files) {
+                            expertFiles.add(file.getName());
+                        }
+                    }
+
+                } else if ("jar".equals(protocol)) {
+                    // Running from packaged JAR
+                    JarURLConnection jarConnection =
+                            (JarURLConnection) resourceUrl.openConnection();
+
+                    try (JarFile jarFile = jarConnection.getJarFile()) {
+                        String resourcePath = jarConnection.getEntryName();
+
+                        jarFile.stream()
+                                .filter(e -> !e.isDirectory())
+                                .filter(e -> e.getName().startsWith(resourcePath + "/"))
+                                .filter(e -> e.getName().toLowerCase().endsWith(".json"))
+                                .forEach(e -> {
+                                    String name = e.getName()
+                                            .substring(resourcePath.length() + 1);
+                                    expertFiles.add(name);
+                                });
+                    }
+                } else {
+                    throw new IllegalStateException(
+                            "Unsupported protocol: " + protocol
+                    );
+                }
+
+            } catch (Exception e) {
+                // If resource directory doesn't exist, try alternative approach
+                try {
+                    java.io.InputStream resourceStream = getClass().getClassLoader()
+                        .getResourceAsStream("expert-dashboards");
+                    if (resourceStream == null) {
+                        // Directory doesn't exist, return empty list
+                        return ResponseEntity.ok(Utils.toJson(expertFiles));
+                    }
+                    resourceStream.close();
+                } catch (Exception ex) {
+                    // Directory doesn't exist, return empty list
+                }
+            }
+            
+            // Sort the list
+            java.util.Collections.sort(expertFiles);
+            return ResponseEntity.ok(Utils.toJson(expertFiles));
+        } catch (Exception e) {
+            System.err.println("Error listing expert dashboards: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                    .body("{\"error\":\"" + e.getMessage().replace("\"", "\\\"") + "\"}");
+        }
+    }
+
+    /**
+     * GET endpoint to fetch a specific expert dashboard JSON file
+     * GET /api/v1/expert-dashboards/{filename}
+     */
+    @GetMapping(path = {"/api/v1/expert-dashboards/{filename}", "/v1/expert-dashboards/{filename}"}, 
+                 produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> getExpertDashboard(@PathVariable String filename) {
+        try {
+            // Security: ensure filename doesn't contain path traversal
+            if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+                return ResponseEntity.status(400)
+                        .body("{\"error\":\"Invalid filename\"}");
+            }
+            
+            // Ensure filename ends with .json
+            if (!filename.toLowerCase().endsWith(".json")) {
+                filename = filename + ".json";
+            }
+            
+            // Try to load from resources/expert-dashboards directory
+            try {
+                java.io.InputStream resourceStream = getClass().getClassLoader()
+                        .getResourceAsStream("expert-dashboards/" + filename);
+                
+                if (resourceStream == null) {
+                    return ResponseEntity.status(404)
+                            .body("{\"error\":\"Expert dashboard not found: " + filename + "\"}");
+                }
+                
+                // Read the file content (Java 8 compatible)
+                java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+                byte[] data = new byte[1024];
+                int nRead;
+                while ((nRead = resourceStream.read(data, 0, data.length)) != -1) {
+                    buffer.write(data, 0, nRead);
+                }
+                buffer.flush();
+                String content = new String(buffer.toByteArray(), StandardCharsets.UTF_8);
+                resourceStream.close();
+                
+                return ResponseEntity.ok(content);
+            } catch (Exception e) {
+                return ResponseEntity.status(404)
+                        .body("{\"error\":\"Expert dashboard not found: " + filename + "\"}");
+            }
+        } catch (Exception e) {
+            System.err.println("Error fetching expert dashboard: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                    .body("{\"error\":\"" + e.getMessage().replace("\"", "\\\"") + "\"}");
+        }
+    }
+
+    /**
+     * Get dashboard assistant message template for Step 1 (metadata)
+     * GET /api/v1/dashboard-assistant/templates/step1
+     */
+    @GetMapping(path = {"/api/v1/dashboard-assistant/templates/step1", "/v1/dashboard-assistant/templates/step1"}, 
+                 produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> getDashboardAssistantStep1Template() {
+        try {
+            java.io.InputStream resourceStream = getClass().getClassLoader()
+                    .getResourceAsStream("dashboard-assistant-templates/step1-metadata-template.json");
+            
+            if (resourceStream == null) {
+                return ResponseEntity.status(404)
+                        .body("{\"error\":\"Step 1 template not found\"}");
+            }
+            
+            // Read the file content (Java 8 compatible)
+            java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+            byte[] data = new byte[1024];
+            int nRead;
+            while ((nRead = resourceStream.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+            }
+            buffer.flush();
+            String content = new String(buffer.toByteArray(), StandardCharsets.UTF_8);
+            resourceStream.close();
+            
+            return ResponseEntity.ok(content);
+        } catch (Exception e) {
+            System.err.println("Error fetching Step 1 template: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                    .body("{\"error\":\"" + e.getMessage().replace("\"", "\\\"") + "\"}");
+        }
+    }
+
+    /**
+     * Get dashboard assistant message template for Step 2 (data analysis)
+     * GET /api/v1/dashboard-assistant/templates/step2
+     */
+    @GetMapping(path = {"/api/v1/dashboard-assistant/templates/step2", "/v1/dashboard-assistant/templates/step2"}, 
+                 produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> getDashboardAssistantStep2Template() {
+        try {
+            java.io.InputStream resourceStream = getClass().getClassLoader()
+                    .getResourceAsStream("dashboard-assistant-templates/step2-data-template.json");
+            
+            if (resourceStream == null) {
+                return ResponseEntity.status(404)
+                        .body("{\"error\":\"Step 2 template not found\"}");
+            }
+            
+            // Read the file content (Java 8 compatible)
+            java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+            byte[] data = new byte[1024];
+            int nRead;
+            while ((nRead = resourceStream.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+            }
+            buffer.flush();
+            String content = new String(buffer.toByteArray(), StandardCharsets.UTF_8);
+            resourceStream.close();
+            
+            return ResponseEntity.ok(content);
+        } catch (Exception e) {
+            System.err.println("Error fetching Step 2 template: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                    .body("{\"error\":\"" + e.getMessage().replace("\"", "\\\"") + "\"}");
+        }
+    }
+
+    /**
+     * Get dashboard assistant message template for Step 3 (consolidation)
+     * GET /api/v1/dashboard-assistant/templates/step3
+     */
+    @GetMapping(path = {"/api/v1/dashboard-assistant/templates/step3", "/v1/dashboard-assistant/templates/step3"}, 
+                 produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> getDashboardAssistantStep3Template() {
+        try {
+            java.io.InputStream resourceStream = getClass().getClassLoader()
+                    .getResourceAsStream("dashboard-assistant-templates/step3-consolidation-template.json");
+            
+            if (resourceStream == null) {
+                return ResponseEntity.status(404)
+                        .body("{\"error\":\"Step 3 template not found\"}");
+            }
+            
+            // Read the file content (Java 8 compatible)
+            java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+            byte[] data = new byte[1024];
+            int nRead;
+            while ((nRead = resourceStream.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+            }
+            buffer.flush();
+            String content = new String(buffer.toByteArray(), StandardCharsets.UTF_8);
+            resourceStream.close();
+            
+            return ResponseEntity.ok(content);
+        } catch (Exception e) {
+            System.err.println("Error fetching Step 3 template: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                    .body("{\"error\":\"" + e.getMessage().replace("\"", "\\\"") + "\"}");
+        }
     }
 
 }

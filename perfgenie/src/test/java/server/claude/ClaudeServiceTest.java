@@ -17,6 +17,8 @@ import server.claude.model.ClaudeRequest;
 import server.claude.model.ClaudeResponse;
 import server.claude.mcp.MCPManager;
 import server.claude.rag.RAGService;
+import server.investigation.InvestigateConnectionPoolIssues;
+import server.profiler.IPerfGenieService;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,6 +43,11 @@ public class ClaudeServiceTest {
     
     @Mock
     private TokenCounter tokenCounter;
+    
+    @Mock
+    private IPerfGenieService perfGenieService;
+    
+    private InvestigateConnectionPoolIssues investigateConnectionPoolIssues;
 
     private ClaudeService claudeService;
 
@@ -56,7 +63,10 @@ public class ClaudeServiceTest {
         // Mock RAG service
         when(ragService.isEnabled()).thenReturn(false);
         
-        claudeService = new ClaudeService(claudeConfig, mcpManager, historyManager, ragService, tokenCounter);
+        // Create InvestigateConnectionPoolIssues with mocked IPerfGenieService
+        investigateConnectionPoolIssues = new InvestigateConnectionPoolIssues(perfGenieService);
+        
+        claudeService = new ClaudeService(claudeConfig, mcpManager, historyManager, ragService, tokenCounter, investigateConnectionPoolIssues);
         claudeService.init(); // Initialize the HTTP client
     }
 
@@ -81,7 +91,9 @@ public class ClaudeServiceTest {
         TokenCounter realTokenCounter = new TokenCounter();
         ConversationHistoryManager realHistoryManager = new ConversationHistoryManager(realTokenCounter);
         RAGService realRAGService = new RAGService();
-        ClaudeService realService = new ClaudeService(realConfig, realMCPManager, realHistoryManager, realRAGService, realTokenCounter);
+        IPerfGenieService realPerfGenieService = mock(IPerfGenieService.class);
+        InvestigateConnectionPoolIssues realInvestigateConnectionPoolIssues = new InvestigateConnectionPoolIssues(realPerfGenieService);
+        ClaudeService realService = new ClaudeService(realConfig, realMCPManager, realHistoryManager, realRAGService, realTokenCounter, realInvestigateConnectionPoolIssues);
         realService.init();
         
         try {
@@ -126,7 +138,9 @@ public class ClaudeServiceTest {
         TokenCounter realTokenCounter = new TokenCounter();
         ConversationHistoryManager realHistoryManager = new ConversationHistoryManager(realTokenCounter);
         RAGService realRAGService = new RAGService();
-        ClaudeService realService = new ClaudeService(realConfig, realMCPManager, realHistoryManager, realRAGService, realTokenCounter);
+        IPerfGenieService realPerfGenieService = mock(IPerfGenieService.class);
+        InvestigateConnectionPoolIssues realInvestigateConnectionPoolIssues = new InvestigateConnectionPoolIssues(realPerfGenieService);
+        ClaudeService realService = new ClaudeService(realConfig, realMCPManager, realHistoryManager, realRAGService, realTokenCounter, realInvestigateConnectionPoolIssues);
         realService.init();
         
         try {
@@ -167,7 +181,9 @@ public class ClaudeServiceTest {
         TokenCounter realTokenCounter = new TokenCounter();
         ConversationHistoryManager realHistoryManager = new ConversationHistoryManager(realTokenCounter);
         RAGService realRAGService = new RAGService();
-        ClaudeService realService = new ClaudeService(realConfig, realMCPManager, realHistoryManager, realRAGService, realTokenCounter);
+        IPerfGenieService realPerfGenieService = mock(IPerfGenieService.class);
+        InvestigateConnectionPoolIssues realInvestigateConnectionPoolIssues = new InvestigateConnectionPoolIssues(realPerfGenieService);
+        ClaudeService realService = new ClaudeService(realConfig, realMCPManager, realHistoryManager, realRAGService, realTokenCounter, realInvestigateConnectionPoolIssues);
         realService.init();
         
         try {

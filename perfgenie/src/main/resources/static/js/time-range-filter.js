@@ -6,6 +6,8 @@
  * @param {function} onCancel - Optional callback function called when Cancel is clicked
  * @param {string} labelPrefix - Optional text to prepend to Start Time and End Time labels
  */
+var enableTimerangefilterDebug = false;
+
 function showTimeRangeFilter(startTimestamp, endTimestamp, onApply, onCancel, labelPrefix) {
     // Validate inputs
     if (typeof startTimestamp !== 'number' || typeof endTimestamp !== 'number') {
@@ -202,118 +204,118 @@ function showTimeRangeFilter(startTimestamp, endTimestamp, onApply, onCancel, la
 
 // Test function
 function testTimeRangeFilter() {
-    console.log('=== Testing Time Range Filter ===');
+    if(enableTimerangefilterDebug){console.log('=== Testing Time Range Filter ===');}
     
     // Test case 1: Current time range (last 24 hours)
-    console.log('\n1. Testing with last 24 hours:');
+    if(enableTimerangefilterDebug){console.log('\n1. Testing with last 24 hours:');}
     const startTime = Date.now() - (24 * 60 * 60 * 1000); // 24 hours ago
     const endTime = Date.now(); // Now
     
     showTimeRangeFilter(startTime, endTime, 
         (result) => {
-            console.log('✅ Test 1 - Apply clicked:');
-            console.log('  Selected time range:', result);
-            console.log('  Start epoch:', result.start);
-            console.log('  End epoch:', result.end);
-            console.log('  Start date:', new Date(result.start));
-            console.log('  End date:', new Date(result.end));
-            console.log('  Duration (hours):', (result.end - result.start) / (1000 * 60 * 60));
+            if(enableTimerangefilterDebug){console.log('✅ Test 1 - Apply clicked:');}
+            if(enableTimerangefilterDebug){console.log('  Selected time range:', result);}
+            if(enableTimerangefilterDebug){console.log('  Start epoch:', result.start);}
+            if(enableTimerangefilterDebug){console.log('  End epoch:', result.end);}
+            if(enableTimerangefilterDebug){console.log('  Start date:', new Date(result.start));}
+            if(enableTimerangefilterDebug){console.log('  End date:', new Date(result.end));}
+            if(enableTimerangefilterDebug){console.log('  Duration (hours):', (result.end - result.start) / (1000 * 60 * 60));}
         },
         () => {
-            console.log('❌ Test 1 - Cancelled');
+            if(enableTimerangefilterDebug){console.log('❌ Test 1 - Cancelled');}
         }
     );
 }
 
 // Test function for specific date range
 function testSpecificDateRange() {
-    console.log('\n=== Testing Specific Date Range ===');
+    if(enableTimerangefilterDebug){console.log('\n=== Testing Specific Date Range ===');}
     
     // Test case 2: Specific date range (January 1-15, 2024)
-    console.log('\n2. Testing with specific date range (Jan 1-15, 2024):');
+    if(enableTimerangefilterDebug){console.log('\n2. Testing with specific date range (Jan 1-15, 2024):');}
     const specificStart = new Date('2024-01-01T00:00:00').getTime();
     const specificEnd = new Date('2024-01-15T23:59:59').getTime();
     
     showTimeRangeFilter(specificStart, specificEnd, 
         (result) => {
-            console.log('✅ Test 2 - Apply clicked:');
-            console.log('  Selected time range:', result);
-            console.log('  Start date:', new Date(result.start));
-            console.log('  End date:', new Date(result.end));
-            console.log('  Duration (days):', (result.end - result.start) / (1000 * 60 * 60 * 24));
+            if(enableTimerangefilterDebug){console.log('✅ Test 2 - Apply clicked:');}
+            if(enableTimerangefilterDebug){console.log('  Selected time range:', result);}
+            if(enableTimerangefilterDebug){console.log('  Start date:', new Date(result.start));}
+            if(enableTimerangefilterDebug){console.log('  End date:', new Date(result.end));}
+            if(enableTimerangefilterDebug){console.log('  Duration (days):', (result.end - result.start) / (1000 * 60 * 60 * 24));}
         },
         () => {
-            console.log('❌ Test 2 - Cancelled');
+            if(enableTimerangefilterDebug){console.log('❌ Test 2 - Cancelled');}
         }
     );
 }
 
 // Test function for edge cases
 function testEdgeCases() {
-    console.log('\n=== Testing Edge Cases ===');
+    if(enableTimerangefilterDebug){console.log('\n=== Testing Edge Cases ===');}
     
     // Test case 3: Very short time range (1 minute)
-    console.log('\n3. Testing with very short range (1 minute):');
+    if(enableTimerangefilterDebug){console.log('\n3. Testing with very short range (1 minute):');}
     const shortStart = Date.now() - (60 * 1000); // 1 minute ago
     const shortEnd = Date.now(); // Now
     
     showTimeRangeFilter(shortStart, shortEnd, 
         (result) => {
-            console.log('✅ Test 3 - Apply clicked:');
-            console.log('  Selected time range:', result);
-            console.log('  Duration (minutes):', (result.end - result.start) / (1000 * 60));
+            if(enableTimerangefilterDebug){console.log('✅ Test 3 - Apply clicked:');}
+            if(enableTimerangefilterDebug){console.log('  Selected time range:', result);}
+            if(enableTimerangefilterDebug){console.log('  Duration (minutes):', (result.end - result.start) / (1000 * 60));}
         },
         () => {
-            console.log('❌ Test 3 - Cancelled');
+            if(enableTimerangefilterDebug){console.log('❌ Test 3 - Cancelled');}
         }
     );
 }
 
 // Test function for invalid inputs
 function testInvalidInputs() {
-    console.log('\n=== Testing Invalid Inputs ===');
+    if(enableTimerangefilterDebug){console.log('\n=== Testing Invalid Inputs ===');}
     
     // Test case 4: Invalid timestamps (start > end)
-    console.log('\n4. Testing with invalid timestamps (start > end):');
+    if(enableTimerangefilterDebug){console.log('\n4. Testing with invalid timestamps (start > end):');}
     const invalidStart = Date.now();
     const invalidEnd = Date.now() - (60 * 1000); // 1 minute before start
     
     showTimeRangeFilter(invalidStart, invalidEnd, 
         (result) => {
-            console.log('❌ Test 4 - Should not reach here with invalid input');
+            if(enableTimerangefilterDebug){console.log('❌ Test 4 - Should not reach here with invalid input');}
         },
         () => {
-            console.log('✅ Test 4 - Correctly handled invalid input');
+            if(enableTimerangefilterDebug){console.log('✅ Test 4 - Correctly handled invalid input');}
         }
     );
 }
 
 // Test function for very long time range
 function testLongTimeRange() {
-    console.log('\n=== Testing Long Time Range ===');
+    if(enableTimerangefilterDebug){console.log('\n=== Testing Long Time Range ===');}
     
     // Test case 5: Long time range (1 year)
-    console.log('\n5. Testing with long range (1 year):');
+    if(enableTimerangefilterDebug){console.log('\n5. Testing with long range (1 year):');}
     const longStart = Date.now() - (365 * 24 * 60 * 60 * 1000); // 1 year ago
     const longEnd = Date.now(); // Now
     
     showTimeRangeFilter(longStart, longEnd, 
         (result) => {
-            console.log('✅ Test 5 - Apply clicked:');
-            console.log('  Selected time range:', result);
-            console.log('  Start date:', new Date(result.start));
-            console.log('  End date:', new Date(result.end));
-            console.log('  Duration (days):', (result.end - result.start) / (1000 * 60 * 60 * 24));
+            if(enableTimerangefilterDebug){console.log('✅ Test 5 - Apply clicked:');}
+            if(enableTimerangefilterDebug){console.log('  Selected time range:', result);}
+            if(enableTimerangefilterDebug){console.log('  Start date:', new Date(result.start));}
+            if(enableTimerangefilterDebug){console.log('  End date:', new Date(result.end));}
+            if(enableTimerangefilterDebug){console.log('  Duration (days):', (result.end - result.start) / (1000 * 60 * 60 * 24));}
         },
         () => {
-            console.log('❌ Test 5 - Cancelled');
+            if(enableTimerangefilterDebug){console.log('❌ Test 5 - Cancelled');}
         }
     );
 }
 
 // Run all tests
 function runAllTests() {
-    console.log('🚀 Starting Time Range Filter Tests...');
+    if(enableTimerangefilterDebug){console.log('🚀 Starting Time Range Filter Tests...');}
     
     // Run tests with delays to avoid overlapping modals
     testTimeRangeFilter();
@@ -335,51 +337,51 @@ function runAllTests() {
     }, 8000);
     
     setTimeout(() => {
-        console.log('\n🎉 All tests completed! Check the console for results.');
+        if(enableTimerangefilterDebug){console.log('\n🎉 All tests completed! Check the console for results.');}
     }, 10000);
 }
 
 // Test function with label prefix
 function testWithLabelPrefix() {
-    console.log('\n=== Testing with Label Prefix ===');
+    if(enableTimerangefilterDebug){console.log('\n=== Testing with Label Prefix ===');}
     
     // Get current time and 1 hour ago
     const now = Date.now();
     const hourAgo = now - (60 * 60 * 1000);
     
-    console.log('Testing with label prefix "Event":');
-    console.log('Start:', new Date(hourAgo));
-    console.log('End:', new Date(now));
+    if(enableTimerangefilterDebug){console.log('Testing with label prefix "Event":');}
+    if(enableTimerangefilterDebug){console.log('Start:', new Date(hourAgo));}
+    if(enableTimerangefilterDebug){console.log('End:', new Date(now));}
     
     showTimeRangeFilter(hourAgo, now, 
         (result) => {
-            console.log('✅ Label Prefix Test - Apply clicked:');
-            console.log('  Selected time range:', result);
-            console.log('  Start date:', new Date(result.start));
-            console.log('  End date:', new Date(result.end));
-            console.log('  Duration (hours):', (result.end - result.start) / (1000 * 60 * 60));
+            if(enableTimerangefilterDebug){console.log('✅ Label Prefix Test - Apply clicked:');}
+            if(enableTimerangefilterDebug){console.log('  Selected time range:', result);}
+            if(enableTimerangefilterDebug){console.log('  Start date:', new Date(result.start));}
+            if(enableTimerangefilterDebug){console.log('  End date:', new Date(result.end));}
+            if(enableTimerangefilterDebug){console.log('  Duration (hours):', (result.end - result.start) / (1000 * 60 * 60));}
         },
         () => {
-            console.log('❌ Label Prefix Test - Cancelled');
+            if(enableTimerangefilterDebug){console.log('❌ Label Prefix Test - Cancelled');}
         },
         'Event' // Label prefix
     );
 }
 
 // Example usage and test runner
-console.log('Time Range Filter loaded. Available functions:');
-console.log('- testTimeRangeFilter() - Test with last 24 hours');
-console.log('- testSpecificDateRange() - Test with specific dates');
-console.log('- testEdgeCases() - Test with short time range');
-console.log('- testInvalidInputs() - Test with invalid inputs');
-console.log('- testLongTimeRange() - Test with long time range');
-console.log('- testWithLabelPrefix() - Test with label prefix');
-console.log('- runAllTests() - Run all tests with delays');
-console.log('\nTo run a specific test, call the function name in the console.');
-console.log('To run all tests, call: runAllTests()');
+if(enableTimerangefilterDebug){console.log('Time Range Filter loaded. Available functions:');}
+if(enableTimerangefilterDebug){console.log('- testTimeRangeFilter() - Test with last 24 hours');}
+if(enableTimerangefilterDebug){console.log('- testSpecificDateRange() - Test with specific dates');}
+if(enableTimerangefilterDebug){console.log('- testEdgeCases() - Test with short time range');}
+if(enableTimerangefilterDebug){console.log('- testInvalidInputs() - Test with invalid inputs');}
+if(enableTimerangefilterDebug){console.log('- testLongTimeRange() - Test with long time range');}
+if(enableTimerangefilterDebug){console.log('- testWithLabelPrefix() - Test with label prefix');}
+if(enableTimerangefilterDebug){console.log('- runAllTests() - Run all tests with delays');}
+if(enableTimerangefilterDebug){console.log('\nTo run a specific test, call the function name in the console.');}
+if(enableTimerangefilterDebug){console.log('To run all tests, call: runAllTests()');}
 
 // Auto-run basic test if in browser environment
 if (typeof window !== 'undefined') {
-    console.log('\n🌐 Browser environment detected. You can run tests now!');
-    console.log('Try: testTimeRangeFilter()');
+    if(enableTimerangefilterDebug){console.log('\n🌐 Browser environment detected. You can run tests now!');}
+    if(enableTimerangefilterDebug){console.log('Try: testTimeRangeFilter()');}
 }

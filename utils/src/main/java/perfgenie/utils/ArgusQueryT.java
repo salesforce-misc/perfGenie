@@ -13,6 +13,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static perfgenie.utils.ArgusQueries.*;
@@ -1141,11 +1143,61 @@ public class ArgusQueryT {
         }
     }
 
-    public static String genieQuery(String query, String refId, String previous) {
+    public static String genieQuery(String query, String refId, String previous, long start, long end,String regex) {
+        boolean diskCache = false;
+        if(query.contains("container_network") || query.contains("kube_pod_info") || query.contains("container_cpu_usage_seconds_total") || query.contains("container_memory_usage_bytes") || query.contains("container_start_time_seconds") || query.contains("kube_pod_status_phase") || query.contains("container_spec_cpu_shares") || query.contains("kube_pod_container_status_running")){
+            return "[]";
+        }
+        // Store original query for cache key generation (before URL encoding)
+        String originalQuery = query;
+
+        
         if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
             updateAccessToken();
             lastUpdated = System.currentTimeMillis();
         }
+
+        Pattern p = Pattern.compile(
+                "service\\(metrics\\?expression=(.*)\\),jsonpath"
+        );
+        Matcher m = p.matcher(query);
+
+        Pattern p1 = Pattern.compile("metrics\\?expression=([^)]*)");
+        Matcher m1 = p1.matcher(query);
+
+        String filterType = "";
+        String tagK = "";
+        if (m.find()) {
+            diskCache=false;
+            query = m.group(1);
+            originalQuery = query; // Update originalQuery after extraction
+        }else if (m1.find()) {
+            diskCache=false;
+            query = m1.group(1);
+            originalQuery = query; // Update originalQuery after extraction
+        }else if(query.contains("type(")){
+                start = end - 31*60*1000;//use only last 10 min
+                diskCache=false;
+                String[] parseResult = parseTypeQuery(query);
+                query = start+":"+end+":"+parseResult[0];
+                originalQuery = query; // Update originalQuery after parsing
+                filterType = parseResult[1];
+                tagK = parseResult[2];
+        }
+        
+        // Check disk cache if enabled
+        if (diskCache) {
+            System.out.println("check1");
+            // Exclude refId from cache key - use null instead
+            String cachedResult = DiskCache.getQueryCache(originalQuery, null, previous, start, end, regex);
+            if (cachedResult != null) {
+                System.out.println("genieQuery: Using cached result for query: " + originalQuery);
+                System.out.println("check2");
+                return cachedResult;
+            }
+            System.out.println("check3");
+        }
+        
         System.out.println(previous + ":"+refId + ":" + query);
         try {
             query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
@@ -1158,10 +1210,71 @@ public class ArgusQueryT {
         String metric = "";
         if (accessToken != null) {
             //request timeout
+            //System.out.println(metricCommand);
             String output = executeCurlCommand(metricCommand);
+            //System.out.println(output);
             if (output.contains("request timeout")) {
                 System.out.println("retry: " + query);
-                output = executeCurlCommand(metricCommand);
+                //output = executeCurlCommand(metricCommand);
+            }
+            if(filterType != null && !filterType.isEmpty()){
+                try {
+                    // Parse the output JSON array
+                    JSONArray jsonArray = new JSONArray(output);
+                    Set<String> collectedValues = new LinkedHashSet<>(); // Use LinkedHashSet to preserve order and avoid duplicates
+
+                    // Compile regex pattern if provided
+                    Pattern regexPattern = null;
+                    if (regex != null && !regex.isEmpty()) {
+                        try {
+                            // Strip leading/trailing forward slashes if present (regex delimiters)
+                            String cleanedRegex = regex.trim();
+                            if (cleanedRegex.startsWith("/") && cleanedRegex.endsWith("/")) {
+                                cleanedRegex = cleanedRegex.substring(1, cleanedRegex.length() - 1);
+                            }
+                            regexPattern = Pattern.compile(cleanedRegex);
+                            System.out.println("Compiled regex pattern: " + cleanedRegex);
+                        } catch (Exception e) {
+                            System.out.println("Error compiling regex pattern: " + regex + " - " + e.getMessage());
+                        }
+                    }
+                    
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject object = jsonArray.getJSONObject(i);
+                        // Look at root level to match filterType key and collect all matching values
+                        if (object.has(filterType)) {
+                            String value = object.get(filterType).toString();
+                            //apply regex on value and add 1st matcher to collectedValues
+                            String processedValue = applyRegex(value, regexPattern);
+                            if (processedValue != null && !processedValue.isEmpty()) {
+                                collectedValues.add(processedValue);
+                            }
+                        } else if (filterType.equals("tagv") && tagK != null && !tagK.isEmpty()) {
+                            // Look into "tags" object to collect values of matching filterType key
+                            if (object.has("tags")) {
+                                JSONObject tags = object.getJSONObject("tags");
+                                if (tags.has(tagK)) {
+                                    String tagValue = tags.get(tagK).toString();
+                                    //apply regex on value and add 1st matcher to collectedValues
+                                    String processedValue = applyRegex(tagValue, regexPattern);
+                                    if (processedValue != null && !processedValue.isEmpty()) {
+                                        collectedValues.add(processedValue);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Convert collected values to JSON array string
+                    JSONArray resultArray = new JSONArray();
+                    for (String value : collectedValues) {
+                        resultArray.put(value);
+                    }
+                    output = resultArray.toString();
+                } catch (Exception e) {
+                    System.out.println("Error filtering output by filterType " + filterType + ": " + e.getMessage());
+                    // If filtering fails, keep original output
+                }
             }
             metric = output;
         } else {
@@ -1191,6 +1304,13 @@ public class ArgusQueryT {
                 System.out.println("genieQuery2 " + e.getMessage());
             }
         }
+        
+        // Store result in disk cache if enabled and we have a valid result
+        // Exclude refId from cache key - use null instead
+        if (diskCache && metric != null && !metric.isEmpty() && accessToken != null) {
+            DiskCache.setQueryCache(originalQuery, null, previous, start, end, regex, metric);
+        }
+        
         return metric;
     }
 
@@ -1380,11 +1500,39 @@ public class ArgusQueryT {
     private static long lastUpdated = 0;
 
     public static synchronized boolean updateAccessToken() {
-        if ((System.currentTimeMillis() - lastUpdated) > 3 * 60 * 1000) {//5 min
+        String home = System.getProperty("user.home");
+        /*Path tokenPath = Path.of(home, ".ssh", "token");
+
+        String token = null;
+
+        if (Files.exists(tokenPath) && Files.isReadable(tokenPath)) {
+            try {
+                token = Files.readString(tokenPath).trim();
+                //check validity
+                String metricCommand = "curl -H \"Authorization: Bearer " + token + "\" " + "https://monitoring-api.salesforce.com/argusws/metrics?expression=1763514000000%3A1763517600000%3Acore.%2A%3Ajava-lang_type-Runtime.Uptime%7Bcell%3Dind86%7D%3Aavg%3Aall-max";
+                String output = executeCurlCommand(metricCommand);
+                if(output.contains("core.aws.aws-prod2-apsouth1.core1")){
+                    accessToken = token;
+                    lastUpdated = System.currentTimeMillis();
+                    return true;
+                }
+                System.out.println(output);
+            }catch (Exception e){
+
+            }
+        }*/
+
+        if ((System.currentTimeMillis() - lastUpdated) > 60 * 60 * 1000) {//60 min
             String curlCommand = "curl -vX POST \"https://monitoring-api.salesforce.com/monexws/auth/1.0/token\" "
                     + "--capath /etc/identity/client/certificates/ "
                     + "--cert /etc/identity/client/certificates/client.pem "
                     + "--key /etc/identity/client/keys/client-key.pem";
+            if (substrate == null) {
+                curlCommand = "curl -vX POST \"https://monitoring-api.salesforce.com/monexws/auth/1.0/token\" "
+                        + "--capath " + home + "/.ssh "
+                        + "--cert "+ home + "/.ssh/" + "client.pem "
+                        + "--key "+ home + "/.ssh/" + "client-key.pem";
+            }
             String response = executeCurlCommand(curlCommand);
             accessToken = parseAccessToken(response);
             lastUpdated = System.currentTimeMillis();
@@ -1393,7 +1541,7 @@ public class ArgusQueryT {
             } else {
                 return true;
             }
-        }else{
+        } else {
             return true;
         }
     }
@@ -1550,6 +1698,164 @@ public class ArgusQueryT {
         public void setDatapoints(ArrayList<AbstractMap.SimpleEntry<double[], double[]>> datapoints) {
             this.datapoints = datapoints;
         }
+    }
+
+    /**
+     * Applies a regex pattern to a value and returns the first match (first capturing group if available, otherwise the whole match).
+     * 
+     * @param value The value to apply regex to
+     * @param regexPattern The compiled regex pattern, or null if no regex should be applied
+     * @return The first match from the regex, or the original value if no regex or no match
+     */
+    private static String applyRegex(String value, Pattern regexPattern) {
+        if (regexPattern == null || value == null || value.isEmpty()) {
+            return value;
+        }
+        
+        try {
+            Matcher matcher = regexPattern.matcher(value);
+            System.out.println("Applying regex pattern to value: " + value);
+            if (matcher.find()) {
+                System.out.println("Regex match found! Group count: " + matcher.groupCount());
+                // If there are capturing groups, return the first one (group 1)
+                // Otherwise return the whole match (group 0)
+                if (matcher.groupCount() > 0) {
+                    String result = matcher.group(1);
+                    System.out.println("Returning first capturing group: " + result);
+                    return result;
+                } else {
+                    String result = matcher.group(0);
+                    System.out.println("Returning whole match: " + result);
+                    return result;
+                }
+            } else {
+                System.out.println("No regex match found for value: " + value);
+            }
+        } catch (Exception e) {
+            System.out.println("Error applying regex pattern: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        // If no match or error, return null (will be filtered out)
+        return null;
+    }
+
+    /**
+     * Parses a type query string and generates a map of key-value pairs.
+     * Example: "type(tagv),scope(core.aws.*),metric(java-lang_type-Runtime.Uptime),tag(k8s_container_name=coreapp),tagk(cell),limit(5000)"
+     * Then uses template "scope:metric{tag,tagk}" to replace placeholders with map values.
+     * 
+     * @param query The query string to parse
+     * @return An array containing [finalQuery, typeValue] where finalQuery is the query string after replacing placeholders, and typeValue is the value of the "type" key
+     */
+    public static String[] parseTypeQuery(String query) {
+        Map<String, List<String>> result = new HashMap<>();
+        
+        if (query == null || query.trim().isEmpty()) {
+            System.out.println("{}");
+            return new String[]{"", null};
+        }
+        
+        // Pattern to match key(value) where key is alphanumeric/underscore and value can contain various characters
+        Pattern pattern = Pattern.compile("(\\w+)\\(([^)]+)\\)");
+        Matcher matcher = pattern.matcher(query);
+        
+        while (matcher.find()) {
+            String key = matcher.group(1);
+            String value = matcher.group(2);
+            // If key already exists, add to the list; otherwise create a new list
+            result.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
+        }
+        
+        // Print the map as a string
+        System.out.println(result.toString());
+        
+        // Convert arrays to comma-separated strings before replacing placeholders
+        Map<String, String> stringValues = new HashMap<>();
+        for (Map.Entry<String, List<String>> entry : result.entrySet()) {
+            String key = entry.getKey();
+            List<String> values = entry.getValue();
+            // Join multiple values with commas
+            stringValues.put(key, String.join(",", values));
+        }
+        
+        // Use template "scope:metric{tag,tagk}" and replace placeholders with map values
+        String template = "scope:metric{tag,tagk=tagv}:avg";
+        String finalQuery = template;
+        
+        // Replace placeholders in order: tagk first (to avoid replacing "tag" inside "tagk"), then tag, then scope, then metric
+        //Pattern pattern;
+
+        // Replace tagk placeholder first (before tag to avoid partial replacement)
+        if (stringValues.containsKey("tagk")) {
+            finalQuery = finalQuery.replace("tagk", stringValues.get("tagk"));
+        } else {
+            // Remove placeholder and surrounding commas
+            pattern = Pattern.compile(",?" + Pattern.quote("tagk") + ",?");
+            finalQuery = pattern.matcher(finalQuery).replaceFirst("");
+            if (finalQuery.contains("=tagv,")) {
+                finalQuery = finalQuery.replace("=tagv,", "");
+            }
+            if (finalQuery.contains("=tagv")) {
+                finalQuery = finalQuery.replace("=tagv", "");
+            }
+
+        }
+
+        // Replace tagv placeholder first (before tag to avoid partial replacement)
+        if (stringValues.containsKey("tagv")) {
+            finalQuery = finalQuery.replace("tagv", stringValues.get("tagv"));
+        } else {
+            // Remove placeholder with *
+            finalQuery = finalQuery.replace("tagv", "*");
+        }
+
+
+
+
+        
+        // Replace tag placeholder
+        if (stringValues.containsKey("tag")) {
+            finalQuery = finalQuery.replace("tag", stringValues.get("tag"));
+        } else {
+            // Remove placeholder and surrounding commas
+            pattern = Pattern.compile(",?" + Pattern.quote("tag") + ",?");
+            finalQuery = pattern.matcher(finalQuery).replaceFirst("");
+        }
+        
+        // Replace scope placeholder
+        if (stringValues.containsKey("scope")) {
+            finalQuery = finalQuery.replace("scope", stringValues.get("scope"));
+        } else {
+            // Remove placeholder and surrounding commas
+            pattern = Pattern.compile(",?" + Pattern.quote("scope") + ",?");
+            finalQuery = pattern.matcher(finalQuery).replaceFirst("");
+        }
+        
+        // Replace metric placeholder
+        if (stringValues.containsKey("metric")) {
+            finalQuery = finalQuery.replace("metric", stringValues.get("metric"));
+        } else {
+            // Remove placeholder and surrounding commas
+            pattern = Pattern.compile(",?" + Pattern.quote("metric") + ",?");
+            finalQuery = pattern.matcher(finalQuery).replaceFirst("");
+        }
+        
+        // Print the final template string after replacing
+        System.out.println(finalQuery);
+        
+        // Get the type value (may be null if not present)
+        String typeValue = stringValues.get("type");
+
+        // Get the tagk value (may be null if not present)
+        String tagkValue = stringValues.get("tagk");
+
+        if (finalQuery.contains("{}")) {
+            finalQuery = finalQuery.replace("{}", "{cell!=none}");
+        }
+
+        // Return array with finalQuery and type value
+        return new String[]{finalQuery, typeValue, tagkValue};
     }
 
     public static void main(String[] args) {

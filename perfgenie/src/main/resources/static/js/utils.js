@@ -218,11 +218,11 @@ function stackDigVizAjax(pod, method, endpoint, successFunc, errorFunc) {
 // Only declare toastType if it doesn't already exist (to avoid redeclaration errors)
 if (typeof toastType === 'undefined') {
     var toastType = {
-        INFO: 1,
-        WARNING: 2,
-        ERROR: 3
-    };
-    Object.freeze(toastType);
+    INFO: 1,
+    WARNING: 2,
+    ERROR: 3
+};
+Object.freeze(toastType);
 }
 
 function toastMessage(type, msg, d = 5000){

@@ -147,7 +147,7 @@ $(document).ready(() => {
                             }
                         }
                         ],
-        tab: 'Timeseries',
+        tab: 'Statistics',
         tabs: true,
         transpose: false,
         type: 'timeseries',  // or 'stat', 'table', 'gauge', 'bargauge'
@@ -197,13 +197,13 @@ $(document).ready(() => {
         statsTable: {
                     transpose: false,  // Table will be transposed by default
                     base_series: 'Wallclock Time',
-                    'previous': 'none,-1d,-7d,-14d,-21d,-28d',
+                    'previous': 'none',
                     'displayName': "scope",
                     'percentBase': "cpu_time",
                     'percentTargets': ["wall_time"]
                 },
 "timeSeries": {
-    "zoomSlider": true,
+    "zoomSlider": false,
     "zoomSliderPosition": "bottom",
     "sort":true
   },
@@ -229,7 +229,7 @@ $(document).ready(() => {
                     datasource: { type: 'argus' }
                 }
         ]
-        },
+        }*//*,
         {
                 id: 5,
                 seriesContextMenu: [
@@ -322,123 +322,11 @@ $(document).ready(() => {
                             datasource: { type: 'argus' }
                         }
                 ]
-                },*/
-        {
-                id: 3,
-                seriesContextMenu: [
-                                {
-                                    label: 'Select host',
-                                    handler: function(seriesName) {
-                                        console.log('View details for:', seriesName);
-                                        alert('View details for: ' + seriesName);
-                                    }
-                                }
-                                ],
-                tab: 'Timeseries',
-                tabs: true,
-                transpose: false,
-                type: 'timeseries',  // or 'stat', 'table', 'gauge', 'bargauge'
-                title: 'Pidstats',
-                description: 'Hover over the chart to see interactive tooltips showing all series values at each timestamp',
-                gridPos: { x: 0, y: 8, w: 24, h: 6 },  // Grid position (24-column system)
-                stats: ['avg',"p95","p90"],  // Statistics for stats tab
-                fieldConfig: {
-                defaults: {
-                unit: 'ms',  // Unit for Y-axis
-                custom: {
-                drawStyle: 'line',
-                lineWidth: 0.5,
-                fillOpacity: 0.1,
-                showPoints: 'never'
-                }
-                },
-                overrides: [
-                                    {
-                                        matcher: { id: 'byRegexp', options: '/ddcpu_time|CPU Usage/' },
-                                        properties: [
-                                            {
-                                                id: 'displayName',
-                                                value: 'CPU Usage'
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        matcher: { id: 'byRegexp', options: '/ddwall_time|Wallclock Time/' },
-                                        properties: [
-                                            {
-                                                id: 'displayName',
-                                                value: 'Wallclock Time'
-                                            }
-                                        ]
-                                    }
-                                ]
-                },
-                options: {
-                download: true,
-                aggregation : {
-                                            tag: 'cell',           // Tag name to use as aggregation key
-                                            type: 'sum',           // Default aggregation type (optional)
-                                            span: '1m',            // Optional: span duration for time window aggregation
-                                            spanAggregation: 'avg' // Optional: aggregation type for span (sum or avg)
-                                            },
-                statsTable: {
-                            transpose: false,  // Table will be transposed by default
+                }*/
 
-                            'previous': '-7d,none,-1d,-7d,-14d,-21d,-28d',
-                            'displayName': "scope",
-                            base_series: 'containerCpu',
-                            'percentBase': "containerCpu",
-                            'percentTargets': ["c2Cpu","gcCpu","jfrCpu"]
-                        },
-                        "timeSeries": {
-                            "zoomSlider": true,
-                            "zoomSliderPosition": "bottom",
-                            "sort":true
-                          },
 
-                legend: {
-                showLegend: true,
-                displayMode: 'tooltip',
-                placement: 'bottom'
-                },
-                tooltip: {
-                mode: 'multi'
-                }
-                },
-                targets: [
-                {
-                                    refId: 'pidstats',
-                                    rawSql: '$start:$end:$substrate:$instance:$domain:$cell:$datahost',
-                                    datasource: { type: 'genie' }
-                                    }
-                ]
-                },
 
-        {
-        id: 2,
-        type: 'stat',
-        title: 'Heap',
-
-        gridPos: { x: 0, y: 14, w: 4, h: 2 },
-        fieldConfig: {
-        defaults: {
-        unit: 'G'
-        }
-        },
-        options: {
-        reduceOptions: {
-        calcs: ['lastNotNull']
-        }
-        },
-        targets: [
-        {
-        refId: 'D',
-        rawSql: 'HIGHEST( $start:$end:core.$substrate.$fi.$fd:java-lang_type-Memory.HeapMemoryUsage_max{cell=$cell,k8s_container_name=coreapp,k8s_pod_name=*,role=app}:avg:$interval-avg,#1# )',
-        datasource: { type: 'argus' }
-        }
-        ]
-        },
-        {
+        /*{
                stats: ['sum'],
               "datasource": {
                 "type": "argus",
@@ -876,6 +764,12 @@ $(document).ready(() => {
               "id": 9,
               tab: 'Timeseries',
               "options": {
+                download: true,
+              "timeSeries": {
+
+                                          "zoom":true,
+                                          "sort":true
+                                        },
                 "legend": {
                   "calcs": [],
                   "displayMode": "tooltip",
@@ -919,7 +813,7 @@ $(document).ready(() => {
               ],
               "title": "APT Dissection (ms / request)",
               "type": "timeseries"
-            }/*,
+            }*//*,
             {
                           "datasource": {
                             "type": "argus",
@@ -1530,42 +1424,69 @@ $(document).ready(() => {
                           "title": "APT Dissection (ms / request)",
                           "type": "timeseries"
                         }*/
-        ]
+        ],
+        "templating": {
+
+          }
         };
 
         // 6. Define input configuration (endpoints and variables)
         const inputJson = {
+         panelRefreshOnTimeRangeChange: false,  // auto refresh panels on timerange change
+                isAnomalyProcessInUI: false,  // Set to false to use backend
+                // Optional backend configuration
+                //genieAnomalyEndpoint: '/api/v1/genie/anomaly',  // Custom endpoint (optional)
+                genieAnomalyMaxDataPoints: 3600,  // Max data points per series (optional)
+                genieAnomalyEnablePattern: false,  // Enable pattern analysis (optional)
+                // Backend calculation parameter (affects how anomaly score is calculated)
+                genieAnomalyThreshold: 1.5,  // Default: 1.5 (IQR multiplier)
+                // UI collapse/expand threshold (for final anomaly scores 0.0-1.0)
+                genieAnomalyCollapseThreshold: 0.4,  // Default: 0.3
+                // Alternative name for collapse threshold (for backward compatibility)
+                genieAnomalyColorThreshold: 0.3,  // Used if genieAnomalyCollapseThreshold not set
+                genieNonCompareThresholdPercent: 10, //at least this percent of group should be above genieAnomalyColorThreshold, if so all members greater than genieAnomalyColorThreshold average should used to sort panels
+                includePanelsAboveThreshold: true,  // dashboard assistant, only in genie check view, if this is true include panels that are above threshold which is _geniePanelsMetThresholdList, for step 1 metadata and step 2 batch requests
+
+
         // REST endpoint with QEURY placeholder (will be replaced with URL-encoded query)
         argus: '/v1/geniequery/?query=QEURY',
         genie: '/v1/geniequery/?query=QEURY',
         // Variables to replace in queries (all $ keys will be replaced)
-        '$start': 1763514000000,  // 1 hour ago
-        '$end': 1763517600000,
-        "Cell": {
-            "value": "usa12",
+                '$start': Date.now() - 60*60*1000, //1764835200000,//1763514000000,  // 1 hour ago
+                '$end': Date.now() ,//1763517600000,
+        "placeholdernamemappings": {
+            "Cell": ["$cell","$cellkey"],
+            "Substrate": ["$substrate","$sub"],
+            "HF Instance": ["$fi","$falcon_instance", "$fd_instance", "$instance"],
+            "Domain": ["$fd", "$functional_domain", "$domain"],
+            "Interval": ["$interval"],
+            "Aggregate": ["$agg", "$aggregation"]
+        },
+        /*"Cell": {
+            "value": "",
             "placeholders": ["$cell", "$cellkey"]
           },
           "Substrate": {
-            "value": "aws",
+            "value": "",
             "placeholders": ["$substrate", "$sub"]
           },
           "HF Instance": {
-                      "value": "aws-prod0-uswest2",
+                      "value": "",
                       "placeholders": ["$fi", "$falcon_instance", "$fd_instance", "$instance"]
                     },
           "Domain": {
-                                "value": "core1",
+                                "value": "",
                                 "placeholders": ["$fd", "$functional_domain", "$domain"]
                               },
           "Interval": {
-                                          "value": "1m",
+                                          "value": "",
                                           "placeholders": ["$interval"]
                                         },
          "Aggregate": {
                        "value": "avg",
                        "placeholders": ["$agg", "$aggregation"]
-                     },
-        'previous': '-7d,none,-1d,-14d,-21d,-28d',
+                     },*/
+        'previous': 'none,-7d,-14d,-21d,-28d',
         '$host' : 'tmphost',
         'overrides' : {
         "panels":

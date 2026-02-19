@@ -70,22 +70,348 @@
                                 let arr = $instance.split(".");
                                 $instance = "aws-"+arr[0]+"-"+arr[0];
 
+perfswatdashboard = new GenieDashboard('perfswat-dashboard-container');
+
+        // 5. Define dashboard configuration (Grafana-style JSON)
+        perfswatdashboardJson = {
+        toolbar: {
+                enabled: true,  // Set to false to hide toolbar
+                showTimeRange: true,  // Show time range selector (clock icon)
+                showInterval: true,  // Show interval input
+                showAggregation: true,  // Show aggregation dropdown
+                showRefresh: true,  // Show refresh button
+                collapse:false
+            },
+        panels: [
+ {
+                 id: 3,
+                 seriesContextMenu: [
+                                 {
+                                     label: 'Select host',
+                                     handler: function(seriesName) {
+                                         console.log('View details for:', seriesName);
+                                         alert('View details for: ' + seriesName);
+                                     }
+                                 }
+                                 ],
+                 tab: 'Timeseries',
+                 tabs: true,
+                 transpose: false,
+                 type: 'timeseries',  // or 'stat', 'table', 'gauge', 'bargauge'
+                 title: 'Pidstats',
+                 description: 'Hover over the chart to see interactive tooltips showing all series values at each timestamp',
+                 gridPos: { x: 0, y: 0, w: 24, h: 8 },  // Grid position (24-column system)
+                 stats: ['avg',"sum"],  // Statistics for stats tab
+                 fieldConfig: {
+                 defaults: {
+                 unit: 'ms',  // Unit for Y-axis
+                 custom: {
+                 drawStyle: 'line',
+                 lineWidth: 0.5,
+                 fillOpacity: 0.1,
+                 showPoints: 'never'
+                 }
+                 },
+                 overrides: [
+                                     {
+                                         matcher: { id: 'byRegexp', options: '/ddcpu_time|CPU Usage/' },
+                                         properties: [
+                                             {
+                                                 id: 'displayName',
+                                                 value: 'CPU Usage'
+                                             }
+                                         ]
+                                     },
+                                     {
+                                         matcher: { id: 'byRegexp', options: '/ddwall_time|Wallclock Time/' },
+                                         properties: [
+                                             {
+                                                 id: 'displayName',
+                                                 value: 'Wallclock Time'
+                                             }
+                                         ]
+                                     }
+                                 ]
+                 },
+                 options: {
+                 download: true,
+                 aggregation : {
+                                             tag: 'cell',           // Tag name to use as aggregation key
+                                             type: 'sum',           // Default aggregation type (optional)
+                                             span: '1m',            // Optional: span duration for time window aggregation
+                                             spanAggregation: 'sum' // Optional: aggregation type for span (sum or avg)
+                                             },
+                 statsTable: {
+                             transpose: false,  // Table will be transposed by default
+
+                             'previous': '-7d,none,-1d,-7d,-14d,-21d,-28d',
+                             'displayName': "scope",
+                             base_series: 'containerCpu',
+                             'percentBase': "containerCpu",
+                             'percentTargets': ["c2Cpu","gcCpu","jfrCpu"]
+                         },
+                         "timeSeries": {
+                             "zoomSlider": false,
+                             "zoom":true,
+                             "zoomSliderPosition": "bottom",
+                             "sort":true
+                           },
+
+                 legend: {
+                 showLegend: true,
+                 displayMode: 'tooltip',
+                 placement: 'bottom'
+                 },
+                 tooltip: {
+                 mode: 'multi'
+                 }
+                 },
+                 targets: [
+                 {
+                                     refId: 'pidstats',
+                                     rawSql: '$start:$end:$substrate:$instance:$domain:$cell',
+                                     datasource: { type: 'genie' }
+                                     }
+                 ]
+                 }
+
+
+        ],
+                                   "templating": {
+                                       "list": [
+                                         {
+                                           "current": {
+                                             "selected": false,
+                                             "text": "aws",
+                                             "value": "aws"
+                                           },
+                                           "datasource": {
+                                             "type": "argus",
+                                             "uid": "000000001"
+                                           },
+                                           "definition": "",
+                                           "hide": 0,
+                                           "includeAll": false,
+                                           "label": "Substrate",
+                                           "multi": false,
+                                           "name": "substrate",
+                                           "options": [],
+                                           "query": "type(scope),scope(core.*),metric(java-lang_type-Runtime.Uptime),tagk(k8s_container_name),tagv(coreapp),limit(5000)",
+                                           "refresh": 1,
+                                           "regex": "/core\\.(.*)\\..*\\..*/",
+                                           "skipUrlSync": false,
+                                           "sort": 1,
+                                           "tagValuesQuery": "",
+                                           "tagsQuery": "",
+                                           "type": "query",
+                                           "useTags": false
+                                         },
+                                         {
+                                           "current": {
+                                             "selected": false,
+                                             "text": this.text(),
+                                             "value": this.text()
+                                           },
+                                           "datasource": {
+                                             "type": "argus",
+                                             "uid": "000000001"
+                                           },
+                                           "definition": "",
+                                           "hide": 0,
+                                           "includeAll": false,
+                                           "label": "Cell",
+                                           "multi": false,
+                                           "name": "cell",
+                                           "options": [],
+                                           "query": "type(tagv),scope(core.$substrate.*),metric(java-lang_type-Runtime.Uptime),tag(k8s_container_name=coreapp),tagk(cell),limit(5000)",
+                                           "refresh": 1,
+                                           "regex": "",
+                                           "skipUrlSync": false,
+                                           "sort": 1,
+                                           "tagValuesQuery": "",
+                                           "tagsQuery": "",
+                                           "type": "query",
+                                           "useTags": false
+                                         },
+                                         {
+                                           "current": {
+                                             "selected": false,
+                                             "text": "",
+                                             "value": ""
+                                           },
+                                           "datasource": {
+                                             "type": "argus",
+                                             "uid": "000000001"
+                                           },
+                                           "definition": "",
+                                           "hide": 0,
+                                           "includeAll": false,
+                                           "label": "Falcon Instance",
+                                           "multi": false,
+                                           "name": "falcon_instance",
+                                           "options": [],
+                                           "query": "type(scope),scope(core.*),metric(java-lang_type-Runtime.Uptime),tagk(cell),tagv($cell),limit(5000)",
+                                           "refresh": 1,
+                                           "regex": "/core\\..*\\.(.*)\\..*/",
+                                           "skipUrlSync": false,
+                                           "sort": 1,
+                                           "tagValuesQuery": "",
+                                           "tagsQuery": "",
+                                           "type": "query",
+                                           "useTags": false
+                                         },
+                                         {
+                                           "current": {
+                                             "selected": false,
+                                             "text": "",
+                                             "value": ""
+                                           },
+                                           "datasource": {
+                                             "type": "argus",
+                                             "uid": "000000001"
+                                           },
+                                           "definition": "",
+                                           "hide": 0,
+                                           "includeAll": false,
+                                           "label": "Functional Domain",
+                                           "multi": false,
+                                           "name": "functional_domain",
+                                           "options": [],
+                                           "query": "type(scope),scope(core.*),metric(java-lang_type-Runtime.Uptime),tagk(cell),tagv($cell),limit(5000)",
+                                           "refresh": 1,
+                                           "regex": "/core\\..*\\..*\\.(.*)/",
+                                           "skipUrlSync": false,
+                                           "sort": 1,
+                                           "tagValuesQuery": "",
+                                           "tagsQuery": "",
+                                           "type": "query",
+                                           "useTags": false
+                                         },
+                                         {
+                                           "auto": false,
+                                           "auto_count": 300,
+                                           "auto_min": "10s",
+                                           "current": {
+                                             "selected": true,
+                                             "text": "2m",
+                                             "value": "2m"
+                                           },
+                                           "hide": 0,
+                                           "label": "Interval",
+                                           "name": "interval",
+                                           "options": [
+                                             {
+                                               "selected": false,
+                                               "text": "1m",
+                                               "value": "1m"
+                                             },
+                                             {
+                                               "selected": true,
+                                               "text": "2m",
+                                               "value": "2m"
+                                             },
+                                             {
+                                               "selected": false,
+                                               "text": "5m",
+                                               "value": "5m"
+                                             },
+                                             {
+                                               "selected": false,
+                                               "text": "10m",
+                                               "value": "10m"
+                                             },
+                                             {
+                                               "selected": false,
+                                               "text": "30m",
+                                               "value": "30m"
+                                             },
+                                             {
+                                               "selected": false,
+                                               "text": "1h",
+                                               "value": "1h"
+                                             },
+                                             {
+                                               "selected": false,
+                                               "text": "6h",
+                                               "value": "6h"
+                                             },
+                                             {
+                                               "selected": false,
+                                               "text": "12h",
+                                               "value": "12h"
+                                             },
+                                             {
+                                               "selected": false,
+                                               "text": "1d",
+                                               "value": "1d"
+                                             },
+                                             {
+                                               "selected": false,
+                                               "text": "7d",
+                                               "value": "7d"
+                                             }
+                                           ],
+                                           "query": "1m,2m,5m,10m,30m,1h,6h,12h,1d,7d",
+                                           "refresh": 2,
+                                           "skipUrlSync": false,
+                                           "type": "interval"
+                                         },
+                                         {
+                                                 "current": {
+                                                   "selected": false,
+                                                   "text": "sum",
+                                                   "value": "sum"
+                                                 },
+                                                 "description": "Aggregation options for graphs, in conjunction with the interval.",
+                                                 "hide": 0,
+                                                 "includeAll": false,
+                                                 "label": "Aggregate",
+                                                 "multi": false,
+                                                 "name": "agg",
+                                                 "options": [
+                                                   {
+                                                     "selected": true,
+                                                     "text": "avg",
+                                                     "value": "avg"
+                                                   },
+                                                   {
+                                                     "selected": false,
+                                                     "text": "sum",
+                                                     "value": "sum"
+                                                   },
+                                                   {
+                                                     "selected": false,
+                                                     "text": "min",
+                                                     "value": "min"
+                                                   },
+                                                   {
+                                                     "selected": false,
+                                                     "text": "max",
+                                                     "value": "max"
+                                                   }
+                                                 ],
+                                                 "query": "avg,sum,min,max",
+                                                 "skipUrlSync": false,
+                                                 "type": "custom"
+                                               }
+                                       ]
+                                     }
+        };
                                 const inputJson = {
                                         // REST endpoint with QEURY placeholder (will be replaced with URL-encoded query)
                                         argus: '/v1/geniequery/?query=QEURY',
                                         genie: '/v1/geniequery/?query=QEURY',
-
+                                        "placeholdernamemappings": {
+                                                    "Cell": ["$cell","$cellkey"],
+                                                    "Substrate": ["$substrate","$sub"],
+                                                    "HF Instance": ["$fi", "$falcon_instance", "$fd_instance", "$instance"],
+                                                    "Domain": ["$fd", "$functional_domain", "$domain"],
+                                                    "Interval": ["$interval"],
+                                                    "Aggregate": ["$agg", "$aggregation"]
+                                                },
                                         // Variables to replace in queries (all $ keys will be replaced)
-                                        '$start': $(this).attr("t")-24*60*60*1000,  // 1 hour ago
-                                        '$end': $(this).attr("t"),
-                                        '$cell': $(this).text(),
-                                        '$instance': $instance,
-                                        '$domain': "core1",
-                                        '$substrate' : "aws",
-                                        '$interval': '1m',
-                                        '$agg': 'avg',
-                                        'previous': 'none',
-                                        '$datahost': dataHost
+                                        '$start': $(this).attr("t")-14*60*60*1000,  // 1 hour ago
+                                        '$end': $(this).attr("t") - 0
                                         };
                                         // 7. Render the dashboard
                                         perfswatdashboard.render(perfswatdashboardJson, inputJson);

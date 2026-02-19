@@ -134,5 +134,30 @@ public interface IClaudeService {
      * @return true if the server is connected
      */
     boolean isMCPServerConnected(String serverName);
+    
+    /**
+     * Process Step 2 message with batched panel data to handle length constraints
+     * 
+     * @param userMessage Original user question
+     * @param conversationHistory Step 1 conversation history
+     * @param panelIds List of panel IDs to process
+     * @param panelData Map of panel ID to panel data
+     * @return Final consolidated response
+     * @throws IOException if there's an error communicating with the API
+     */
+    ClaudeResponse processStep2Batched(String userMessage, List<ClaudeMessage> conversationHistory, 
+            List<String> panelIds, Map<String, Object> panelData) throws IOException;
+    
+    /**
+     * Process Step 1 message with batched panel metadata to handle length constraints
+     * 
+     * @param userMessage Original user question
+     * @param conversationHistory Previous conversation history (usually empty for Step 1)
+     * @param panelMetadata List of panel metadata objects
+     * @return Response containing comma-separated panel IDs
+     * @throws IOException if there's an error communicating with the API
+     */
+    ClaudeResponse processStep1Batched(String userMessage, List<ClaudeMessage> conversationHistory, 
+            List<Map<String, Object>> panelMetadata) throws IOException;
 }
 

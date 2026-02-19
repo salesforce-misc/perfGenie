@@ -877,7 +877,7 @@ public class EventStore {
 
     public HashMap<String,ArrayList<String>> getPidStatPayLoads(final String tenant, final long start, final long end, final Map<String, String> queryMap, final Map<String, String> dimMap, final boolean payload, int limit) throws IOException {
         String namespace = PerfGenieConstants.getEventNameSpace(tenant, queryMap.get(PerfGenieConstants.SOURCE_KEY), config.getBackup_namespace());
-        long queryWindowLimit = 3*60*60*1000; // 6 hours in milliseconds
+        long queryWindowLimit = 1*60*60*1000; // 1 hour in milliseconds
         
         // Calculate time range
         long timeRange = end - start;

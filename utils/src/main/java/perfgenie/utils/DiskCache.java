@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -232,7 +233,8 @@ public class DiskCache {
             }
             
             File dir = cacheDir.toFile();
-            File[] files = dir.listFiles((dir1, name) -> name.endsWith(CACHE_FILE_EXTENSION));
+            // Include both .cache files (for Events) and .cache.json files (for query results)
+            File[] files = dir.listFiles((dir1, name) -> name.endsWith(CACHE_FILE_EXTENSION) || name.endsWith(CACHE_FILE_EXTENSION + ".json"));
             
             if (files == null) {
                 logger.debug("No cache files found in directory: {}", CACHE_DIR);
@@ -262,6 +264,105 @@ public class DiskCache {
         }
         
         return deletedCount;
+    }
+
+    /**
+     * Generates a cache key hash for a query string
+     */
+    private static String generateQueryCacheKey(String query, String refId, String previous, long start, long end, String regex) {
+        try {
+            // Create a deterministic string representation of the cache key
+            StringBuilder keyBuilder = new StringBuilder();
+            keyBuilder.append("genieQuery|");
+            keyBuilder.append(query != null ? query : "").append("|");
+            keyBuilder.append(refId != null ? refId : "").append("|");
+            keyBuilder.append(previous != null ? previous : "").append("|");
+            keyBuilder.append(start).append("|");
+            keyBuilder.append(end).append("|");
+            keyBuilder.append(regex != null ? regex : "").append("|");
+            
+            String keyString = keyBuilder.toString();
+            
+            // Generate MD5 hash
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] hashBytes = md.digest(keyString.getBytes("UTF-8"));
+            
+            // Convert to hex string
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hashBytes) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
+            logger.error("Failed to generate query cache key", e);
+            // Fallback to a simple hash
+            return String.valueOf((query + refId + previous + start + end + regex).hashCode());
+        }
+    }
+
+    /**
+     * Gets cached query result (JSON string) from disk
+     * @param query The query string
+     * @param refId The refId
+     * @param previous The previous parameter
+     * @param start Start timestamp
+     * @param end End timestamp
+     * @param regex The regex parameter
+     * @return Cached JSON string if found, null otherwise
+     */
+    public static String getQueryCache(String query, String refId, String previous, long start, long end, String regex) {
+        try {
+            String cacheKey = generateQueryCacheKey(query, refId, previous, start, end, regex);
+            Path cacheFile = Paths.get(CACHE_DIR, cacheKey + CACHE_FILE_EXTENSION + ".json");
+            
+            if (!Files.exists(cacheFile)) {
+                logger.debug("DiskCache: CACHE MISS - Query cache file not found for key: {}", cacheKey);
+                return null;
+            }
+            
+            logger.info("DiskCache: CACHE HIT - Found query cache file for key: {}", cacheKey);
+            
+            // Read cached JSON string
+            String cachedResult = Files.readString(cacheFile, StandardCharsets.UTF_8);
+            logger.info("DiskCache: Successfully loaded cached query result (CACHE USED)");
+            return cachedResult;
+        } catch (Exception e) {
+            logger.warn("DiskCache: CACHE ERROR - Failed to read query cache, will fallback to direct call", e);
+            return null;
+        }
+    }
+
+    /**
+     * Stores query result (JSON string) to disk cache
+     * @param query The query string
+     * @param refId The refId
+     * @param previous The previous parameter
+     * @param start Start timestamp
+     * @param end End timestamp
+     * @param regex The regex parameter
+     * @param result The JSON string result to cache
+     */
+    public static void setQueryCache(String query, String refId, String previous, long start, long end, String regex, String result) {
+        if (result == null || result.trim().isEmpty()) {
+            return;
+        }
+        
+        try {
+            String cacheKey = generateQueryCacheKey(query, refId, previous, start, end, regex);
+            Path cacheFile = Paths.get(CACHE_DIR, cacheKey + CACHE_FILE_EXTENSION + ".json");
+            
+            // Write cached JSON string
+            Files.writeString(cacheFile, result, StandardCharsets.UTF_8);
+            
+            logger.info("DiskCache: Successfully stored query result to cache with key: {} (CACHE WRITTEN)", cacheKey);
+        } catch (Exception e) {
+            logger.warn("DiskCache: CACHE ERROR - Failed to write query cache", e);
+        }
     }
 }
 

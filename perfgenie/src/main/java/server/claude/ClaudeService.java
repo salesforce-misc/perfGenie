@@ -20,6 +20,7 @@ import server.claude.model.ClaudeResponse;
 import server.claude.mcp.MCPManager;
 import server.claude.mcp.MCPTool;
 import server.claude.rag.RAGService;
+import server.investigation.InvestigateConnectionPoolIssues;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -29,6 +30,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Service implementation for interacting with Claude API
@@ -44,17 +49,19 @@ public class ClaudeService implements IClaudeService {
     private final ConversationHistoryManager historyManager;
     private final RAGService ragService;
     private final TokenCounter tokenCounter;
+    private final InvestigateConnectionPoolIssues investigateConnectionPoolIssues;
     private OkHttpClient httpClient;
     
     @Autowired
     public ClaudeService(ClaudeConfig config, MCPManager mcpManager, 
                         ConversationHistoryManager historyManager, RAGService ragService,
-                        TokenCounter tokenCounter) {
+                        TokenCounter tokenCounter, InvestigateConnectionPoolIssues investigateConnectionPoolIssues) {
         this.config = config;
         this.mcpManager = mcpManager;
         this.historyManager = historyManager;
         this.ragService = ragService;
         this.tokenCounter = tokenCounter;
+        this.investigateConnectionPoolIssues = investigateConnectionPoolIssues;
         this.objectMapper = new ObjectMapper();
     }
     
@@ -487,11 +494,28 @@ public class ClaudeService implements IClaudeService {
     
     /**
      * Get all available MCP tools from all connected servers
+     * Includes both external MCP server tools and local tools
      * 
      * @return Map of tool names to MCPTool objects
      */
     public Map<String, MCPTool> getAvailableMCPTools() {
-        return mcpManager.getAllAvailableTools();
+        Map<String, MCPTool> tools = new HashMap<>(mcpManager.getAllAvailableTools());
+        
+        // Add the local connection pool investigation tool
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> toolSchema = (Map<String, Object>) investigateConnectionPoolIssues.getToolSchema().get("inputSchema");
+            MCPTool connectionPoolTool = new MCPTool();
+            connectionPoolTool.setName("investigate_connection_pool_issues");
+            connectionPoolTool.setDescription("Investigate connection pool issues by analyzing jstacks. Use this tool when asked to analyze jstacks, investigate connection pools, or debug thread issues. Requires: cellName (cell name), host (host or kpod name), startTime (epoch milliseconds), endTime (epoch milliseconds).");
+            connectionPoolTool.setInputSchema(toolSchema);
+            tools.put("investigate_connection_pool_issues", connectionPoolTool);
+            logger.debug("Added local tool 'investigate_connection_pool_issues' to available MCP tools");
+        } catch (Exception e) {
+            logger.warn("Failed to add local connection pool investigation tool to MCP tools: {}", e.getMessage());
+        }
+        
+        return tools;
     }
     
     /**
@@ -584,6 +608,801 @@ public class ClaudeService implements IClaudeService {
             }
         }
         return sendMessage(userMessage);
+    }
+    
+    /**
+     * Process Step 2 message with batched panel data to handle length constraints
+     * 
+     * @param userMessage Original user question
+     * @param conversationHistory Step 1 conversation history
+     * @param panelIds List of panel IDs to process
+     * @param panelData Map of panel ID to panel data
+     * @return Final consolidated response
+     * @throws IOException if there's an error communicating with the API
+     */
+    public ClaudeResponse processStep2Batched(
+            String userMessage,
+            List<ClaudeMessage> conversationHistory,
+            List<String> panelIds,
+            Map<String, Object> panelData) throws IOException {
+        
+        logger.info("Processing Step 2 batched: {} panels, {} history messages", 
+                panelIds.size(), conversationHistory != null ? conversationHistory.size() : 0);
+        
+        // Load templates
+        String step2Template = loadTemplate("dashboard-assistant-templates/step2-data-template.json");
+        String step3Template = loadTemplate("dashboard-assistant-templates/step3-consolidation-template.json");
+        
+        // Token limit: 85000 tokens (as specified)
+        final int TOKEN_LIMIT = 85000;
+        
+        // Filter history to only include assistant responses (skip user messages to save tokens)
+        // User messages are redundant since Step 2 message already includes the current user question and panel data
+        // But assistant responses may contain useful context
+        List<ClaudeMessage> filteredHistory = new java.util.ArrayList<>();
+        if (conversationHistory != null && !conversationHistory.isEmpty()) {
+            for (ClaudeMessage msg : conversationHistory) {
+                if ("assistant".equals(msg.getRole())) {
+                    filteredHistory.add(msg);
+                }
+            }
+            logger.info("Step 2 filtered history: {} total messages -> {} assistant messages (skipped {} user messages)", 
+                    conversationHistory.size(), filteredHistory.size(), conversationHistory.size() - filteredHistory.size());
+        }
+        
+        // Estimate history tokens for filtered history (assistant responses only)
+        int historyTokens = historyManager.estimateTokens(filteredHistory);
+        
+        // Reserve tokens for history + response buffer (leave ~5000 for response)
+        int reservedTokens = historyTokens + 5000;
+        int availableTokens = TOKEN_LIMIT - reservedTokens;
+        
+        // Ensure we have at least some tokens available for data
+        if (availableTokens < 1000) {
+            logger.warn("Very little token budget available ({}), filtered history is large ({} tokens)", 
+                    availableTokens, historyTokens);
+            availableTokens = Math.max(1000, TOKEN_LIMIT - historyTokens - 5000);
+        }
+        
+        logger.info("Token budget: limit={}, history={}, reserved={}, available={}", 
+                TOKEN_LIMIT, historyTokens, reservedTokens, availableTokens);
+        
+        // Batch panels based on data size
+        List<List<String>> batches = createBatches(panelIds, panelData, step2Template, userMessage, availableTokens);
+        logger.info("Created {} batches for {} panels", batches.size(), panelIds.size());
+        
+        // Process batches in parallel (max 8 concurrent)
+        final int MAX_CONCURRENT_BATCHES = 8;
+        ExecutorService executor = Executors.newFixedThreadPool(MAX_CONCURRENT_BATCHES);
+        
+        try {
+            // Create CompletableFuture for each batch
+            List<CompletableFuture<String>> batchFutures = new java.util.ArrayList<>();
+            
+            for (int i = 0; i < batches.size(); i++) {
+                final int batchIndex = i;
+                final List<String> batch = batches.get(i);
+                
+                CompletableFuture<String> batchFuture = CompletableFuture.supplyAsync(() -> {
+                    try {
+                        logger.info("Processing batch {}/{} with {} panels", batchIndex + 1, batches.size(), batch.size());
+                        
+                        // Create batch data
+                        Map<String, Object> batchData = new java.util.HashMap<>();
+                        for (String panelId : batch) {
+                            batchData.put(panelId, panelData.get(panelId));
+                        }
+                        
+                        // Build Step 2 message for this batch
+                        String batchMessage = buildStep2Message(step2Template, userMessage, batchData);
+                        
+                        // Validate token count before sending to avoid retries
+                        int batchMessageTokens = tokenCounter.countTokens(batchMessage);
+                        int totalTokens = historyTokens + batchMessageTokens;
+                        
+                        if (totalTokens > TOKEN_LIMIT) {
+                            logger.warn("Batch {}/{} exceeds token limit: total={} (history={} + message={}) > limit={}. Reducing batch size...", 
+                                    batchIndex + 1, batches.size(), totalTokens, historyTokens, batchMessageTokens, TOKEN_LIMIT);
+                            
+                            // Reduce batch size and retry
+                            int maxTokensForBatch = TOKEN_LIMIT - historyTokens - 1000; // Leave 1000 token buffer
+                            List<String> reducedBatch = reduceBatchSize(batch, batchData, step2Template, userMessage, maxTokensForBatch);
+                            
+                            if (reducedBatch.isEmpty()) {
+                                logger.error("Cannot create valid batch for panels: {}", batch);
+                                return null; // Skip this batch
+                            }
+                            
+                            // Rebuild message with reduced batch
+                            Map<String, Object> reducedBatchData = new java.util.HashMap<>();
+                            for (String panelId : reducedBatch) {
+                                reducedBatchData.put(panelId, panelData.get(panelId));
+                            }
+                            batchMessage = buildStep2Message(step2Template, userMessage, reducedBatchData);
+                            batchMessageTokens = tokenCounter.countTokens(batchMessage);
+                            totalTokens = historyTokens + batchMessageTokens;
+                            
+                            logger.info("Reduced batch to {} panels, new token count: total={} (history={} + message={})", 
+                                    reducedBatch.size(), totalTokens, historyTokens, batchMessageTokens);
+                        }
+                        
+                        // Final validation before sending
+                        if (totalTokens > TOKEN_LIMIT) {
+                            logger.error("Batch {}/{} still exceeds token limit after reduction: {} > {}. Skipping batch.", 
+                                    batchIndex + 1, batches.size(), totalTokens, TOKEN_LIMIT);
+                            return null; // Skip this batch
+                        }
+                        
+                        logger.debug("Batch {}/{} token count: total={} (history={} + message={}) <= limit={}", 
+                                batchIndex + 1, batches.size(), totalTokens, historyTokens, batchMessageTokens, TOKEN_LIMIT);
+                        
+                        // Send to Claude (now guaranteed to be within limit)
+                        // Use filtered history (assistant responses only) - user messages are redundant
+                        ClaudeResponse batchResponse = sendMessage(batchMessage, filteredHistory);
+                        String batchResponseText = extractTextFromResponse(batchResponse);
+                        
+                        logger.debug("Batch {}/{} completed, response length: {} chars", batchIndex + 1, batches.size(), batchResponseText.length());
+                        return batchResponseText;
+                    } catch (Exception e) {
+                        logger.error("Error processing batch {}/{}: {}", batchIndex + 1, batches.size(), e.getMessage(), e);
+                        return null;
+                    }
+                }, executor);
+                
+                batchFutures.add(batchFuture);
+            }
+            
+            // Wait for all batches to complete and collect responses (maintain order)
+            List<String> batchResponses = new java.util.ArrayList<>();
+            for (CompletableFuture<String> future : batchFutures) {
+                try {
+                    String response = future.get(); // Wait for completion
+                    if (response != null) {
+                        batchResponses.add(response);
+                    }
+                } catch (InterruptedException | ExecutionException e) {
+                    logger.error("Error waiting for batch completion: {}", e.getMessage(), e);
+                }
+            }
+            
+            logger.info("Completed {} batches in parallel, collected {} responses", batches.size(), batchResponses.size());
+            
+            // Check if we have any responses
+            if (batchResponses.isEmpty()) {
+                logger.error("No batch responses generated. All batches may have been skipped due to token limits.");
+                return createTextResponse("I apologize, but I was unable to process the panel data due to size constraints. Please try with fewer panels or a shorter time range.");
+            }
+            
+            // Consolidate responses using Step 3 template
+            if (batchResponses.size() == 1) {
+                // Single batch, return directly
+                return createTextResponse(batchResponses.get(0));
+            }
+            
+            logger.info("Consolidating {} batch responses", batchResponses.size());
+            String consolidationMessage = buildStep3Message(step3Template, userMessage, batchResponses, panelIds);
+            
+            // Validate consolidation message token count before sending
+            int consolidationTokens = tokenCounter.countTokens(consolidationMessage);
+            int consolidationTotalTokens = historyTokens + consolidationTokens;
+            
+            if (consolidationTotalTokens > TOKEN_LIMIT) {
+                logger.warn("Consolidation message exceeds token limit: total={} (history={} + message={}) > limit={}. Truncating batch responses...", 
+                        consolidationTotalTokens, historyTokens, consolidationTokens, TOKEN_LIMIT);
+                
+                // Truncate batch responses to fit within limit
+                List<String> truncatedResponses = truncateBatchResponses(batchResponses, 
+                        TOKEN_LIMIT - historyTokens - 2000); // Leave 2000 tokens for template and structure
+                
+                consolidationMessage = buildStep3Message(step3Template, userMessage, truncatedResponses, panelIds);
+                consolidationTokens = tokenCounter.countTokens(consolidationMessage);
+                consolidationTotalTokens = historyTokens + consolidationTokens;
+                
+                logger.info("Truncated batch responses, new token count: total={} (history={} + message={})", 
+                        consolidationTotalTokens, historyTokens, consolidationTokens);
+            }
+            
+            // Final validation
+            if (consolidationTotalTokens > TOKEN_LIMIT) {
+                logger.error("Consolidation message still exceeds token limit after truncation: {} > {}. Using last batch response only.", 
+                        consolidationTotalTokens, TOKEN_LIMIT);
+                // Fallback: return the last batch response
+                if (!batchResponses.isEmpty()) {
+                    return createTextResponse(batchResponses.get(batchResponses.size() - 1));
+                }
+            }
+            
+            logger.debug("Consolidation token count: total={} (history={} + message={}) <= limit={}", 
+                    consolidationTotalTokens, historyTokens, consolidationTokens, TOKEN_LIMIT);
+            
+            // Use filtered history (assistant responses only) for consolidation
+            ClaudeResponse finalResponse = sendMessage(consolidationMessage, filteredHistory);
+            
+            return finalResponse;
+        } finally {
+            // Shutdown executor
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+    
+    /**
+     * Process Step 1 message with batched panel metadata to handle length constraints
+     * Similar to processStep2Batched but for panel metadata instead of timeseries data
+     */
+    @Override
+    public ClaudeResponse processStep1Batched(
+            String userMessage,
+            List<ClaudeMessage> conversationHistory,
+            List<Map<String, Object>> panelMetadata) throws IOException {
+        
+        // Filter history to only include assistant responses (skip user messages to save tokens)
+        // User messages are redundant since Step 1 message already includes the current user question and panel metadata
+        // But assistant responses may contain useful context
+        List<ClaudeMessage> filteredHistory = new java.util.ArrayList<>();
+        if (conversationHistory != null && !conversationHistory.isEmpty()) {
+            for (ClaudeMessage msg : conversationHistory) {
+                if ("assistant".equals(msg.getRole())) {
+                    filteredHistory.add(msg);
+                }
+            }
+            logger.info("Step 1 filtered history: {} total messages -> {} assistant messages (skipped {} user messages)", 
+                    conversationHistory.size(), filteredHistory.size(), conversationHistory.size() - filteredHistory.size());
+        }
+        
+        logger.info("Processing Step 1 batched: {} panels, {} filtered history messages (assistant responses only)", 
+                panelMetadata.size(), filteredHistory.size());
+        
+        // Load Step 1 template
+        String step1Template = loadTemplate("dashboard-assistant-templates/step1-metadata-template.json");
+        if (step1Template == null) {
+            logger.warn("Step 1 template not found, using fallback");
+            step1Template = "You are a dashboard analyzer. This is a TWO-STEP process:\n\nSTEP 1 (THIS MESSAGE): Identify panel IDs needed - respond with ONLY comma-separated panel IDs using the EXACT IDs shown below (e.g., \"{exampleFormat}\" or \"none\")\nSTEP 2 (NEXT MESSAGE): You will receive the actual timeseries data from those panels, then analyze and answer\n\nDashboard has {panelCount} panels:\n\n{panelMetadataList}\n\nUser question: \"{userMessage}\"\n\nCONTEXT-AWARE PANEL IDENTIFICATION:\n- Carefully examine panel Titles, Descriptions, Categories, and Series names to identify relevant panels\n- Match keywords from the user's question to panel metadata (e.g., \"Availability\" matches panels with \"Availability\" in title/category/description)\n- Consider panel Categories (Parent titles) when questions mention categories or groupings\n- Look for series/metric names that match the question (e.g., questions about specific metrics should match Series names)\n- If the question asks about \"what are X metrics\" or \"what metrics are in X\", identify panels that contain those metrics based on Titles, Descriptions, Categories, and Series names\n\nCRITICAL RULES - FOLLOW EXACTLY:\n1. Your response MUST be ONLY comma-separated panel IDs or the word \"none\" - nothing else\n2. Use ONLY the EXACT Panel ID values from the list above (e.g., \"p1\", \"p2\", \"p8\")\n3. Do NOT include any explanations, questions, or additional text\n4. Do NOT use panel titles, descriptions, or DOM IDs\n5. If you cannot determine which panels are needed, respond with \"none\"\n6. If panels are needed: respond with exactly: {exampleFormat} (comma-separated, no spaces or quotes)\n7. If no panels are needed: respond with exactly: none\n\nVALID RESPONSE FORMATS (choose one):\n- {exampleFormat}\n- {firstPanelId}\n- none\n\nYOUR RESPONSE MUST BE:\n- Either: comma-separated panel IDs (e.g., \"p1,p2,p3\") with NO spaces, NO quotes, NO explanations\n- Or: the single word \"none\"\n- Nothing else. No prefixes, no suffixes, no additional text.\n\nRespond now (ONLY panel IDs or \"none\"):";
+        }
+        
+        // Token limit: 85000 tokens
+        final int TOKEN_LIMIT = 85000;
+        
+        // Estimate history tokens for filtered history (assistant responses only)
+        int historyTokens = historyManager.estimateTokens(filteredHistory);
+        
+        // Reserve tokens for history + response buffer (leave ~5000 for response)
+        int reservedTokens = historyTokens + 5000;
+        int availableTokens = TOKEN_LIMIT - reservedTokens;
+        
+        // Ensure we have at least some tokens available
+        if (availableTokens < 1000) {
+            logger.warn("Very little token budget available ({}), history is large ({} tokens)", 
+                    availableTokens, historyTokens);
+            availableTokens = Math.max(1000, TOKEN_LIMIT - historyTokens - 5000);
+        }
+        
+        logger.info("Token budget: limit={}, history={}, reserved={}, available={}", 
+                TOKEN_LIMIT, historyTokens, reservedTokens, availableTokens);
+        
+        // Batch panel metadata based on size
+        List<List<Map<String, Object>>> batches = createStep1Batches(panelMetadata, step1Template, userMessage, availableTokens);
+        logger.info("Created {} batches for {} panels", batches.size(), panelMetadata.size());
+        
+        // Process each batch and collect responses
+        List<String> batchResponses = new java.util.ArrayList<>();
+        for (int i = 0; i < batches.size(); i++) {
+            List<Map<String, Object>> batch = batches.get(i);
+            logger.info("Processing batch {}/{} with {} panels", i + 1, batches.size(), batch.size());
+            
+            // Build Step 1 message for this batch
+            String batchMessage = buildStep1Message(step1Template, userMessage, batch);
+            
+            // Validate token count before sending
+            int batchMessageTokens = tokenCounter.countTokens(batchMessage);
+            int totalTokens = historyTokens + batchMessageTokens;
+            
+            if (totalTokens > TOKEN_LIMIT) {
+                logger.warn("Batch {}/{} exceeds token limit: total={} (history={} + message={}) > limit={}. Reducing batch size...", 
+                        i + 1, batches.size(), totalTokens, historyTokens, batchMessageTokens, TOKEN_LIMIT);
+                
+                // Reduce batch size and retry
+                int maxTokensForBatch = TOKEN_LIMIT - historyTokens - 1000;
+                List<Map<String, Object>> reducedBatch = reduceStep1BatchSize(batch, step1Template, userMessage, maxTokensForBatch);
+                
+                if (reducedBatch.isEmpty()) {
+                    logger.error("Cannot create valid batch for panels: {}", batch.size());
+                    continue; // Skip this batch
+                }
+                
+                batchMessage = buildStep1Message(step1Template, userMessage, reducedBatch);
+                batchMessageTokens = tokenCounter.countTokens(batchMessage);
+                totalTokens = historyTokens + batchMessageTokens;
+                
+                logger.info("Reduced batch to {} panels, new token count: total={} (history={} + message={})", 
+                        reducedBatch.size(), totalTokens, historyTokens, batchMessageTokens);
+                
+                batch = reducedBatch;
+            }
+            
+            // Final validation before sending
+            if (totalTokens > TOKEN_LIMIT) {
+                logger.error("Batch {}/{} still exceeds token limit after reduction: {} > {}. Skipping batch.", 
+                        i + 1, batches.size(), totalTokens, TOKEN_LIMIT);
+                continue;
+            }
+            
+            logger.debug("Batch {}/{} token count: total={} (history={} + message={}) <= limit={}", 
+                    i + 1, batches.size(), totalTokens, historyTokens, batchMessageTokens, TOKEN_LIMIT);
+            
+            // Send to Claude with filtered history (assistant responses only)
+            ClaudeResponse batchResponse = sendMessage(batchMessage, filteredHistory);
+            String batchResponseText = extractTextFromResponse(batchResponse);
+            batchResponses.add(batchResponseText);
+            
+            logger.info("Batch {}/{} completed, response length: {}", i + 1, batches.size(), batchResponseText.length());
+        }
+        
+        // Check if we have any responses
+        if (batchResponses.isEmpty()) {
+            logger.error("No batch responses generated. All batches may have been skipped due to token limits.");
+            return createTextResponse("none");
+        }
+        
+        // Consolidate responses - extract panel IDs from each batch response and combine
+        if (batchResponses.size() == 1) {
+            // Single batch, return directly
+            return createTextResponse(batchResponses.get(0));
+        }
+        
+        logger.info("Consolidating {} batch responses", batchResponses.size());
+        
+        // Extract panel IDs from each batch response and combine them
+        List<String> allPanelIds = new java.util.ArrayList<>();
+        for (String batchResponse : batchResponses) {
+            // Parse panel IDs from response (comma-separated)
+            String cleanResponse = batchResponse.trim()
+                    .replaceAll("^[\"']|[\"']$", "") // Remove surrounding quotes
+                    .replaceAll("^```[\\w]*\\n?|\\n?```$", "") // Remove code blocks
+                    .replaceAll("(?i)^panel\\s*ids?[:\\s]+", "") // Remove "Panel IDs:" prefix (case-insensitive)
+                    .trim();
+            
+            if (cleanResponse.equalsIgnoreCase("none")) {
+                continue; // Skip "none" responses
+            }
+            
+            // Split by comma and add to list
+            String[] ids = cleanResponse.split(",");
+            for (String id : ids) {
+                String trimmedId = id.trim();
+                if (!trimmedId.isEmpty() && !allPanelIds.contains(trimmedId)) {
+                    allPanelIds.add(trimmedId);
+                }
+            }
+        }
+        
+        // Combine all panel IDs into final response
+        String finalResponse = allPanelIds.isEmpty() ? "none" : String.join(",", allPanelIds);
+        logger.info("Consolidated {} panel IDs from {} batches", allPanelIds.size(), batchResponses.size());
+        
+        return createTextResponse(finalResponse);
+    }
+    
+    /**
+     * Create batches of panel metadata based on size
+     */
+    private List<List<Map<String, Object>>> createStep1Batches(
+            List<Map<String, Object>> panelMetadata,
+            String step1Template,
+            String userMessage,
+            int maxTokensPerBatch) {
+        
+        List<List<Map<String, Object>>> batches = new java.util.ArrayList<>();
+        List<Map<String, Object>> currentBatch = new java.util.ArrayList<>();
+        int currentBatchTokens = 0;
+        
+        for (Map<String, Object> panel : panelMetadata) {
+            // Estimate tokens for this panel
+            String testMessage = buildStep1Message(step1Template, userMessage, java.util.Collections.singletonList(panel));
+            int panelTokens = tokenCounter.countTokens(testMessage);
+            
+            // If single panel exceeds limit, add it anyway (will be handled by validation)
+            if (panelTokens > maxTokensPerBatch && currentBatch.isEmpty()) {
+                logger.warn("Panel {} exceeds token limit ({}), adding as single batch", 
+                        panel.get("id"), panelTokens);
+                batches.add(java.util.Collections.singletonList(panel));
+                continue;
+            }
+            
+            // Check if adding this panel would exceed limit
+            if (currentBatchTokens + panelTokens > maxTokensPerBatch && !currentBatch.isEmpty()) {
+                // Start new batch
+                batches.add(new java.util.ArrayList<>(currentBatch));
+                currentBatch.clear();
+                currentBatchTokens = 0;
+            }
+            
+            currentBatch.add(panel);
+            currentBatchTokens += panelTokens;
+        }
+        
+        // Add remaining panels as final batch
+        if (!currentBatch.isEmpty()) {
+            batches.add(currentBatch);
+        }
+        
+        return batches;
+    }
+    
+    /**
+     * Build Step 1 message from template and panel metadata
+     */
+    private String buildStep1Message(String template, String userMessage, List<Map<String, Object>> panelMetadata) {
+        if (template == null || panelMetadata == null || panelMetadata.isEmpty()) {
+            return "User question: \"" + userMessage + "\"\n\nNo panel metadata available.";
+        }
+        
+        // Format panel metadata list
+        StringBuilder panelMetadataList = new StringBuilder();
+        for (Map<String, Object> panel : panelMetadata) {
+            panelMetadataList.append("Panel ID: ").append(panel.get("id")).append("\n");
+            panelMetadataList.append("Title: ").append(panel.get("title")).append("\n");
+            panelMetadataList.append("Description: ").append(panel.getOrDefault("description", "No description")).append("\n");
+            panelMetadataList.append("Type: ").append(panel.get("type")).append("\n");
+            
+            // Add category (parent title) if available (for child panels)
+            if (panel.containsKey("parentTitle") && panel.get("parentTitle") != null) {
+                panelMetadataList.append("Category: ").append(panel.get("parentTitle")).append("\n");
+            }
+            
+            // Add stat value if available
+            if (panel.containsKey("statValue") && panel.get("statValue") != null) {
+                panelMetadataList.append("Stat Value: ").append(panel.get("statValue")).append("\n");
+            }
+            
+            // Add series if available
+            Object seriesObj = panel.get("series");
+            if (seriesObj != null) {
+                if (seriesObj instanceof List) {
+                    @SuppressWarnings("unchecked")
+                    List<String> series = (List<String>) seriesObj;
+                    panelMetadataList.append("Series: ").append(String.join(", ", series)).append("\n");
+                } else if (seriesObj instanceof String) {
+                    panelMetadataList.append("Series: ").append(seriesObj).append("\n");
+                }
+            } else {
+                panelMetadataList.append("Series: No series\n");
+            }
+            
+            panelMetadataList.append("\n---\n\n");
+        }
+        
+        // Build example panel IDs
+        String exampleFormat = panelMetadata.stream()
+                .limit(3)
+                .map(p -> String.valueOf(p.get("id")))
+                .reduce((a, b) -> a + "," + b)
+                .orElse("p1,p2");
+        String firstPanelId = panelMetadata.isEmpty() ? "p1" : String.valueOf(panelMetadata.get(0).get("id"));
+        
+        // Replace template variables
+        String message = template.replace("{userMessage}", userMessage)
+                .replace("{panelCount}", String.valueOf(panelMetadata.size()))
+                .replace("{panelMetadataList}", panelMetadataList.toString())
+                .replace("{exampleFormat}", exampleFormat)
+                .replace("{firstPanelId}", firstPanelId);
+        
+        return message;
+    }
+    
+    /**
+     * Reduce Step 1 batch size to fit within token limit
+     */
+    private List<Map<String, Object>> reduceStep1BatchSize(
+            List<Map<String, Object>> batch,
+            String step1Template,
+            String userMessage,
+            int maxTokens) {
+        
+        List<Map<String, Object>> reducedBatch = new java.util.ArrayList<>(batch);
+        int attempts = 0;
+        int maxAttempts = 10;
+        
+        while (attempts < maxAttempts && !reducedBatch.isEmpty()) {
+            String testMessage = buildStep1Message(step1Template, userMessage, reducedBatch);
+            int testTokens = tokenCounter.countTokens(testMessage);
+            
+            if (testTokens <= maxTokens) {
+                logger.debug("Reduced Step 1 batch to {} panels, token count: {}", reducedBatch.size(), testTokens);
+                return reducedBatch;
+            }
+            
+            // Remove last panel and try again
+            reducedBatch.remove(reducedBatch.size() - 1);
+            attempts++;
+        }
+        
+        // If still too large, try with just the first panel
+        if (reducedBatch.isEmpty() && !batch.isEmpty()) {
+            reducedBatch.add(batch.get(0));
+            logger.warn("Reduced Step 1 batch to single panel: {}", batch.get(0).get("id"));
+        }
+        
+        return reducedBatch;
+    }
+    
+    /**
+     * Load template from resources
+     */
+    @SuppressWarnings("unchecked")
+    private String loadTemplate(String resourcePath) {
+        try {
+            java.io.InputStream resourceStream = getClass().getClassLoader()
+                    .getResourceAsStream(resourcePath);
+            if (resourceStream == null) {
+                logger.warn("Template not found: {}", resourcePath);
+                return null;
+            }
+            
+            java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+            byte[] data = new byte[1024];
+            int nRead;
+            while ((nRead = resourceStream.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+            }
+            buffer.flush();
+            String content = new String(buffer.toByteArray(), java.nio.charset.StandardCharsets.UTF_8);
+            resourceStream.close();
+            
+            // Parse JSON and extract template
+            Map<String, Object> templateJson = (Map<String, Object>) objectMapper.readValue(content, Map.class);
+            if (templateJson.containsKey("template")) {
+                return (String) templateJson.get("template");
+            } else if (templateJson.containsKey("templateWithData")) {
+                return (String) templateJson.get("templateWithData");
+            }
+            return null;
+        } catch (Exception e) {
+            logger.error("Error loading template {}: {}", resourcePath, e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Create batches of panels based on data size
+     */
+    private List<List<String>> createBatches(
+            List<String> panelIds,
+            Map<String, Object> panelData,
+            String step2Template,
+            String userMessage,
+            int maxTokensPerBatch) {
+        
+        List<List<String>> batches = new java.util.ArrayList<>();
+        List<String> currentBatch = new java.util.ArrayList<>();
+        int currentBatchTokens = 0;
+        
+        for (String panelId : panelIds) {
+            Object panelDataObj = panelData.get(panelId);
+            if (panelDataObj == null) continue;
+            
+            // Estimate tokens for this panel
+            String testMessage = buildStep2Message(step2Template, userMessage, 
+                    java.util.Collections.singletonMap(panelId, panelDataObj));
+            int panelTokens = tokenCounter.countTokens(testMessage);
+            
+            // If single panel exceeds limit, add it anyway (will be handled by validation before sending)
+            if (panelTokens > maxTokensPerBatch && currentBatch.isEmpty()) {
+                logger.warn("Panel {} exceeds token limit ({}), adding as single batch (will be validated before sending)", 
+                        panelId, panelTokens);
+                batches.add(java.util.Collections.singletonList(panelId));
+                continue;
+            }
+            
+            // Check if adding this panel would exceed limit
+            if (currentBatchTokens + panelTokens > maxTokensPerBatch && !currentBatch.isEmpty()) {
+                // Start new batch
+                batches.add(new java.util.ArrayList<>(currentBatch));
+                currentBatch.clear();
+                currentBatchTokens = 0;
+            }
+            
+            currentBatch.add(panelId);
+            currentBatchTokens += panelTokens;
+        }
+        
+        // Add remaining panels
+        if (!currentBatch.isEmpty()) {
+            batches.add(currentBatch);
+        }
+        
+        return batches;
+    }
+    
+    /**
+     * Build Step 2 message from template
+     */
+    private String buildStep2Message(String template, String userMessage, Map<String, Object> panelData) {
+        // Get current date/time in ISO 8601 format (UTC)
+        String currentDateTime = java.time.Instant.now().toString() + " (UTC)";
+        
+        if (template == null) {
+            // Fallback template
+            return String.format("Current Date and Time (UTC): %s\n\nUser question: \"%s\"\n\nHere is the timeseries data from the requested panels:\n\n%s\n\nCRITICAL: USE PANEL METADATA CONTEXT FOR CONTEXTUAL ANSWERS\n- Each panel in the data includes: panelId, title, description, type, category (if child panel), and seriesData\n- When answering questions about \"what are X metrics\" or \"what metrics are in X category\", use the panel data context:\n  * Panel title indicates what the panel measures\n  * Panel description provides additional context about metrics\n  * Panel category (if present) indicates the grouping/categorization (e.g., \"Availability\", \"Performance\")\n  * Series names in seriesData are the actual metric names available in each panel\n- For questions that can be answered from metadata context (e.g., \"what are Availability Category metrics?\"), provide a contextual answer based on:\n  1. Which panels have category matching the question (check the category field in each panel object)\n  2. What metrics/series are available in those panels (check seriesData keys)\n  3. What each panel measures (check title and description fields)\n- Combine metadata context with actual data values to provide comprehensive answers\n- If the question asks about metric definitions or what metrics exist, use panel titles, descriptions, categories, and series names from the panel data\n\nIMPORTANT: Provide a SHORT and CRISP answer. Be concise and direct. Focus on key findings only. Avoid lengthy explanations or unnecessary details. Maximum 2-3 sentences unless the question specifically requires more detail.",
+                    currentDateTime, userMessage, serializePanelData(panelData));
+        }
+        
+        String panelDataJSON = serializePanelData(panelData);
+        return template.replace("{currentDateTime}", currentDateTime)
+                .replace("{userMessage}", userMessage)
+                .replace("{panelDataJSON}", panelDataJSON);
+    }
+    
+    /**
+     * Build Step 3 consolidation message
+     */
+    private String buildStep3Message(String template, String userMessage, 
+            List<String> batchResponses, List<String> panelIds) {
+        if (template == null) {
+            // Fallback template
+            StringBuilder sb = new StringBuilder();
+            sb.append("You are consolidating multiple analysis responses from a dashboard assistant.\n\n");
+            sb.append("User's original question: \"").append(userMessage).append("\"\n\n");
+            sb.append("You received ").append(batchResponses.size()).append(" separate analysis responses:\n\n");
+            for (int i = 0; i < batchResponses.size(); i++) {
+                sb.append("--- Batch ").append(i + 1).append(" ---\n");
+                sb.append(batchResponses.get(i)).append("\n\n");
+            }
+            sb.append("Your task: Provide a SINGLE, CONSOLIDATED, and COMPREHENSIVE answer by combining insights from all responses.\n\n");
+            sb.append("Consolidated answer:");
+            return sb.toString();
+        }
+        
+        // Format batch responses
+        StringBuilder batchResponsesText = new StringBuilder();
+        int batchSize = batchResponses.size() > 0 ? panelIds.size() / batchResponses.size() : panelIds.size();
+        for (int i = 0; i < batchResponses.size(); i++) {
+            int startIdx = i * batchSize;
+            int endIdx = Math.min(startIdx + batchSize, panelIds.size());
+            List<String> batchPanelIds = panelIds.subList(startIdx, endIdx);
+            batchResponsesText.append("--- Batch ").append(i + 1)
+                    .append(" (Panels: ").append(String.join(", ", batchPanelIds)).append(") ---\n")
+                    .append(batchResponses.get(i)).append("\n\n");
+        }
+        
+        return template.replace("{userMessage}", userMessage)
+                .replace("{batchCount}", String.valueOf(batchResponses.size()))
+                .replace("{batchResponses}", batchResponsesText.toString());
+    }
+    
+    /**
+     * Reduce batch size to fit within token limit
+     */
+    private List<String> reduceBatchSize(
+            List<String> batch,
+            Map<String, Object> batchData,
+            String step2Template,
+            String userMessage,
+            int maxTokens) {
+        
+        if (batch.isEmpty()) {
+            return batch;
+        }
+        
+        // Try removing panels from the end until we fit
+        List<String> reducedBatch = new java.util.ArrayList<>(batch);
+        int attempts = 0;
+        int maxAttempts = batch.size(); // Don't try more times than panels
+        
+        while (attempts < maxAttempts && !reducedBatch.isEmpty()) {
+            // Build message with current batch
+            Map<String, Object> testData = new java.util.HashMap<>();
+            for (String panelId : reducedBatch) {
+                testData.put(panelId, batchData.get(panelId));
+            }
+            
+            String testMessage = buildStep2Message(step2Template, userMessage, testData);
+            int testTokens = tokenCounter.countTokens(testMessage);
+            
+            if (testTokens <= maxTokens) {
+                logger.debug("Reduced batch to {} panels, token count: {}", reducedBatch.size(), testTokens);
+                return reducedBatch;
+            }
+            
+            // Remove last panel and try again
+            reducedBatch.remove(reducedBatch.size() - 1);
+            attempts++;
+        }
+        
+        // If still too large, try with just the first panel
+        if (reducedBatch.isEmpty() && !batch.isEmpty()) {
+            reducedBatch.add(batch.get(0));
+            logger.warn("Reduced batch to single panel: {}", batch.get(0));
+        }
+        
+        return reducedBatch;
+    }
+    
+    /**
+     * Truncate batch responses to fit within token limit
+     */
+    private List<String> truncateBatchResponses(List<String> batchResponses, int maxTokens) {
+        if (batchResponses.isEmpty()) {
+            return batchResponses;
+        }
+        
+        // Estimate tokens for template structure (without responses)
+        String testTemplate = "User's original question: \"{userMessage}\"\n\nYou received {batchCount} separate analysis responses:\n\n{batchResponses}\n\nYour task: Provide a SINGLE, CONSOLIDATED answer.";
+        int templateTokens = tokenCounter.countTokens(testTemplate.replace("{userMessage}", "").replace("{batchCount}", "0").replace("{batchResponses}", ""));
+        
+        List<String> truncatedResponses = new java.util.ArrayList<>();
+        int currentTokens = templateTokens;
+        
+        for (String response : batchResponses) {
+            int responseTokens = tokenCounter.countTokens(response);
+            
+            // Check if adding this response would exceed limit
+            if (currentTokens + responseTokens > maxTokens) {
+                // Truncate this response to fit
+                int availableTokens = maxTokens - currentTokens - 100; // Leave 100 token buffer
+                if (availableTokens > 0) {
+                    // Truncate response (rough estimate: 4 chars per token)
+                    int maxChars = availableTokens * 4;
+                    if (response.length() > maxChars) {
+                        response = response.substring(0, maxChars) + "\n\n[... response truncated due to length ...]";
+                        logger.debug("Truncated batch response from {} to {} chars", response.length() + maxChars, maxChars);
+                    }
+                    truncatedResponses.add(response);
+                }
+                break; // Can't fit more responses
+            }
+            
+            truncatedResponses.add(response);
+            currentTokens += responseTokens;
+        }
+        
+        logger.info("Truncated batch responses from {} to {} to fit token limit", 
+                batchResponses.size(), truncatedResponses.size());
+        
+        return truncatedResponses;
+    }
+    
+    /**
+     * Serialize panel data to JSON string
+     */
+    private String serializePanelData(Map<String, Object> panelData) {
+        try {
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(panelData);
+        } catch (Exception e) {
+            logger.error("Error serializing panel data: {}", e.getMessage());
+            return "{}";
+        }
+    }
+    
+    /**
+     * Extract text from Claude response
+     */
+    private String extractTextFromResponse(ClaudeResponse response) {
+        if (response == null) {
+            return "";
+        }
+        // Use the existing getTextContent method
+        return response.getTextContent();
+    }
+    
+    /**
+     * Create a text response from string
+     */
+    private ClaudeResponse createTextResponse(String text) {
+        ClaudeResponse response = new ClaudeResponse();
+        ClaudeResponse.ContentBlock block = new ClaudeResponse.ContentBlock();
+        block.setType("text");
+        block.setText(text);
+        response.setContent(new java.util.ArrayList<>(java.util.Collections.singletonList(block)));
+        response.setRole("assistant");
+        return response;
     }
 }
 

@@ -15,6 +15,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import server.claude.model.ClaudeMessage;
 import server.claude.model.ClaudeResponse;
+import server.investigation.InvestigateConnectionPoolIssues;
+import server.profiler.IPerfGenieService;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,13 +32,18 @@ public class ClaudeControllerTest {
 
     @Mock
     private IClaudeService claudeService;
+    
+    @Mock
+    private IPerfGenieService perfGenieService;
 
     private ClaudeController controller;
 
     @BeforeMethod
     public void setup() {
         MockitoAnnotations.openMocks(this);
-        controller = new ClaudeController(claudeService);
+        InvestigateConnectionPoolIssues investigateConnectionPoolIssues = 
+            new InvestigateConnectionPoolIssues(perfGenieService);
+        controller = new ClaudeController(claudeService, investigateConnectionPoolIssues);
     }
 
     @Test

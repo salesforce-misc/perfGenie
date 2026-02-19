@@ -11466,14 +11466,14 @@ class GenieAnalytics {
             const fieldPalette = this.getElementById('fieldPalette');
             
             if (attempts % 5 === 0 || (collapseBtn && fieldPalette)) {
-            console.log('Attempt ' + attempts + ': Collapse elements found:', { 
+            /*console.log('Attempt ' + attempts + ': Collapse elements found:', {
                 collapseBtn: !!collapseBtn, 
                 fieldPalette: !!fieldPalette,
                     containerInDOM: document.body.contains(this.container),
                     accordionExpanded: isAccordionExpanded,
                     accordionContentHeight: accordionContent ? accordionContent.offsetHeight : 0,
                     stableChecks: stableChecks
-                });
+                });*/
             }
             
             // Check if elements are found and stable
